@@ -1,0 +1,7 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`<NotFoundPage /> should match snapshot 1`] = `
+<h2>
+  Page not found.
+</h2>
+`;

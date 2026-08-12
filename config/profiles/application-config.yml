@@ -1,0 +1,135 @@
+spring:
+  main:
+    # Spring Boot 2.6+ 默认禁止 Bean 循环依赖；datart 存在历史循环引用，恢复允许以保证启动
+    allow-circular-references: true
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.alibaba.druid.pool.DruidDataSource
+    url: jdbc:mysql://${datasource.ip:127.0.0.1}:${datasource.port:3306}/${datasource.database:datart}?&allowMultiQueries=true&characterEncoding=utf8&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${datasource.username:root}
+    password: ${datasource.password:123456}
+    druid:
+      # 连接池保活配置，防止 MySQL 连接超时断开
+      test-while-idle: true                           # 空闲时检测连接是否有效
+      test-on-borrow: false                           # 获取连接时不检测（避免性能损耗）
+      test-on-return: false                           # 归还连接时不检测
+      validation-query: SELECT 1                      # 心跳检测 SQL
+      time-between-eviction-runs-millis: 60000        # 每 60 秒扫描一次空闲连接
+      min-evictable-idle-time-millis: 300000          # 空闲超过 5 分钟才回收
+      keep-alive: true                                # 保持连接活跃
+      keep-alive-between-time-millis: 120000          # 每 120 秒发送保活心跳（必须大于 time-between-eviction-runs-millis）
+      # 连接超时
+      max-wait: 60000                                 # 获取连接最长等待时间
+      # 连接泄漏检测
+      remove-abandoned: true                          # 自动回收泄漏连接
+      remove-abandoned-timeout: 300                   # 超过 5 分钟未关闭视为泄漏
+      log-abandoned: true                             # 记录泄漏日志
+
+# security:
+#   oauth2:
+#     client:
+#       registration:
+#         cas:
+#           provider: cas
+#           client-id: "xxxxx"
+#           client-name: "Sign in with CAS"
+#           client-secret: "xxx"
+#           authorization-grant-type: authorization_code
+#           client-authentication-method: post
+#           redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+#           scope: userinfo
+#       provider:
+#         cas:
+#           authorization-uri: https://cas.xxx.com/cas/oauth2.0/authorize
+#           token-uri: https://cas.xxx.com/cas/oauth2.0/accessToken
+#           user-info-uri: https://cas.xxx.com/cas/oauth2.0/profile
+#           user-name-attribute: id
+#           userMapping:
+#             email: "attributes.email"
+#             name: "attributes.name"
+#             avatar: "attributes.avatar"
+
+# ldap config
+
+# ldap:
+#   urls: ldap://{IP}:{PORT}
+#   base: xxx
+#   username: {username}
+#   password: {password}
+#   attribute-mapping:
+#     username: cn # 自定义登录用户名对应属性名
+
+# mail config
+
+# mail:
+#   host: { 邮箱服务地址 }
+#   port: { 端口号 }
+#   username: { 邮箱地址 }
+#   fromAddress:
+#   password: { 邮箱服务密码 }
+#   senderName: { 发送者昵称 }
+#
+#   properties:
+#     smtp:
+#       starttls:
+#         enable: true
+#         required: true
+#       auth: true
+#     mail:
+#       smtp:
+#         ssl:
+#           enable: true
+
+
+# redis config
+
+#  redis:
+#    port: 6379
+#    host: { HOST }
+
+
+server:
+  port: ${server.port:8080}
+  address: ${server.ip:0.0.0.0}
+  ssl:
+    enabled: false
+    key-store: keystore.p12 # Absolute path
+    key-store-password: password
+    keyStoreType: PKCS12
+    keyAlias: tomcat
+
+datart:
+  swagger:
+    enabled: ${DATART_SWAGGER_ENABLED:false}
+  migration:
+    enable: true # 是否开启数据库自动升级
+  server:
+    address: ${datart.address:http://127.0.0.1:8080}
+
+  # 租户管理模式：platform-平台(默认)，team-团队
+  tenant-management-mode: platform
+
+  user:
+    register: false # 是否允许注册
+    active:
+      send-mail: ${datart.send-mail:false}  # 注册用户时是否需要邮件验证激活
+      expire-hours: ${datart.register.expire-hours:48} # 注册邮件有效期/小时
+    invite:
+      expire-hours: ${datart.invite.expire-hours:48} # 邀请邮件有效期/小时
+
+  security:
+    content-security-policy: "${DATART_CONTENT_SECURITY_POLICY:default-src 'self'; img-src 'self' data: blob: https: http:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; worker-src 'self' blob:; connect-src 'self' ws: wss:; frame-ancestors 'self'}"
+    token:
+      secret: "d@tart_S3cur!ty_T0k3n_K3y_2024"  # AES加密密钥，必须设置固定值，否则每次重启后数据源密码无法解密
+      timeout-min: 30  # 登录会话有效时长，单位：分钟。
+
+  env:
+    file-path: ${user.dir}/static # 服务端文件保存位置
+
+  screenshot:
+    timeout-seconds: 60
+    webdriver-type: CHROME
+    webdriver-path: ${datart.webdriver-path:}
+
+  http-data-provider:
+    allow-insecure-tls: ${DATART_HTTP_ALLOW_INSECURE_TLS:false}

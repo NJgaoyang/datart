@@ -1,0 +1,9 @@
+{
+  "short_name": "宜租乐BI",
+  "name": "宜租乐BI",
+  "icons": [],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
