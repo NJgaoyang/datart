@@ -100,6 +100,14 @@ export const selectLayoutWidgetMap = createSelector(
   },
 );
 
+export const selectMobileLayoutWidgets = createSelector(
+  [selectLayoutWidgetMap],
+  widgetMap =>
+    Object.values(widgetMap).sort(
+      (a, b) => a.config.index - b.config.index,
+    ),
+);
+
 // widgetsInfo
 export const selectAllWidgetInfoMap = (state: { editBoard: EditBoardState }) =>
   state.editBoard.widgetInfoRecord || undefined;

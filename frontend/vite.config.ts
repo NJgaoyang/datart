@@ -99,7 +99,9 @@ export default defineConfig({
       },
       output: {
         manualChunks,
-        entryFileNames: 'static/js/[name].js',
+        // 入口也必须带版本号。否则缓存中的旧 main.js 会继续引用已被
+        // 新版发布删除的 vendor/app 分包，导致页面报“静态资源不存在”。
+        entryFileNames: 'static/js/[name].[hash].js',
         chunkFileNames: 'static/js/[name].[hash].js',
         assetFileNames: 'static/[ext]/[name].[hash].[ext]',
       },

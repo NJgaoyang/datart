@@ -17,8 +17,10 @@
  */
 
 import { FONT_DEFAULT } from 'app/constants';
+import { migrateAutoWidgetsLayout } from 'app/pages/DashBoardPage/utils/autoLayout';
 import { initInteractionTpl } from 'app/pages/DashBoardPage/components/WidgetManager/utils/init';
 import { ORIGINAL_TYPE_MAP } from 'app/pages/DashBoardPage/constants';
+import { PRIMARY } from 'styles/StyleConstants';
 import {
   BoardType,
   ControllerWidgetContent,
@@ -180,10 +182,13 @@ export const RC0 = (widget?: Widget) => {
 };
 
 /**
- * RC4 — 主题刷新：更新旧 border / padding / button 默认值至新样式
- * 仅覆盖仍保留旧默认值的 widget，用户自定义过的值不会被修改。
+ * RC4 — 主题刷新：更新旧 border / padding / button 默认值至新样式。
  */
-const OLD_BORDER_DEFAULTS = { color: 'transparent', width: 0, radius: 0 };
+const DATAEASE_BORDER_DEFAULTS = {
+  color: 'transparent',
+  width: 0,
+  radius: 0,
+};
 
 export const RC4 = (widget?: Widget) => {
   if (!widget) return undefined;
@@ -202,13 +207,11 @@ export const RC4 = (widget?: Widget) => {
     if (borderRow?.value) {
       const b = borderRow.value as Record<string, any>;
       if (
-        b.color === OLD_BORDER_DEFAULTS.color &&
-        b.width === OLD_BORDER_DEFAULTS.width &&
-        b.radius === OLD_BORDER_DEFAULTS.radius
+        b.color === '#f0f0f0' &&
+        b.width === 1 &&
+        b.radius === 8
       ) {
-        b.color = '#f0f0f0';
-        b.width = 1;
-        b.radius = 8;
+        Object.assign(b, DATAEASE_BORDER_DEFAULTS);
       }
     }
   }
@@ -224,21 +227,59 @@ export const RC4 = (widget?: Widget) => {
     }
   }
 
-  // 3) 更新 padding 默认值：仅当所有值都为旧默认 8 时
+  // 3) 更新所有 padding 为 DataEase 风格的 0
   const paddingGroup = props.find((p: any) => p.key === 'paddingGroup');
   if (paddingGroup?.rows) {
-    const allOldDefault = paddingGroup.rows.every(
-      (r: any) => r.value === 8,
-    );
-    if (allOldDefault) {
-      paddingGroup.rows.forEach((r: any) => {
-        r.value = 16;
-      });
-    }
+    paddingGroup.rows.forEach((r: any) => {
+      r.value = 0;
+    });
   }
 
   RCFourWidget.config.version = APP_VERSION_RC_4;
   return RCFourWidget as Widget;
+};
+
+/**
+ * Normalize the container style for every widget type. This intentionally
+ * overwrites saved padding and border values so all widgets use the same
+ * DataEase-style container.
+ */
+export const migrateDataEaseContainerStyle = (widget?: Widget) => {
+  if (!widget) return undefined;
+  const props = widget.config?.customConfig?.props;
+  if (!Array.isArray(props)) return widget;
+
+  const paddingGroup = props.find((p: any) => p.key === 'paddingGroup');
+  if (paddingGroup?.rows?.length) {
+    paddingGroup.rows.forEach((row: any) => {
+      row.value = 0;
+    });
+  }
+
+  const borderGroup = props.find((p: any) => p.key === 'borderGroup');
+  const borderRow = borderGroup?.rows?.find((row: any) => row.key === 'border');
+  const border = borderRow?.value;
+  if (border) {
+    Object.assign(border, DATAEASE_BORDER_DEFAULTS);
+  }
+
+  // 旧查询按钮曾被迁移为白字但保留白底，移动端就完全不可见。
+  if (widget.config.originalType === ORIGINAL_TYPE_MAP.queryBtn) {
+    const titleGroup = props.find((p: any) => p.key === 'titleGroup');
+    const titleColor = titleGroup?.rows?.find((row: any) => row.key === 'font')
+      ?.value?.color;
+    const background = props
+      .find((p: any) => p.key === 'backgroundGroup')
+      ?.rows?.find((row: any) => row.key === 'background')?.value;
+    if (
+      titleColor === '#ffffff' &&
+      ['transparent', '#fff', '#ffffff', ''].includes(background?.color)
+    ) {
+      background.color = PRIMARY;
+    }
+  }
+
+  return widget;
 };
 
 const finaleWidget = (widget?: Widget) => {
@@ -266,6 +307,9 @@ export const parseServerWidget = (sWidget: ServerWidget) => {
 export const migrateWidgets = (
   widgets: ServerWidget[],
   boardType: BoardType,
+  layoutVersion?: number,
+  mobileLayoutVersion?: number,
+  pcRowLayoutVersion?: number,
 ) => {
   if (!Array.isArray(widgets)) {
     return [];
@@ -289,8 +333,18 @@ export const migrateWidgets = (
 
       RC4(beta4Widget);
 
+      migrateDataEaseContainerStyle(beta4Widget as Widget);
+
       return finaleWidget(beta4Widget as Widget);
     })
     .filter(widget => !!widget);
-  return targetWidgets as Widget[];
+  const result = targetWidgets as Widget[];
+  return boardType === 'auto'
+    ? migrateAutoWidgetsLayout(
+        result,
+        layoutVersion,
+        mobileLayoutVersion,
+        pcRowLayoutVersion,
+      )
+    : result;
 };

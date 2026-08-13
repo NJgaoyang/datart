@@ -29,19 +29,33 @@ import { ITimeDefault } from './types/widgetTypes';
 export const WIDGET_DRAG_HANDLE = 'widget-draggableHandle';
 export const BOARD_FILE_IMG_PREFIX = 'resources/image/dashboard/';
 export const BASE_VIEW_WIDTH = 1024;
-export const BASE_ROW_HEIGHT = 32;
-export const MIN_ROW_HEIGHT = 24;
+/** Auto-board layout versions are independent from the application config version. */
+export const AUTO_LAYOUT_VERSION = 2;
+export const LEGACY_AUTO_LAYOUT_VERSION = 1;
+export const LEGACY_AUTO_GRID_COLS = 12;
+export const AUTO_GRID_COLS = 72;
+export const LEGACY_BASE_ROW_HEIGHT = 32;
+export const PC_ROW_LAYOUT_VERSION = 2;
+export const LEGACY_PC_ROW_LAYOUT_VERSION = 1;
+export const LEGACY_MOBILE_GRID_COLS = 6;
+export const MOBILE_GRID_COLS = 24;
+export const LEGACY_MOBILE_LAYOUT_VERSION = 1;
+export const MOBILE_LAYOUT_VERSION = 2;
+export const BASE_ROW_HEIGHT = 8;
+export const MIN_ROW_HEIGHT = 6;
+export const MOBILE_ROW_HEIGHT = 24;
 export const MIN_MARGIN = 8;
 export const MIN_PADDING = 8;
+export const MOBILE_MIN_MARGIN = 2;
+export const MOBILE_MIN_PADDING = 4;
 export const LAYOUT_COLS_KEYS = ['lg', 'md', 'sm', 'xs', 'xxs'] as const;
 export const LAYOUT_COLS_MAP = {
-  lg: 12,
-  md: 12,
-  sm: 12,
-  xs: 6,
-  xxs: 6,
+  lg: AUTO_GRID_COLS,
+  md: AUTO_GRID_COLS,
+  sm: MOBILE_GRID_COLS,
+  xs: MOBILE_GRID_COLS,
+  xxs: MOBILE_GRID_COLS,
 };
-/** lg: 12,md: 10,sm: 6,xs: 4,xxs: 2 */
 
 export const BREAK_POINT_MAP = {
   lg: 1200,
@@ -51,21 +65,7 @@ export const BREAK_POINT_MAP = {
   xxs: 0,
 };
 
-export const INIT_COLS = 12;
-export const DEVICE_LIST = {
-  '华为 Mate 30': [360, 780],
-  '华为 Mate 30 Pro': [392, 800],
-  '小米 12': [393, 851],
-  'iPhone X': [375, 812],
-  'iPhone XR': [414, 896],
-  'iPhone 12 Pro': [390, 844],
-  'iPhone SE': [375, 667],
-  'Pixel 5': [393, 851],
-  'Samsung Galaxy S8+': [360, 740],
-  'iPad Mini': [768, 1024],
-  custom: null,
-};
-
+export const INIT_COLS = AUTO_GRID_COLS;
 // DASH_UNDO
 export const BOARD_UNDO = {
   undo: 'EDITOR_UNDO',

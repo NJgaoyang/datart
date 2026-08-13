@@ -230,10 +230,11 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
     }
 
     return {
+      widgetId: wid,
       linkFields,
       jumpField,
     };
-  }, [widget]);
+  }, [wid, widget]);
 
   const buildDrillThroughEventParams = useCallback(
     (clickEventParams, targetEvent: InteractionMouseEvent, ruleId?: string) => {

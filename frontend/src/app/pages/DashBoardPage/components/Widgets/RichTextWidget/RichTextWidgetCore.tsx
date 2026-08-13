@@ -16,10 +16,6 @@
  * limitations under the License.
  */
 import { Modal } from 'antd';
-import {
-  CustomColor,
-  QuillPalette,
-} from 'app/components/ChartGraph/BasicRichText/RichTextPluginLoader/CustomColor';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { WidgetInfo } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { editBoardStackActions } from 'app/pages/DashBoardPage/pages/BoardEditor/slice';
@@ -33,7 +29,6 @@ import React, {
   useCallback,
   useContext,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -43,15 +38,31 @@ import ReactQuill, { Quill } from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { useDispatch } from 'react-redux';
 import styled from 'styled-components';
+import { FONT_FAMILIES, FONT_SIZES } from 'globalConstants';
 import { SPACE_TIMES } from 'styles/StyleConstants';
 import { WidgetActionContext } from '../../ActionProvider/WidgetActionProvider';
 import { Formats, MarkdownOptions } from './config';
 
 Quill.register('modules/imageDrop', ImageDrop);
 
-const CUSTOM_COLOR_INIT = {
-  background: 'transparent',
-  color: '#000',
+const size = Quill.import('attributors/style/size') as any;
+size.whitelist = FONT_SIZES.map(fontSize => `${fontSize}px`);
+Quill.register(size, true);
+
+const font = Quill.import('attributors/style/font') as any;
+font.whitelist = FONT_FAMILIES.map(item => item.value);
+Quill.register(font, true);
+
+const RICH_TEXT_MODULES = {
+  toolbar: [
+    [{ font: [] }, { size: [] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ color: [] }, { background: [] }],
+    [{ align: [] }, { indent: '-1' }, { indent: '+1' }],
+    [{ list: 'ordered' }, { list: 'bullet' }, 'blockquote', 'code-block'],
+    ['link', 'image', 'clean'],
+  ],
+  imageDrop: true,
 };
 
 type RichTextWidgetProps = {
@@ -74,18 +85,8 @@ export const RichTextWidgetCore: React.FC<RichTextWidgetProps> = ({
   const [quillValue, setQuillValue] = useState<DeltaStatic | undefined>(
     initContent,
   );
-  const [containerId, setContainerId] = useState<string>();
-  const [quillModules, setQuillModules] = useState<any>(null);
-
-  const [customColorVisible, setCustomColorVisible] = useState<boolean>(false);
-  const [customColor, setCustomColor] = useState<{
-    background: string;
-    color: string;
-  }>({ ...QuillPalette.RICH_TEXT_CUSTOM_COLOR_INIT });
-  const [customColorType, setCustomColorType] = useState<
-    'color' | 'background'
-  >('color');
   const [contentSavable, setContentSavable] = useState(false);
+  const markdownInitialized = useRef(false);
 
   useEffect(() => {
     if (widgetInfo.editing) {
@@ -128,92 +129,14 @@ export const RichTextWidgetCore: React.FC<RichTextWidgetProps> = ({
     widgetInfo.editing,
   ]);
 
-  useEffect(() => {
-    const newId = `rich-text-${widgetInfo.id + new Date().getTime()}`;
-    setContainerId(newId);
-    const modules = {
-      toolbar: {
-        container: `#${newId}`,
-        handlers: {
-          color: function (value) {
-            if (value === QuillPalette.RICH_TEXT_CUSTOM_COLOR) {
-              setCustomColorType('color');
-              setCustomColorVisible(true);
-            }
-            quillRef.current!.getEditor().format('color', value);
-          },
-          background: function (value) {
-            if (value === QuillPalette.RICH_TEXT_CUSTOM_COLOR) {
-              setCustomColorType('background');
-              setCustomColorVisible(true);
-            }
-            quillRef.current!.getEditor().format('background', value);
-          },
-        },
-      },
-      imageDrop: true,
-    };
-    setQuillModules(modules);
-  }, [widgetInfo.id]);
-
   const quillRef = useRef<ReactQuill>(null);
 
-  useLayoutEffect(() => {
-    if (quillRef.current) {
-      quillRef.current
-        .getEditor()
-        .on('selection-change', (r: { index: number; length: number }) => {
-          if (!r?.index) return;
-          try {
-            const index = r.length === 0 ? r.index - 1 : r.index;
-            const length = r.length === 0 ? 1 : r.length;
-            const delta = quillRef
-              .current!.getEditor()
-              .getContents(index, length);
-
-            if (delta.ops?.length === 1 && delta.ops[0]?.attributes) {
-              const { background, color } = delta.ops[0].attributes;
-              setCustomColor({
-                background: (background as string) || CUSTOM_COLOR_INIT.background,
-                color: (color as string) || CUSTOM_COLOR_INIT.color,
-              });
-
-              const colorNode = document.querySelector(
-                '.ql-color .ql-color-label',
-              );
-              const backgroundNode = document.querySelector(
-                '.ql-background .ql-color-label',
-              );
-              if (color && !colorNode?.getAttribute('style')) {
-                colorNode!.setAttribute('style', `stroke: ${color}`);
-              }
-              if (background && !backgroundNode?.getAttribute('style')) {
-                backgroundNode!.setAttribute('style', `fill: ${background}`);
-              }
-            } else {
-              setCustomColor({ ...CUSTOM_COLOR_INIT });
-            }
-          } catch (error) {
-            console.error('selection-change callback | error', error);
-          }
-        });
-      new QuillMarkdown(quillRef.current.getEditor(), MarkdownOptions);
-    }
-  }, [quillModules]);
-
   useEffect(() => {
-    let palette: QuillPalette | null = null;
-    if (quillRef.current && containerId) {
-      palette = new QuillPalette(quillRef.current, {
-        toolbarId: containerId,
-        onChange: setCustomColor,
-      });
+    if (!markdownInitialized.current && quillRef.current) {
+      new QuillMarkdown(quillRef.current.getEditor(), MarkdownOptions);
+      markdownInitialized.current = true;
     }
-
-    return () => {
-      palette?.destroy();
-    };
-  }, [containerId]);
+  }, [widgetInfo.editing]);
 
   const ssp = e => {
     e.stopPropagation();
@@ -225,18 +148,6 @@ export const RichTextWidgetCore: React.FC<RichTextWidgetProps> = ({
       setQuillValue(contents);
     }
   }, []);
-
-  const toolbar = useMemo(
-    () => QuillPalette.getToolbar({ id: containerId as string, t }),
-    [containerId, t],
-  );
-
-  const customColorChange = color => {
-    if (color) {
-      quillRef.current!.getEditor().format(customColorType, color);
-    }
-    setCustomColorVisible(false);
-  };
 
   const modalCancel = useCallback(() => {
     onEditClearActiveWidgets();
@@ -256,12 +167,6 @@ export const RichTextWidgetCore: React.FC<RichTextWidgetProps> = ({
         formats={Formats}
         readOnly={true}
       />
-      <CustomColor
-        visible={customColorVisible}
-        onCancel={() => setCustomColorVisible(false)}
-        color={customColor?.[customColorType]}
-        colorChange={customColorChange}
-      />
       <Modal
         width={992}
         closable={false}
@@ -271,21 +176,18 @@ export const RichTextWidgetCore: React.FC<RichTextWidgetProps> = ({
         onOk={modalOk}
         onCancel={modalCancel}
       >
-        {quillModules && (
-          <ModalBody>
-            {toolbar}
-            <ReactQuill
-              ref={quillRef}
-              className="react-quill"
-              placeholder={t('viz.board.setting.enterHere')}
-              value={quillValue}
-              onChange={quillChange}
-              modules={quillModules}
-              formats={Formats}
-              readOnly={false}
-            />
-          </ModalBody>
-        )}
+        <ModalBody>
+          <ReactQuill
+            ref={quillRef}
+            className="react-quill"
+            placeholder={t('viz.board.setting.enterHere')}
+            value={quillValue}
+            onChange={quillChange}
+            modules={RICH_TEXT_MODULES}
+            formats={Formats}
+            readOnly={false}
+          />
+        </ModalBody>
       </Modal>
     </TextWrap>
   );
@@ -323,6 +225,15 @@ const TextWrap = styled.div`
 `;
 
 const ModalBody = styled.div`
+  .ql-toolbar {
+    min-height: 42px;
+    overflow: visible;
+  }
+
+  .ql-toolbar .ql-picker-options {
+    z-index: 1;
+  }
+
   & .ql-editor {
     min-height: ${SPACE_TIMES(60)};
   }

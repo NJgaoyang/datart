@@ -50,6 +50,8 @@ export interface WidgetConf {
   content?: any;
   rect: RectConfig; // rect of freeBoard
   mRect?: RectConfig; // mobile rect of autoBoard
+  /** 移动端是否展示，历史组件未设置时默认展示 */
+  mVisible?: boolean;
   pRect: RectConfig; // pc rect of autoBoard
   // tRect?: RectConfig; // tablet rect of autoBoard
   parentId?: string;

@@ -89,7 +89,8 @@ export const widgetToolkit: WidgetToolkit = {
     widget.config.type = 'media';
     widget.config.name = opt.name || '';
 
-    widget.config.pRect.height = 3;
+    // Datart's original rich-text default was half-width and 3 legacy rows.
+    widget.config.pRect.height = 12;
 
     widget.config.customConfig.props = [
       { ...initTitleTpl() },

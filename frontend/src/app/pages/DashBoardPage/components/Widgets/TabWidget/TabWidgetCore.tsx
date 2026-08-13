@@ -17,10 +17,18 @@
  */
 import { Tabs } from 'antd';
 import { TabWidgetContent } from 'app/pages/DashBoardPage/pages/Board/slice/types';
-import { memo, useCallback, useContext, useEffect, useState } from 'react';
+import {
+  memo,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useState,
+} from 'react';
 import { useDispatch } from 'react-redux';
 import styled from 'styled-components';
 import { PRIMARY } from 'styles/StyleConstants';
+import { dispatchResize } from 'app/utils/dispatchResize';
 import { uuidv4 } from 'utils/utils';
 import { editBoardStackActions } from '../../../pages/BoardEditor/slice';
 import { WidgetActionContext } from '../../ActionProvider/WidgetActionProvider';
@@ -64,9 +72,15 @@ export const TabWidgetCore: React.FC<{}> = memo(() => {
     }
   }, [activeKey, editing, onEditSelectWidget, tabsCons]);
 
-  const onTabClick = useCallback((activeKey: any, event) => {
+  const onTabChange = useCallback((activeKey: string) => {
     SetActiveKey(activeKey);
   }, []);
+
+  // 标签内容提交后同步一次尺寸，避免通过多个定时器重复补偿布局。
+  useLayoutEffect(() => {
+    const frame = requestAnimationFrame(dispatchResize);
+    return () => cancelAnimationFrame(frame);
+  }, [activeKey]);
 
   const tabAdd = useCallback(() => {
     const newTabId = `tab_${uuidv4()}`;
@@ -117,7 +131,7 @@ export const TabWidgetCore: React.FC<{}> = memo(() => {
   return (
     <TabsBoxWrap className="TabsBoxWrap" tabsAlign={align}>
       <Tabs
-        onTabClick={editing ? onTabClick : undefined}
+        onChange={onTabChange}
         size="small"
         tabBarGutter={1}
         tabPosition={position as any}
@@ -168,12 +182,45 @@ const TabsBoxWrap = styled.div<{ tabsAlign: string }>`
   height: 100%;
 
   & .ant-tabs {
+    display: flex;
+    flex-direction: column;
     width: 100%;
     height: 100%;
+    min-height: 0;
     background: none;
   }
 
+  & .ant-tabs-content-holder {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
   & .ant-tabs-content {
+    display: flex;
+    flex: 1 1 auto;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  & .ant-tabs-content-holder,
+  & .ant-tabs-tabpane,
+  & .TabPane,
+  & .MapWrapper {
+    min-height: 0;
+    box-sizing: border-box;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  & .ant-tabs-tabpane {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
     width: 100%;
     height: 100%;
   }

@@ -86,8 +86,8 @@ export const widgetToolkit: GroupToolkit = {
     widget.config.name = opt.name || '';
     widget.config.children = opt.children;
 
-    widget.config.pRect.width = 8; // NOTE: group width in auto grid system is 8
-    widget.config.pRect.height = 8;
+    widget.config.pRect.width = 48; // 8/12 of the legacy grid = 48/72
+    widget.config.pRect.height = 32;
 
     widget.config.customConfig.props = [];
     return widget;

@@ -45,11 +45,20 @@ interface TableStyleConfigProps {
 const AntdTableWrapper: FC<{
   dataSource: [];
   columns: [];
+  widgetId?: string;
   children?: ReactNode;
   tableStyleConfig?: TableStyleConfigProps | undefined;
   summaryFn?: (data) => { total: number; summarys: [] };
 }> = memo(
-  ({ dataSource, columns, children, summaryFn, tableStyleConfig, ...rest }) => {
+  ({
+    dataSource,
+    columns,
+    children,
+    widgetId,
+    summaryFn,
+    tableStyleConfig,
+    ...rest
+  }) => {
     const { i18n } = useTranslation();
 
     const getTableSummaryRow = pageData => {
@@ -74,21 +83,32 @@ const AntdTableWrapper: FC<{
 
     return (
       <ConfigProvider locale={antdLocales[i18n.language]}>
-        <StyledTable
-          {...rest}
-          tableStyleConfig={tableStyleConfig}
-          dataSource={dataSource}
-          columns={columns}
-          summary={getTableSummaryRow}
-        />
+        <TableHost data-datart-widget-id={widgetId}>
+          <StyledTable
+            {...rest}
+            tableStyleConfig={tableStyleConfig}
+            dataSource={dataSource}
+            columns={columns}
+            summary={getTableSummaryRow}
+          />
+        </TableHost>
       </ConfigProvider>
     );
   },
 );
 
+const TableHost = styled.div`
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+`;
+
 const StyledTable = styled(Table)<{ tableStyleConfig?: TableStyleConfigProps }>`
   height: 100%;
-  overflow: auto;
+  min-width: 0;
+  overflow: hidden;
 
   .ant-table {
     background: transparent;
@@ -96,6 +116,84 @@ const StyledTable = styled(Table)<{ tableStyleConfig?: TableStyleConfigProps }>`
   .ant-table-body {
     overflow: ${p =>
       p?.tableStyleConfig?.isFixedColumns ? 'auto scroll' : 'auto !important'};
+  }
+
+  .datart-mobile-board & {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+
+    .ant-spin-nested-loading,
+    .ant-spin-container {
+      height: 100%;
+      min-height: 0;
+    }
+
+    .ant-spin-container,
+    .ant-table,
+    .ant-table-container {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .ant-table {
+      background: #fff;
+    }
+
+    .ant-table-container {
+      border: 0;
+    }
+
+    .ant-table-body,
+    .ant-table-content {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-x: scroll !important;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: auto;
+      scrollbar-gutter: stable;
+    }
+
+    .ant-table-body > table,
+    .ant-table-content > table {
+      width: max-content !important;
+      min-width: 100% !important;
+    }
+
+    .ant-table-body::-webkit-scrollbar,
+    .ant-table-content::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    .ant-table-body::-webkit-scrollbar-thumb,
+    .ant-table-content::-webkit-scrollbar-thumb {
+      background: #aeb8c5;
+      border-radius: 4px;
+    }
+
+    .ant-table-thead > tr > th,
+    .ant-table-tbody > tr > td {
+      white-space: nowrap;
+    }
+
+    .ant-table-thead > tr > th:first-child,
+    .ant-table-tbody > tr > td:first-child {
+      position: sticky;
+      left: 0;
+      min-width: 88px;
+      background: #fff;
+    }
+
+    .ant-table-thead > tr > th:first-child {
+      z-index: 3;
+    }
+
+    .ant-table-tbody > tr > td:first-child {
+      z-index: 2;
+    }
   }
 
   /* 极窄边分页区域 */

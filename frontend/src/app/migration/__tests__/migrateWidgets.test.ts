@@ -22,6 +22,7 @@ import {
   beta0,
   beta4_2,
   convertWidgetRelationsToObj,
+  migrateDataEaseContainerStyle,
   RC0,
 } from '../BoardConfig/migrateWidgets';
 import { WidgetBeta3 } from '../BoardConfig/types';
@@ -206,5 +207,117 @@ describe('test migrateWidgets ', () => {
         },
       },
     });
+  });
+
+  test('migrate all widget default container styles to DataEase style', () => {
+    const widget = {
+      config: {
+        customConfig: {
+          props: [
+            {
+              key: 'paddingGroup',
+              rows: [
+                { key: 'top', value: 16 },
+                { key: 'right', value: 16 },
+                { key: 'bottom', value: 16 },
+                { key: 'left', value: 16 },
+              ],
+            },
+            {
+              key: 'borderGroup',
+              rows: [
+                {
+                  key: 'border',
+                  value: { color: '#f0f0f0', width: 1, radius: 8 },
+                },
+              ],
+            },
+          ],
+        },
+      },
+    } as any;
+
+    migrateDataEaseContainerStyle(widget);
+
+    expect(widget.config.customConfig.props[0].rows).toEqual([
+      { key: 'top', value: 0 },
+      { key: 'right', value: 0 },
+      { key: 'bottom', value: 0 },
+      { key: 'left', value: 0 },
+    ]);
+    expect(widget.config.customConfig.props[1].rows[0].value).toEqual({
+      color: 'transparent',
+      width: 0,
+      radius: 0,
+    });
+  });
+
+  test('reset customized container styles to DataEase style', () => {
+    const widget = {
+      config: {
+        customConfig: {
+          props: [
+            {
+              key: 'paddingGroup',
+              rows: [
+                { key: 'top', value: 4 },
+                { key: 'right', value: 16 },
+                { key: 'bottom', value: 4 },
+                { key: 'left', value: 16 },
+              ],
+            },
+            {
+              key: 'borderGroup',
+              rows: [
+                {
+                  key: 'border',
+                  value: { color: '#123456', width: 2, radius: 12 },
+                },
+              ],
+            },
+          ],
+        },
+      },
+    } as any;
+
+    migrateDataEaseContainerStyle(widget);
+
+    expect(widget.config.customConfig.props[0].rows).toEqual([
+      { key: 'top', value: 0 },
+      { key: 'right', value: 0 },
+      { key: 'bottom', value: 0 },
+      { key: 'left', value: 0 },
+    ]);
+    expect(widget.config.customConfig.props[1].rows[0].value).toEqual({
+      color: 'transparent',
+      width: 0,
+      radius: 0,
+    });
+  });
+
+  test('restore the default query button contrast', () => {
+    const widget = {
+      config: {
+        originalType: 'queryBtn',
+        customConfig: {
+          props: [
+            {
+              key: 'titleGroup',
+              rows: [{ key: 'font', value: { color: '#ffffff' } }],
+            },
+            {
+              key: 'backgroundGroup',
+              rows: [{ key: 'background', value: { color: '#ffffff' } }],
+            },
+          ],
+        },
+      },
+    } as any;
+
+    migrateDataEaseContainerStyle(widget);
+
+    expect(widget.config.customConfig.props[1].rows[0].value.color).toBe(
+      '#1677ff',
+    );
   });
 });

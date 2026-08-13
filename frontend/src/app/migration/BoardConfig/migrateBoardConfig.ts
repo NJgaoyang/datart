@@ -15,7 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { MIN_MARGIN, MIN_PADDING } from 'app/pages/DashBoardPage/constants';
+import {
+  LEGACY_AUTO_LAYOUT_VERSION,
+  LEGACY_PC_ROW_LAYOUT_VERSION,
+  MOBILE_LAYOUT_VERSION,
+  MOBILE_MIN_MARGIN,
+  MOBILE_MIN_PADDING,
+} from 'app/pages/DashBoardPage/constants';
 import { BoardTypes } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { BoardConfig } from 'app/pages/DashBoardPage/types/boardTypes';
 import {
@@ -43,6 +49,39 @@ export const parseBoardConfig = (boardConfig: string) => {
   }
 };
 
+const markLegacyAutoLayout = config => {
+  if (config?.type === 'auto' && config.layoutVersion === undefined) {
+    config.layoutVersion = 1;
+  }
+  if (config?.type === 'auto' && config.mobileLayoutVersion === undefined) {
+    config.mobileLayoutVersion = 1;
+  }
+  if (config?.type === 'auto' && config.pcRowLayoutVersion === undefined) {
+    config.pcRowLayoutVersion = LEGACY_PC_ROW_LAYOUT_VERSION;
+  }
+  return config;
+};
+
+const upgradeMobileGrid = config => {
+  if (
+    config?.type !== 'auto' ||
+    config.mobileLayoutVersion === MOBILE_LAYOUT_VERSION
+  ) {
+    return config;
+  }
+  const spaceRows = config.jsonConfig?.props?.find(item => item.key === 'mSpace')
+    ?.rows;
+  spaceRows?.forEach(row => {
+    if (row.key === 'marginTB' || row.key === 'marginLR') {
+      row.value = Math.max(MOBILE_MIN_MARGIN, Math.round(Number(row.value) / 4));
+    }
+    if (row.key === 'paddingTB' || row.key === 'paddingLR') {
+      row.value = Math.max(MOBILE_MIN_PADDING, Math.round(Number(row.value) / 2));
+    }
+  });
+  return config;
+};
+
 export const beta0 = config => {
   if (!versionCanDo(APP_VERSION_BETA_0, config.version)) return config;
   // 1. initialQuery 新增属性 检测没有这个属性就设置为 true,如果已经设置为false，则保持false
@@ -52,11 +91,11 @@ export const beta0 = config => {
 
   // 2.1 新增移动端属性 mobileMargin
   if (!config?.mobileMargin) {
-    config.mobileMargin = [MIN_MARGIN, MIN_MARGIN];
+    config.mobileMargin = [MOBILE_MIN_MARGIN, MOBILE_MIN_MARGIN];
   }
   // 2.2 新增移动端属性 mobileContainerPadding
   if (!config?.mobileContainerPadding) {
-    config.mobileContainerPadding = [MIN_PADDING, MIN_PADDING];
+    config.mobileContainerPadding = [MOBILE_MIN_PADDING, MOBILE_MIN_PADDING];
   }
   // 3 QueryButton and ResetButton
   config.hasQueryControl = Boolean(config.hasQueryControl);
@@ -173,9 +212,23 @@ export const beta4 = (config: any) => {
 };
 export const migrateBoardConfig = (boardConfig: string) => {
   let config = parseBoardConfig(boardConfig);
+  const isLegacyAutoLayout =
+    config?.type === 'auto' && config.layoutVersion === undefined;
+  const isLegacyPcRowLayout =
+    config?.type === 'auto' && config.pcRowLayoutVersion === undefined;
+  config = markLegacyAutoLayout(config);
   config = beta0(config);
   config = beta2(config);
   config = beta4(config);
+  config = upgradeMobileGrid(config);
+  // beta4 may replace an old config with a fresh default config. Preserve the
+  // legacy marker so widget coordinates are still converted from 12 columns.
+  if (isLegacyAutoLayout && config?.type === 'auto') {
+    config.layoutVersion = LEGACY_AUTO_LAYOUT_VERSION;
+  }
+  if (isLegacyPcRowLayout && config?.type === 'auto') {
+    config.pcRowLayoutVersion = LEGACY_PC_ROW_LAYOUT_VERSION;
+  }
   config = setLatestVersion(config);
   return config as BoardConfig;
 };

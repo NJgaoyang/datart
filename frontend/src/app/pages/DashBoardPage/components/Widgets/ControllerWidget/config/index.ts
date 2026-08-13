@@ -76,8 +76,8 @@ export const controlWidgetTpl = (opt: WidgetCreateProps) => {
 
   widget.config.content = opt.content; //controller
   widget.config.customConfig.props = [{ ...initTitleTpl() }];
-  widget.config.pRect.width = 4;
-  widget.config.pRect.height = 1;
+  widget.config.pRect.width = 24;
+  widget.config.pRect.height = 4;
   return widget;
 };
 export const getCanLinkControlWidgets = (widgets: Widget[]) => {

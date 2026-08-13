@@ -84,6 +84,9 @@ export interface ServerDashboard extends Omit<Dashboard, 'config'> {
 }
 export interface DashboardConfigBeta3 {
   version: string;
+  layoutVersion?: number;
+  mobileLayoutVersion?: number;
+  pcRowLayoutVersion?: number;
   background: BackgroundConfig;
   widgetDefaultSettings: {
     background: BackgroundConfig;

@@ -17,11 +17,16 @@
  */
 import { ListTitle } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
+import { DeviceType } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { FC, memo, useMemo } from 'react';
+import { useSelector } from 'react-redux';
 import styled from 'styled-components';
 import { LayerTree } from './LayerTree';
+import { MobileAppearancePanel } from './MobileAppearancePanel';
+import { selectDeviceType } from '../../slice/selectors';
 
 export const LayerTreePanel: FC<{}> = memo(() => {
+  const deviceType = useSelector(selectDeviceType);
   const t = useI18NPrefix(`viz.board.action`);
   const titleProps = useMemo(
     () => ({
@@ -34,8 +39,14 @@ export const LayerTreePanel: FC<{}> = memo(() => {
 
   return (
     <Panel>
-      <ListTitle {...titleProps} />
-      <LayerTree />
+      {deviceType === DeviceType.Mobile ? (
+        <MobileAppearancePanel />
+      ) : (
+        <>
+          <ListTitle {...titleProps} />
+          <LayerTree />
+        </>
+      )}
     </Panel>
   );
 });

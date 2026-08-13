@@ -134,7 +134,7 @@ export const widgetToolkit: TimerWidgetToolKit = {
     widget.config.type = 'media';
     widget.config.name = opt.name || '';
     widget.config.rect.height = 100;
-    widget.config.pRect.height = 3;
+    widget.config.pRect.height = 12;
 
     widget.config.customConfig.props = [
       { ...initTimerTpl() },

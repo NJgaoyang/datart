@@ -22,6 +22,7 @@ import {
   BASE_VIEW_WIDTH,
   BREAK_POINT_MAP,
   LAYOUT_COLS_KEYS,
+  MOBILE_ROW_HEIGHT,
   MIN_ROW_HEIGHT,
 } from 'app/pages/DashBoardPage/constants';
 import { boardActions } from 'app/pages/DashBoardPage/pages/Board/slice';
@@ -55,9 +56,10 @@ export const useGridWidgetHeight = () => {
   }, [width, height, dispatch, boardId, renderMode]);
 
   const widgetRowHeight = useMemo(() => {
+    if (colsKey === 'sm') return MOBILE_ROW_HEIGHT;
     let dynamicHeight = (cacheW * BASE_ROW_HEIGHT) / BASE_VIEW_WIDTH;
     return Math.max(dynamicHeight, MIN_ROW_HEIGHT);
-  }, [cacheW]);
+  }, [cacheW, colsKey]);
 
   return {
     ref,

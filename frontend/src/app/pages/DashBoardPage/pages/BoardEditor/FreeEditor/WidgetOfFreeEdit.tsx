@@ -33,7 +33,7 @@ import { DraggableCore, DraggableEventHandler } from 'react-draggable';
 import { useSelector } from 'react-redux';
 import { Resizable, ResizeCallbackData } from 'react-resizable';
 import styled from 'styled-components';
-import { LEVEL_DASHBOARD_EDIT_OVERLAY, WHITE } from 'styles/StyleConstants';
+import { LEVEL_DASHBOARD_EDIT_OVERLAY } from 'styles/StyleConstants';
 import { WidgetActionContext } from '../../../components/ActionProvider/WidgetActionProvider';
 import { BoardScaleContext } from '../../../components/FreeBoardBackground';
 import { WidgetInfoContext } from '../../../components/WidgetProvider/WidgetInfoProvider';
@@ -196,8 +196,7 @@ export const WidgetOfFreeEdit: React.FC<{}> = () => {
         minConstraints={[50, 50]}
         handleSize={undefined}
         // handleSize={[20, 20]}
-        resizeHandles={undefined}
-        // resizeHandles={['se']}
+        resizeHandles={['n', 'e', 's', 'w', 'ne', 'nw', 'se', 'sw']}
         lockAspectRatio={false}
       >
         <ItemWrap style={style} onClick={ssp} hideHandle={hideHandle}>
@@ -231,19 +230,17 @@ const ItemWrap = styled.div<{ hideHandle?: boolean }>`
     height: 20px;
     padding: 0 3px 3px 0;
 
-    background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2IDYiIHN0eWxlPSJiYWNrZ3JvdW5kLWNvbG9yOiNmZmZmZmYwMCIgeD0iMHB4IiB5PSIwcHgiIHdpZHRoPSI2cHgiIGhlaWdodD0iNnB4Ij48ZyBvcGFjaXR5PSIwLjMwMiI+PHBhdGggZD0iTSA2IDYgTCAwIDYgTCAwIDQuMiBMIDQgNC4yIEwgNC4yIDQuMiBMIDQuMiAwIEwgNiAwIEwgNiA2IEwgNiA2IFoiIGZpbGw9IiMwMDAwMDAiLz48L2c+PC9zdmc+');
+    background-image: none;
     background-repeat: no-repeat;
     background-position: bottom right;
     background-origin: content-box;
   }
 
   &:hover .react-resizable-handle {
-    background-color: ${WHITE};
+    background-color: transparent;
   }
 
-  .react-resizable-handle-se {
-    right: 0;
-    bottom: 0;
-    cursor: se-resize;
+  .react-resizable-handle::after {
+    display: none;
   }
 `;
