@@ -25,6 +25,7 @@ import debounce from 'lodash/debounce';
 import {
   forwardRef,
   ForwardRefRenderFunction,
+  useEffect,
   useImperativeHandle,
   useRef,
   useState,
@@ -33,6 +34,7 @@ import MonacoEditor from 'react-monaco-editor';
 import styled from 'styled-components';
 import ChartComputedFieldEditorDarkTheme from './ChartComputedFieldEditorDarkTheme';
 import DatartQueryLanguageSpecification from './DatartQueryLanguageSpecification';
+import { registerDqlLanguage } from './registerDqlLanguage';
 
 const ChartComputedFieldEditor: ForwardRefRenderFunction<
   ChartComputedFieldHandle,
@@ -43,8 +45,12 @@ const ChartComputedFieldEditor: ForwardRefRenderFunction<
   }
 > = (props, ref) => {
   const editorRef = useRef<any>(null);
-  const [editorText, setEditorText] = useState(props.value);
+  const [editorText, setEditorText] = useState(props.value || '');
   const [description, setDescription] = useState<FunctionDescription>();
+
+  useEffect(() => {
+    setEditorText(props.value || '');
+  }, [props.value]);
 
   useImperativeHandle(ref, () => ({
     insertField: (value, funcDesc) => {
@@ -64,11 +70,15 @@ const ChartComputedFieldEditor: ForwardRefRenderFunction<
   };
 
   const onChange = debounce(newValue => {
-    setEditorText(newValue);
+    const expression = newValue || '';
+    setEditorText(expression);
 
-    const removeNewLineCharactor = value =>
-      value.replace(getEditorNewLineCharactor(), ' ');
-    props.onChange && props.onChange(removeNewLineCharactor(newValue));
+    const newLineCharactor = getEditorNewLineCharactor();
+    props.onChange(
+      newLineCharactor
+        ? expression.replaceAll(newLineCharactor, ' ')
+        : expression,
+    );
   }, 200);
 
   const handleDescriptionChange = debounce(descKey => {
@@ -82,7 +92,7 @@ const ChartComputedFieldEditor: ForwardRefRenderFunction<
   }, 200);
 
   const handleEdtiorWillMount = monacoEditor => {
-    monacoEditor.languages.register({ id: 'dql' });
+    registerDqlLanguage(monacoEditor);
     monacoEditor.languages.setMonarchTokensProvider('dql', {
       ...DatartQueryLanguageSpecification,
       builtinFunctions: (props?.functionDescriptions || []).map(f => f.name),
@@ -116,7 +126,7 @@ const ChartComputedFieldEditor: ForwardRefRenderFunction<
         <MonacoEditor
           theme="dqlTheme"
           language="dql"
-          defaultValue={editorText}
+          value={editorText}
           onChange={onChange}
           editorWillMount={handleEdtiorWillMount}
           editorDidMount={handleEditorDidMount}
@@ -143,11 +153,23 @@ export default forwardRef(ChartComputedFieldEditor);
 const StyledChartComputedFieldEditor = styled.div`
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
   height: 100%;
   padding: 10px;
-  background-color: #d9d9d9;
+  overflow: hidden;
+  color: #d4d4d4;
+  background-color: #1e1e1e;
 
   & > .ant-row:first-child {
-    height: 300px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  & > .ant-row:last-child {
+    flex-shrink: 0;
+
+    .ant-divider {
+      border-color: #3c3c3c;
+    }
   }
 `;

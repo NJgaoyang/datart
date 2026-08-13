@@ -24,11 +24,16 @@ import { ViewType } from 'app/pages/MainPage/pages/ViewPage/slice/types';
 import { ChartDataViewMeta } from 'app/types/ChartDataViewMeta';
 import { ChartComputedFieldHandle } from 'app/types/ComputedFieldEditor';
 import { hasAggregationFunction } from 'app/utils/chartHelper';
-import { FC, useCallback, useEffect, useRef, useState } from 'react';
+import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { getFieldDisplayName } from 'utils/utils';
 import ChartComputedFieldEditor from './ChartComputedFieldEditor/ChartComputedFieldEditor';
 import ChartSearchableList from './ChartSearchableList';
+import {
+  ComputedFieldDisplayName,
+  toDisplayExpression,
+  toQueryExpression,
+} from './computedFieldExpression';
 import ComputedFunctionDescriptions from './computed-function-description-map';
 import { FieldTemplate, FunctionTemplate, VariableTemplate } from './utils';
 
@@ -62,6 +67,49 @@ const ChartComputedFieldSettingPanel: FC<{
   const [selectedFunctionCategory, setSelectedFunctionCategory] = useState(
     defaultFunctionCategory,
   );
+
+  const editorFieldNames = useMemo<ComputedFieldDisplayName[]>(() => {
+    const result: ComputedFieldDisplayName[] = [];
+    const collectFields = (items: any[] = []) => {
+      items.forEach(item => {
+        if (item?.children?.length) {
+          collectFields(item.children);
+          return;
+        }
+
+        const key = item?.key;
+        const name = String(
+          item?.name || (Array.isArray(key) ? key[key.length - 1] : key) || '',
+        );
+        if (!name) return;
+
+        const label = String(item?.title || getFieldDisplayName(item) || name);
+        result.push({ name, label });
+      });
+    };
+    collectFields(fields as any[]);
+
+    const labelCounts = result.reduce<Record<string, number>>(
+      (counts, field) => {
+        counts[field.label] = (counts[field.label] || 0) + 1;
+        return counts;
+      },
+      {},
+    );
+    return result.map(field => ({
+      ...field,
+      label:
+        labelCounts[field.label] > 1
+          ? `${field.label}（${field.name}）`
+          : field.label,
+    }));
+  }, [fields]);
+
+  useEffect(() => {
+    if (computedField) {
+      onChange?.(computedField);
+    }
+  }, [computedField, onChange]);
 
   // --- Resizable left pane ---
   const [leftPaneWidth, setLeftPaneWidth] = useState(200);
@@ -133,7 +181,7 @@ const ChartComputedFieldSettingPanel: FC<{
 
   const handleExpressionChange = expression => {
     const newField = Object.assign({}, myComputedFieldRef.current, {
-      expression,
+      expression: toQueryExpression(expression, editorFieldNames),
     });
     handleChange(newField);
   };
@@ -195,9 +243,14 @@ const ChartComputedFieldSettingPanel: FC<{
     );
   };
 
-  const handleFieldSelected = useCallback(field => {
-    editorRef.current?.insertField(getInputText(field, TextType.Field));
-  }, []);
+  const handleFieldSelected = useCallback(
+    field => {
+      const displayName =
+        editorFieldNames.find(item => item.name === field)?.label || field;
+      editorRef.current?.insertField(getInputText(displayName, TextType.Field));
+    },
+    [editorFieldNames],
+  );
 
   const handleVariableSelected = variable => {
     editorRef.current?.insertField(getInputText(variable, TextType.Variable));
@@ -296,7 +349,10 @@ const ChartComputedFieldSettingPanel: FC<{
         <StyledMiddlePane>
           <ChartComputedFieldEditor
             ref={editorRef}
-            value={myComputedFieldRef.current?.expression}
+            value={toDisplayExpression(
+              myComputedFieldRef.current?.expression,
+              editorFieldNames,
+            )}
             functionDescriptions={ComputedFunctionDescriptions}
             onChange={handleExpressionChange}
           />
@@ -349,6 +405,7 @@ const StyledChartComputedFieldSettingPanel = styled(Space)`
 
 const StyledRow = styled.div`
   display: flex;
+  height: 400px;
   margin-top: 16px;
   gap: 8px;
   align-items: stretch;
@@ -396,7 +453,7 @@ const StyledResizer = styled.div`
 const StyledMiddlePane = styled.div`
   flex: 1 1 auto;
   min-width: 0;
-  overflow: auto;
+  overflow: hidden;
 `;
 
 const StyledRightPane = styled.div`

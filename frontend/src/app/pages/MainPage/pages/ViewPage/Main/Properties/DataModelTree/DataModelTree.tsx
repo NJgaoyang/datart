@@ -756,11 +756,13 @@ const DataModelTree: FC = memo(() => {
 
   const addCallback = useCallback(
     (field?: ChartDataViewMeta) => {
+      const modalContentKey = `${field?.name || 'new'}-${Date.now()}`;
       (showModal as Function)({
         title: t('model.createComputedFields'),
         modalSize: StateModalSize.MIDDLE,
         content: onChange => (
           <ChartComputedFieldSettingPanel
+            key={modalContentKey}
             viewType={viewType}
             computedField={field}
             sourceId={sourceId}

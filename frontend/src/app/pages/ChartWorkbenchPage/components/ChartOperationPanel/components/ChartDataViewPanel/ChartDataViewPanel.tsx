@@ -317,11 +317,13 @@ const ChartDataViewPanel: FC<{
 
   const handleAddOrEditComputedField = useCallback(
     (field?: ChartDataViewMeta) => {
+      const modalContentKey = `${field?.name || 'new'}-${Date.now()}`;
       (showModal as Function)({
         title: t('createComputedFields'),
         modalSize: StateModalSize.MIDDLE,
         content: onChange => (
           <ChartComputedFieldSettingPanel
+            key={modalContentKey}
             computedField={field}
             sourceId={dataView?.sourceId}
             fields={buildFieldsForComputedFieldSettingPanel(dataView?.meta)}
