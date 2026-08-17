@@ -425,7 +425,7 @@ export class ChartDataRequestBuilder {
 
           if (cur.drillable) {
             if (this.isInValidDrillOption()) {
-              return acc.concat(cur.rows?.[0] || []);
+              return acc.concat(rows?.[0] || []);
             }
             return acc.concat(
               rows?.filter(field => {

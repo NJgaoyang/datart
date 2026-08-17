@@ -22,13 +22,74 @@ import {
   ChartDataViewFieldCategory,
   DataViewFieldType,
   FilterConditionType,
+  RUNTIME_DATE_LEVEL_KEY,
+  SortActionType,
 } from 'app/constants';
 import { getChartDrillOption } from 'app/utils/internalChartHelper';
-import { FilterSqlOperator, RECOMMEND_TIME } from 'globalConstants';
+import {
+  DATE_LEVEL_DELIMITER,
+  FilterSqlOperator,
+  RECOMMEND_TIME,
+} from 'globalConstants';
 import dayjs from 'dayjs';
 import { ChartDataRequestBuilder } from '../ChartDataRequestBuilder';
 
 describe('ChartDataRequestBuild Test', () => {
+  test('should use runtime date level for a drillable group order', () => {
+    const dayFieldName = `dt${DATE_LEVEL_DELIMITER}AGG_DATE_DAY`;
+    const weekFieldName = `dt${DATE_LEVEL_DELIMITER}AGG_DATE_WEEK`;
+    const dataView = {
+      id: 'view-id',
+      meta: [
+        {
+          name: 'dt',
+          path: ['DATART_VTABLE', 'dt'],
+          type: DataViewFieldType.DATE,
+        },
+      ],
+      computedFields: [],
+    } as any;
+    const dayField = {
+      uid: 'date-group',
+      colName: dayFieldName,
+      type: DataViewFieldType.DATE,
+      category: ChartDataViewFieldCategory.DateLevelComputedField,
+      sort: { type: SortActionType.ASC },
+      [RUNTIME_DATE_LEVEL_KEY]: {
+        uid: 'date-group',
+        colName: weekFieldName,
+        type: DataViewFieldType.DATE,
+        category: ChartDataViewFieldCategory.DateLevelComputedField,
+        expression: 'AGG_DATE_WEEK(`DATART_VTABLE`.`dt`)',
+        sort: { type: SortActionType.ASC },
+      },
+    };
+    const chartDataConfigs = [
+      {
+        type: ChartDataSectionType.Group,
+        key: 'group',
+        drillable: true,
+        rows: [dayField],
+      },
+    ] as any;
+
+    const request = new ChartDataRequestBuilder(
+      dataView,
+      chartDataConfigs,
+    ).build();
+
+    expect(request.groups).toEqual([
+      { alias: weekFieldName, column: [weekFieldName] },
+    ]);
+    expect(request.orders).toEqual([
+      {
+        column: [weekFieldName],
+        operator: SortActionType.ASC,
+        aggOperator: undefined,
+      },
+    ]);
+  });
+
   test('should get builder with default values', () => {
     const dataView = { id: 'view-id' } as any;
     const enableScript = false;
