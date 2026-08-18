@@ -43,6 +43,7 @@ import datart.server.base.dto.StoryboardDetail;
 import datart.server.base.params.*;
 import datart.server.service.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -251,7 +252,17 @@ public class ShareServiceImpl extends BaseService implements ShareService {
     public Dataframe execute(ShareToken shareToken, ViewExecuteParam executeParam) throws Exception {
         ShareAuthorizedToken shareAuthorizedToken = validateExecutePermission(shareToken.getAuthorizedToken(), executeParam);
         getSecurityManager().runAs(shareAuthorizedToken.getPermissionBy());
-        return dataProviderService.execute(executeParam, false);
+        return dataProviderService.execute(executeParam, false, queryOwner(shareToken.getAuthorizedToken()));
+    }
+
+    @Override
+    public boolean cancelQuery(ShareToken shareToken, String queryId) {
+        ShareAuthorizedToken authorizedToken = AESUtil.decrypt(shareToken.getAuthorizedToken(), Application.getTokenSecret(), ShareAuthorizedToken.class);
+        validateExpiration(authorizedToken);
+        if (!ResourceType.VIEW.equals(authorizedToken.getVizType())) {
+            Exceptions.tr(PermissionDeniedException.class, "message.provider.execute.permission.denied");
+        }
+        return dataProviderService.cancelQuery(queryId, queryOwner(shareToken.getAuthorizedToken()));
     }
 
     @Override
@@ -369,6 +380,10 @@ public class ShareServiceImpl extends BaseService implements ShareService {
             Exceptions.tr(PermissionDeniedException.class, "message.provider.execute.permission.denied");
         }
         return shareAuthorizedToken;
+    }
+
+    private String queryOwner(String authorizedToken) {
+        return "share:" + DigestUtils.sha256Hex(authorizedToken);
     }
 
     private void validateExpiration(ShareAuthorizedToken share) {

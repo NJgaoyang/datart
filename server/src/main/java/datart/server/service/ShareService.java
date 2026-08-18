@@ -25,6 +25,8 @@ public interface ShareService extends BaseCRUDService<Share, ShareMapperExt> {
 
     Dataframe execute(ShareToken shareToken, ViewExecuteParam executeParam) throws Exception;
 
+    boolean cancelQuery(ShareToken shareToken, String queryId);
+
     Download createDownload(String clientId, ShareDownloadParam downloadCreateParams);
 
     List<Download> listDownloadTask(ShareToken shareToken, String clientId);

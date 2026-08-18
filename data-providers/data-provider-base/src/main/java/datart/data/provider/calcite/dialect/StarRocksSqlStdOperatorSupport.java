@@ -19,6 +19,9 @@ package datart.data.provider.calcite.dialect;
 
 import datart.core.data.provider.StdSqlOperator;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.dialect.StarRocksSqlDialect;
 
@@ -36,14 +39,18 @@ public class StarRocksSqlStdOperatorSupport extends StarRocksSqlDialect
         implements SqlStdOperatorSupport, FetchAndOffsetSupport {
 
     static ConcurrentSkipListSet<StdSqlOperator> OWN_SUPPORTED = new ConcurrentSkipListSet<>(
-            EnumSet.of(STDDEV, ABS, CEILING, FLOOR, POWER, ROUND, SQRT, EXP, LOG10, LN, MOD, RAND,
+            EnumSet.of(STDDEV, PERCENTILE_APPROX, ABS, CEILING, FLOOR, POWER, ROUND, SQRT, EXP, LOG10, LN, MOD, RAND,
                     DEGREES, RADIANS, TRUNC, SIGN,
                     ACOS, ASIN, ATAN, ATAN2, SIN, COS, TAN, COT,
                     LENGTH, CONCAT, REPLACE, SUBSTRING, LOWER, UPPER, LTRIM, RTRIM, TRIM,
                     NOW, DAY, SECOND, MINUTE, HOUR, DAY, WEEK, QUARTER, MONTH, YEAR,
                     DAY_OF_WEEK, DAY_OF_MONTH, DAY_OF_YEAR,
                     IF, COALESCE,
-                    AGG_DATE_YEAR, AGG_DATE_QUARTER, AGG_DATE_MONTH, AGG_DATE_WEEK, AGG_DATE_DAY));
+                    AGG_DATE_YEAR, AGG_DATE_QUARTER, AGG_DATE_MONTH, AGG_DATE_WEEK, AGG_DATE_DAY,
+                    AGG_DATE_HOUR, AGG_DATE_MINUTE, AGG_DATE_SECOND,
+                    AGG_DATE_YEAR_NATIVE, AGG_DATE_QUARTER_NATIVE, AGG_DATE_MONTH_NATIVE,
+                    AGG_DATE_WEEK_NATIVE, AGG_DATE_DAY_NATIVE, AGG_DATE_HOUR_NATIVE,
+                    AGG_DATE_MINUTE_NATIVE, AGG_DATE_SECOND_NATIVE, TIME_SLICE));
 
     static {
         OWN_SUPPORTED.addAll(SUPPORTED);
@@ -59,10 +66,38 @@ public class StarRocksSqlStdOperatorSupport extends StarRocksSqlDialect
 
     @Override
     public void unparseCall(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
+        if (unparsePercentileApprox(writer, call)) {
+            return;
+        }
         if (isStdSqlOperator(call) && unparseStdSqlOperator(writer, call, leftPrec, rightPrec)) {
             return;
         }
         super.unparseCall(writer, call, leftPrec, rightPrec);
+    }
+
+    private boolean unparsePercentileApprox(SqlWriter writer, SqlCall call) {
+        if (call.getKind() != SqlKind.WITHIN_GROUP || !(call.operand(0) instanceof SqlCall)) {
+            return false;
+        }
+        SqlCall percentile = call.operand(0);
+        if (!"PERCENTILE_CONT".equalsIgnoreCase(percentile.getOperator().getName())
+                || percentile.operandCount() != 1 || !(call.operand(1) instanceof SqlNodeList)) {
+            return false;
+        }
+        SqlNodeList orderList = call.operand(1);
+        if (orderList.size() < 1 || orderList.size() > 2) {
+            return false;
+        }
+        SqlWriter.Frame frame = writer.startFunCall(PERCENTILE_APPROX.getSymbol());
+        orderList.get(0).unparse(writer, 0, 0);
+        writer.sep(",");
+        percentile.operand(0).unparse(writer, 0, 0);
+        if (orderList.size() == 2) {
+            writer.sep(",");
+            orderList.get(1).unparse(writer, 0, 0);
+        }
+        writer.endFunCall(frame);
+        return true;
     }
 
     @Override
@@ -70,11 +105,13 @@ public class StarRocksSqlStdOperatorSupport extends StarRocksSqlDialect
         StdSqlOperator operator = symbolOf(call.getOperator().getName());
         switch (operator) {
             case TRUNC:
-                renameCallOperator("TRUNCATE", call);
-                break;
+                return unparseFunctionCall(writer, "TRUNCATE", call);
+            case DAY_OF_WEEK:
+                return unparseFunctionCall(writer, "DAYOFWEEK", call);
             case DAY_OF_MONTH:
-                renameCallOperator("DAYOFMONTH", call);
-                break;
+                return unparseFunctionCall(writer, "DAYOFMONTH", call);
+            case DAY_OF_YEAR:
+                return unparseFunctionCall(writer, "DAYOFYEAR", call);
             case AGG_DATE_YEAR:
                 writer.print("YEAR(" + call.getOperandList().get(0).toSqlString(this).getSql() + ")");
                 return true;
@@ -92,10 +129,45 @@ public class StarRocksSqlStdOperatorSupport extends StarRocksSqlDialect
             case AGG_DATE_DAY:
                 writer.print("DATE_FORMAT(" + call.getOperandList().get(0).toSqlString(this).getSql() + ",'%Y-%m-%d')");
                 return true;
+            case AGG_DATE_HOUR:
+                return unparseDateFormat(writer, "%Y-%m-%d %H", call);
+            case AGG_DATE_MINUTE:
+                return unparseDateFormat(writer, "%Y-%m-%d %H:%i", call);
+            case AGG_DATE_SECOND:
+                return unparseDateFormat(writer, "%Y-%m-%d %H:%i:%s", call);
+            case AGG_DATE_YEAR_NATIVE:
+                return unparseDateTrunc(writer, "year", call);
+            case AGG_DATE_QUARTER_NATIVE:
+                return unparseDateTrunc(writer, "quarter", call);
+            case AGG_DATE_MONTH_NATIVE:
+                return unparseDateTrunc(writer, "month", call);
+            case AGG_DATE_WEEK_NATIVE:
+                return unparseDateTrunc(writer, "week", call);
+            case AGG_DATE_DAY_NATIVE:
+                return unparseDateTrunc(writer, "day", call);
+            case AGG_DATE_HOUR_NATIVE:
+                return unparseDateTrunc(writer, "hour", call);
+            case AGG_DATE_MINUTE_NATIVE:
+                return unparseDateTrunc(writer, "minute", call);
+            case AGG_DATE_SECOND_NATIVE:
+                return unparseDateTrunc(writer, "second", call);
             default:
                 break;
         }
         return false;
+    }
+
+    private boolean unparseDateTrunc(SqlWriter writer, String unit, SqlCall call) {
+        writer.print("DATE_TRUNC('" + unit + "', ");
+        call.getOperandList().get(0).unparse(writer, 0, 0);
+        writer.print(")");
+        return true;
+    }
+
+    private boolean unparseDateFormat(SqlWriter writer, String format, SqlCall call) {
+        writer.print("DATE_FORMAT(" + call.getOperandList().get(0).toSqlString(this).getSql()
+                + ",'" + format + "')");
+        return true;
     }
 
     @Override

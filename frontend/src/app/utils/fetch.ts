@@ -192,6 +192,14 @@ export async function fetchAvailableSourceFunctionsAsync(sourceId) {
   return response?.data;
 }
 
+export async function fetchSourceFunctionDefinitionsAsync(sourceId) {
+  const response = await request2<any[]>({
+    method: 'POST',
+    url: `data-provider/function/definitions/${sourceId}`,
+  });
+  return response?.data || [];
+}
+
 export async function fetchAvailableSourceFunctionsAsyncForShare(
   sourceId,
   executeToken,

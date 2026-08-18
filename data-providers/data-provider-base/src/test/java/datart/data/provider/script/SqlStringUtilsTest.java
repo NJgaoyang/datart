@@ -87,6 +87,15 @@ public class SqlStringUtilsTest {
         assertTrue(canParse("SELECT JSON_OBJECT('id', 87, 'name', 'carrot') FROM DUAL"));
     }
 
+    @Test
+    public void shouldDetectOnlyTopLevelPagination() {
+        assertTrue(SqlStringUtils.hasTopLevelPagination("SELECT * FROM report LIMIT 20 OFFSET 10"));
+        assertTrue(SqlStringUtils.hasTopLevelPagination("SELECT * FROM report FETCH FIRST 20 ROWS ONLY"));
+        assertFalse(SqlStringUtils.hasTopLevelPagination("SELECT * FROM (SELECT * FROM report LIMIT 20) t"));
+        assertFalse(SqlStringUtils.hasTopLevelPagination("SELECT 'LIMIT 20' AS note FROM report"));
+        assertFalse(SqlStringUtils.hasTopLevelPagination("SELECT * FROM report /* LIMIT 20 */"));
+    }
+
     // ======================== BIT_AND (&) conversion tests ========================
 
     @Test

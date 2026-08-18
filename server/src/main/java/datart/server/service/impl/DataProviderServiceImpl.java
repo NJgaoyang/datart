@@ -37,6 +37,7 @@ import datart.core.entity.RelSubjectColumns;
 import datart.core.entity.Source;
 import datart.core.entity.View;
 import datart.core.mappers.ext.RelSubjectColumnsMapperExt;
+import datart.security.util.PermissionHelper;
 import datart.security.util.AESUtil;
 import datart.server.base.dto.VariableValue;
 import datart.server.base.params.TestExecuteParam;
@@ -84,16 +85,20 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
 
     private final SourceService sourceService;
 
+    private final QueryExecutionTracePersistence queryExecutionTracePersistence;
+
     public DataProviderServiceImpl(DataProviderManager dataProviderManager,
                                    RelSubjectColumnsMapperExt rscMapper,
                                    VariableService variableService,
                                    ViewService viewService,
-                                   SourceService sourceService) {
+                                   SourceService sourceService,
+                                   QueryExecutionTracePersistence queryExecutionTracePersistence) {
         this.dataProviderManager = dataProviderManager;
         this.rscMapper = rscMapper;
         this.variableService = variableService;
         this.viewService = viewService;
         this.sourceService = sourceService;
+        this.queryExecutionTracePersistence = queryExecutionTracePersistence;
     }
 
     @PostConstruct
@@ -213,6 +218,9 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
                 .columns(testExecuteParam.getColumns())
                 .serverAggregate((boolean) providerSource.getProperties().getOrDefault(SERVER_AGGREGATE, false))
                 .cacheEnable(false)
+                .queryId(testExecuteParam.getQueryId())
+                .queryOwner(getCurrentUser().getId())
+                .reportName("数据集预览")
                 .build();
         return dataProviderManager.execute(providerSource, queryScript, executeParam);
     }
@@ -229,11 +237,21 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
 
     @Override
     public Dataframe execute(ViewExecuteParam viewExecuteParam, boolean checkViewPermission) throws Exception {
-        return execute(viewExecuteParam, checkViewPermission, null);
+        return execute(viewExecuteParam, checkViewPermission, null, null);
+    }
+
+    @Override
+    public Dataframe execute(ViewExecuteParam viewExecuteParam, boolean checkViewPermission, String queryOwner) throws Exception {
+        return execute(viewExecuteParam, checkViewPermission, null, queryOwner);
     }
 
     private Dataframe execute(ViewExecuteParam viewExecuteParam, boolean checkViewPermission,
                               BatchContext batchContext) throws Exception {
+        return execute(viewExecuteParam, checkViewPermission, batchContext, null);
+    }
+
+    private Dataframe execute(ViewExecuteParam viewExecuteParam, boolean checkViewPermission,
+                              BatchContext batchContext, String queryOwner) throws Exception {
         if (viewExecuteParam.isEmpty()) {
             return Dataframe.empty();
         }
@@ -308,6 +326,10 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
                 .serverAggregate((boolean) providerSource.getProperties().getOrDefault(SERVER_AGGREGATE, false))
                 .cacheEnable(viewExecuteParam.isCache())
                 .cacheExpires(viewExecuteParam.getCacheExpires())
+                .queryId(viewExecuteParam.getQueryId())
+                .queryOwner(StringUtils.defaultIfBlank(queryOwner, getCurrentUser().getId()))
+                .reportId(viewExecuteParam.getVizId())
+                .reportName(StringUtils.defaultIfBlank(viewExecuteParam.getVizName(), view.getName()))
                 .build();
 
         Dataframe dataframe = dataProviderManager.execute(providerSource, queryScript, queryParam);
@@ -414,10 +436,76 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
     }
 
     @Override
+    public List<FunctionDefinition> functionDefinitions(String sourceId) {
+        Source source = retrieve(sourceId, Source.class, false);
+        sourceService.requirePermission(source, Const.READ);
+        DataProviderSource dataProviderSource = parseDataProviderConfig(source);
+        return FunctionDefinitionRegistry.supported(
+                dataProviderManager.supportedStdFunctions(dataProviderSource));
+    }
+
+    @Override
     public boolean validateFunction(String sourceId, String snippet) {
         Source source = retrieve(sourceId, Source.class);
         DataProviderSource dataProviderSource = parseDataProviderConfig(source);
         return dataProviderManager.validateFunction(dataProviderSource, snippet);
+    }
+
+    @Override
+    public boolean cancelQuery(String queryId) {
+        return QueryCancellationRegistry.cancel(queryId, getCurrentUser().getId());
+    }
+
+    @Override
+    public boolean cancelQuery(String queryId, String queryOwner) {
+        return QueryCancellationRegistry.cancel(queryId, queryOwner);
+    }
+
+    @Override
+    public Map<String, Object> getRuntimeStats(String sourceId) {
+        Source source = retrieve(sourceId, Source.class, false);
+        sourceService.requirePermission(source, Const.MANAGE);
+        return dataProviderManager.getRuntimeStats(parseDataProviderConfig(source));
+    }
+
+    @Override
+    public List<Map<String, Object>> getQueryTraces(String sourceId) {
+        Source source = retrieve(sourceId, Source.class, false);
+        sourceService.requirePermission(source, Const.MANAGE);
+        return queryExecutionTracePersistence.recent(sourceId);
+    }
+
+    @Override
+    public Map<String, Object> getQueryMonitor(String orgId) {
+        securityManager.requireAllPermissions(PermissionHelper.rolePermission(orgId, Const.MANAGE));
+        List<Map<String, Object>> sourceStatuses = new ArrayList<>();
+        List<Map<String, Object>> traces = new ArrayList<>();
+        for (Source source : sourceService.listSources(orgId, true)) {
+            try {
+                sourceService.requirePermission(source, Const.MANAGE);
+            } catch (RuntimeException ignored) {
+                continue;
+            }
+            if (!"JDBC".equalsIgnoreCase(source.getType())) {
+                continue;
+            }
+            Map<String, Object> status = new LinkedHashMap<>(
+                    dataProviderManager.getRuntimeStats(parseDataProviderConfig(source)));
+            status.put("sourceId", source.getId());
+            status.put("sourceName", source.getName());
+            sourceStatuses.add(status);
+            for (Map<String, Object> trace : queryExecutionTracePersistence.recent(source.getId())) {
+                Map<String, Object> row = new LinkedHashMap<>(trace);
+                row.put("sourceName", source.getName());
+                traces.add(row);
+            }
+        }
+        traces.sort(Comparator.comparingLong(
+                row -> -((Number) row.getOrDefault("startedAt", 0L)).longValue()));
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("sources", sourceStatuses);
+        result.put("traces", traces);
+        return result;
     }
 
     @Override

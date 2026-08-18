@@ -54,7 +54,19 @@ const functions = [
     description: '中位数',
     syntax: 'MEDIAN(expression)',
   },
+  {
+    name: 'PERCENTILE_APPROX',
+    type: 'aggregator',
+    description: '近似分位数（仅在支持的数据源中可用）',
+    syntax: 'PERCENTILE_APPROX(expression, percentile[, compression])',
+  },
   // math 数学类
+  {
+    name: 'TIME_SLICE',
+    type: 'date',
+    description: '按时间间隔切片（仅 StarRocks）',
+    syntax: 'TIME_SLICE(datetime, INTERVAL number unit[, FLOOR|CEIL])',
+  },
   { name: 'ABS', type: 'math', description: '绝对值', syntax: 'ABS(number)' },
   {
     name: 'CEILING',

@@ -33,6 +33,7 @@ const FilterAggregateConfiguration: FC<{
     switch (config?.type) {
       case DataViewFieldType.STRING:
       case DataViewFieldType.DATE:
+      case DataViewFieldType.DATETIME:
         return [AggregateFieldActionType.None, AggregateFieldActionType.Count];
       case DataViewFieldType.NUMERIC:
         return Object.values(AggregateFieldActionType);

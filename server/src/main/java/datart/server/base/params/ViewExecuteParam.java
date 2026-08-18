@@ -34,6 +34,8 @@ public class ViewExecuteParam {
 
     private String requestId;
 
+    private String queryId;
+
     private String vizId;
 
     private String vizName;

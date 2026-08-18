@@ -37,6 +37,8 @@ public class JdbcProperties {
     @NotBlank
     private String driverClass;
 
+    private String sourceId;
+
     private Properties properties;
 
     private boolean enableSpecialSql;

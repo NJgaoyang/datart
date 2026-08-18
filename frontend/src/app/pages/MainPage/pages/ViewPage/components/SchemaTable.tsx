@@ -134,6 +134,7 @@ export const SchemaTable = memo(
             icon = <NumberOutlined />;
             break;
           case DataViewFieldType.DATE:
+          case DataViewFieldType.DATETIME:
             icon = <CalendarOutlined />;
             break;
           default:

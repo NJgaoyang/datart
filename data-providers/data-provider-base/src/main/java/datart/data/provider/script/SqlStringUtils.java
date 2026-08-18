@@ -100,6 +100,109 @@ public class SqlStringUtils {
         return sql.trim();
     }
 
+    /**
+     * Whether a top-level query already controls its result window. Text in strings,
+     * quoted identifiers, comments and nested queries is deliberately ignored.
+     */
+    public static boolean hasTopLevelPagination(String sql) {
+        if (StringUtils.isBlank(sql)) {
+            return false;
+        }
+        int depth = 0;
+        for (int index = 0; index < sql.length(); ) {
+            char current = sql.charAt(index);
+            if (current == '\'' || current == '"' || current == '`') {
+                index = skipQuotedLiteral(sql, sql.length(), index);
+                continue;
+            }
+            if (current == '[') {
+                index = skipBracketIdentifier(sql, index + 1);
+                continue;
+            }
+            if (current == '-' && index + 1 < sql.length() && sql.charAt(index + 1) == '-') {
+                index = skipLineComment(sql, index + 2);
+                continue;
+            }
+            if (current == '#') {
+                index = skipLineComment(sql, index + 1);
+                continue;
+            }
+            if (current == '/' && index + 1 < sql.length() && sql.charAt(index + 1) == '*') {
+                index = skipBlockComment(sql, index + 2);
+                continue;
+            }
+            if (current == '(') {
+                depth++;
+                index++;
+                continue;
+            }
+            if (current == ')') {
+                depth = Math.max(0, depth - 1);
+                index++;
+                continue;
+            }
+            if (depth == 0 && isIdentifierChar(current)) {
+                int end = index + 1;
+                while (end < sql.length() && isIdentifierChar(sql.charAt(end))) {
+                    end++;
+                }
+                String token = sql.substring(index, end);
+                if ("LIMIT".equalsIgnoreCase(token) || "OFFSET".equalsIgnoreCase(token)) {
+                    return true;
+                }
+                if ("FETCH".equalsIgnoreCase(token) && followsFetchPagination(sql, end)) {
+                    return true;
+                }
+                index = end;
+                continue;
+            }
+            index++;
+        }
+        return false;
+    }
+
+    private static boolean followsFetchPagination(String sql, int index) {
+        while (index < sql.length() && Character.isWhitespace(sql.charAt(index))) {
+            index++;
+        }
+        int end = index;
+        while (end < sql.length() && isIdentifierChar(sql.charAt(end))) {
+            end++;
+        }
+        String token = sql.substring(index, end);
+        return "FIRST".equalsIgnoreCase(token) || "NEXT".equalsIgnoreCase(token);
+    }
+
+    private static int skipBracketIdentifier(String sql, int index) {
+        while (index < sql.length()) {
+            if (sql.charAt(index++) == ']') {
+                return index;
+            }
+        }
+        return index;
+    }
+
+    private static int skipLineComment(String sql, int index) {
+        while (index < sql.length() && sql.charAt(index) != '\r' && sql.charAt(index) != '\n') {
+            index++;
+        }
+        return index;
+    }
+
+    private static int skipBlockComment(String sql, int index) {
+        while (index + 1 < sql.length()) {
+            if (sql.charAt(index) == '*' && sql.charAt(index + 1) == '/') {
+                return index + 2;
+            }
+            index++;
+        }
+        return sql.length();
+    }
+
+    private static boolean isIdentifierChar(char value) {
+        return Character.isLetterOrDigit(value) || value == '_';
+    }
+
     public static String cleanupSqlComments(String sql, SqlDialect sqlDialect) {
         Quoting quoting = Lex.MYSQL.quoting;
         if (sqlDialect != null) {

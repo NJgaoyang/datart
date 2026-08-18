@@ -45,6 +45,12 @@ public class AggregateOperator extends ColumnOperator implements Alias {
         COUNT,
 
         COUNT_DISTINCT,
+
+        STDDEV,
+
+        VARIANCE,
+
+        APPROX_COUNT_DISTINCT,
     }
 
     @Override

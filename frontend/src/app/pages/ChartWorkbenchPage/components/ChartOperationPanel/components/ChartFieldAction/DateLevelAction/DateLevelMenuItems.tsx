@@ -19,6 +19,7 @@ import { CheckOutlined } from '@ant-design/icons';
 import { Menu } from 'antd';
 import {
   ChartDataViewFieldCategory,
+  DataViewFieldType,
   RUNTIME_DATE_LEVEL_KEY,
 } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
@@ -114,7 +115,11 @@ const DateLevelMenuItems = memo(
           {t('default')}
         </Menu.Item>
         {DATE_LEVELS.map(item => {
-          if (availableSourceFunctions?.includes(item.expression)) {
+          const nativeExpression = `${item.expression}_NATIVE`;
+          const expressionName = availableSourceFunctions?.includes(nativeExpression)
+            ? nativeExpression
+            : item.expression;
+          if (availableSourceFunctions?.includes(expressionName)) {
             const configColName =
               config.category === ChartDataViewFieldCategory.Field
                 ? config.colName
@@ -122,7 +127,10 @@ const DateLevelMenuItems = memo(
             const row = getAllColumnInMeta(metas)?.find(
               v => v.name === configColName,
             );
-            const expression = `${item.expression}(${FieldTemplate(
+            if (item.datetimeOnly && row?.type !== DataViewFieldType.DATETIME) {
+              return null;
+            }
+            const expression = `${expressionName}(${FieldTemplate(
               row?.path,
             )})`;
             return (
@@ -134,7 +142,7 @@ const DateLevelMenuItems = memo(
                   handleChangeFn({
                     category: ChartDataViewFieldCategory.DateLevelComputedField,
                     colName:
-                      configColName + DATE_LEVEL_DELIMITER + item.expression,
+                      configColName + DATE_LEVEL_DELIMITER + expressionName,
                     expression,
                   })
                 }

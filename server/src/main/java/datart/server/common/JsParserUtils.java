@@ -25,7 +25,7 @@ public class JsParserUtils {
     private static synchronized Invocable getParser() {
         if (parser == null) {
             try {
-                parser = JavascriptUtils.load("javascript/parser.js");
+                parser = JavascriptUtils.load("javascript/task/parser.js");
             } catch (Exception e) {
                 Exceptions.e(e);
             }

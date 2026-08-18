@@ -25,9 +25,10 @@ import { ChartConfig, SelectedItem } from 'app/types/ChartConfig';
 import ChartDataSetDTO from 'app/types/ChartDataSet';
 import ChartDataView from 'app/types/ChartDataView';
 import { IChartDrillOption } from 'app/types/ChartDrillOption';
-import { FC, memo } from 'react';
+import { FC, memo, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import styled from 'styled-components';
+import { cancelQuery } from 'utils/queryCancellation';
 import ChartDrillContext from '../../../../contexts/ChartDrillContext';
 import { dateFormatSelector, languageSelector } from '../../slice/selectors';
 import ChartHeaderPanel from '../ChartHeaderPanel';
@@ -85,6 +86,8 @@ const ChartWorkbench: FC<{
   }) => {
     const language = useSelector(languageSelector);
     const dateFormat = useSelector(dateFormatSelector);
+
+    useEffect(() => () => cancelQuery('chart-workbench'), []);
 
     return (
       <ChartAggregationContext.Provider

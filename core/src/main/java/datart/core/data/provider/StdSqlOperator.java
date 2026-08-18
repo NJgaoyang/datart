@@ -14,6 +14,7 @@ public enum StdSqlOperator {
     VAR("VAR"),
     STDDEV("STDDEV"),
     MEDIAN("MEDIAN"),
+    PERCENTILE_APPROX("PERCENTILE_APPROX"),
 //    PERCENTILE("PERCENTILE"),
 
     // math
@@ -74,10 +75,25 @@ public enum StdSqlOperator {
     AGG_DATE_MONTH("AGG_DATE_MONTH"),
     AGG_DATE_WEEK("AGG_DATE_WEEK"),
     AGG_DATE_DAY("AGG_DATE_DAY"),
+    AGG_DATE_HOUR("AGG_DATE_HOUR"),
+    AGG_DATE_MINUTE("AGG_DATE_MINUTE"),
+    AGG_DATE_SECOND("AGG_DATE_SECOND"),
+    // Native date buckets are only exposed by dialects that preserve a date/time result.
+    // The legacy AGG_DATE_* functions remain for existing dashboard compatibility.
+    AGG_DATE_YEAR_NATIVE("AGG_DATE_YEAR_NATIVE"),
+    AGG_DATE_QUARTER_NATIVE("AGG_DATE_QUARTER_NATIVE"),
+    AGG_DATE_MONTH_NATIVE("AGG_DATE_MONTH_NATIVE"),
+    AGG_DATE_WEEK_NATIVE("AGG_DATE_WEEK_NATIVE"),
+    AGG_DATE_DAY_NATIVE("AGG_DATE_DAY_NATIVE"),
+    AGG_DATE_HOUR_NATIVE("AGG_DATE_HOUR_NATIVE"),
+    AGG_DATE_MINUTE_NATIVE("AGG_DATE_MINUTE_NATIVE"),
+    AGG_DATE_SECOND_NATIVE("AGG_DATE_SECOND_NATIVE"),
+
+    TIME_SLICE("TIME_SLICE"),
 
     // operator
     ADD("+"),
-    SUBTRACT("/"),
+    SUBTRACT("-"),
     MULTIPLY("*"),
     DIVIDE("/"),
     EQUALS("="),

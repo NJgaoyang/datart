@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+import { useEffect } from 'react';
+import { cancelQuery } from 'utils/queryCancellation';
 import { useSourceSlice } from '../SourcePage/slice';
 import { Container } from './Container';
 import { EditorContext, useEditorContext } from './EditorContext';
@@ -27,6 +29,8 @@ export function ViewPage() {
   useSourceSlice();
   const saveFormContextValue = useSaveFormContext();
   const editorContextValue = useEditorContext();
+
+  useEffect(() => () => cancelQuery('view-preview'), []);
 
   return (
     <EditorContext.Provider value={editorContextValue}>

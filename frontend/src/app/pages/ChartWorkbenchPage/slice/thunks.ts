@@ -32,6 +32,7 @@ import {
 import { filterCurrentUsedComputedFields } from 'app/utils/chartHelper';
 import { fetchAvailableSourceFunctionsAsync } from 'app/utils/fetch';
 import { filterSqlOperatorName } from 'app/utils/internalChartHelper';
+import { startQuery } from 'utils/queryCancellation';
 import { request2 } from 'utils/request';
 import { rejectHandle } from 'utils/utils';
 import workbenchSlice, { initState } from '.';
@@ -75,23 +76,26 @@ export const fetchDataSetAction = createAsyncThunk(
   'workbench/fetchDataSetAction',
   async (arg: ChartDataRequest, thunkAPI) => {
     let errorData: any = null;
-    const response = await request2(
-      {
-        method: 'POST',
-        url: `data-provider/execute`,
-        data: arg,
-      },
-      {},
-      {
-        onRejected: error => {
-          errorData = error.response;
+    const query = startQuery('chart-workbench');
+    try {
+      const response = await request2(
+        {
+          method: 'POST',
+          url: `data-provider/execute`,
+          signal: query.signal,
+          data: { ...arg, queryId: query.queryId },
         },
-      },
-    );
-    if (errorData) {
-      return thunkAPI.rejectWithValue(errorData?.data);
-    } else {
+        {},
+        {
+          onRejected: error => {
+            errorData = error.response;
+          },
+        },
+      );
+      if (errorData) return thunkAPI.rejectWithValue(errorData?.data);
       return filterSqlOperatorName(arg, response.data);
+    } finally {
+      query.finish();
     }
   },
 );

@@ -146,6 +146,7 @@ export const Resource = memo(() => {
             case DataViewFieldType.NUMERIC:
               return <NumberOutlined />;
             case DataViewFieldType.DATE:
+            case DataViewFieldType.DATETIME:
               return <CalendarOutlined />;
           }
       }

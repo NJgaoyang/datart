@@ -28,8 +28,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -62,7 +65,7 @@ public class JdbcDataProvider extends DataProvider {
      */
     public static final Integer DEFAULT_MAX_WAIT = 5000;
 
-    private final Map<String, JdbcDataProviderAdapter> cachedProviders = new ConcurrentSkipListMap<>();
+    private final Map<String, CachedProvider> cachedProviders = new ConcurrentHashMap<>();
 
     @Override
     public Object test(DataProviderSource source) {
@@ -125,6 +128,7 @@ public class JdbcDataProvider extends DataProvider {
 
     private JdbcProperties conv2JdbcProperties(DataProviderSource config) {
         JdbcProperties jdbcProperties = new JdbcProperties();
+        jdbcProperties.setSourceId(config.getSourceId());
         jdbcProperties.setDbType(config.getProperties().get(DB_TYPE).toString().toUpperCase());
         String rawUrl = config.getProperties().get(URL).toString();
         jdbcProperties.setUrl(appendDefaultConnectionParams(
@@ -149,13 +153,17 @@ public class JdbcDataProvider extends DataProvider {
         }
 
         Object properties = config.getProperties().get("properties");
+        Properties prop = new Properties();
         if (properties != null) {
             if (properties instanceof Map) {
-                Properties prop = new Properties();
                 prop.putAll((Map) properties);
-                jdbcProperties.setProperties(prop);
             }
         }
+        Object queryTimeout = config.getProperties().get("queryTimeout");
+        if (queryTimeout != null && StringUtils.isNotBlank(queryTimeout.toString())) {
+            prop.setProperty("queryTimeout", queryTimeout.toString());
+        }
+        jdbcProperties.setProperties(prop);
         return jdbcProperties;
     }
 
@@ -216,14 +224,95 @@ public class JdbcDataProvider extends DataProvider {
     }
 
     private JdbcDataProviderAdapter matchProviderAdapter(DataProviderSource source) {
-        JdbcDataProviderAdapter adapter;
-        adapter = cachedProviders.get(source.getSourceId());
-        if (adapter != null) {
-            return adapter;
+        JdbcProperties properties = conv2JdbcProperties(source);
+        String fingerprint = fingerprint(properties);
+        CachedProvider provider = cachedProviders.compute(source.getSourceId(), (sourceId, cached) -> {
+            if (cached != null && cached.fingerprint.equals(fingerprint)) {
+                return cached;
+            }
+            closeQuietly(cached, sourceId);
+            return new CachedProvider(fingerprint, createProviderAdapter(properties));
+        });
+        return provider.adapter;
+    }
+
+    protected JdbcDataProviderAdapter createProviderAdapter(JdbcProperties properties) {
+        return ProviderFactory.createDataProvider(properties, true);
+    }
+
+    private static String fingerprint(JdbcProperties properties) {
+        StringBuilder value = new StringBuilder();
+        appendFingerprintValue(value, properties.getDbType());
+        appendFingerprintValue(value, properties.getUrl());
+        appendFingerprintValue(value, properties.getUser());
+        appendFingerprintValue(value, properties.getPassword());
+        appendFingerprintValue(value, properties.getDriverClass());
+        appendFingerprintValue(value, String.valueOf(properties.isEnableSpecialSql()));
+
+        TreeMap<String, String> extraProperties = new TreeMap<>();
+        if (properties.getProperties() != null) {
+            properties.getProperties().forEach((key, propertyValue) ->
+                    extraProperties.put(String.valueOf(key), String.valueOf(propertyValue)));
         }
-        adapter = ProviderFactory.createDataProvider(conv2JdbcProperties(source), true);
-        cachedProviders.put(source.getSourceId(), adapter);
-        return adapter;
+        extraProperties.forEach((key, propertyValue) -> {
+            appendFingerprintValue(value, key);
+            appendFingerprintValue(value, propertyValue);
+        });
+
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest(value.toString().getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to fingerprint JDBC source configuration", e);
+        }
+    }
+
+    private static void appendFingerprintValue(StringBuilder target, String value) {
+        String text = value == null ? "<null>" : value;
+        target.append(text.length()).append(':').append(text).append('|');
+    }
+
+    private void closeQuietly(CachedProvider cached, String sourceId) {
+        if (cached == null) {
+            return;
+        }
+        try {
+            cached.adapter.close();
+        } catch (Exception e) {
+            log.warn("jdbc source '{}' adapter close error", sourceId, e);
+        }
+    }
+
+    public void evictProvider(String sourceId) {
+        closeQuietly(cachedProviders.remove(sourceId), sourceId);
+    }
+
+    @Override
+    public Map<String, Object> getRuntimeStats(DataProviderSource source) {
+        CachedProvider cached = cachedProviders.get(source.getSourceId());
+        if (cached == null) {
+            return Map.of("sourceId", source.getSourceId(), "initialized", false);
+        }
+        Map<String, Object> stats = new LinkedHashMap<>(cached.adapter.getRuntimeStats());
+        stats.put("sourceId", source.getSourceId());
+        stats.put("initialized", true);
+        return stats;
+    }
+
+    @Override
+    public List<Map<String, Object>> getQueryTraces(DataProviderSource source) {
+        CachedProvider cached = cachedProviders.get(source.getSourceId());
+        return cached == null ? Collections.emptyList() : cached.adapter.getQueryTraces();
+    }
+
+    private static class CachedProvider {
+        private final String fingerprint;
+        private final JdbcDataProviderAdapter adapter;
+
+        private CachedProvider(String fingerprint, JdbcDataProviderAdapter adapter) {
+            this.fingerprint = fingerprint;
+            this.adapter = adapter;
+        }
     }
 
     @Override
@@ -241,7 +330,8 @@ public class JdbcDataProvider extends DataProvider {
     @Override
     public boolean validateFunction(DataProviderSource source, String snippet) {
         try {
-            SqlParserUtils.parseSnippet(snippet);
+            SqlDialect sqlDialect = matchProviderAdapter(source).getSqlDialect();
+            SqlParserUtils.validateSnippet(snippet, sqlDialect, supportedStdFunctions(source));
         } catch (Exception e) {
             Exceptions.e(e);
         }
@@ -290,7 +380,8 @@ public class JdbcDataProvider extends DataProvider {
 
     @Override
     public void close() throws IOException {
-
+        cachedProviders.forEach((sourceId, provider) -> closeQuietly(provider, sourceId));
+        cachedProviders.clear();
     }
 
     public static DataSourceFactory<? extends DataSource> getDataSourceFactory() {
@@ -424,14 +515,7 @@ public class JdbcDataProvider extends DataProvider {
 
     @Override
     public void resetSource(DataProviderSource source) {
-        try {
-            JdbcDataProviderAdapter adapter = cachedProviders.remove(source.getSourceId());
-            if (adapter != null) {
-                adapter.close();
-            }
-            log.info("jdbc source '{}-{}' updated, source has been reset", source.getSourceId(), source.getName());
-        } catch (Exception e) {
-            log.error("source reset error.", e);
-        }
+        evictProvider(source.getSourceId());
+        log.info("jdbc source '{}-{}' updated, source has been reset", source.getSourceId(), source.getName());
     }
 }

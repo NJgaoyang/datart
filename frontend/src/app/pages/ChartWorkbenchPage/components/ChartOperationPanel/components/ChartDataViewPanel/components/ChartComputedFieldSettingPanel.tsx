@@ -27,6 +27,7 @@ import { hasAggregationFunction } from 'app/utils/chartHelper';
 import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { getFieldDisplayName } from 'utils/utils';
+import { fetchSourceFunctionDefinitionsAsync } from 'app/utils/fetch';
 import ChartComputedFieldEditor from './ChartComputedFieldEditor/ChartComputedFieldEditor';
 import ChartSearchableList from './ChartSearchableList';
 import {
@@ -67,6 +68,36 @@ const ChartComputedFieldSettingPanel: FC<{
   const [selectedFunctionCategory, setSelectedFunctionCategory] = useState(
     defaultFunctionCategory,
   );
+  const [availableSourceFunctions, setAvailableSourceFunctions] = useState<
+    string[] | undefined
+  >();
+
+  useEffect(() => {
+    let active = true;
+    if (!sourceId) {
+      setAvailableSourceFunctions(undefined);
+      return;
+    }
+    fetchSourceFunctionDefinitionsAsync(sourceId)
+      .then(definitions =>
+        active && setAvailableSourceFunctions(definitions.map(item => item.name)),
+      )
+      .catch(() => active && setAvailableSourceFunctions(undefined));
+    return () => {
+      active = false;
+    };
+  }, [sourceId]);
+
+  const supportedFunctionDescriptions = useMemo(() => {
+    if (sourceId && !availableSourceFunctions) {
+      return [];
+    }
+    if (!availableSourceFunctions) {
+      return ComputedFunctionDescriptions;
+    }
+    const supported = new Set(availableSourceFunctions);
+    return ComputedFunctionDescriptions.filter(item => supported.has(item.name));
+  }, [availableSourceFunctions, sourceId]);
 
   const editorFieldNames = useMemo<ComputedFieldDisplayName[]>(() => {
     const result: ComputedFieldDisplayName[] = [];
@@ -187,7 +218,7 @@ const ChartComputedFieldSettingPanel: FC<{
   };
 
   const getFunctionCategories = (): Array<{ label; value }> => {
-    const functionCategories = ComputedFunctionDescriptions.reduce<string[]>(
+    const functionCategories = supportedFunctionDescriptions.reduce<string[]>(
       (acc, cur) => {
         if (acc.find(x => x === cur.type)) {
           return acc;
@@ -208,7 +239,7 @@ const ChartComputedFieldSettingPanel: FC<{
   };
 
   const getFunctionList = () => {
-    return ComputedFunctionDescriptions.filter(
+    return supportedFunctionDescriptions.filter(
       item =>
         item.type === selectedFunctionCategory ||
         !selectedFunctionCategory ||
@@ -233,7 +264,7 @@ const ChartComputedFieldSettingPanel: FC<{
   };
 
   const handleFieldFunctionSelected = funName => {
-    const functionDescription = ComputedFunctionDescriptions.find(
+    const functionDescription = supportedFunctionDescriptions.find(
       f => f.name === funName,
     );
 
@@ -353,7 +384,7 @@ const ChartComputedFieldSettingPanel: FC<{
               myComputedFieldRef.current?.expression,
               editorFieldNames,
             )}
-            functionDescriptions={ComputedFunctionDescriptions}
+            functionDescriptions={supportedFunctionDescriptions}
             onChange={handleExpressionChange}
           />
         </StyledMiddlePane>

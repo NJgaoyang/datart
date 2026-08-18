@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public abstract class DataProvider extends AutoCloseBean {
@@ -125,6 +127,17 @@ public abstract class DataProvider extends AutoCloseBean {
      * @param source
      */
     public void resetSource(DataProviderSource source) {
+    }
+
+    /**
+     * Returns read-only runtime information for an initialized source.
+     */
+    public Map<String, Object> getRuntimeStats(DataProviderSource source) {
+        return Collections.emptyMap();
+    }
+
+    public List<Map<String, Object>> getQueryTraces(DataProviderSource source) {
+        return Collections.emptyList();
     }
 
 }

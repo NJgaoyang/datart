@@ -17,7 +17,17 @@
  */
 
 import { LoadingOutlined } from '@ant-design/icons';
-import { Button, Card, Form, Input, message, Popconfirm, Select } from 'antd';
+import {
+  Button,
+  Card,
+  Descriptions,
+  Form,
+  Input,
+  message,
+  Popconfirm,
+  Select,
+  Table,
+} from 'antd';
 import { Authorized, EmptyFiller } from 'app/components';
 import { DetailPageHeader } from 'app/components/DetailPageHeader';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
@@ -96,6 +106,9 @@ export function SourceDetailPage() {
   const [providerType, setProviderType] = useState('');
   const [testLoading, setTestLoading] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<string | undefined>();
+  const [poolStats, setPoolStats] = useState<Record<string, number | boolean>>();
+  const [queryTraces, setQueryTraces] = useState<Record<string, any>[]>([]);
+  const [poolStatsLoading, setPoolStatsLoading] = useState(false);
   const { actions } = useSourceSlice();
   const { actions: viewActions } = useViewSlice();
   const dispatch = useDispatch<AppDispatch>();
@@ -419,6 +432,37 @@ export function SourceDetailPage() {
     }
   };
 
+  const refreshPoolStats = useCallback(async () => {
+    if (!editingSource?.id || providerType !== 'JDBC') {
+      return;
+    }
+    setPoolStatsLoading(true);
+    try {
+      const [poolResponse, traceResponse] = await Promise.all([
+        request2<Record<string, number | boolean>>({
+          url: `/data-provider/${editingSource.id}/pool-stats`,
+          method: 'GET',
+        }),
+        request2<Record<string, any>[]>({
+          url: `/data-provider/${editingSource.id}/query-traces`,
+          method: 'GET',
+        }),
+      ]);
+      setPoolStats(poolResponse.data);
+      setQueryTraces(traceResponse.data || []);
+    } catch (error) {
+      errorHandle(error);
+    } finally {
+      setPoolStatsLoading(false);
+    }
+  }, [editingSource?.id, providerType]);
+
+  useEffect(() => {
+    setPoolStats(undefined);
+    setQueryTraces([]);
+    refreshPoolStats();
+  }, [refreshPoolStats]);
+
   return (
     <Authorized
       authority={allowCreate || allowManage}
@@ -569,6 +613,63 @@ export function SourceDetailPage() {
               ))}
             </Form>
           </Card>
+          {editingSource?.id && providerType === 'JDBC' && (
+            <Card
+              title="连接池运行状态"
+              extra={
+                <Button loading={poolStatsLoading} onClick={refreshPoolStats}>
+                  刷新
+                </Button>
+              }
+            >
+              {!poolStats || poolStats.initialized === false ? (
+                <span>当前数据源尚未建立连接；执行一次查询后即可查看连接池状态。</span>
+              ) : (
+                <Descriptions size="small" column={3}>
+                  <Descriptions.Item label="活跃连接">
+                    {poolStats.activeCount}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="空闲连接">
+                    {poolStats.poolingCount}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="连接上限">
+                    {poolStats.maxActive}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="等待线程">
+                    {poolStats.waitThreadCount}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="累计创建">
+                    {poolStats.connectCount}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="累计关闭">
+                    {poolStats.closeCount}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="查询超时">
+                    {poolStats.queryTimeout} 秒
+                  </Descriptions.Item>
+                </Descriptions>
+              )}
+              <Table
+                size="small"
+                pagination={false}
+                rowKey="id"
+                dataSource={queryTraces}
+                locale={{ emptyText: '暂无查询摘要' }}
+                columns={[
+                  { title: '状态', dataIndex: 'status', width: 90 },
+                  { title: '数据库', dataIndex: 'dbType', width: 100 },
+                  { title: '耗时(ms)', dataIndex: 'elapsedMs', width: 100 },
+                  { title: 'SQL 摘要', dataIndex: 'sqlDigest', ellipsis: true },
+                  {
+                    title: '开始时间',
+                    dataIndex: 'startedAt',
+                    width: 170,
+                    render: value => value ? dayjs(value).format(TIME_FORMATTER) : '-',
+                  },
+                ]}
+              />
+            </Card>
+          )}
         </Content>
       </Wrapper>
     </Authorized>

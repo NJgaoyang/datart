@@ -223,7 +223,7 @@ export class ChartDataRequestBuilder {
         }
         if (cur.type === ChartDataSectionType.Mixed) {
           const dateAndStringFields = cur.rows?.filter(v =>
-            [DataViewFieldType.DATE, DataViewFieldType.STRING].includes(v.type),
+            [DataViewFieldType.DATE, DataViewFieldType.DATETIME, DataViewFieldType.STRING].includes(v.type),
           );
           //zh: 判断数据中是否含有 DATE 和 STRING 类型 en: Determine whether the data contains DATE and STRING types
           return acc.concat(dateAndStringFields || []);
@@ -611,7 +611,12 @@ export class ChartDataRequestBuilder {
     const dataViewFieldsNames = (
       getAllColumnInMeta(this.dataView?.meta) as ChartDataViewMeta[]
     )
-      .concat(this.dataView?.computedFields || [])
+      .concat(
+        createDateLevelComputedFieldForConfigComputedFields(
+          this.dataView?.meta,
+          this.dataView?.computedFields,
+        ),
+      )
       .map(c => c?.name);
 
     return (filters || []).filter(f => {

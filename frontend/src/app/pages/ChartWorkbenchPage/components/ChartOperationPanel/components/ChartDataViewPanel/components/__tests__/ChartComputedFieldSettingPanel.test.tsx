@@ -57,7 +57,7 @@ describe('ChartComputedFieldSettingPanel', () => {
             selectable: false,
             children: [{ title: '城市', key: ['report', 'city'] }],
           },
-        ]}
+        ] as any}
         variables={[]}
         onChange={vi.fn()}
       />,

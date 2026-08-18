@@ -41,6 +41,7 @@ import { Navbar } from './Navbar';
 import { AuditLogPage } from './pages/AuditLogPage';
 import { ConfirmInvitePage } from './pages/ConfirmInvitePage';
 import { MemberPage } from './pages/MemberPage';
+import { MonitorPage } from './pages/MonitorPage';
 import { OrgSettingPage } from './pages/OrgSettingPage';
 import { PermissionPage } from './pages/PermissionPage';
 import { ResourceTypes } from './pages/PermissionPage/constants';
@@ -253,6 +254,14 @@ export function MainPage() {
             element={
               <AccessRoute module={ResourceTypes.Manager}>
                 <VariablePage />
+              </AccessRoute>
+            }
+          />
+          <Route
+            path="/organizations/:orgId/monitor"
+            element={
+              <AccessRoute module={ResourceTypes.Manager}>
+                <MonitorPage />
               </AccessRoute>
             }
           />

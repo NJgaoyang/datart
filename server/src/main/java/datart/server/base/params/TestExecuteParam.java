@@ -31,6 +31,8 @@ public class TestExecuteParam {
 
     private String sourceId;
 
+    private String queryId;
+
     private String script;
 
     private List<SelectColumn> columns;

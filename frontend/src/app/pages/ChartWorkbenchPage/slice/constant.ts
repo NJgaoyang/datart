@@ -60,4 +60,25 @@ export const DATE_LEVELS = [
     name: i18n.t(prefix + 'AGG_DATE_DAY'),
     type: 'DATE',
   },
+  {
+    category: ChartDataViewFieldCategory.DateLevelComputedField,
+    expression: 'AGG_DATE_HOUR',
+    name: i18n.t(prefix + 'AGG_DATE_HOUR'),
+    type: 'DATETIME',
+    datetimeOnly: true,
+  },
+  {
+    category: ChartDataViewFieldCategory.DateLevelComputedField,
+    expression: 'AGG_DATE_MINUTE',
+    name: i18n.t(prefix + 'AGG_DATE_MINUTE'),
+    type: 'DATETIME',
+    datetimeOnly: true,
+  },
+  {
+    category: ChartDataViewFieldCategory.DateLevelComputedField,
+    expression: 'AGG_DATE_SECOND',
+    name: i18n.t(prefix + 'AGG_DATE_SECOND'),
+    type: 'DATETIME',
+    datetimeOnly: true,
+  },
 ];

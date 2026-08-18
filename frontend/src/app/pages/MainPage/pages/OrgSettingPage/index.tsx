@@ -1,4 +1,4 @@
-import { Button, Card, Form, Input, message, Upload } from 'antd';
+import { Alert, Button, Card, Form, Input, message, Modal, Table, Tag, Upload } from 'antd';
 import { Avatar } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { fetchCheckName } from 'app/utils/fetch';
@@ -19,6 +19,7 @@ import {
 } from 'styles/StyleConstants';
 import { APIResponse } from 'types';
 import { getToken } from 'utils/auth';
+import { request2 } from 'utils/request';
 import { useMainSlice } from '../../slice';
 import {
   selectCurrentOrganization,
@@ -29,6 +30,9 @@ import { DeleteConfirm } from './DeleteConfirm';
 
 export function OrgSettingPage() {
   const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+  const [migrationVisible, setMigrationVisible] = useState(false);
+  const [migrationLoading, setMigrationLoading] = useState(false);
+  const [migrationPreview, setMigrationPreview] = useState<HistoryMigrationPreview>();
   const { actions } = useMainSlice();
   const [avatarLoading, setAvatarLoading] = useState(false);
   const dispatch = useDispatch();
@@ -80,6 +84,23 @@ export function OrgSettingPage() {
   const hideDeleteConfirm = useCallback(() => {
     setDeleteConfirmVisible(false);
   }, []);
+
+  const showMigrationPreview = useCallback(async () => {
+    if (!currentOrganization?.id) return;
+    setMigrationVisible(true);
+    setMigrationLoading(true);
+    try {
+      const { data } = await request2<HistoryMigrationPreview>({
+        url: `/admin/history-migration/preview?orgId=${encodeURIComponent(currentOrganization.id)}`,
+        method: 'GET',
+      });
+      setMigrationPreview(data);
+    } catch (error) {
+      message.error(t('historyMigrationError'));
+    } finally {
+      setMigrationLoading(false);
+    }
+  }, [currentOrganization?.id, t]);
 
   return (
     <Wrapper>
@@ -163,8 +184,66 @@ export function OrgSettingPage() {
           onCancel={hideDeleteConfirm}
         />
       </Card>
+      <Card title={t('historyMigration')}>
+        <h4 className="notice">{t('historyMigrationDesc')}</h4>
+        <Button onClick={showMigrationPreview} loading={migrationLoading}>
+          {t('historyMigrationPreview')}
+        </Button>
+      </Card>
+      <Modal
+        title={t('historyMigrationPreview')}
+        visible={migrationVisible}
+        width={960}
+        onCancel={() => setMigrationVisible(false)}
+        footer={null}
+      >
+        {migrationPreview && (
+          <>
+            <Alert
+              type={migrationPreview.needsReview ? 'warning' : 'success'}
+              showIcon
+              message={`${t('historyMigrationTotal')}: ${migrationPreview.total}，${t('historyMigrationReview')}: ${migrationPreview.needsReview}`}
+              description={t('historyMigrationReadonly')}
+              style={{ marginBottom: SPACE_MD }}
+            />
+            <Table
+              size="small"
+              rowKey={item => `${item.resourceType}:${item.resourceId}`}
+              pagination={{ pageSize: 10 }}
+              dataSource={migrationPreview.items}
+              columns={[
+                { title: t('historyMigrationType'), dataIndex: 'resourceType', width: 120 },
+                { title: t('historyMigrationName'), dataIndex: 'resourceName', ellipsis: true },
+                {
+                  title: t('historyMigrationStatus'),
+                  dataIndex: 'status',
+                  width: 120,
+                  render: status => <Tag color={status === 'REVIEW' ? 'orange' : 'green'}>{status}</Tag>,
+                },
+                {
+                  title: t('historyMigrationReason'),
+                  dataIndex: 'reasons',
+                  render: reasons => reasons?.join(', ') || '-',
+                },
+              ]}
+            />
+          </>
+        )}
+      </Modal>
     </Wrapper>
   );
+}
+
+interface HistoryMigrationPreview {
+  total: number;
+  needsReview: number;
+  items: Array<{
+    resourceType: string;
+    resourceId: string;
+    resourceName: string;
+    status: string;
+    reasons: string[];
+  }>;
 }
 
 const Wrapper = styled.div`

@@ -202,6 +202,16 @@ public class ProviderManager extends DataProviderExecuteOptimizer implements Dat
         providerService.resetSource(source);
     }
 
+    @Override
+    public Map<String, Object> getRuntimeStats(DataProviderSource source) {
+        return getDataProviderService(source.getType()).getRuntimeStats(source);
+    }
+
+    @Override
+    public List<Map<String, Object>> getQueryTraces(DataProviderSource source) {
+        return getDataProviderService(source.getType()).getQueryTraces(source);
+    }
+
     private void excludeColumns(Dataframe data, Set<SelectColumn> include) {
         if (data == null
                 || CollectionUtils.isEmpty(data.getColumns())

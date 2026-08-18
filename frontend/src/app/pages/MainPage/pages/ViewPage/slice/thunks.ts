@@ -25,6 +25,7 @@ import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
 import i18n from 'i18next';
 import { monaco } from 'react-monaco-editor';
 import { RootState } from 'types';
+import { startQuery } from 'utils/queryCancellation';
 import { request2 } from 'utils/request';
 import { errorHandle, getErrorMessage, rejectHandle } from 'utils/utils';
 import { viewActions } from '.';
@@ -208,11 +209,15 @@ export const runSql = createAsyncThunk<
     reqColumns = buildRequestColumns(structure!);
   }
 
+  const query = startQuery('view-preview');
+  try {
   const response = await request2<QueryResult>(
     {
       url: '/data-provider/execute/test',
       method: 'POST',
+      signal: query.signal,
       data: {
+        queryId: query.queryId,
         script,
         sourceId,
         size,
@@ -255,6 +260,9 @@ export const runSql = createAsyncThunk<
     warnings: response?.warnings,
     reqColumns: reqColumns,
   };
+  } finally {
+    query.finish();
+  }
 });
 
 export const saveView = createAsyncThunk<

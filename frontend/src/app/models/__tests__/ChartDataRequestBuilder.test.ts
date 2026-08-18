@@ -90,6 +90,59 @@ describe('ChartDataRequestBuild Test', () => {
     ]);
   });
 
+  test('should include native date levels in the function columns used by drill filters', () => {
+    const yearFieldName = `dt${DATE_LEVEL_DELIMITER}AGG_DATE_YEAR_NATIVE`;
+    const dayFieldName = `dt${DATE_LEVEL_DELIMITER}AGG_DATE_DAY_NATIVE`;
+    const chartDataConfigs = [
+      {
+        type: ChartDataSectionType.Group,
+        key: 'group',
+        drillable: true,
+        rows: [
+          { uid: 'year', colName: yearFieldName, type: DataViewFieldType.DATE },
+          { uid: 'day', colName: dayFieldName, type: DataViewFieldType.DATE },
+        ],
+      },
+    ] as any;
+    const drillOption = getChartDrillOption(chartDataConfigs)!;
+    drillOption.drillDown({ [yearFieldName]: '2026-01-01 00:00:00' });
+
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'view-id',
+        meta: [
+          {
+            name: 'dt',
+            path: ['DATART_VTABLE', 'dt'],
+            type: DataViewFieldType.DATE,
+          },
+        ],
+        computedFields: [],
+      } as any,
+      chartDataConfigs,
+    )
+      .addDrillOption(drillOption)
+      .build();
+
+    expect(request.functionColumns).toEqual(
+      expect.arrayContaining([
+        {
+          alias: yearFieldName,
+          snippet: expect.stringContaining('AGG_DATE_YEAR_NATIVE'),
+        },
+        {
+          alias: dayFieldName,
+          snippet: expect.stringContaining('AGG_DATE_DAY_NATIVE'),
+        },
+      ]),
+    );
+    expect(request.filters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ column: [yearFieldName] }),
+      ]),
+    );
+  });
+
   test('should get builder with default values', () => {
     const dataView = { id: 'view-id' } as any;
     const enableScript = false;

@@ -22,6 +22,7 @@ import {
   ChartDataSectionType,
   ChartDataViewFieldCategory,
   DataViewFieldType,
+  isDateFieldType,
   FieldFormatType,
   RUNTIME_DATE_LEVEL_KEY,
 } from 'app/constants';
@@ -1447,7 +1448,7 @@ export function createDateLevelComputedFieldForConfigComputedFields(
   computedFields?: ChartDataViewMeta[],
 ): ChartDataViewMeta[] {
   const dateFields =
-    getAllColumnInMeta(meta)?.filter(v => v.type === DataViewFieldType.DATE) ||
+    getAllColumnInMeta(meta)?.filter(v => isDateFieldType(v.type)) ||
     [];
   const allDateLevelComputedFields: ChartDataViewMeta[] = [];
   const notDateLevelComputedFields =
@@ -1458,11 +1459,16 @@ export function createDateLevelComputedFieldForConfigComputedFields(
 
   dateFields.forEach(field => {
     DATE_LEVELS.forEach(v => {
-      allDateLevelComputedFields.push({
-        category: ChartDataViewFieldCategory.DateLevelComputedField,
-        name: field.name + DATE_LEVEL_DELIMITER + v.expression,
-        type: field.type,
-        expression: `${v.expression}(${FieldTemplate(field.path)})`,
+      if (v.datetimeOnly && field.type !== DataViewFieldType.DATETIME) {
+        return;
+      }
+      [v.expression, `${v.expression}_NATIVE`].forEach(expression => {
+        allDateLevelComputedFields.push({
+          category: ChartDataViewFieldCategory.DateLevelComputedField,
+          name: field.name + DATE_LEVEL_DELIMITER + expression,
+          type: field.type,
+          expression: `${expression}(${FieldTemplate(field.path)})`,
+        });
       });
     });
   });
@@ -1498,8 +1504,11 @@ export function hasAggregationFunction(exp?: string) {
     AggregateFieldActionType.Avg,
     AggregateFieldActionType.Count,
     AggregateFieldActionType.Count_Distinct,
+    AggregateFieldActionType.Stddev,
+    AggregateFieldActionType.Variance,
     AggregateFieldActionType.Max,
     AggregateFieldActionType.Min,
     AggregateFieldActionType.Sum,
+    'PERCENTILE_APPROX',
   ].some(agg => new RegExp(`${agg}\\(`, 'i').test(exp || ''));
 }

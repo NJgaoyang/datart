@@ -417,6 +417,7 @@ export function transformModelToViewModel(
 export const dataModelColumnSorter = (prev: Column, next: Column): number => {
   const columnTypePriority = {
     [DataViewFieldType.DATE]: 1,
+    [DataViewFieldType.DATETIME]: 1,
     [DataViewFieldType.STRING]: 1,
     [DataViewFieldType.NUMERIC]: 2,
   };

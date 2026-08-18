@@ -228,6 +228,7 @@ export const ChartDraggableSourceContainer: FC<
           icon = <NumberOutlined {...props} />;
           break;
         case DataViewFieldType.DATE:
+        case DataViewFieldType.DATETIME:
           icon = <CalendarOutlined {...props} />;
           break;
         default:
@@ -235,7 +236,7 @@ export const ChartDraggableSourceContainer: FC<
       }
     }
 
-    if (type === 'DATE' && category === 'field') {
+    if ((type === 'DATE' || type === 'DATETIME') && category === 'field') {
       return (
         <Row align="middle" style={{ width: '100%' }}>
           <CollapseWrapper

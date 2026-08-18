@@ -188,7 +188,7 @@ public abstract class DefaultDataProvider extends DataProvider {
     @Override
     public boolean validateFunction(DataProviderSource source, String snippet) {
         try {
-            SqlParserUtils.parseSnippet(snippet);
+            SqlParserUtils.validateSnippet(snippet, LocalDB.SQL_DIALECT, supportedStdFunctions(source));
         } catch (Exception e) {
             Exceptions.e(e);
         }

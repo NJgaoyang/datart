@@ -32,6 +32,7 @@ import {
   ChartDataSectionType,
   ChartDataViewFieldCategory,
   DataViewFieldType,
+  isDateFieldType,
 } from 'app/constants';
 import { ChartDrillOption } from 'app/models/ChartDrillOption';
 import { handleDateLevelsName } from 'app/pages/ChartWorkbenchPage/components/ChartOperationPanel/utils';
@@ -242,7 +243,7 @@ const transferMixedToNonMixed = (
   ) {
     const dimensions = sourceSectionConfigRows?.filter(
       r =>
-        r.type === DataViewFieldType.DATE ||
+        isDateFieldType(r.type) ||
         r.type === DataViewFieldType.STRING,
     );
     const metrics = sourceSectionConfigRows?.filter(

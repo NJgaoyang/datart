@@ -16,7 +16,11 @@
  * limitations under the License.
  */
 
-import { ChartDataViewFieldCategory, DataViewFieldType } from 'app/constants';
+import {
+  ChartDataViewFieldCategory,
+  DataViewFieldType,
+  isDateFieldType,
+} from 'app/constants';
 import { FieldTemplate } from 'app/pages/ChartWorkbenchPage/components/ChartOperationPanel/components/ChartDataViewPanel/components/utils';
 import { ColumnRole } from 'app/pages/MainPage/pages/ViewPage/slice/types';
 import { ChartDataSectionField } from 'app/types/ChartConfig';
@@ -53,7 +57,7 @@ export const getAllFieldsOfEachType = (args: {
     f => f.type === DataViewFieldType.NUMERIC,
   );
   const dateFields =
-    allNoHierarchyFields.filter(f => f.type === DataViewFieldType.DATE) || [];
+    allNoHierarchyFields.filter(f => isDateFieldType(f.type)) || [];
   const dateLevelFields = buildDateLevelFields({
     dateFields,
     availableSourceFunctions,
@@ -65,7 +69,7 @@ export const getAllFieldsOfEachType = (args: {
     f => f.type === DataViewFieldType.NUMERIC,
   );
   const dateComputedFields = computedFields.filter(
-    f => f.type === DataViewFieldType.DATE,
+    f => isDateFieldType(f.type),
   );
   hierarchyFields = updateBy(hierarchyFields, draft => {
     draft.forEach((v, i) => {
@@ -97,20 +101,27 @@ export const buildDateLevelFields = (args: {
   const { dateFields, availableSourceFunctions } = args;
   return updateBy(dateFields, draft => {
     draft.forEach(v => {
-      if (v.type !== 'DATE') {
+      if (!isDateFieldType(v.type)) {
         return false;
       }
       v.children = DATE_LEVELS.map((item, i) => {
+        if (item.datetimeOnly && v.type !== DataViewFieldType.DATETIME) {
+          return null;
+        }
+        const nativeExpression = `${item.expression}_NATIVE`;
+        const expression = availableSourceFunctions?.includes(nativeExpression)
+          ? nativeExpression
+          : item.expression;
         if (
           availableSourceFunctions &&
-          availableSourceFunctions.includes(item.expression)
+          availableSourceFunctions.includes(expression)
         ) {
           return {
-            name: v.name + DATE_LEVEL_DELIMITER + item.expression,
+            name: v.name + DATE_LEVEL_DELIMITER + expression,
             field: v.name,
             type: item.type,
             category: item.category,
-            expression: `${item.expression}(${FieldTemplate(v.path)})`,
+            expression: `${expression}(${FieldTemplate(v.path)})`,
             displayName: `${getFieldDisplayName(v)}（${item.name}）`,
           };
         }
@@ -233,7 +244,7 @@ export const handleDateLevelsName = (
   if (col.category === ChartDataViewFieldCategory.DateLevelComputedField) {
     const prefix = 'viz.workbench.dataview.';
     const colList = col.name.split(DATE_LEVEL_DELIMITER);
-    const levelName = i18n.t(prefix + colList[1]);
+    const levelName = i18n.t(prefix + colList[1].replace(/_NATIVE$/, ''));
     const levelSuffix = `（${levelName}）`;
     if (col.displayName?.endsWith(levelSuffix)) {
       const sourceDisplayName = col.displayName.slice(0, -levelSuffix.length);

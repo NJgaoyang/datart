@@ -574,6 +574,12 @@ public class SqlBuilder {
             case COUNT:
             case COUNT_DISTINCT:
                 return SqlStdOperatorTable.COUNT;
+            case STDDEV:
+                return SqlStdOperatorTable.STDDEV;
+            case VARIANCE:
+                return SqlStdOperatorTable.VARIANCE;
+            case APPROX_COUNT_DISTINCT:
+                return SqlStdOperatorTable.APPROX_COUNT_DISTINCT;
             default:
                 Exceptions.msg("message.provider.sql.type.unsupported", sqlOperator.name());
         }

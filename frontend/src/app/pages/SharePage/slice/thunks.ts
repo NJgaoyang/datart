@@ -33,6 +33,7 @@ import { convertToChartDto } from 'app/utils/ChartDtoHelper';
 import { fetchAvailableSourceFunctionsAsyncForShare } from 'app/utils/fetch';
 import { RootState } from 'types';
 import persistence from 'utils/persistence';
+import { startQuery } from 'utils/queryCancellation';
 import { request2 } from 'utils/request';
 import { shareActions } from '.';
 import { ShareVizInfo } from './types';
@@ -182,16 +183,21 @@ export const fetchShareDataSetByPreviewChartAction = createAsyncThunk(
       .addDrillOption(args?.drillOption)
       .build();
 
-    const response = await request2({
-      method: 'POST',
-      url: `shares/execute`,
-      params: {
-        executeToken:
-          shareState?.shareToken[executeParam.viewId]['authorizedToken'],
-      },
-      data: executeParam,
-    });
-    return response.data;
+    const executeToken =
+      shareState?.shareToken[executeParam.viewId]['authorizedToken'];
+    const query = startQuery(`share:${args.preview?.backendChart?.id || executeParam.viewId}`);
+    try {
+      const response = await request2({
+        method: 'POST',
+        url: `shares/execute`,
+        params: { executeToken },
+        data: { ...executeParam, queryId: query.queryId },
+        signal: query.signal,
+      });
+      return response.data;
+    } finally {
+      query.finish();
+    }
   },
 );
 

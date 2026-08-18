@@ -333,7 +333,7 @@ public class SourceServiceImpl extends BaseService implements SourceService {
             getDataProviderService().updateSource(source);
             updateJdbcSourceSyncJob(source);
         }
-        return false;
+        return success;
     }
 
     @Override
@@ -437,6 +437,9 @@ public class SourceServiceImpl extends BaseService implements SourceService {
 
     @Override
     public void deleteReference(Source source) {
+        if (!Boolean.TRUE.equals(source.getIsFolder())) {
+            getDataProviderService().updateSource(source);
+        }
         deleteJdbcSourceSyncJob(source);
         sourceSchemasMapper.deleteBySource(source.getId());
     }

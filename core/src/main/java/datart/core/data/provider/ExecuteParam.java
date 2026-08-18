@@ -63,6 +63,14 @@ public class ExecuteParam implements Serializable {
 
     private int cacheExpires;
 
+    private String queryId;
+
+    private String queryOwner;
+
+    private String reportId;
+
+    private String reportName;
+
     @Override
     public String toString() {
         return JSON.toJSONString(JSON.toJSONString(this));

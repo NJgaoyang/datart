@@ -34,7 +34,8 @@ public class MysqlSqlStdOperatorSupport extends MysqlSqlDialect implements SqlSt
             EnumSet.of(STDDEV, ABS, CEILING, FLOOR, POWER, ROUND, SQRT, EXP, LOG10, LN, MOD, RAND, DEGREES, RADIANS, TRUNC, SIGN,
             ACOS, ASIN, ATAN, ATAN2, SIN, COS, TAN, COT, LENGTH, CONCAT, REPLACE, SUBSTRING, LOWER, UPPER, LTRIM, RTRIM, TRIM,
             NOW, DAY, SECOND, MINUTE, HOUR, DAY, WEEK, QUARTER, MONTH, YEAR, DAY_OF_WEEK, DAY_OF_MONTH, DAY_OF_YEAR,
-            IF, COALESCE, AGG_DATE_YEAR, AGG_DATE_QUARTER, AGG_DATE_MONTH, AGG_DATE_WEEK, AGG_DATE_DAY));
+            IF, COALESCE, AGG_DATE_YEAR, AGG_DATE_QUARTER, AGG_DATE_MONTH, AGG_DATE_WEEK, AGG_DATE_DAY,
+            AGG_DATE_HOUR, AGG_DATE_MINUTE, AGG_DATE_SECOND));
 
     static {
         OWN_SUPPORTED.addAll(SUPPORTED);
@@ -61,11 +62,13 @@ public class MysqlSqlStdOperatorSupport extends MysqlSqlDialect implements SqlSt
         StdSqlOperator operator = symbolOf(call.getOperator().getName());
         switch (operator) {
             case TRUNC:
-                renameCallOperator("TRUNCATE", call);
-                break;
+                return unparseFunctionCall(writer, "TRUNCATE", call);
+            case DAY_OF_WEEK:
+                return unparseFunctionCall(writer, "DAYOFWEEK", call);
             case DAY_OF_MONTH:
-                renameCallOperator("DAYOFMONTH", call);
-                break;
+                return unparseFunctionCall(writer, "DAYOFMONTH", call);
+            case DAY_OF_YEAR:
+                return unparseFunctionCall(writer, "DAYOFYEAR", call);
             case AGG_DATE_YEAR:
                 writer.print("YEAR(" + call.getOperandList().get(0).toSqlString(this).getSql() + ")");
                 return true;
@@ -82,6 +85,15 @@ public class MysqlSqlStdOperatorSupport extends MysqlSqlDialect implements SqlSt
                 return true;
             case AGG_DATE_DAY:
                 writer.print("DATE_FORMAT(" + call.getOperandList().get(0).toSqlString(this).getSql() + ",'%Y-%m-%d')");
+                return true;
+            case AGG_DATE_HOUR:
+                writer.print("DATE_FORMAT(" + call.getOperandList().get(0).toSqlString(this).getSql() + ",'%Y-%m-%d %H')");
+                return true;
+            case AGG_DATE_MINUTE:
+                writer.print("DATE_FORMAT(" + call.getOperandList().get(0).toSqlString(this).getSql() + ",'%Y-%m-%d %H:%i')");
+                return true;
+            case AGG_DATE_SECOND:
+                writer.print("DATE_FORMAT(" + call.getOperandList().get(0).toSqlString(this).getSql() + ",'%Y-%m-%d %H:%i:%s')");
                 return true;
             default:
                 break;

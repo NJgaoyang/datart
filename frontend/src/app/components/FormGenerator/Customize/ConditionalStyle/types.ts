@@ -89,4 +89,11 @@ export const ConditionalOperatorTypes = {
     OperatorTypes.NotIn,
     OperatorTypes.IsNull,
   ],
+  [DataViewFieldType.DATETIME]: [
+    OperatorTypes.Equal,
+    OperatorTypes.NotEqual,
+    OperatorTypes.In,
+    OperatorTypes.NotIn,
+    OperatorTypes.IsNull,
+  ],
 };
