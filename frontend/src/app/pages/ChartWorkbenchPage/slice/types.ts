@@ -59,6 +59,8 @@ export interface dateLevelFieldsProps {
   expression: string;
   field: string;
   type: string;
-  displayName: string;
+  path?: string[];
+  displayName?: string;
   comment?: string;
+  isDisplayNameCustom?: boolean;
 }

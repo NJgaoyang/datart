@@ -56,7 +56,7 @@ export type DatabaseSchema = {
     columns: Array<{
       fmt: string;
       foreignKeys: Array<{ column: string; database: string; table: string }>;
-      name: string;
+      name: string[];
       type: string;
       comment?: string;
     }>;
@@ -139,6 +139,7 @@ export interface Column extends Schema {
   path?: string[];
   displayName?: string;
   comment?: string;
+  isDisplayNameCustom?: boolean;
 }
 
 export interface ColumnsProps {
@@ -150,6 +151,7 @@ export interface ColumnsProps {
   role?: ColumnRole;
   displayName?: string;
   comment?: string;
+  isDisplayNameCustom?: boolean;
 }
 
 export interface Model {

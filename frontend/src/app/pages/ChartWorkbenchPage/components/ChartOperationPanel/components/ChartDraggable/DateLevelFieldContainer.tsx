@@ -28,15 +28,17 @@ function DateLevelFieldContainer({
         type: item?.type,
         category: item?.category,
         expression: item?.expression,
-        displayName,
+        path: item?.path,
+        displayName: item?.displayName,
         comment: item?.comment,
+        isDisplayNameCustom: item?.isDisplayNameCustom,
       },
       collect: monitor => ({
         isDragging: monitor.isDragging(),
       }),
       end: onClearCheckedList,
     }),
-    [],
+    [item, onClearCheckedList],
   );
 
   return (

@@ -134,7 +134,10 @@ const ChartDataViewPanel: FC<{
 
   const { filteredData: filteredTreeData, debouncedSearch: treeSearch } =
     useDebouncedSearch(allMetaFields, (keywords, d) => {
-      return d?.name.toLowerCase().includes(keywords.toLowerCase());
+      const lowerKeyword = keywords.toLowerCase();
+      return [getFieldDisplayName(d), d?.name, d?.comment, d?.path?.join('.')]
+        .filter(Boolean)
+        .some(value => String(value).toLowerCase().includes(lowerKeyword));
     });
 
   const handleDataViewChange = useCallback(
@@ -292,6 +295,7 @@ const ChartDataViewPanel: FC<{
               path: v.path,
               displayName: v.displayName,
               comment: v.comment,
+              isDisplayNameCustom: v.isDisplayNameCustom,
             });
             const columnNameArr = columnNameObj[tableName];
             columnNameObj[tableName] = columnNameArr

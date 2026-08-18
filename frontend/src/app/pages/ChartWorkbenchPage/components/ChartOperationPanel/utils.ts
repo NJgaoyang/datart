@@ -68,8 +68,8 @@ export const getAllFieldsOfEachType = (args: {
   const numericComputedFields = computedFields.filter(
     f => f.type === DataViewFieldType.NUMERIC,
   );
-  const dateComputedFields = computedFields.filter(
-    f => isDateFieldType(f.type),
+  const dateComputedFields = computedFields.filter(f =>
+    isDateFieldType(f.type),
   );
   hierarchyFields = updateBy(hierarchyFields, draft => {
     draft.forEach((v, i) => {
@@ -122,7 +122,10 @@ export const buildDateLevelFields = (args: {
             type: item.type,
             category: item.category,
             expression: `${expression}(${FieldTemplate(v.path)})`,
-            displayName: `${getFieldDisplayName(v)}（${item.name}）`,
+            path: v.path,
+            displayName: v.displayName,
+            comment: v.comment,
+            isDisplayNameCustom: v.isDisplayNameCustom,
           };
         }
         return null;
@@ -133,17 +136,7 @@ export const buildDateLevelFields = (args: {
 export const fieldsSortByType = (fields, sortType) => {
   return fields.sort((a, b) => {
     if (sortType === 'byNameSort') {
-      if (a.category === ChartDataViewFieldCategory.Field) {
-        const aPath = a.path;
-        const bPath = b.path;
-
-        const aFileName = aPath[aPath.length - 1];
-        const bFileName = bPath[bPath.length - 1];
-
-        return aFileName.localeCompare(bFileName);
-      } else {
-        return a.name.localeCompare(b.name);
-      }
+      return getFieldDisplayName(a).localeCompare(getFieldDisplayName(b));
     } else {
       return null;
     }
@@ -235,9 +228,12 @@ export const findSameFieldInView = (
 export const handleDateLevelsName = (
   col: {
     name: string;
+    field?: string;
+    path?: string[];
     category: string;
     displayName?: string;
     comment?: string;
+    isDisplayNameCustom?: boolean;
   },
   parentDisplayName?: string,
 ): string => {
@@ -251,18 +247,22 @@ export const handleDateLevelsName = (
       return `${
         parentDisplayName ||
         getFieldDisplayName({
-          name: colList[0],
+          name: col.field || colList[0],
+          path: col.path,
           displayName: sourceDisplayName,
           comment: col.comment,
+          isDisplayNameCustom: col.isDisplayNameCustom,
         })
       }${levelSuffix}`;
     }
     return `${
       parentDisplayName ||
       getFieldDisplayName({
-        name: colList[0],
+        name: col.field || colList[0],
+        path: col.path,
         displayName: col.displayName,
         comment: col.comment,
+        isDisplayNameCustom: col.isDisplayNameCustom,
       })
     }${levelSuffix}`;
   } else {

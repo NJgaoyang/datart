@@ -82,8 +82,10 @@ export const ChartDraggableSourceContainer: FC<
   children,
   isViewComputedFields,
   viewType,
+  path,
   displayName,
   comment,
+  isDisplayNameCustom,
   folderRole,
   dateFormat,
   onDeleteComputedField,
@@ -94,8 +96,10 @@ export const ChartDraggableSourceContainer: FC<
   const t = useI18NPrefix(`viz.workbench.dataview`);
   const fieldDisplayName = getFieldDisplayName({
     name: colName,
+    path,
     displayName,
     comment,
+    isDisplayNameCustom,
   });
   const [showChild, setShowChild] = useToggle(false);
   const isHierarchyFieldOrTable =
@@ -115,9 +119,11 @@ export const ChartDraggableSourceContainer: FC<
               subType,
               category,
               name: colName,
+              path,
               dateFormat,
-              displayName: fieldDisplayName,
+              displayName,
               comment,
+              isDisplayNameCustom,
             },
             children,
           ),
@@ -126,7 +132,19 @@ export const ChartDraggableSourceContainer: FC<
       }),
       end: onClearCheckedList,
     }),
-    [selectedItems],
+    [
+      category,
+      children,
+      colName,
+      comment,
+      dateFormat,
+      displayName,
+      isDisplayNameCustom,
+      path,
+      selectedItems,
+      subType,
+      type,
+    ],
   );
 
   const styleClasses: Array<string> = useMemo(() => {
@@ -309,6 +327,8 @@ export const ChartDraggableSourceContainer: FC<
     category,
     colName,
     comment,
+    isDisplayNameCustom,
+    path,
     fieldDisplayName,
     children,
     isViewComputedFields,
@@ -335,8 +355,10 @@ export const ChartDraggableSourceContainer: FC<
         <ChartDraggableSourceContainer
           key={item.name}
           name={item.name}
+          path={item.path}
           displayName={item.displayName}
           comment={item.comment}
+          isDisplayNameCustom={item.isDisplayNameCustom}
           category={item.category}
           expression={item.expression}
           type={item.type}

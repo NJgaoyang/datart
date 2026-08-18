@@ -22,7 +22,12 @@ import { APP_CURRENT_VERSION } from 'app/migration/constants';
 import { FONT_WEIGHT_MEDIUM, SPACE_UNIT } from 'styles/StyleConstants';
 import { Nullable } from 'types';
 import { isEmptyArray, isEqualObject } from 'utils/object';
-import { getDiffParams, getFieldDisplayName, getTextWidth } from 'utils/utils';
+import {
+  getDiffParams,
+  getFieldCustomDisplayName,
+  getFieldDisplayName,
+  getTextWidth,
+} from 'utils/utils';
 import {
   ColumnCategories,
   DEFAULT_PREVIEW_SIZE,
@@ -68,6 +73,86 @@ export function generateEditingView(
     fragment: '',
     ...attrs,
   };
+}
+
+export function getSchemaColumnName(name?: string | string[]): string {
+  return Array.isArray(name) ? name[name.length - 1] || '' : name || '';
+}
+
+function equalsIgnoreCase(left?: string, right?: string): boolean {
+  return Boolean(left && right && left.toUpperCase() === right.toUpperCase());
+}
+
+export function resolveSchemaColumnComment(
+  schemas: DatabaseSchema[] | undefined,
+  field: { name?: string | string[]; path?: string[] },
+): string | undefined {
+  if (!schemas?.length) {
+    return undefined;
+  }
+
+  const path = field.path?.length
+    ? field.path
+    : Array.isArray(field.name)
+    ? field.name
+    : undefined;
+  const columnName = path?.[path.length - 1] || getSchemaColumnName(field.name);
+  if (!columnName) {
+    return undefined;
+  }
+
+  const tableName =
+    path && path.length >= 2 ? path[path.length - 2] : undefined;
+  const dbName = path && path.length >= 3 ? path[path.length - 3] : undefined;
+  const matches: Array<{ comment?: string }> = [];
+
+  schemas.forEach(schema => {
+    if (dbName && !equalsIgnoreCase(schema.dbName, dbName)) {
+      return;
+    }
+    (schema.tables || []).forEach(table => {
+      if (tableName && !equalsIgnoreCase(table.tableName, tableName)) {
+        return;
+      }
+      (table.columns || []).forEach(column => {
+        if (equalsIgnoreCase(getSchemaColumnName(column.name), columnName)) {
+          matches.push(column);
+        }
+      });
+    });
+  });
+
+  return matches.length === 1 ? matches[0].comment?.trim() : undefined;
+}
+
+export function getHierarchyColumnByField(
+  hierarchy: Model | undefined,
+  field: { name?: string; path?: string[] },
+): Column | undefined {
+  if (!hierarchy) {
+    return undefined;
+  }
+
+  const columns = Object.values(hierarchy).flatMap(column =>
+    column.children?.length ? column.children : [column],
+  );
+  if (field.path?.length) {
+    const pathMatches = columns.filter(
+      column => column.path?.join('\0') === field.path?.join('\0'),
+    );
+    if (pathMatches.length === 1) {
+      return pathMatches[0];
+    }
+  }
+
+  if (!field.name) {
+    return undefined;
+  }
+  const nameMatches = columns.filter(column => {
+    const columnName = column.path?.[column.path.length - 1] || column.name;
+    return column.name === field.name || columnName === field.name;
+  });
+  return nameMatches.length === 1 ? nameMatches[0] : undefined;
 }
 
 export function generateNewEditingViewName(editingViews: ViewViewModel[]) {
@@ -128,6 +213,7 @@ export function transformQueryResultToModelAndDataSource(
         category: hierarchyColumn?.category || ColumnCategories.UnCategorized, // FIXME: model 重构时一起改
         displayName: hierarchyColumn?.displayName,
         comment: hierarchyColumn?.comment,
+        isDisplayNameCustom: hierarchyColumn?.isDisplayNameCustom,
       },
     };
   }, {});
@@ -150,16 +236,19 @@ export function normalizeModelDisplayNames(
   model: HierarchyModel,
 ): HierarchyModel {
   const normalize = (column: any): any => {
-    const path = Array.isArray(column?.name) ? column.name : undefined;
+    const path = Array.isArray(column?.name) ? column.name : column?.path;
     const name = path?.[path.length - 1] || column?.name || '';
+    const customDisplayName = getFieldCustomDisplayName({
+      name,
+      path,
+      displayName: column?.displayName,
+      comment: column?.comment,
+      isDisplayNameCustom: column?.isDisplayNameCustom,
+    });
     return {
       ...column,
-      displayName: getFieldDisplayName({
-        name,
-        path,
-        displayName: column?.displayName,
-        comment: column?.comment,
-      }),
+      displayName: customDisplayName,
+      isDisplayNameCustom: Boolean(customDisplayName),
       ...(column?.children
         ? { children: column.children.map(child => normalize(child)) }
         : {}),
@@ -397,7 +486,7 @@ export function transformModelToViewModel(
     ...tempViewModel,
     ...rest,
     config: safeJSONParse(config),
-    model: safeJSONParse(model),
+    model: normalizeModelDisplayNames(safeJSONParse(model)),
     originVariables: (variables || []).map(v => ({
       ...v,
       relVariableSubjects,
@@ -565,7 +654,7 @@ export function findAllColumnsOrIsCheckAll(
   if (table.length === 1) {
     const foundColumns = database?.[0]?.tables
       ?.find(v => v.tableName === table[0])
-      ?.['columns'].map(v => v.name[0]);
+      ?.['columns'].map(v => getSchemaColumnName(v.name));
 
     return {
       columns: foundColumns,
@@ -576,7 +665,7 @@ export function findAllColumnsOrIsCheckAll(
   const foundColumns = database
     ?.find(v => v.dbName === table[0])
     ?.tables?.find(v => v.tableName === table[1])
-    ?.['columns'].map(v => v.name);
+    ?.['columns'].map(v => getSchemaColumnName(v.name));
 
   return {
     columns: foundColumns,
@@ -655,9 +744,13 @@ export const getTableAllColumns = (
       ? currentDatabaseSchemas[0]?.tables
           ?.find(v => v.tableName === joinTableName[0])
           ?.columns?.map(v => {
-            const colName = v.name[0];
+            const colName = getSchemaColumnName(v.name);
             return {
-              label: getFieldDisplayName({ name: colName, comment: v.comment }),
+              label: getFieldDisplayName({
+                name: colName,
+                path: [joinTableName[0], colName],
+                comment: v.comment,
+              }),
               value: colName,
             };
           })
@@ -665,9 +758,13 @@ export const getTableAllColumns = (
           ?.find(v => v.dbName === joinTableName?.[0])
           ?.tables?.find(v => v.tableName === joinTableName[1])
           ?.columns?.map(v => {
-            const colName = v.name[0];
+            const colName = getSchemaColumnName(v.name);
             return {
-              label: getFieldDisplayName({ name: colName, comment: v.comment }),
+              label: getFieldDisplayName({
+                name: colName,
+                path: [joinTableName[0], joinTableName[1], colName],
+                comment: v.comment,
+              }),
               value: colName,
             };
           });

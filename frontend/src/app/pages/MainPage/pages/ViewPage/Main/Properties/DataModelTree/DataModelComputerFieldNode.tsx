@@ -32,6 +32,7 @@ import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { ChartDataViewMeta } from 'app/types/ChartDataViewMeta';
 import { FC, memo } from 'react';
 import styled from 'styled-components';
+import { getFieldDisplayName } from 'utils/utils';
 import {
   FONT_SIZE_BASE,
   FONT_SIZE_TITLE,
@@ -84,7 +85,7 @@ const DataModelComputerFieldNode: FC<{
           <Tooltip title={t('createComputedFields')} placement="left">
             <StyledIW fontSize={FONT_SIZE_TITLE}>{icon}</StyledIW>
           </Tooltip>
-          <span>{node.name}</span>
+          <span>{getFieldDisplayName(node)}</span>
         </div>
         <div className="action">
           <Popup

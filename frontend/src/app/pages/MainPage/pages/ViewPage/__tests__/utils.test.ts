@@ -23,7 +23,64 @@ import {
   dataModelColumnSorter,
   diffMergeHierarchyModel,
   normalizeModelDisplayNames,
+  resolveSchemaColumnComment,
 } from '../utils';
+import { getFieldDisplayName } from 'utils/utils';
+
+describe('field display metadata', () => {
+  test('uses custom name, then comment, then field name', () => {
+    expect(
+      getFieldDisplayName({
+        name: 'order_id',
+        displayName: '订单号',
+        comment: '订单编号',
+        isDisplayNameCustom: true,
+      }),
+    ).toBe('订单号');
+    expect(
+      getFieldDisplayName({
+        name: 'order_id',
+        displayName: undefined,
+        comment: '订单编号',
+        isDisplayNameCustom: false,
+      }),
+    ).toBe('订单编号');
+    expect(getFieldDisplayName({ name: 'order_id' })).toBe('order_id');
+    expect(
+      getFieldDisplayName({
+        name: 'order_id',
+        displayName: 'order_id',
+        comment: '订单编号',
+        isDisplayNameCustom: true,
+      }),
+    ).toBe('order_id');
+  });
+
+  test('resolves same-name join fields only with an exact path', () => {
+    const schemas: any = [
+      {
+        dbName: 'analytics',
+        tables: [
+          {
+            tableName: 'users',
+            columns: [{ name: ['id'], comment: '用户ID' }],
+          },
+          {
+            tableName: 'orders',
+            columns: [{ name: ['id'], comment: '订单ID' }],
+          },
+        ],
+      },
+    ];
+    expect(
+      resolveSchemaColumnComment(schemas, {
+        name: 'id',
+        path: ['analytics', 'orders', 'id'],
+      }),
+    ).toBe('订单ID');
+    expect(resolveSchemaColumnComment(schemas, { name: 'id' })).toBeUndefined();
+  });
+});
 
 describe('normalizeModelDisplayNames test', () => {
   test('should persist display names without changing field names', () => {
@@ -47,9 +104,11 @@ describe('normalizeModelDisplayNames test', () => {
 
     expect(normalized.columns?.ratio).toMatchObject({
       name: ['ratio'],
-      displayName: '资产配比',
+      comment: '资产配比',
+      isDisplayNameCustom: false,
     });
     expect(normalized.columns?.custom.displayName).toBe('自定义名称');
+    expect(normalized.columns?.custom.isDisplayNameCustom).toBe(true);
   });
 });
 

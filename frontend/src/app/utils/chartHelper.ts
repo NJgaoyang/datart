@@ -1448,8 +1448,7 @@ export function createDateLevelComputedFieldForConfigComputedFields(
   computedFields?: ChartDataViewMeta[],
 ): ChartDataViewMeta[] {
   const dateFields =
-    getAllColumnInMeta(meta)?.filter(v => isDateFieldType(v.type)) ||
-    [];
+    getAllColumnInMeta(meta)?.filter(v => isDateFieldType(v.type)) || [];
   const allDateLevelComputedFields: ChartDataViewMeta[] = [];
   const notDateLevelComputedFields =
     computedFields?.filter(
@@ -1468,6 +1467,10 @@ export function createDateLevelComputedFieldForConfigComputedFields(
           name: field.name + DATE_LEVEL_DELIMITER + expression,
           type: field.type,
           expression: `${expression}(${FieldTemplate(field.path)})`,
+          path: field.path,
+          displayName: field.displayName,
+          comment: field.comment,
+          isDisplayNameCustom: field.isDisplayNameCustom,
         });
       });
     });

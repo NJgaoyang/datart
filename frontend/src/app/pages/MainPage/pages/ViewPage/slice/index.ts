@@ -22,6 +22,8 @@ import { useInjectReducer } from 'utils/@reduxjs/injectReducer';
 import { ViewViewModelStages } from '../constants';
 import {
   diffMergeHierarchyModel,
+  getSchemaColumnName,
+  resolveSchemaColumnComment,
   transformQueryResultToModelAndDataSource,
 } from '../utils';
 import {
@@ -173,10 +175,12 @@ const slice = createSlice({
         );
         if (table) {
           table.children = schema.map(column => ({
-            key: [databaseName, tableName, column.name].join(
-              String.fromCharCode(0),
-            ),
-            title: column.name,
+            key: [
+              databaseName,
+              tableName,
+              getSchemaColumnName(column.name),
+            ].join(String.fromCharCode(0)),
+            title: getSchemaColumnName(column.name),
             value: column,
             isLeaf: true,
           }));
@@ -276,27 +280,12 @@ const slice = createSlice({
             if (columns) {
               Object.values(columns).forEach((column: any) => {
                 if (!column.comment) {
-                  const colName = column.name;
-                  const colNameStr = Array.isArray(colName)
-                    ? colName[colName.length - 1]
-                    : colName;
-                  for (const schema of schemas) {
-                    for (const tbl of schema.tables || []) {
-                      const found = tbl.columns?.find((c: any) => {
-                        const schemaColName = c.name?.[0];
-                        if (!schemaColName) return false;
-                        return (
-                          schemaColName === colNameStr ||
-                          schemaColName.toUpperCase() ===
-                            colNameStr?.toUpperCase()
-                        );
-                      });
-                      if (found?.comment) {
-                        column.comment = found.comment;
-                        break;
-                      }
-                    }
-                    if (column.comment) break;
+                  const comment = resolveSchemaColumnComment(schemas, {
+                    name: column.name,
+                    path: Array.isArray(column.name) ? column.name : undefined,
+                  });
+                  if (comment) {
+                    column.comment = comment;
                   }
                 }
               });

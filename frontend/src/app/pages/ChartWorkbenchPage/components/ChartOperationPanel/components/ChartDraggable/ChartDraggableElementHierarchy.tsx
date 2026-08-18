@@ -63,8 +63,10 @@ const ChartDraggableElementHierarchy: FC<{
         <StyledGroupName>
           {getFieldDisplayName({
             name: columnConfig.colName,
+            path: columnConfig.path,
             displayName: columnConfig.displayName,
             comment: columnConfig.comment,
+            isDisplayNameCustom: columnConfig.isDisplayNameCustom,
           })}
         </StyledGroupName>
         <Space direction="vertical" size="small">

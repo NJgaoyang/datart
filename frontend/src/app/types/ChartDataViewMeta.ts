@@ -29,6 +29,7 @@ export type ChartDataViewMeta = {
   isActive?: boolean;
   displayName?: string;
   comment?: string;
+  isDisplayNameCustom?: boolean;
   selectedItems?: Array<ChartDataViewMeta>;
   primaryKey?: boolean;
   category?: Uncapitalize<keyof typeof ChartDataViewFieldCategory>;

@@ -36,7 +36,11 @@ import {
 } from 'styles/StyleConstants';
 import { getFieldDisplayName, uuidv4 } from 'utils/utils';
 import { Column, ColumnsModel, DatabaseSchema, Model } from '../slice/types';
-import { getColumnWidthMap, getHierarchyColumn } from '../utils';
+import {
+  getColumnWidthMap,
+  getHierarchyColumn,
+  resolveSchemaColumnComment,
+} from '../utils';
 import SetFieldType from './SetFieldType';
 
 const ROW_KEY = 'DATART_ROW_KEY';
@@ -91,29 +95,6 @@ export const SchemaTable = memo(
     );
     const indexColumnWidth = 50;
 
-    const findColumnComment = useMemo(() => {
-      const schemas = databaseSchemas;
-      if (!schemas) return (name: string) => undefined;
-      const map = new Map<string, string>();
-      for (const schema of schemas) {
-        for (const tbl of schema.tables || []) {
-          for (const col of tbl.columns || []) {
-            if (col.comment && col.name?.[0]) {
-              const colName = col.name[0];
-              map.set(colName.toUpperCase(), col.comment);
-            }
-          }
-        }
-      }
-      return (name: string) => {
-        const lastSegment = name?.split('.').pop();
-        return (
-          map.get(name?.toUpperCase()) ||
-          map.get(lastSegment?.toUpperCase() || '')
-        );
-      };
-    }, [databaseSchemas]);
-
     const {
       columns,
       tableWidth,
@@ -124,6 +105,7 @@ export const SchemaTable = memo(
       let tableWidth = 0;
       const columns = Object.entries(model).map(([name, column]) => {
         const hierarchyColumn = getHierarchyColumn(name, hierarchy) || column;
+        const hierarchyMeta = hierarchyColumn as Column;
 
         const width = columnWidthMap[name];
         tableWidth += width;
@@ -147,8 +129,16 @@ export const SchemaTable = memo(
 
         const displayText = getFieldDisplayName({
           name,
+          path: hierarchyMeta.path,
           displayName: hierarchyColumn.displayName,
-          comment: column.comment || findColumnComment(name),
+          comment:
+            column.comment ||
+            hierarchyMeta.comment ||
+            resolveSchemaColumnComment(databaseSchemas, {
+              name,
+              path: hierarchyMeta.path,
+            }),
+          isDisplayNameCustom: hierarchyMeta.isDisplayNameCustom,
         });
 
         const title = (
@@ -200,7 +190,7 @@ export const SchemaTable = memo(
       columnWidthMap,
       hasCategory,
       hasFormat,
-      findColumnComment,
+      databaseSchemas,
       getExtraHeaderActions,
       onSchemaTypeChange,
     ]);

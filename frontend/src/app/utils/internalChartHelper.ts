@@ -66,7 +66,7 @@ import {
   isUndefined,
   pipe,
 } from 'utils/object';
-import { deduplicateDisplayNames, getFieldDisplayName } from 'utils/utils';
+import { getFieldCustomDisplayName, getFieldDisplayName } from 'utils/utils';
 import { getDrillableRows, round } from './chartHelper';
 
 export const transferChartConfigs = (
@@ -242,9 +242,7 @@ const transferMixedToNonMixed = (
     isEmptyArray(targetSectionConfigs)
   ) {
     const dimensions = sourceSectionConfigRows?.filter(
-      r =>
-        isDateFieldType(r.type) ||
-        r.type === DataViewFieldType.STRING,
+      r => isDateFieldType(r.type) || r.type === DataViewFieldType.STRING,
     );
     const metrics = sourceSectionConfigRows?.filter(
       r => r.type === DataViewFieldType.NUMERIC,
@@ -341,8 +339,10 @@ export function getColumnRenderOriginName(c?: ChartDataSectionField) {
   }
   const displayName = getFieldDisplayName({
     name: c.colName,
+    path: c.path,
     displayName: c.displayName,
     comment: c.comment,
+    isDisplayNameCustom: c.isDisplayNameCustom,
   });
   if (c.aggregate === AggregateFieldActionType.None) {
     return displayName;
@@ -413,7 +413,7 @@ export function transformMeta(model?: string) {
       };
     },
   );
-  return deduplicateDisplayNames(flatMeta);
+  return flatMeta;
 }
 
 export function transformHierarchyMeta(model?: string): ChartDataViewMeta[] {
@@ -473,30 +473,24 @@ function getMeta(key, column, columnMetadata = new Map<string, any>()) {
   const fieldName = Array.isArray(column?.name)
     ? column.name[column.name.length - 1]
     : column?.name || key;
-  const fieldNames = [
-    fieldName,
-    ...(Array.isArray(column?.path) ? [column.path.join('.')] : []),
-  ];
-  const displayName =
-    [column?.displayName, metadata?.displayName].find(
-      name => name && !fieldNames.includes(name),
-    ) ||
-    column?.displayName ||
-    metadata?.displayName;
-  const comment = column?.comment || metadata?.comment;
+  const rawDisplayName = column?.displayName ?? metadata?.displayName;
+  const comment = column?.comment ?? metadata?.comment;
+  const isDisplayNameCustom =
+    column?.isDisplayNameCustom ?? metadata?.isDisplayNameCustom;
+  const displayName = getFieldCustomDisplayName({
+    name: fieldName,
+    path: column?.path,
+    displayName: rawDisplayName,
+    comment,
+    isDisplayNameCustom,
+  });
   return {
     ...column,
-    ...(displayName || comment
-      ? {
-          displayName: getFieldDisplayName({
-            name: fieldName,
-            path: column?.path,
-            displayName,
-            comment,
-          }),
-        }
+    ...(rawDisplayName !== undefined ? { displayName } : {}),
+    ...(comment !== undefined ? { comment } : {}),
+    ...(isDisplayNameCustom !== undefined || displayName
+      ? { isDisplayNameCustom: Boolean(displayName) }
       : {}),
-    ...(comment ? { comment } : {}),
     subType: column?.category,
     category: isHierarchy
       ? ChartDataViewFieldCategory.Hierarchy
@@ -781,11 +775,55 @@ export const buildDragItem = (item, children: any[] = []) => {
     subType: item?.subType,
     category: item?.category,
     dateFormat: item?.dateFormat,
+    path: item?.path,
     displayName: item?.displayName,
     comment: item?.comment,
+    isDisplayNameCustom: item?.isDisplayNameCustom,
     children: children.map(c => buildDragItem(c)),
   };
 };
+
+function findLatestFieldMeta(
+  row: ChartDataSectionField,
+  fields: ChartDataViewMeta[],
+): ChartDataViewMeta | undefined {
+  if (row.path?.length) {
+    const pathMatches = fields.filter(
+      field => field.path?.join('\0') === row.path?.join('\0'),
+    );
+    if (pathMatches.length === 1) {
+      return pathMatches[0];
+    }
+  }
+
+  const nameMatches = fields.filter(field => field.name === row.colName);
+  return nameMatches.length === 1 ? nameMatches[0] : undefined;
+}
+
+export function reconcileChartConfigFieldMeta(
+  chartConfig: ChartConfig,
+  fields: ChartDataViewMeta[],
+): ChartConfig {
+  return {
+    ...chartConfig,
+    datas: chartConfig.datas?.map(section => ({
+      ...section,
+      rows: section.rows?.map(row => {
+        const latestMeta = findLatestFieldMeta(row, fields);
+        if (!latestMeta) {
+          return row;
+        }
+        return {
+          ...row,
+          path: latestMeta.path || row.path,
+          displayName: latestMeta.displayName,
+          comment: latestMeta.comment,
+          isDisplayNameCustom: latestMeta.isDisplayNameCustom,
+        };
+      }),
+    })),
+  };
+}
 
 /**
  * Get all Drill Paths

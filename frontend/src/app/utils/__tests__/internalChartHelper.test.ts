@@ -1533,9 +1533,10 @@ describe('Internal Chart Helper ', () => {
         },
       });
 
-      expect(transformMeta(model)?.[0].displayName).toBe(
-        '非储能用户可用电池比例',
-      );
+      expect(transformMeta(model)?.[0]).toMatchObject({
+        comment: '非储能用户可用电池比例',
+      });
+      expect(transformMeta(model)?.[0].displayName).toBeUndefined();
     });
   });
 
@@ -1641,6 +1642,11 @@ describe('Internal Chart Helper ', () => {
 
       expect(metas.map(meta => meta.displayName)).toEqual([
         '自定义名称',
+        undefined,
+        undefined,
+      ]);
+      expect(metas.map(meta => meta.comment)).toEqual([
+        '字段注释',
         '字段注释',
         '字段注释',
       ]);
@@ -1672,7 +1678,7 @@ describe('Internal Chart Helper ', () => {
 
       const metas = transformHierarchyMeta(JSON.stringify(model));
 
-      expect(metas[0].children?.[0].displayName).toBe('非储能用户可用电池比例');
+      expect(metas[0].children?.[0].comment).toBe('非储能用户可用电池比例');
     });
 
     test('should not reuse ambiguous same-name column metadata', () => {
@@ -1699,7 +1705,7 @@ describe('Internal Chart Helper ', () => {
 
       const children = transformHierarchyMeta(JSON.stringify(model))[0]
         .children;
-      expect(children?.map(child => child.displayName)).toEqual([
+      expect(children?.map(child => child.comment)).toEqual([
         '表A比例',
         '表B比例',
       ]);

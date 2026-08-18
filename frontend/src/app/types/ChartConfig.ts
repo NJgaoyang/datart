@@ -116,6 +116,7 @@ export type ChartDataSectionField = {
   alias?: AliasFieldAction;
   comment?: string;
   displayName?: string;
+  isDisplayNameCustom?: boolean;
   format?: FormatFieldAction;
   aggregate?: AggregateFieldActionType;
   filter?: FilterFieldAction;

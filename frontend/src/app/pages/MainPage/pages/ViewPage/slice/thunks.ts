@@ -211,55 +211,55 @@ export const runSql = createAsyncThunk<
 
   const query = startQuery('view-preview');
   try {
-  const response = await request2<QueryResult>(
-    {
-      url: '/data-provider/execute/test',
-      method: 'POST',
-      signal: query.signal,
-      data: {
-        queryId: query.queryId,
-        script,
-        sourceId,
-        size,
-        scriptType: type,
-        columns: reqColumns,
-        variables: variables.map(
-          ({ name, type, valueType, defaultValue, expression }) => {
-            let values = null;
-            if (defaultValue) {
-              if (typeof defaultValue === 'object') {
-                values = defaultValue;
-              } else {
-                try {
-                  values = JSON.parse(defaultValue);
-                } catch (err) {
-                  console.error('runSql JSON.parse defaultValue error:', err);
-                  values = null;
+    const response = await request2<QueryResult>(
+      {
+        url: '/data-provider/execute/test',
+        method: 'POST',
+        signal: query.signal,
+        data: {
+          queryId: query.queryId,
+          script,
+          sourceId,
+          size,
+          scriptType: type,
+          columns: reqColumns,
+          variables: variables.map(
+            ({ name, type, valueType, defaultValue, expression }) => {
+              let values = null;
+              if (defaultValue) {
+                if (typeof defaultValue === 'object') {
+                  values = defaultValue;
+                } else {
+                  try {
+                    values = JSON.parse(defaultValue);
+                  } catch (err) {
+                    console.error('runSql JSON.parse defaultValue error:', err);
+                    values = null;
+                  }
                 }
               }
-            }
-            return { name, type, valueType, values, expression };
-          },
-        ),
+              return { name, type, valueType, values, expression };
+            },
+          ),
+        },
       },
-    },
-    undefined,
-    {
-      onRejected: error => {
-        dispatch(
-          viewActions.changeCurrentEditingView({
-            stage: ViewViewModelStages.Initialized,
-            error: getErrorMessage(error),
-          }),
-        );
+      undefined,
+      {
+        onRejected: error => {
+          dispatch(
+            viewActions.changeCurrentEditingView({
+              stage: ViewViewModelStages.Initialized,
+              error: getErrorMessage(error),
+            }),
+          );
+        },
       },
-    },
-  );
-  return {
-    ...response?.data,
-    warnings: response?.warnings,
-    reqColumns: reqColumns,
-  };
+    );
+    return {
+      ...response?.data,
+      warnings: response?.warnings,
+      reqColumns: reqColumns,
+    };
   } finally {
     query.finish();
   }
@@ -456,7 +456,7 @@ export const getEditorProvideCompletionItems = createAsyncThunk<
         db.tables?.forEach(table => {
           tableKeywords.add(table.tableName);
           table.columns?.forEach(column => {
-            schemaKeywords.add(column.name as string);
+            schemaKeywords.add(column.name?.[column.name.length - 1] || '');
           });
         });
       });
