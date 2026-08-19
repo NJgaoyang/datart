@@ -33,6 +33,12 @@ public class SourceSchemaIndex {
         return cache.computeIfAbsent(sourceId, this::load);
     }
 
+    public synchronized void invalidate(String sourceId) {
+        if (sourceId != null) {
+            cache.remove(sourceId);
+        }
+    }
+
     private Index load(String sourceId) {
         SourceSchemas sourceSchemas = sourceSchemasMapper.selectBySource(sourceId);
         if (sourceSchemas == null || sourceSchemas.getSchemas() == null || sourceSchemas.getSchemas().isBlank()) {

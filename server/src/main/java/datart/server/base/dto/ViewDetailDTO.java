@@ -20,6 +20,8 @@ public class ViewDetailDTO extends View {
 
     private List<RelVariableSubject> relVariableSubjects;
 
+    private List<ViewFieldDTO> fields;
+
     public ViewDetailDTO(View view) {
         BeanUtils.copyProperties(view, this);
     }

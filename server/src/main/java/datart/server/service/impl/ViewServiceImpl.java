@@ -75,6 +75,8 @@ public class ViewServiceImpl extends BaseService implements ViewService {
 
     private final DatachartMapperExt datachartMapper;
 
+    private final ViewFieldService viewFieldService;
+
     public ViewServiceImpl(ViewMapperExt viewMapper,
                            RelSubjectColumnsMapperExt rscMapper,
                            RelRoleResourceMapperExt rrrMapper,
@@ -83,7 +85,8 @@ public class ViewServiceImpl extends BaseService implements ViewService {
                            VariableMapperExt variableMapper,
                            RelVariableSubjectMapperExt rvsMapper,
                            DashboardMapperExt dashboardMapper,
-                           DatachartMapperExt datachartMapper) {
+                           DatachartMapperExt datachartMapper,
+                           ViewFieldService viewFieldService) {
         this.viewMapper = viewMapper;
         this.rscMapper = rscMapper;
         this.rrrMapper = rrrMapper;
@@ -93,6 +96,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         this.rvsMapper = rvsMapper;
         this.dashboardMapper = dashboardMapper;
         this.datachartMapper = datachartMapper;
+        this.viewFieldService = viewFieldService;
     }
 
     @Override
@@ -340,6 +344,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         view.setStatus(Const.DATA_STATUS_ACTIVE);
         view.setModel(normalizeModelDisplayNames(view.getModel()));
         requirePermission(view, Const.CREATE);
+        viewFieldService.reconcile(view);
         viewMapper.insert(view);
 
         getRoleService().grantPermission(viewCreateParam.getPermissions());
@@ -374,6 +379,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         responseView.setModel(normalizeModelDisplayNames(view.getModel()));
 
         ViewDetailDTO viewDetailDTO = new ViewDetailDTO(responseView);
+        viewDetailDTO.setFields(viewFieldService.listByViewId(viewId));
         // column permission
         viewDetailDTO.setRelSubjectColumns(rscMapper.listByView(viewId));
         //view variables
@@ -619,6 +625,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         viewUpdateParam.setModel(normalizeModelDisplayNames(viewUpdateParam.getModel()));
         BeanUtils.copyProperties(updateParam, view);
         view.setType(viewUpdateParam.getType().name());
+        viewFieldService.reconcile(view);
         view.setUpdateBy(getCurrentUser().getId());
         view.setUpdateTime(new Date());
         return 1 == viewMapper.updateByPrimaryKey(view);
