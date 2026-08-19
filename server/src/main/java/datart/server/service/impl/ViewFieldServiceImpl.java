@@ -102,7 +102,7 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
                 field.setExpression(data.expression());
                 field.setOrdinal(ordinal++);
                 field.setActive(true);
-                field.setSourceComment(sourceComment(view.getType(), data, source, field));
+                field.setSourceComment(sourceComment(view.getType(), data, refs, source, field));
                 field.setUpdateBy(currentUserId());
                 field.setUpdateTime(new Date());
                 if (existing.containsKey(data.canonicalKey())) {
@@ -210,15 +210,21 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
         return resolved.displayNameCustom() ? trimToNull(resolved.customDisplayName()) : null;
     }
 
-    private String sourceComment(String viewType, FieldData data, SourceSchemaIndex.Index source, ViewField existing) {
-        if ("SQL".equalsIgnoreCase(viewType) || "COMPUTED".equalsIgnoreCase(data.category())) {
+    private String sourceComment(String viewType, FieldData data, List<ObjectNode> refs,
+                                 SourceSchemaIndex.Index source, ViewField existing) {
+        if ("COMPUTED".equalsIgnoreCase(data.category())) {
             return null;
         }
         SourceSchemaIndex.ColumnMeta schema = source == null ? null : source.exact(data.sourcePath());
-        if (schema != null) {
-            return trimToNull(schema.comment());
+        String schemaComment = schema == null ? null : trimToNull(schema.comment());
+        if (schemaComment != null && ("STRUCT".equalsIgnoreCase(viewType) || "SQL".equalsIgnoreCase(viewType))) {
+            return schemaComment;
         }
-        return existing == null ? null : existing.getSourceComment();
+        ObjectNode column = refs.isEmpty() ? null : refs.get(0);
+        ObjectNode hierarchy = refs.size() > 1 ? refs.get(1) : null;
+        ResolvedFieldMeta resolved = legacyResolver.resolve(data.canonicalKey(), column, hierarchy, source, viewType);
+        String comment = trimToNull(resolved.comment());
+        return comment == null && existing != null ? trimToNull(existing.getSourceComment()) : comment;
     }
 
     private ViewFieldDTO toDTO(ViewField field) {

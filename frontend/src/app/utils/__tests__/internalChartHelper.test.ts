@@ -29,6 +29,7 @@ import {
   mergeChartDataConfigs,
   mergeChartStyleConfigs,
   reachLowerBoundCount,
+  reconcileChartConfigFieldMeta,
   transferChartConfigs,
   transformHierarchyMeta,
   transformMeta,
@@ -1830,6 +1831,32 @@ describe('Internal Chart Helper ', () => {
           children: undefined,
         },
       ]);
+    });
+  });
+
+  test('falls back when a chart fieldId is stale', () => {
+    const config = {
+      datas: [
+        {
+          rows: [{ category: 'field', colName: 'id', fieldId: 'stale' }],
+        },
+      ],
+    } as any;
+    const fields = [
+      {
+        name: 'id',
+        fieldId: 'current',
+        path: ['users', 'id'],
+        displayName: '用户编号',
+      },
+    ] as any;
+
+    const result = reconcileChartConfigFieldMeta(config as any, fields);
+
+    expect(result.datas?.[0].rows?.[0]).toMatchObject({
+      fieldId: 'current',
+      path: ['users', 'id'],
+      displayName: '用户编号',
     });
   });
 

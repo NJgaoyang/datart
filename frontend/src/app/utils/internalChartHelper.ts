@@ -837,7 +837,10 @@ function findLatestFieldMeta(
   fields: ChartDataViewMeta[],
 ): ChartDataViewMeta | undefined {
   if (row.fieldId) {
-    return fields.find(field => field.fieldId === row.fieldId);
+    const fieldById = fields.find(field => field.fieldId === row.fieldId);
+    if (fieldById) {
+      return fieldById;
+    }
   }
   if (row.path?.length) {
     const pathMatches = fields.filter(

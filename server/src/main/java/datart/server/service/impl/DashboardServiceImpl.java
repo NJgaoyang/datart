@@ -181,7 +181,7 @@ public class DashboardServiceImpl extends BaseService implements DashboardServic
         viewIds.addAll(chartViews);
         if (!CollectionUtils.isEmpty(viewIds)) {
             dashboardDetail.setViews(viewMapper.listByIds(viewIds).stream()
-                    .map(view -> (View) viewService.getViewDetail(view.getId()))
+                    .map(view -> (View) viewService.buildViewDetail(view))
                     .toList());
         } else {
             dashboardDetail.setViews(Collections.emptyList());

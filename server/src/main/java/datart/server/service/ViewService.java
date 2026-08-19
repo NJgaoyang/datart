@@ -36,6 +36,8 @@ public interface ViewService extends VizCRUDService<View, ViewMapperExt>, Resour
 
     ViewDetailDTO getViewDetail(String viewId);
 
+    ViewDetailDTO buildViewDetail(View view);
+
     List<View> getViews(String orgId);
 
     View updateView(BaseUpdateParam updateParam);

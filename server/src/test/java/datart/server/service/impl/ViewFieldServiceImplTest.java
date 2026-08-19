@@ -93,6 +93,21 @@ class ViewFieldServiceImplTest {
         assertThrows(IllegalArgumentException.class, () -> service.reconcile(duplicate));
     }
 
+    @Test
+    void keepsSqlColumnAndHierarchyCommentsWhenSchemaCommentIsUnavailable() {
+        FakeViewFieldMapper mapper = new FakeViewFieldMapper();
+        ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, null);
+        View sql = view("SQL", "{\"columns\":{\"id\":{\"name\":[\"users\",\"id\"],\"comment\":\"用户编号\"}},\"hierarchy\":{\"id\":{\"name\":[\"users\",\"id\"],\"comment\":\"客户编号\"}}}");
+
+        service.reconcile(sql);
+
+        assertEquals("用户编号", mapper.fields.get("SQL|id").getSourceComment());
+
+        sql.setModel("{\"columns\":{\"id\":{\"name\":[\"users\",\"id\"]}},\"hierarchy\":{\"id\":{\"name\":[\"users\",\"id\"],\"comment\":\"客户编号\"}}}");
+        service.reconcile(sql);
+        assertEquals("客户编号", mapper.fields.get("SQL|id").getSourceComment());
+    }
+
     private static View view(String type, String model) {
         View view = new View();
         view.setId("view-1");

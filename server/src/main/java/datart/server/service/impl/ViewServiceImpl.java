@@ -378,14 +378,20 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         BeanUtils.copyProperties(view, responseView);
         responseView.setModel(normalizeModelDisplayNames(view.getModel()));
 
-        ViewDetailDTO viewDetailDTO = new ViewDetailDTO(responseView);
-        viewDetailDTO.setFields(viewFieldService.listByViewId(viewId));
+        ViewDetailDTO viewDetailDTO = buildViewDetail(responseView);
         // column permission
         viewDetailDTO.setRelSubjectColumns(rscMapper.listByView(viewId));
         //view variables
         viewDetailDTO.setVariables(variableService.listByView(viewId));
         // view variables rel
         viewDetailDTO.setRelVariableSubjects(variableService.listViewVariableRels(viewId));
+        return viewDetailDTO;
+    }
+
+    @Override
+    public ViewDetailDTO buildViewDetail(View view) {
+        ViewDetailDTO viewDetailDTO = new ViewDetailDTO(view);
+        viewDetailDTO.setFields(viewFieldService.listByViewId(view.getId()));
         return viewDetailDTO;
     }
 
