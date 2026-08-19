@@ -15,6 +15,7 @@ import datart.server.base.dto.FieldMetaMigrationResult;
 import datart.server.base.dto.FieldMetaMigrationScan;
 import datart.server.base.dto.FieldMetaMigrationScope;
 import datart.server.base.dto.FieldMetaMigrationVerify;
+import datart.server.base.dto.ViewFieldDTO;
 import datart.server.common.fieldmeta.ChartConfigReconciler;
 import datart.server.common.fieldmeta.FieldMetaResolver;
 import datart.server.common.fieldmeta.FieldMetaDiagnostics;
@@ -25,6 +26,7 @@ import datart.server.common.fieldmeta.StrictJson;
 import datart.server.common.fieldmeta.ViewModelMigrator;
 import datart.server.service.BaseService;
 import datart.server.service.FieldMetaMigrationService;
+import datart.server.service.ViewFieldService;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,15 +54,18 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
     private final SourceSchemaIndex schemaIndex;
     private final StrictJson strictJson;
     private final JdbcTemplate jdbcTemplate;
+    private final ViewFieldService viewFieldService;
 
     public FieldMetaMigrationServiceImpl(FieldMetaMigrationMapperExt mapper,
                                          SourceSchemaIndex schemaIndex,
                                          StrictJson strictJson,
-                                         JdbcTemplate jdbcTemplate) {
+                                         JdbcTemplate jdbcTemplate,
+                                         ViewFieldService viewFieldService) {
         this.mapper = mapper;
         this.schemaIndex = schemaIndex;
         this.strictJson = strictJson;
         this.jdbcTemplate = jdbcTemplate;
+        this.viewFieldService = viewFieldService;
     }
 
     @Override
@@ -187,7 +192,8 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
                     addIssue(snapshot, VIEW, view, null, "INVALID_SCHEMA_JSON", index.getError());
                 }
                 ViewModelMigrator.Result migration = new ViewModelMigrator().migrate(model, index, view.getType());
-                ViewSnapshot viewSnapshot = new ViewSnapshot(view, model, migration.model(), fields(migration.fields()));
+                ViewSnapshot viewSnapshot = new ViewSnapshot(view, model, migration.model(), fields(migration.fields()),
+                        viewFieldService.listByViewId(view.getId()));
                 views.put(view.getId(), viewSnapshot);
                 snapshot.views.setFields(snapshot.views.getFields() + migration.fields().size());
                 countFields(snapshot.views, migration.fields());
@@ -243,8 +249,10 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
                 addIssue(snapshot, WIDGET, widget.getId(), null, "INVALID_JSON", "缺少 content.dataChart.config");
                 return;
             }
-            ChartConfigReconciler.Result result = new ChartConfigReconciler().reconcile(
-                    (ObjectNode) chartConfig, view.fields);
+            ChartConfigReconciler reconciler = new ChartConfigReconciler();
+            ChartConfigReconciler.Result result = view.viewFields.isEmpty()
+                    ? reconciler.reconcile((ObjectNode) chartConfig, view.fields)
+                    : reconciler.reconcile((ObjectNode) chartConfig, view.viewFields);
             countChart(snapshot.widgets, result);
             result.issues().forEach(issue -> addIssue(snapshot, WIDGET, widget.getId(), issue.fieldKey(), "UNMATCHED", issue.reason()));
         } catch (InvalidMigrationJsonException e) {
@@ -263,7 +271,10 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
                 addIssue(snapshot, DATACHART, datachart.getId(), null, "UNMATCHED_VIEW", datachart.getViewId());
                 return;
             }
-            ChartConfigReconciler.Result result = new ChartConfigReconciler().reconcile(root, view.fields);
+            ChartConfigReconciler reconciler = new ChartConfigReconciler();
+            ChartConfigReconciler.Result result = view.viewFields.isEmpty()
+                    ? reconciler.reconcile(root, view.fields)
+                    : reconciler.reconcile(root, view.viewFields);
             countChart(snapshot.datacharts, result);
             result.issues().forEach(issue -> addIssue(snapshot, DATACHART, datachart.getId(), issue.fieldKey(), "UNMATCHED", issue.reason()));
         } catch (InvalidMigrationJsonException e) {
@@ -274,11 +285,19 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
 
     private void migrateViews(Snapshot snapshot, String runId, String userId, FieldMetaMigrationResult result) {
         for (ViewSnapshot view : snapshot.viewSnapshots.values()) {
-            String migrated = strictJson.write(view.migratedModel);
-            if (migrated.equals(view.view.getModel())) {
+            String original = view.view.getModel();
+            view.view.setModel(strictJson.write(view.migratedModel));
+            viewFieldService.reconcile(view.view);
+            ObjectNode reconciledModel = strictJson.readObject(VIEW, view.view.getId(), view.view.getModel());
+            view.migratedModel.removeAll();
+            view.migratedModel.setAll(reconciledModel);
+            view.viewFields = viewFieldService.listByViewId(view.view.getId());
+            String migrated = view.view.getModel();
+            if (migrated.equals(original)) {
                 continue;
             }
-            backup(runId, view.view.getOrgId(), VIEW, view.view.getId(), "model", view.view.getModel(), view.view.getUpdateTime(), migrated);
+            backup(runId, view.view.getOrgId(), VIEW, view.view.getId(), "model",
+                    original, view.view.getUpdateTime(), migrated);
             if (mapper.updateViewModel(view.view.getId(), migrated, userId, view.view.getUpdateTime()) != 1) {
                 throw new IllegalStateException("CONCURRENT_MODIFICATION: view " + view.view.getId());
             }
@@ -326,7 +345,10 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
         } else {
             chartRoot = root;
         }
-        ChartConfigReconciler.Result reconciled = new ChartConfigReconciler().reconcile(chartRoot, view.fields);
+        ChartConfigReconciler reconciler = new ChartConfigReconciler();
+        ChartConfigReconciler.Result reconciled = view.viewFields.isEmpty()
+                ? reconciler.reconcile(chartRoot, view.fields)
+                : reconciler.reconcile(chartRoot, view.viewFields);
         scope.setRowsUpdated(scope.getRowsUpdated() + reconciled.changedRows());
         if (reconciled.issues().size() > 0) {
             throw new IllegalStateException("UNMATCHED chart row: " + entityId);
@@ -438,7 +460,10 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
                 }
                 JsonNode chartConfig = root.at("/content/dataChart/config");
                 if (chartConfig.isObject()) {
-                    ChartConfigReconciler.Result result = new ChartConfigReconciler().reconcile((ObjectNode) chartConfig, view.fields);
+                    ChartConfigReconciler reconciler = new ChartConfigReconciler();
+                    ChartConfigReconciler.Result result = view.viewFields.isEmpty()
+                            ? reconciler.reconcile((ObjectNode) chartConfig, view.fields)
+                            : reconciler.reconcile((ObjectNode) chartConfig, view.viewFields);
                     if (result.changedRows() > 0) {
                         verify.getIssues().add(new FieldMetaMigrationIssue(WIDGET, widget.getId(), widget.getId(), null,
                                 "LEGACY_CHART_METADATA", "图表字段 metadata 未与 View 完全一致"));
@@ -455,7 +480,10 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
                 if (view == null) {
                     continue;
                 }
-                ChartConfigReconciler.Result result = new ChartConfigReconciler().reconcile(root, view.fields);
+                ChartConfigReconciler reconciler = new ChartConfigReconciler();
+                ChartConfigReconciler.Result result = view.viewFields.isEmpty()
+                        ? reconciler.reconcile(root, view.fields)
+                        : reconciler.reconcile(root, view.viewFields);
                 if (result.changedRows() > 0) {
                     verify.getIssues().add(new FieldMetaMigrationIssue(DATACHART, datachart.getId(), datachart.getName(), null,
                             "LEGACY_CHART_METADATA", "图表字段 metadata 未与 View 完全一致"));
@@ -576,13 +604,15 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
         private final ObjectNode originalModel;
         private final ObjectNode migratedModel;
         private final Map<String, ResolvedFieldMeta> fields;
+        private List<ViewFieldDTO> viewFields;
 
         private ViewSnapshot(View view, ObjectNode originalModel, ObjectNode migratedModel,
-                             Map<String, ResolvedFieldMeta> fields) {
+                             Map<String, ResolvedFieldMeta> fields, List<ViewFieldDTO> viewFields) {
             this.view = view;
             this.originalModel = originalModel;
             this.migratedModel = migratedModel;
             this.fields = fields;
+            this.viewFields = viewFields;
         }
     }
 

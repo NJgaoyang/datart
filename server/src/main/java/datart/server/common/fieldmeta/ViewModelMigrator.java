@@ -5,9 +5,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import datart.server.base.dto.FieldMetaMigrationIssueSeverity;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class ViewModelMigrator {
 
@@ -24,6 +26,7 @@ public class ViewModelMigrator {
         collect(result.path("hierarchy"), nodes);
         List<ResolvedFieldMeta> fields = new ArrayList<>();
         List<MigrationIssue> issues = new ArrayList<>();
+        Set<String> sqlOutputNames = new HashSet<>();
         int changed = 0;
         for (Map.Entry<String, List<ObjectNode>> entry : nodes.entrySet()) {
             List<ObjectNode> refs = entry.getValue();
@@ -35,6 +38,12 @@ public class ViewModelMigrator {
             }
             ResolvedFieldMeta resolved = resolver.resolve(entry.getKey(), column, hierarchy, schemaIndex, viewType);
             fields.add(resolved);
+            if ("SQL".equalsIgnoreCase(viewType) && !sqlOutputNames.add(resolved.rawName())) {
+                issues.add(new MigrationIssue("VIEW", entry.getKey(), entry.getKey(),
+                        "SQL_OUTPUT_COLUMN_DUPLICATED", resolved.diagnostics(),
+                        FieldMetaMigrationIssueSeverity.BLOCKING));
+                continue;
+            }
             if (commentDiverges(column, hierarchy, schemaIndex, resolved, viewType)) {
                 issues.add(new MigrationIssue("VIEW", entry.getKey(), entry.getKey(),
                         "SQL_COMMENT_RESOLVED_FROM_COLUMNS", resolved.diagnostics(),

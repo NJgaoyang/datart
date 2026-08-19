@@ -3,6 +3,7 @@ package datart.server.common.fieldmeta;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import datart.server.base.dto.FieldMetaMigrationIssueSeverity;
+import datart.server.base.dto.ViewFieldDTO;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -96,5 +97,32 @@ class FieldMetaMigrationTest {
         assertEquals("订单号", chart.at("/datas/0/rows/0/displayName").asText());
         assertEquals("日期", chart.at("/datas/0/rows/1/alias").asText());
         assertFalse(chart.at("/datas/0/rows/1/displayName").isTextual());
+    }
+
+    @Test
+    void addsFieldIdByExactPathAndRejectsInactiveField() throws Exception {
+        ObjectNode chart = (ObjectNode) mapper.readTree("""
+                {"datas":[{"rows":[
+                  {"category":"field","colName":"id","path":["db","user","id"]},
+                  {"category":"field","colName":"old_id","fieldId":"inactive"}
+                ]}]}
+                """);
+        ViewFieldDTO active = field("field-1", "id", List.of("db", "user", "id"), true);
+        ViewFieldDTO inactive = field("inactive", "old_id", List.of("db", "user", "old_id"), false);
+
+        ChartConfigReconciler.Result result = new ChartConfigReconciler().reconcile(chart, List.of(active, inactive));
+
+        assertEquals(2, result.rows());
+        assertEquals("field-1", chart.at("/datas/0/rows/0/fieldId").asText());
+        assertEquals("FIELD_INACTIVE", result.issues().get(0).reason());
+    }
+
+    private static ViewFieldDTO field(String id, String name, List<String> path, boolean active) {
+        ViewFieldDTO field = new ViewFieldDTO();
+        field.setFieldId(id);
+        field.setOriginName(name);
+        field.setSourcePath(path);
+        field.setActive(active);
+        return field;
     }
 }
