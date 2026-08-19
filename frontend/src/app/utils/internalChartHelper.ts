@@ -51,6 +51,7 @@ import {
 } from 'app/types/ChartConfigDTO';
 import { PendingChartDataRequestFilter } from 'app/types/ChartDataRequest';
 import { ChartDataViewMeta } from 'app/types/ChartDataViewMeta';
+import { ViewFieldMeta } from 'app/types/View';
 import { IChartDrillOption } from 'app/types/ChartDrillOption';
 import { FilterSqlOperator } from 'globalConstants';
 import {
@@ -337,13 +338,7 @@ export function getColumnRenderOriginName(c?: ChartDataSectionField) {
   if (!c) {
     return '[unknown]';
   }
-  const displayName = getFieldDisplayName({
-    name: c.colName,
-    path: c.path,
-    displayName: c.displayName,
-    comment: c.comment,
-    isDisplayNameCustom: c.isDisplayNameCustom,
-  });
+  const displayName = c.displayName || c.colName;
   if (c.aggregate === AggregateFieldActionType.None) {
     return displayName;
   }
@@ -387,7 +382,7 @@ export function flattenHeaderRowsWithoutGroupRow<
   return [groupedHeaderRow].concat(childRows);
 }
 
-export function transformMeta(model?: string) {
+export function transformMeta(model?: string, viewFields?: ViewFieldMeta[]) {
   if (!model) {
     return undefined;
   }
@@ -397,7 +392,7 @@ export function transformMeta(model?: string) {
       ? jsonObj.hierarchy
       : jsonObj.columns || jsonObj,
   );
-  const flatMeta: any[] = (transformHierarchyMeta(model) as any[]).flatMap(
+  const flatMeta: any[] = (transformHierarchyMeta(model, viewFields) as any[]).flatMap(
     (column, index) => {
       if (!isEmptyArray(column?.children)) {
         return (column.children || []).map(c => ({
@@ -416,7 +411,10 @@ export function transformMeta(model?: string) {
   return flatMeta;
 }
 
-export function transformHierarchyMeta(model?: string): ChartDataViewMeta[] {
+export function transformHierarchyMeta(
+  model?: string,
+  viewFields?: ViewFieldMeta[],
+): ChartDataViewMeta[] {
   if (!model) {
     return [];
   }
@@ -445,12 +443,39 @@ export function transformHierarchyMeta(model?: string): ChartDataViewMeta[] {
     ? modelObj.columns || modelObj
     : modelObj.hierarchy;
 
+  const fieldsById = new Map((viewFields || []).map(field => [field.fieldId, field]));
+  const fieldsByPath = new Map(
+    (viewFields || [])
+      .filter(field => field.sourcePath?.length)
+      .map(field => [field.sourcePath!.join('.'), field]),
+  );
+  const fieldsByName = new Map<string, ViewFieldMeta | undefined>();
+  (viewFields || []).forEach(field => {
+    if (!fieldsByName.has(field.originName)) {
+      fieldsByName.set(field.originName, field);
+    } else {
+      fieldsByName.set(field.originName, undefined);
+    }
+  });
   return Object.keys(hierarchyMeta || {}).map(key => {
-    return getMeta(key, hierarchyMeta?.[key], columnMetadata);
+    return getMeta(key, hierarchyMeta?.[key], columnMetadata, {
+      fieldsById,
+      fieldsByPath,
+      fieldsByName,
+    });
   });
 }
 
-function getMeta(key, column, columnMetadata = new Map<string, any>()) {
+function getMeta(
+  key,
+  column,
+  columnMetadata = new Map<string, any>(),
+  fieldMaps?: {
+    fieldsById: Map<string, ViewFieldMeta>;
+    fieldsByPath: Map<string, ViewFieldMeta>;
+    fieldsByName: Map<string, ViewFieldMeta | undefined>;
+  },
+) {
   let children;
   let isHierarchy = false;
   const metadataKeys = [
@@ -467,28 +492,51 @@ function getMeta(key, column, columnMetadata = new Map<string, any>()) {
   if (!isEmptyArray(column?.children)) {
     isHierarchy = true;
     children = column?.children.map(child =>
-      getMeta(child?.name, child, columnMetadata),
+      getMeta(child?.name, child, columnMetadata, fieldMaps),
     );
   }
   const fieldName = Array.isArray(column?.name)
     ? column.name[column.name.length - 1]
     : column?.name || key;
-  const rawDisplayName = column?.displayName ?? metadata?.displayName;
+  const sourcePath = column?.path || column?.name;
+  const serverField =
+    (column?.fieldId && fieldMaps?.fieldsById.get(column.fieldId)) ||
+    (Array.isArray(sourcePath) && fieldMaps?.fieldsByPath.get(sourcePath.join('.'))) ||
+    fieldMaps?.fieldsByName.get(fieldName);
+  const rawDisplayName = serverField?.displayName ?? column?.displayName ?? metadata?.displayName;
   const comment = column?.comment ?? metadata?.comment;
   const isDisplayNameCustom =
     column?.isDisplayNameCustom ?? metadata?.isDisplayNameCustom;
-  const displayName = getFieldCustomDisplayName({
+  const legacyDisplayName = getFieldCustomDisplayName({
     name: fieldName,
     path: column?.path,
     displayName: rawDisplayName,
     comment,
     isDisplayNameCustom,
   });
+  const displayName =
+    serverField?.displayName ??
+    legacyDisplayName ??
+    (rawDisplayName && Array.isArray(column?.path) &&
+    rawDisplayName === column.path.join('.')
+      ? rawDisplayName
+      : undefined);
   return {
     ...column,
+    ...(serverField
+      ? {
+          fieldId: serverField.fieldId,
+          originName: serverField.originName,
+          sourceComment: serverField.sourceComment,
+          customName: serverField.customName,
+          displayName: serverField.displayName,
+        }
+      : {}),
     ...(rawDisplayName !== undefined ? { displayName } : {}),
     ...(comment !== undefined ? { comment } : {}),
-    ...(isDisplayNameCustom !== undefined || displayName
+    ...(serverField
+      ? { isDisplayNameCustom: Boolean(serverField.customName) }
+      : isDisplayNameCustom !== undefined || legacyDisplayName
       ? { isDisplayNameCustom: Boolean(displayName) }
       : {}),
     subType: column?.category,
@@ -770,6 +818,7 @@ export const transformToViewConfig = (
 
 export const buildDragItem = (item, children: any[] = []) => {
   return {
+    fieldId: item?.fieldId,
     colName: item?.name,
     type: item?.type,
     subType: item?.subType,
@@ -787,6 +836,9 @@ function findLatestFieldMeta(
   row: ChartDataSectionField,
   fields: ChartDataViewMeta[],
 ): ChartDataViewMeta | undefined {
+  if (row.fieldId) {
+    return fields.find(field => field.fieldId === row.fieldId);
+  }
   if (row.path?.length) {
     const pathMatches = fields.filter(
       field => field.path?.join('\0') === row.path?.join('\0'),
@@ -815,6 +867,7 @@ export function reconcileChartConfigFieldMeta(
         }
         return {
           ...row,
+          fieldId: latestMeta.fieldId || row.fieldId,
           path: latestMeta.path || row.path,
           displayName: latestMeta.displayName,
           comment: latestMeta.comment,

@@ -213,7 +213,7 @@ export const getChartDataView = (views: View[], dataCharts: DataChart[]) => {
     if (view?.model) {
       view.model = beginViewModelMigration(view.model, view.type);
     }
-    const meta = transformMeta(view.model);
+    const meta = transformMeta(view.model, view.fields);
     const viewComputedFields =
       JSON.parse(view.model || '{}').computedFields || [];
     const computedFields = createDateLevelComputedFieldForConfigComputedFields(

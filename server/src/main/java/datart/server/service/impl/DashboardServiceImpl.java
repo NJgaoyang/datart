@@ -180,7 +180,9 @@ public class DashboardServiceImpl extends BaseService implements DashboardServic
         List<String> chartViews = dashboardDetail.getDatacharts().stream().map(Datachart::getViewId).collect(Collectors.toList());
         viewIds.addAll(chartViews);
         if (!CollectionUtils.isEmpty(viewIds)) {
-            dashboardDetail.setViews(viewMapper.listByIds(viewIds));
+            dashboardDetail.setViews(viewMapper.listByIds(viewIds).stream()
+                    .map(view -> (View) viewService.getViewDetail(view.getId()))
+                    .toList());
         } else {
             dashboardDetail.setViews(Collections.emptyList());
         }

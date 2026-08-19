@@ -106,6 +106,7 @@ export type AggregateLimit = Pick<typeof AggregateFieldActionType, 'Count'>;
 
 export type ChartDataSectionField = {
   uid?: string;
+  fieldId?: string;
   colName: string;
   desc?: string;
   type: DataViewFieldType;

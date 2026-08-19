@@ -32,6 +32,7 @@ import styled from 'styled-components';
 import { SPACE_LG } from 'styles/StyleConstants';
 import { Nullable } from 'types';
 import { CloneValueDeep, isEmpty, isEmptyArray } from 'utils/object';
+import { request2 } from 'utils/request';
 import {
   getFieldCustomDisplayName,
   getFieldDisplayName,
@@ -497,8 +498,58 @@ const DataModelTree: FC = memo(() => {
     return (openStateModal as Function)({
       title: t('model.setDisplayName'),
       modalSize: StateModalSize.XSMALL,
-      onOk: displayName => {
+      onOk: async displayName => {
         const trimmedDisplayName = displayName?.trim();
+        if (currentEditingView?.id && node?.fieldId) {
+          const { data } = await request2<any>({
+            url: `/views/${currentEditingView.id}/fields/${node.fieldId}`,
+            method: 'PATCH',
+            data: { customName: trimmedDisplayName || null },
+          });
+          const serverDisplayNamePatch = {
+            displayName: data?.displayName,
+            comment: data?.sourceComment,
+            isDisplayNameCustom: Boolean(data?.customName),
+          };
+          const update = (item: Column) => ({ ...item, ...serverDisplayNamePatch });
+          let newHierarchy: Model;
+          if (
+            node.role === ColumnRole.Hierarchy ||
+            node.role === ColumnRole.Table
+          ) {
+            newHierarchy = updateNode(
+              tableColumns,
+              update(node),
+              tableColumns.findIndex(n => n.name === node.name),
+            );
+          } else {
+            const parentBranch = tableColumns?.find(b =>
+              b?.children?.find(bn => bn.name === node.name),
+            );
+            if (parentBranch) {
+              const clonedBranch = CloneValueDeep(parentBranch);
+              const childIdx = clonedBranch.children?.findIndex(
+                c => c.name === node.name,
+              );
+              if (childIdx !== undefined && childIdx > -1 && clonedBranch.children) {
+                clonedBranch.children[childIdx] = update(clonedBranch.children[childIdx]);
+              }
+              newHierarchy = updateNode(
+                tableColumns,
+                clonedBranch,
+                tableColumns.findIndex(n => n.name === clonedBranch.name),
+              );
+            } else {
+              newHierarchy = updateNode(
+                tableColumns,
+                update(node),
+                tableColumns.findIndex(n => n.name === node.name),
+              );
+            }
+          }
+          handleDataModelHierarchyChange(newHierarchy);
+          return;
+        }
         const displayNamePatch = trimmedDisplayName
           ? {
               displayName: trimmedDisplayName,

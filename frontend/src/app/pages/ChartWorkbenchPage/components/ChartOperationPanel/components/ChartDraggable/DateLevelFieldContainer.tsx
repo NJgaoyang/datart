@@ -24,6 +24,7 @@ function DateLevelFieldContainer({
       canDrag: true,
       item: {
         field: item.field,
+        fieldId: item?.fieldId,
         colName: item?.name,
         type: item?.type,
         category: item?.category,

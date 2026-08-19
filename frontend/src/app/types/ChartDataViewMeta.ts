@@ -25,6 +25,10 @@ import {
 
 export type ChartDataViewMeta = {
   name: string;
+  fieldId?: string;
+  originName?: string;
+  sourceComment?: string;
+  customName?: string;
   path?: string[];
   isActive?: boolean;
   displayName?: string;

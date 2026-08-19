@@ -1431,6 +1431,13 @@ export function findPathByNameInMeta(meta, colName) {
   return getAllColumnInMeta(meta)?.find(v => v.name === colName);
 }
 
+export function findFieldByIdInMeta(meta, fieldId) {
+  if (!fieldId) {
+    return undefined;
+  }
+  return getAllColumnInMeta(meta)?.find(field => field.fieldId === fieldId);
+}
+
 export function mergeChartAndViewComputedField(
   viewComputer?: ChartDataViewMeta[],
   chartComputer?: ChartDataViewMeta[],

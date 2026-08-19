@@ -41,6 +41,7 @@ import { ChartDataViewMeta } from 'app/types/ChartDataViewMeta';
 import { IChartDrillOption } from 'app/types/ChartDrillOption';
 import {
   createDateLevelComputedFieldForConfigComputedFields,
+  findFieldByIdInMeta,
   findPathByNameInMeta,
   getAllColumnInMeta,
   getRuntimeDateLevelFields,
@@ -179,6 +180,14 @@ export class ChartDataRequestBuilder {
   }
 
   private buildColumnName(col) {
+    if (col.fieldId) {
+      const field = findFieldByIdInMeta(this.dataView.meta, col.fieldId);
+      if (field) {
+        return field.path || [field.originName || field.name];
+      }
+    }
+
+    // LEGACY COMPATIBILITY ONLY: old charts do not have fieldId yet.
     const row = findPathByNameInMeta(this.dataView.meta, col.colName);
     if (row) {
       return row?.path || [];

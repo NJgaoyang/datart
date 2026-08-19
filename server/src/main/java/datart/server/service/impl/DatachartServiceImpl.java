@@ -27,7 +27,6 @@ import datart.core.common.UUIDGenerator;
 import datart.core.entity.Datachart;
 import datart.core.entity.Folder;
 import datart.core.entity.Variable;
-import datart.core.entity.View;
 import datart.core.mappers.ext.DatachartMapperExt;
 import datart.core.mappers.ext.FolderMapperExt;
 import datart.core.mappers.ext.RelRoleResourceMapperExt;
@@ -134,7 +133,7 @@ public class DatachartServiceImpl extends BaseService implements DatachartServic
         }
         BeanUtils.copyProperties(datachart, datachartDetail);
         try {
-            datachartDetail.setView(retrieve(datachart.getViewId(), View.class));
+            datachartDetail.setView(viewService.getViewDetail(datachart.getViewId()));
         } catch (NotFoundException ignored) {
         }
 
