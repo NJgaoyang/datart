@@ -658,10 +658,17 @@ public class ViewServiceImpl extends BaseService implements ViewService {
             name = rawName.toString();
         }
 
-        String displayName = field.getString("displayName");
-        String comment = field.getString("comment");
-        if (!hasText(displayName) || (displayName.equals(name) && hasText(comment))) {
-            field.put("displayName", hasText(comment) ? comment : name);
+        Boolean isDisplayNameCustom = field.getBoolean("isDisplayNameCustom");
+        if (Boolean.FALSE.equals(isDisplayNameCustom)) {
+            // Formal metadata: non-custom fields must not persist displayName.
+            field.remove("displayName");
+        } else if (isDisplayNameCustom == null) {
+            // Legacy metadata without the marker keeps the historical fallback behavior.
+            String displayName = field.getString("displayName");
+            String comment = field.getString("comment");
+            if (!hasText(displayName) || (displayName.equals(name) && hasText(comment))) {
+                field.put("displayName", hasText(comment) ? comment : name);
+            }
         }
 
         JSONArray children = field.getJSONArray("children");
