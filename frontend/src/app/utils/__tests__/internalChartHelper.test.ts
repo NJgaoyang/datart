@@ -1925,7 +1925,7 @@ describe('Internal Chart Helper ', () => {
     });
   });
 
-  test('preserves a historical chart displayName when ViewField metadata changes', () => {
+  test('synchronizes cached chart displayName from the latest ViewField metadata', () => {
     const config = {
       datas: [
         {
@@ -1953,8 +1953,7 @@ describe('Internal Chart Helper ', () => {
 
     expect(result.datas?.[0].rows?.[0]).toMatchObject({
       fieldId: 'current',
-      displayName: '在租用户较昨日净增人数',
-      isDisplayNameCustom: true,
+      displayName: 'net_increase_users',
     });
   });
 
@@ -1988,7 +1987,7 @@ describe('Internal Chart Helper ', () => {
     expect(result.datas?.[0].rows?.[0]).toMatchObject({
       fieldId: 'current',
       alias: { name: '净增' },
-      displayName: '历史字段名',
+      displayName: '在租用户较昨日净增人数',
     });
   });
 

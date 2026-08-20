@@ -20,6 +20,7 @@ package datart.server.base.params;
 
 import datart.core.base.PageInfo;
 import datart.core.data.provider.SelectColumn;
+import datart.core.data.provider.QueryOutputProjection;
 import datart.core.data.provider.sql.*;
 import datart.security.base.ResourceType;
 import lombok.Data;
@@ -51,6 +52,8 @@ public class ViewExecuteParam {
     private Map<String, Set<String>> params;
 
     private List<FunctionColumn> functionColumns;
+
+    private List<QueryOutputProjection> outputProjections;
 
     private List<AggregateOperator> aggregators;
 

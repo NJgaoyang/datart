@@ -67,7 +67,11 @@ import {
   isUndefined,
   pipe,
 } from 'utils/object';
-import { getFieldCustomDisplayName, getFieldDisplayName } from 'utils/utils';
+import {
+  getDatasetFieldDisplayName,
+  getFieldCustomDisplayName,
+  getFieldDisplayName,
+} from 'utils/utils';
 import { getDrillableRows, round } from './chartHelper';
 
 export const transferChartConfigs = (
@@ -338,13 +342,22 @@ export function getColumnRenderOriginName(c?: ChartDataSectionField) {
   if (!c) {
     return '[unknown]';
   }
-  const displayName = getFieldDisplayName({
-    name: c.colName,
-    path: c.path,
-    displayName: c.displayName,
-    comment: c.comment,
-    isDisplayNameCustom: c.isDisplayNameCustom,
-  });
+  const displayName =
+    c.fieldId || c.originName
+      ? getDatasetFieldDisplayName({
+          fieldId: c.fieldId,
+          originName: c.originName,
+          name: c.colName,
+          path: c.path,
+          displayName: c.displayName,
+        })
+      : getFieldDisplayName({
+          name: c.colName,
+          path: c.path,
+          displayName: c.displayName,
+          comment: c.comment,
+          isDisplayNameCustom: c.isDisplayNameCustom,
+        });
   if (c.aggregate === AggregateFieldActionType.None) {
     return displayName;
   }
@@ -454,7 +467,9 @@ export function transformHierarchyMeta(
     ? modelObj.columns || modelObj
     : modelObj.hierarchy;
 
-  const normalizedViewFields = Array.isArray(viewFields) ? viewFields : [];
+  const normalizedViewFields = (Array.isArray(viewFields) ? viewFields : []).filter(
+    field => field.active !== false,
+  );
   const fieldsById = new Map(
     normalizedViewFields.map(field => [field.fieldId, field]),
   );
@@ -556,7 +571,7 @@ function getMeta(
     ...(rawDisplayName !== undefined ? { displayName } : {}),
     ...(comment !== undefined ? { comment } : {}),
     ...(serverField
-      ? { isDisplayNameCustom: Boolean(serverField.customName) }
+      ? { isDisplayNameCustom: serverField.customName ? true : undefined }
       : isDisplayNameCustom !== undefined || legacyDisplayName
       ? { isDisplayNameCustom: Boolean(displayName) }
       : {}),
@@ -840,6 +855,7 @@ export const transformToViewConfig = (
 export const buildDragItem = (item, children: any[] = []) => {
   return {
     fieldId: item?.fieldId,
+    originName: item?.originName ?? item?.name,
     colName: item?.name,
     type: item?.type,
     subType: item?.subType,
@@ -857,14 +873,17 @@ function findLatestFieldMeta(
   row: ChartDataSectionField,
   fields: ChartDataViewMeta[],
 ): ChartDataViewMeta | undefined {
+  const activeFields = fields.filter(
+    field => field.active !== false && field.isActive !== false,
+  );
   if (row.fieldId) {
-    const fieldById = fields.find(field => field.fieldId === row.fieldId);
+    const fieldById = activeFields.find(field => field.fieldId === row.fieldId);
     if (fieldById) {
       return fieldById;
     }
   }
   if (row.path?.length) {
-    const pathMatches = fields.filter(
+    const pathMatches = activeFields.filter(
       field => field.path?.join('\0') === row.path?.join('\0'),
     );
     if (pathMatches.length === 1) {
@@ -872,7 +891,9 @@ function findLatestFieldMeta(
     }
   }
 
-  const nameMatches = fields.filter(field => field.name === row.colName);
+  const nameMatches = activeFields.filter(
+    field => (field.originName || field.name) === row.colName,
+  );
   return nameMatches.length === 1 ? nameMatches[0] : undefined;
 }
 
@@ -889,29 +910,36 @@ export function reconcileChartConfigFieldMeta(
         if (!latestMeta) {
           return row;
         }
-        const legacyCustomDisplayName = getFieldCustomDisplayName({
-          name: row.colName,
-          path: row.path,
-          displayName: row.displayName,
-          comment: row.comment,
-          isDisplayNameCustom: row.isDisplayNameCustom,
-        });
         return {
           ...row,
-          fieldId: latestMeta.fieldId || row.fieldId,
-          path: latestMeta.path || row.path,
+          fieldId: latestMeta.fieldId ?? row.fieldId,
+          originName: latestMeta.originName ?? row.originName ?? row.colName,
+          path: latestMeta.path ?? row.path,
           displayName:
-            legacyCustomDisplayName ??
             latestMeta.displayName ??
-            row.displayName,
-          comment: latestMeta.comment ?? row.comment,
-          isDisplayNameCustom: legacyCustomDisplayName
-            ? true
-            : latestMeta.isDisplayNameCustom ?? row.isDisplayNameCustom,
+            row.displayName ??
+            latestMeta.originName ??
+            row.colName,
+          isDisplayNameCustom: undefined,
         };
       }),
     })),
   };
+}
+
+export function getChartFieldDisplayName(
+  field?: ChartDataSectionField | ChartDataViewMeta,
+): string {
+  const value = field as any;
+  return (
+    value?.alias?.name?.trim() ||
+    (value?.fieldId || value?.originName
+      ? getDatasetFieldDisplayName(value)
+      : getFieldDisplayName(value)) ||
+    value?.colName ||
+    value?.name ||
+    ''
+  );
 }
 
 /**

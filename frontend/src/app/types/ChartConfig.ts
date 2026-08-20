@@ -108,6 +108,7 @@ export type ChartDataSectionField = {
   uid?: string;
   fieldId?: string;
   colName: string;
+  originName?: string;
   desc?: string;
   type: DataViewFieldType;
   category: Uncapitalize<keyof typeof ChartDataViewFieldCategory>;

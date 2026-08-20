@@ -24,6 +24,7 @@ import datart.core.common.MessageResolver;
 import datart.core.common.RequestContext;
 import datart.core.data.provider.ExecuteParam;
 import datart.core.data.provider.QueryScript;
+import datart.core.data.provider.QueryOutputProjection;
 import datart.core.data.provider.ScriptVariable;
 import datart.core.data.provider.ScriptType;
 import datart.data.provider.calcite.*;
@@ -35,12 +36,23 @@ import datart.data.provider.freemarker.FreemarkerContext;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.SqlParseException;
+import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.parser.impl.SqlParserImpl;
+import org.apache.calcite.avatica.util.Casing;
+import org.apache.calcite.avatica.util.Quoting;
+import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Comparator;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -91,6 +103,7 @@ public class SqlScriptRender extends ScriptRender {
                     .withAddDefaultNamePrefix(result.isWithDefaultPrefix())
                     .withDefaultNamePrefix(result.getTablePrefix())
                     .withPage(withPage)
+                    .withPresentationAliases(!onlySelectStatement)
                     .withQuoteIdentifiers(quoteIdentifiers)
                     .build();
         } else {
@@ -99,6 +112,7 @@ public class SqlScriptRender extends ScriptRender {
                     .withQueryScriptProcessResult(result)
                     .withAddDefaultNamePrefix(result.isWithDefaultPrefix())
                     .withDefaultNamePrefix(result.getTablePrefix())
+                    .withPresentationAliases(!onlySelectStatement)
                     .withQuoteIdentifiers(quoteIdentifiers)
                     .build();
         }
@@ -106,11 +120,65 @@ public class SqlScriptRender extends ScriptRender {
 
         selectSql = SqlStringUtils.cleanupSql(selectSql);
 
+        if (withExecuteParam && !onlySelectStatement
+                && CollectionUtils.isNotEmpty(executeParam.getOutputProjections())) {
+            selectSql = addPresentationProjection(selectSql, executeParam.getOutputProjections());
+        }
+
         selectSql = replaceVariables(selectSql);
 
         RequestContext.setSql(selectSql);
 
         return selectSql;
+    }
+
+    private String addPresentationProjection(String technicalSql,
+                                             List<QueryOutputProjection> projections) throws SqlParseException {
+        SqlNode inner = SqlParser.create(technicalSql, SqlParser.config()
+                .withParserFactory(SqlParserImpl.FACTORY)
+                .withQuotedCasing(Casing.UNCHANGED)
+                .withUnquotedCasing(Casing.UNCHANGED)
+                .withConformance(SqlConformanceEnum.LENIENT)
+                .withQuoting(Quoting.BACK_TICK))
+                .parseQuery();
+        SqlNodeList selectList = new SqlNodeList(org.apache.calcite.sql.parser.SqlParserPos.ZERO);
+        for (QueryOutputProjection projection : projections) {
+            if (projection == null || StringUtils.isBlank(projection.getTechnicalAlias())
+                    || StringUtils.isBlank(projection.getDisplayAlias())) {
+                continue;
+            }
+            SqlNode technicalColumn = createQuotedTechnicalIdentifier(projection);
+            selectList.add(SqlNodeUtils.createAliasNode(technicalColumn, projection.getDisplayAlias()));
+        }
+        if (selectList.isEmpty()) {
+            return technicalSql;
+        }
+        SqlSelect outer = new SqlSelect(
+                org.apache.calcite.sql.parser.SqlParserPos.ZERO,
+                new SqlNodeList(org.apache.calcite.sql.parser.SqlParserPos.ZERO),
+                selectList,
+                SqlNodeUtils.createAliasNode(inner, "DATART_RESULT"),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
+        return SqlNodeUtils.toSql(outer, sqlDialect, quoteIdentifiers);
+    }
+
+    private SqlIdentifier createQuotedTechnicalIdentifier(QueryOutputProjection projection) {
+        SqlParserPos quoted = SqlParserPos.ZERO.withQuoting(true);
+        String technicalAlias = projection.getOrdinal() == null
+                ? projection.getTechnicalAlias()
+                : "DATART_RESULT_COL_" + projection.getOrdinal();
+        return new SqlIdentifier(
+                Arrays.asList("DATART_RESULT", technicalAlias),
+                null,
+                SqlParserPos.ZERO,
+                Arrays.asList(quoted, quoted));
     }
 
     public QueryScriptProcessor getScriptProcessor() {

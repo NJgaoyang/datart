@@ -51,6 +51,8 @@ public class ExecuteParam implements Serializable {
 
     private List<FunctionColumn> functionColumns;
 
+    private List<QueryOutputProjection> outputProjections;
+
     private Set<SelectColumn> includeColumns;
 
     private PageInfo pageInfo;

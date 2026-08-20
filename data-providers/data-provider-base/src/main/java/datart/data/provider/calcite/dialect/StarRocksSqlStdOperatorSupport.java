@@ -136,31 +136,33 @@ public class StarRocksSqlStdOperatorSupport extends StarRocksSqlDialect
             case AGG_DATE_SECOND:
                 return unparseDateFormat(writer, "%Y-%m-%d %H:%i:%s", call);
             case AGG_DATE_YEAR_NATIVE:
-                return unparseDateTrunc(writer, "year", call);
+                return unparseDateTrunc(writer, "year", call, true);
             case AGG_DATE_QUARTER_NATIVE:
-                return unparseDateTrunc(writer, "quarter", call);
+                return unparseDateTrunc(writer, "quarter", call, true);
             case AGG_DATE_MONTH_NATIVE:
-                return unparseDateTrunc(writer, "month", call);
+                return unparseDateTrunc(writer, "month", call, true);
             case AGG_DATE_WEEK_NATIVE:
-                return unparseDateTrunc(writer, "week", call);
+                return unparseDateTrunc(writer, "week", call, true);
             case AGG_DATE_DAY_NATIVE:
-                return unparseDateTrunc(writer, "day", call);
+                return unparseDateTrunc(writer, "day", call, true);
             case AGG_DATE_HOUR_NATIVE:
-                return unparseDateTrunc(writer, "hour", call);
+                return unparseDateTrunc(writer, "hour", call, false);
             case AGG_DATE_MINUTE_NATIVE:
-                return unparseDateTrunc(writer, "minute", call);
+                return unparseDateTrunc(writer, "minute", call, false);
             case AGG_DATE_SECOND_NATIVE:
-                return unparseDateTrunc(writer, "second", call);
+                return unparseDateTrunc(writer, "second", call, false);
             default:
                 break;
         }
         return false;
     }
 
-    private boolean unparseDateTrunc(SqlWriter writer, String unit, SqlCall call) {
-        writer.print("DATE_TRUNC('" + unit + "', ");
+    private boolean unparseDateTrunc(SqlWriter writer, String unit, SqlCall call, boolean asDate) {
+        writer.print(asDate ? "CAST(DATE_TRUNC('" : "DATE_TRUNC('");
+        writer.print(unit);
+        writer.print("', ");
         call.getOperandList().get(0).unparse(writer, 0, 0);
-        writer.print(")");
+        writer.print(asDate ? ") AS DATE)" : ")");
         return true;
     }
 

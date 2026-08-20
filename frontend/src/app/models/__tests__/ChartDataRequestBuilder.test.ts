@@ -35,6 +35,85 @@ import dayjs from 'dayjs';
 import { ChartDataRequestBuilder } from '../ChartDataRequestBuilder';
 
 describe('ChartDataRequestBuild Test', () => {
+  test('keeps technical query aliases and emits business output projections', () => {
+    const dataView = {
+      id: 'view-id',
+      meta: [
+        {
+          name: 'city',
+          originName: 'city',
+          fieldId: 'field-city',
+          path: ['DATART_VTABLE', 'city'],
+          displayName: '城市',
+          type: DataViewFieldType.STRING,
+        },
+        {
+          name: 'user_count',
+          originName: 'user_count',
+          fieldId: 'field-count',
+          path: ['DATART_VTABLE', 'user_count'],
+          displayName: '用户数',
+          type: DataViewFieldType.NUMERIC,
+        },
+      ],
+      computedFields: [],
+    } as any;
+    const request = new ChartDataRequestBuilder(dataView, [
+      {
+        type: ChartDataSectionType.Group,
+        key: 'group',
+        rows: [
+          {
+            fieldId: 'field-city',
+            colName: 'city',
+            displayName: '城市',
+            type: DataViewFieldType.STRING,
+            category: ChartDataViewFieldCategory.Field as any,
+          },
+        ],
+      },
+      {
+        type: ChartDataSectionType.Aggregate,
+        key: 'aggregate',
+        rows: [
+          {
+            fieldId: 'field-count',
+            colName: 'user_count',
+            displayName: '用户数',
+            aggregate: AggregateFieldActionType.Sum,
+            type: DataViewFieldType.NUMERIC,
+            category: ChartDataViewFieldCategory.Field as any,
+          },
+        ],
+      },
+    ] as any).build();
+
+    expect(request.groups).toEqual([
+      { alias: 'city', column: ['DATART_VTABLE', 'city'] },
+    ]);
+    expect(request.aggregators).toEqual([
+      {
+        alias: 'SUM(user_count)',
+        column: ['DATART_VTABLE', 'user_count'],
+        sqlOperator: AggregateFieldActionType.Sum,
+      },
+    ]);
+    expect(request.outputProjections).toEqual([
+      {
+        fieldId: 'field-city',
+        technicalAlias: 'city',
+        displayAlias: '城市',
+        ordinal: 0,
+      },
+      {
+        fieldId: 'field-count',
+        technicalAlias: 'SUM(user_count)',
+        displayAlias: '用户数',
+        ordinal: 1,
+      },
+    ]);
+  });
+
   test('should use runtime date level for a drillable group order', () => {
     const dayFieldName = `dt${DATE_LEVEL_DELIMITER}AGG_DATE_DAY`;
     const weekFieldName = `dt${DATE_LEVEL_DELIMITER}AGG_DATE_WEEK`;

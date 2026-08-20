@@ -81,6 +81,7 @@ import { TableColumnsList } from '../components/ChartGraph/BasicTableChart/types
 import {
   flattenHeaderRowsWithoutGroupRow,
   getAxisLengthByConfig,
+  getChartFieldDisplayName,
   getColumnRenderOriginName,
   getRequiredAggregatedSections,
   getRequiredGroupedSections,
@@ -757,7 +758,7 @@ export function getColumnRenderName(field?: ChartDataSectionField): string {
     return '[unknown]';
   }
   if (field.alias?.name) {
-    return field.alias.name;
+    return getChartFieldDisplayName(field);
   }
   return getColumnRenderOriginName(field);
 }

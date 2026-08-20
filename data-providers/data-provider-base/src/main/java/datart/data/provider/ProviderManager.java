@@ -26,6 +26,7 @@ import datart.core.data.provider.processor.DataProviderPostProcessor;
 import datart.core.data.provider.processor.DataProviderPreProcessor;
 import datart.data.provider.optimize.DataProviderExecuteOptimizer;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -131,6 +132,7 @@ public class ProviderManager extends DataProviderExecuteOptimizer implements Dat
         if (param.isCacheEnable()) {
             dataframe = getFromCache(queryKey);
             if (dataframe != null) {
+                normalizeResultFields(dataframe, param);
                 return dataframe;
             }
         }
@@ -139,6 +141,7 @@ public class ProviderManager extends DataProviderExecuteOptimizer implements Dat
         } else {
             dataframe = run(source, queryScript, param);
         }
+        normalizeResultFields(dataframe, param);
         if (param.isCacheEnable()) {
             setCache(queryKey, dataframe, param.getCacheExpires());
         }
@@ -257,6 +260,36 @@ public class ProviderManager extends DataProviderExecuteOptimizer implements Dat
         Dataframe dataframe = getDataProviderService(source.getType()).execute(source, queryScript, param);
         excludeColumns(dataframe, param.getIncludeColumns());
         return dataframe;
+    }
+
+    private void normalizeResultFields(Dataframe dataframe, ExecuteParam param) {
+        if (dataframe == null) {
+            return;
+        }
+        if (CollectionUtils.isEmpty(param.getOutputProjections())
+                || CollectionUtils.isEmpty(dataframe.getColumns())) {
+            dataframe.setResultFields(null);
+            return;
+        }
+        List<ResultFieldMeta> resultFields = new ArrayList<>();
+        for (QueryOutputProjection projection : param.getOutputProjections()) {
+            if (projection == null || StringUtils.isBlank(projection.getTechnicalAlias())
+                    || projection.getOrdinal() == null || projection.getOrdinal() < 0
+                    || projection.getOrdinal() >= dataframe.getColumns().size()) {
+                continue;
+            }
+            Column column = dataframe.getColumns().get(projection.getOrdinal());
+            column.setName(projection.getTechnicalAlias());
+            ResultFieldMeta resultField = new ResultFieldMeta();
+            resultField.setFieldId(projection.getFieldId());
+            resultField.setTechnicalName(projection.getTechnicalAlias());
+            resultField.setDisplayName(projection.getDisplayAlias());
+            resultField.setOrdinal(projection.getOrdinal());
+            resultFields.add(resultField);
+        }
+        if (!resultFields.isEmpty()) {
+            dataframe.setResultFields(resultFields);
+        }
     }
 
 }

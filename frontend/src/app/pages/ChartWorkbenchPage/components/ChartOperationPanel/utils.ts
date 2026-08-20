@@ -29,7 +29,10 @@ import { updateBy } from 'app/utils/mutation';
 import { DATE_LEVEL_DELIMITER } from 'globalConstants';
 import i18n from 'i18next';
 import { CloneValueDeep } from 'utils/object';
-import { getFieldDisplayName } from 'utils/utils';
+import {
+  getDatasetFieldDisplayName,
+  getFieldDisplayName,
+} from 'utils/utils';
 import { DATE_LEVELS } from '../../slice/constant';
 
 export const getAllFieldsOfEachType = (args: {
@@ -266,6 +269,11 @@ export const handleDateLevelsName = (
       })
     }${levelSuffix}`;
   } else {
-    return col.name;
+    return getDatasetFieldDisplayName({
+      originName: col.field || col.name,
+      name: col.name,
+      path: col.path,
+      displayName: col.displayName,
+    });
   }
 };

@@ -179,6 +179,50 @@ export class ChartDataRequestBuilder {
     return c.colName;
   }
 
+  private buildBusinessAlias(c?: ChartDataSectionField) {
+    return (
+      c?.alias?.name?.trim() ||
+      c?.displayName?.trim() ||
+      c?.originName?.trim()
+    );
+  }
+
+  private buildOutputProjections(outputs =
+    this.aggregation === false
+      ? this.buildSelectColumns()
+      : this.buildGroups().concat(this.buildAggregators())) {
+    if (isEmptyArray(outputs)) {
+      return undefined;
+    }
+    const candidates = this.chartDataConfigs.flatMap(
+      config => getRuntimeDateLevelFields(config.rows) || [],
+    );
+    const projections = outputs.map((output, ordinal) => {
+      const candidate = candidates.find(field => {
+        if (
+          this.buildAliasName(field) !== output.alias ||
+          !isEqualObject(this.buildColumnName(field), output.column)
+        ) {
+          return false;
+        }
+        return 'sqlOperator' in output
+          ? field.aggregate === output.sqlOperator
+          : true;
+      });
+      return {
+        fieldId: candidate?.fieldId,
+        technicalAlias: output.alias,
+        displayAlias: this.buildBusinessAlias(candidate) || output.alias,
+        ordinal,
+      };
+    });
+    return projections.some(
+      projection => projection.displayAlias !== projection.technicalAlias,
+    )
+      ? projections
+      : undefined;
+  }
+
   private buildColumnName(col) {
     if (col.fieldId) {
       const field = findFieldByIdInMeta(this.dataView.meta, col.fieldId);
@@ -635,6 +679,7 @@ export class ChartDataRequestBuilder {
 
   public build(): ChartDataRequest {
     const validFilters = this.removeInvalidFilter(this.buildFilters());
+    const outputProjections = this.buildOutputProjections();
     return {
       ...this.buildViewConfigs(),
       viewId: this.dataView?.id,
@@ -647,12 +692,16 @@ export class ChartDataRequestBuilder {
       columns: this.buildSelectColumns(),
       script: this.script,
       params: this.variableParams,
+      ...(outputProjections ? { outputProjections } : {}),
     };
   }
 
   public buildDetails(): ChartDataRequest {
     const validFilters = this.removeInvalidFilter(
       this.buildFilters().filter(f => !f.aggOperator),
+    );
+    const outputProjections = this.buildOutputProjections(
+      this.buildDetailColumns(),
     );
     return {
       ...this.buildViewConfigs(),
@@ -666,6 +715,7 @@ export class ChartDataRequestBuilder {
       columns: this.buildDetailColumns(),
       script: this.script,
       params: this.variableParams,
+      ...(outputProjections ? { outputProjections } : {}),
     };
   }
 

@@ -69,6 +69,35 @@ class SqlStdOperatorSupportTest {
         assertTrue(sql.contains("DATE_TRUNC('SECOND'"));
     }
 
+    @Test
+    void shouldReturnDateForStarRocksNativeDateBucketsOnly() throws Exception {
+        StarRocksSqlStdOperatorSupport dialect = new StarRocksSqlStdOperatorSupport();
+        String dateSql = render(dialect,
+                "AGG_DATE_YEAR_NATIVE(created_at), "
+                        + "AGG_DATE_QUARTER_NATIVE(created_at), "
+                        + "AGG_DATE_MONTH_NATIVE(created_at), "
+                        + "AGG_DATE_WEEK_NATIVE(created_at), "
+                        + "AGG_DATE_DAY_NATIVE(created_at)")
+                .toUpperCase(Locale.ROOT);
+        String datetimeSql = render(dialect,
+                "AGG_DATE_HOUR_NATIVE(created_at), "
+                        + "AGG_DATE_MINUTE_NATIVE(created_at), "
+                        + "AGG_DATE_SECOND_NATIVE(created_at)")
+                .toUpperCase(Locale.ROOT);
+
+        assertTrue(dateSql.contains("CAST(DATE_TRUNC('YEAR'"));
+        assertTrue(dateSql.contains("CAST(DATE_TRUNC('QUARTER'"));
+        assertTrue(dateSql.contains("CAST(DATE_TRUNC('MONTH'"));
+        assertTrue(dateSql.contains("CAST(DATE_TRUNC('WEEK'"));
+        assertTrue(dateSql.contains("CAST(DATE_TRUNC('DAY'"));
+        assertTrue(dateSql.contains("AS DATE)"));
+
+        assertTrue(datetimeSql.contains("DATE_TRUNC('HOUR'"));
+        assertTrue(datetimeSql.contains("DATE_TRUNC('MINUTE'"));
+        assertTrue(datetimeSql.contains("DATE_TRUNC('SECOND'"));
+        assertFalse(datetimeSql.contains("AS DATE"));
+    }
+
     private void assertMysqlCompatibleFunctions(SqlDialect dialect) throws Exception {
         String sql = render(dialect, "TRUNC(dt, 2), DAY_OF_WEEK(dt), DAY_OF_MONTH(dt), DAY_OF_YEAR(dt)")
                 .toUpperCase(Locale.ROOT);

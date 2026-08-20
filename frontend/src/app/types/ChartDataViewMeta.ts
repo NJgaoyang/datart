@@ -31,6 +31,7 @@ export type ChartDataViewMeta = {
   customName?: string;
   path?: string[];
   isActive?: boolean;
+  active?: boolean;
   displayName?: string;
   comment?: string;
   isDisplayNameCustom?: boolean;

@@ -426,12 +426,25 @@ export function newIssueUrl({ type, ...options }) {
 }
 
 export type FieldDisplayMeta = {
+  fieldId?: string;
+  originName?: string;
   name?: string;
   path?: string[];
   displayName?: string;
   comment?: string;
   isDisplayNameCustom?: boolean;
 };
+
+/** Dataset/ViewField is authoritative once it is available. */
+export function getDatasetFieldDisplayName(field?: FieldDisplayMeta): string {
+  return (
+    field?.displayName?.trim() ||
+    field?.originName?.trim() ||
+    field?.name?.trim() ||
+    field?.path?.[field.path.length - 1] ||
+    ''
+  );
+}
 
 export function getFieldCustomDisplayName(
   field: FieldDisplayMeta,

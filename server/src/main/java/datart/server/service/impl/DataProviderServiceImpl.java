@@ -333,6 +333,7 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
                 .columns(viewExecuteParam.getColumns())
                 .keywords(viewExecuteParam.getKeywords())
                 .functionColumns(viewExecuteParam.getFunctionColumns())
+                .outputProjections(viewExecuteParam.getOutputProjections())
                 .aggregators(viewExecuteParam.getAggregators())
                 .filters(viewExecuteParam.getFilters())
                 .groups(viewExecuteParam.getGroups())
