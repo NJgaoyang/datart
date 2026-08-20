@@ -5,6 +5,7 @@ import datart.core.entity.View;
 import datart.core.entity.ViewField;
 import datart.core.mappers.ext.SourceSchemasMapperExt;
 import datart.core.mappers.ext.ViewFieldMapperExt;
+import datart.server.base.dto.ViewFieldDTO;
 import datart.server.common.fieldmeta.SourceSchemaIndex;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ViewFieldServiceImplTest {
@@ -106,6 +108,18 @@ class ViewFieldServiceImplTest {
         sql.setModel("{\"columns\":{\"id\":{\"name\":[\"users\",\"id\"]}},\"hierarchy\":{\"id\":{\"name\":[\"users\",\"id\"],\"comment\":\"客户编号\"}}}");
         service.reconcile(sql);
         assertEquals("客户编号", mapper.fields.get("SQL|id").getSourceComment());
+    }
+
+    @Test
+    void returnsIndependentEmptyLists() {
+        ViewFieldServiceImpl service = new ViewFieldServiceImpl(new FakeViewFieldMapper(), null);
+
+        List<ViewFieldDTO> first = service.listByViewId("view-1");
+        List<ViewFieldDTO> second = service.listByViewId("view-2");
+
+        assertEquals(List.of(), first);
+        assertEquals(List.of(), second);
+        assertNotSame(first, second);
     }
 
     private static View view(String type, String model) {

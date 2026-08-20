@@ -443,14 +443,15 @@ export function transformHierarchyMeta(
     ? modelObj.columns || modelObj
     : modelObj.hierarchy;
 
-  const fieldsById = new Map((viewFields || []).map(field => [field.fieldId, field]));
+  const normalizedViewFields = Array.isArray(viewFields) ? viewFields : [];
+  const fieldsById = new Map(normalizedViewFields.map(field => [field.fieldId, field]));
   const fieldsByPath = new Map(
-    (viewFields || [])
+    normalizedViewFields
       .filter(field => field.sourcePath?.length)
       .map(field => [field.sourcePath!.join('.'), field]),
   );
   const fieldsByName = new Map<string, ViewFieldMeta | undefined>();
-  (viewFields || []).forEach(field => {
+  normalizedViewFields.forEach(field => {
     if (!fieldsByName.has(field.originName)) {
       fieldsByName.set(field.originName, field);
     } else {

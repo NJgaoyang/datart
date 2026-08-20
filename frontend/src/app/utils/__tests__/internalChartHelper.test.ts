@@ -1860,6 +1860,15 @@ describe('Internal Chart Helper ', () => {
     });
   });
 
+  test('ignores non-array view field metadata', () => {
+    const metas = transformHierarchyMeta(
+      JSON.stringify({ columns: { id: { name: 'id' } } }),
+      { $ref: '$.data.views[0].fields' } as any,
+    );
+
+    expect(metas[0].name).toBe('id');
+  });
+
   describe.each([
     [false, 0, false],
     [false, true, true],

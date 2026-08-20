@@ -41,6 +41,7 @@ import datart.security.util.PermissionHelper;
 import datart.server.base.dto.ViewComposeResult;
 import datart.server.base.dto.ViewDetailDTO;
 import datart.server.base.dto.ViewLineageDTO;
+import datart.server.base.dto.ViewFieldDTO;
 import datart.server.base.params.*;
 import datart.server.base.transfer.ImportStrategy;
 import datart.server.base.transfer.TransferConfig;
@@ -391,7 +392,8 @@ public class ViewServiceImpl extends BaseService implements ViewService {
     @Override
     public ViewDetailDTO buildViewDetail(View view) {
         ViewDetailDTO viewDetailDTO = new ViewDetailDTO(view);
-        viewDetailDTO.setFields(viewFieldService.listByViewId(view.getId()));
+        List<ViewFieldDTO> fields = viewFieldService.listByViewId(view.getId());
+        viewDetailDTO.setFields(fields == null ? new ArrayList<>() : new ArrayList<>(fields));
         return viewDetailDTO;
     }
 

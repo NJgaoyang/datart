@@ -41,7 +41,9 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
 
     @Override
     public List<ViewFieldDTO> listByViewId(String viewId) {
-        return mapper.listByViewId(viewId).stream().map(this::toDTO).toList();
+        return mapper.listByViewId(viewId).stream()
+                .map(this::toDTO)
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     @Override
