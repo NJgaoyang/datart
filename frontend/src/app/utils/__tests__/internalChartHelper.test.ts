@@ -1556,6 +1556,27 @@ describe('Internal Chart Helper ', () => {
       expect(result).toEqual('a');
     });
 
+    test('should fall back to the legacy comment when displayName is the origin name', () => {
+      const result = getColumnRenderOriginName({
+        colName: 'created_date',
+        displayName: 'created_date',
+        comment: '创建时间',
+        isDisplayNameCustom: false,
+      } as ChartDataSectionField);
+
+      expect(result).toEqual('创建时间');
+    });
+
+    test('should keep the origin name when no trusted display metadata exists', () => {
+      const result = getColumnRenderOriginName({
+        colName: 'cabinet_efficiency',
+        displayName: 'cabinet_efficiency',
+        isDisplayNameCustom: false,
+      } as ChartDataSectionField);
+
+      expect(result).toEqual('cabinet_efficiency');
+    });
+
     test('should get name with aggregate', () => {
       const config = {
         colName: 'a',
@@ -1857,6 +1878,73 @@ describe('Internal Chart Helper ', () => {
       fieldId: 'current',
       path: ['users', 'id'],
       displayName: '用户编号',
+    });
+  });
+
+  test('preserves a historical chart displayName when ViewField metadata changes', () => {
+    const config = {
+      datas: [
+        {
+          rows: [
+            {
+              category: 'field',
+              colName: 'net_increase_users',
+              displayName: '在租用户较昨日净增人数',
+              isDisplayNameCustom: true,
+            },
+          ],
+        },
+      ],
+    } as any;
+    const fields = [
+      {
+        name: 'net_increase_users',
+        fieldId: 'current',
+        displayName: 'net_increase_users',
+        isDisplayNameCustom: false,
+      },
+    ] as any;
+
+    const result = reconcileChartConfigFieldMeta(config, fields);
+
+    expect(result.datas?.[0].rows?.[0]).toMatchObject({
+      fieldId: 'current',
+      displayName: '在租用户较昨日净增人数',
+      isDisplayNameCustom: true,
+    });
+  });
+
+  test('keeps chart alias while synchronizing field identity', () => {
+    const config = {
+      datas: [
+        {
+          rows: [
+            {
+              category: 'field',
+              colName: 'net_increase_users',
+              alias: { name: '净增' },
+              displayName: '历史字段名',
+              isDisplayNameCustom: true,
+            },
+          ],
+        },
+      ],
+    } as any;
+    const fields = [
+      {
+        name: 'net_increase_users',
+        fieldId: 'current',
+        displayName: '在租用户较昨日净增人数',
+        isDisplayNameCustom: false,
+      },
+    ] as any;
+
+    const result = reconcileChartConfigFieldMeta(config, fields);
+
+    expect(result.datas?.[0].rows?.[0]).toMatchObject({
+      fieldId: 'current',
+      alias: { name: '净增' },
+      displayName: '历史字段名',
     });
   });
 

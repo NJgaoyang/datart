@@ -338,7 +338,13 @@ export function getColumnRenderOriginName(c?: ChartDataSectionField) {
   if (!c) {
     return '[unknown]';
   }
-  const displayName = c.displayName || c.colName;
+  const displayName = getFieldDisplayName({
+    name: c.colName,
+    path: c.path,
+    displayName: c.displayName,
+    comment: c.comment,
+    isDisplayNameCustom: c.isDisplayNameCustom,
+  });
   if (c.aggregate === AggregateFieldActionType.None) {
     return displayName;
   }
@@ -869,13 +875,23 @@ export function reconcileChartConfigFieldMeta(
         if (!latestMeta) {
           return row;
         }
+        const legacyCustomDisplayName = getFieldCustomDisplayName({
+          name: row.colName,
+          path: row.path,
+          displayName: row.displayName,
+          comment: row.comment,
+          isDisplayNameCustom: row.isDisplayNameCustom,
+        });
         return {
           ...row,
           fieldId: latestMeta.fieldId || row.fieldId,
           path: latestMeta.path || row.path,
-          displayName: latestMeta.displayName,
-          comment: latestMeta.comment,
-          isDisplayNameCustom: latestMeta.isDisplayNameCustom,
+          displayName:
+            legacyCustomDisplayName ?? latestMeta.displayName ?? row.displayName,
+          comment: latestMeta.comment ?? row.comment,
+          isDisplayNameCustom: legacyCustomDisplayName
+            ? true
+            : latestMeta.isDisplayNameCustom ?? row.isDisplayNameCustom,
         };
       }),
     })),
