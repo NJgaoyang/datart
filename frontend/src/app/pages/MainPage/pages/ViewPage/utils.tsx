@@ -93,13 +93,13 @@ export function resolveSchemaColumnComment(
 
   const path = field.path?.length
     ? field.path
-    : Array.isArray(field.name)
+    : Array.isArray(field.name) && field.name.length >= 2
     ? field.name
     : undefined;
-  const columnName = path?.[path.length - 1] || getSchemaColumnName(field.name);
-  if (!columnName) {
+  if (!path?.length) {
     return undefined;
   }
+  const columnName = path[path.length - 1];
 
   const tableName =
     path && path.length >= 2 ? path[path.length - 2] : undefined;

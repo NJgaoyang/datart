@@ -203,6 +203,26 @@ class ViewFieldServiceImplTest {
     }
 
     @Test
+    void sqlPhysicalPathKeepsAliasAsQueryIdentityAndUsesSourceComment() {
+        FakeViewFieldMapper mapper = new FakeViewFieldMapper();
+        ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper,
+                schemaIndex("ads", "daily", "renting_users", "在租用户数"));
+        View sql = view("SQL", """
+                {"columns":{"current_users":{
+                  "name":["current_users"],
+                  "path":["ads","daily","renting_users"]
+                }}}
+                """);
+
+        service.reconcile(sql);
+
+        ViewField actual = mapper.fields.get("SQL|current_users");
+        assertEquals("current_users", actual.getOriginName());
+        assertEquals("在租用户数", actual.getSourceComment());
+        assertEquals("在租用户数", service.resolveDisplayName(actual));
+    }
+
+    @Test
     void sqlExpressionWithoutTrustedMetadataKeepsOriginName() {
         FakeViewFieldMapper mapper = new FakeViewFieldMapper();
         ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, null);
@@ -238,9 +258,15 @@ class ViewFieldServiceImplTest {
     }
 
     private static SourceSchemaIndex schemaIndex(String comment) {
+        return schemaIndex("db", "user", "id", comment);
+    }
+
+    private static SourceSchemaIndex schemaIndex(String database, String table, String column, String comment) {
         SourceSchemasMapperExt schemasMapper = Mockito.mock(SourceSchemasMapperExt.class);
         SourceSchemas schemas = new SourceSchemas();
-        schemas.setSchemas("[{\"dbName\":\"db\",\"tables\":[{\"tableName\":\"user\",\"columns\":[{\"name\":[\"db\",\"user\",\"id\"],\"comment\":\"" + comment + "\"}]}]}]");
+        schemas.setSchemas("[{\"dbName\":\"" + database + "\",\"tables\":[{\"tableName\":\"" + table
+                + "\",\"columns\":[{\"name\":[\"" + database + "\",\"" + table + "\",\"" + column
+                + "\"],\"comment\":\"" + comment + "\"}]}]}]");
         Mockito.when(schemasMapper.selectBySource("source-1")).thenReturn(schemas);
         return new SourceSchemaIndex(schemasMapper, new com.fasterxml.jackson.databind.ObjectMapper());
     }

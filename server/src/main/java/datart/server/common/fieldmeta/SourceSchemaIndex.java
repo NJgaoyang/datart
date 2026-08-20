@@ -135,5 +135,43 @@ public class SourceSchemaIndex {
             }
             return matches.get(0);
         }
+
+        public ColumnMeta tableColumn(List<String> tablePath, String columnName) {
+            if (tablePath == null || tablePath.isEmpty() || columnName == null || columnName.isBlank()) {
+                return null;
+            }
+            List<ColumnMeta> matches = columns.values().stream()
+                    .flatMap(List::stream)
+                    .filter(item -> normalize(item.column()).equals(normalize(columnName)))
+                    .filter(item -> matchesTable(item, tablePath))
+                    .toList();
+            return matches.size() == 1 ? matches.get(0) : null;
+        }
+
+        public List<ColumnMeta> tableColumns(List<String> tablePath) {
+            if (tablePath == null || tablePath.isEmpty()) {
+                return List.of();
+            }
+            List<ColumnMeta> matches = columns.values().stream()
+                    .flatMap(List::stream)
+                    .filter(item -> matchesTable(item, tablePath))
+                    .toList();
+            if (matches.isEmpty()) {
+                return List.of();
+            }
+            long tableCount = matches.stream()
+                    .map(item -> normalize(item.database()) + "\u0000" + normalize(item.table()))
+                    .distinct()
+                    .count();
+            return tableCount == 1 ? matches : List.of();
+        }
+
+        private static boolean matchesTable(ColumnMeta item, List<String> tablePath) {
+            int size = tablePath.size();
+            if (!normalize(item.table()).equals(normalize(tablePath.get(size - 1)))) {
+                return false;
+            }
+            return size < 2 || normalize(item.database()).equals(normalize(tablePath.get(size - 2)));
+        }
     }
 }

@@ -79,6 +79,7 @@ describe('field display metadata', () => {
       }),
     ).toBe('订单ID');
     expect(resolveSchemaColumnComment(schemas, { name: 'id' })).toBeUndefined();
+    expect(resolveSchemaColumnComment(schemas, { name: ['id'] })).toBeUndefined();
   });
 });
 
