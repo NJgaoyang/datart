@@ -62,12 +62,22 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
     @Override
     @Transactional
     public void reconcile(View view) {
+        reconcile(view, false);
+    }
+
+    @Override
+    @Transactional
+    public void migrateLegacyMetadata(View view) {
+        reconcile(view, true);
+    }
+
+    private void reconcile(View view, boolean migrateLegacyMetadata) {
         if (view == null || view.getId() == null || view.getModel() == null || view.getModel().isBlank()) {
             return;
         }
         try {
             ObjectNode root = (ObjectNode) OBJECT_MAPPER.readTree(view.getModel());
-            Map<String, List<ObjectNode>> references = collectReferences(root);
+            Map<String, FieldReferences> references = collectReferences(root);
             Map<String, ViewField> existing = mapper.listByViewId(view.getId()).stream()
                     .collect(Collectors.toMap(ViewField::getCanonicalKey, item -> item,
                             (left, right) -> left, LinkedHashMap::new));
@@ -75,9 +85,9 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
             Set<String> sqlOutputNames = new HashSet<>();
             SourceSchemaIndex.Index source = schemaIndex == null ? null : schemaIndex.forSource(view.getSourceId());
             int ordinal = 0;
-            for (Map.Entry<String, List<ObjectNode>> entry : references.entrySet()) {
-                List<ObjectNode> refs = entry.getValue();
-                ObjectNode first = refs.get(0);
+            for (Map.Entry<String, FieldReferences> entry : references.entrySet()) {
+                FieldReferences refs = entry.getValue();
+                ObjectNode first = refs.primary();
                 FieldData data = FieldData.from(entry.getKey(), first, view.getType());
                 if ("SQL".equalsIgnoreCase(view.getType()) && !sqlOutputNames.add(data.originName())) {
                     throw new IllegalArgumentException("SQL_OUTPUT_COLUMN_DUPLICATED: " + data.originName());
@@ -93,7 +103,6 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
                     field.setCanonicalKey(data.canonicalKey());
                     field.setCreateBy(currentUserId());
                     field.setCreateTime(new Date());
-                    field.setCustomName(legacyCustomName(view.getType(), entry.getKey(), refs, source));
                 }
                 field.setViewId(view.getId());
                 field.setCanonicalKey(data.canonicalKey());
@@ -104,7 +113,16 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
                 field.setExpression(data.expression());
                 field.setOrdinal(ordinal++);
                 field.setActive(true);
-                field.setSourceComment(sourceComment(view.getType(), data, refs, source, field));
+                String sourceComment = sourceComment(view.getType(), data, refs, source);
+                if (sourceComment != null) {
+                    field.setSourceComment(sourceComment);
+                }
+                if (migrateLegacyMetadata && trimToNull(field.getCustomName()) == null) {
+                    String customName = legacyCustomName(view.getType(), data.canonicalKey(), refs, source);
+                    if (customName != null) {
+                        field.setCustomName(customName);
+                    }
+                }
                 field.setUpdateBy(currentUserId());
                 field.setUpdateTime(new Date());
                 if (existing.containsKey(data.canonicalKey())) {
@@ -113,7 +131,7 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
                     mapper.insert(field);
                 }
                 seen.add(data.canonicalKey());
-                for (ObjectNode node : refs) {
+                for (ObjectNode node : refs.nodes()) {
                     node.put("fieldId", field.getId());
                 }
             }
@@ -160,29 +178,29 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
         return sourceComment == null ? field.getOriginName() : sourceComment;
     }
 
-    private Map<String, List<ObjectNode>> collectReferences(ObjectNode root) {
-        Map<String, List<ObjectNode>> result = new LinkedHashMap<>();
-        collectMap(root.path("columns"), result);
-        collectMap(root.path("hierarchy"), result);
+    private Map<String, FieldReferences> collectReferences(ObjectNode root) {
+        Map<String, FieldReferences> result = new LinkedHashMap<>();
+        collectMap(root.path("columns"), result, ReferenceRole.COLUMN);
+        collectMap(root.path("hierarchy"), result, ReferenceRole.HIERARCHY);
         JsonNode computedFields = root.get("computedFields");
         if (computedFields != null && computedFields.isArray()) {
             for (JsonNode node : computedFields) {
                 if (node.isObject()) {
-                    addReference(result, "computed_" + result.size(), (ObjectNode) node);
+                    addReference(result, "computed_" + result.size(), (ObjectNode) node, ReferenceRole.COMPUTED);
                 }
             }
         }
         return result;
     }
 
-    private void collectMap(JsonNode root, Map<String, List<ObjectNode>> result) {
+    private void collectMap(JsonNode root, Map<String, FieldReferences> result, ReferenceRole role) {
         if (root == null || !root.isObject()) {
             return;
         }
-        root.fields().forEachRemaining(entry -> collectNode(entry.getKey(), entry.getValue(), result));
+        root.fields().forEachRemaining(entry -> collectNode(entry.getKey(), entry.getValue(), result, role));
     }
 
-    private void collectNode(String fallback, JsonNode node, Map<String, List<ObjectNode>> result) {
+    private void collectNode(String fallback, JsonNode node, Map<String, FieldReferences> result, ReferenceRole role) {
         if (!node.isObject()) {
             return;
         }
@@ -191,42 +209,42 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
                 ? (ArrayNode) object.get("children") : null;
         if (children != null && !children.isEmpty()) {
             for (JsonNode child : children) {
-                collectNode(fallback, child, result);
+                collectNode(fallback, child, result, role);
             }
             return;
         }
         FieldData data = FieldData.from(fallback, object, null);
-        addReference(result, data.canonicalKey(), object);
+        addReference(result, data.canonicalKey(), object, role);
     }
 
-    private void addReference(Map<String, List<ObjectNode>> result, String key, ObjectNode node) {
+    private void addReference(Map<String, FieldReferences> result, String key, ObjectNode node, ReferenceRole role) {
         FieldData data = FieldData.from(key, node, null);
-        result.computeIfAbsent(data.canonicalKey(), ignored -> new ArrayList<>()).add(node);
+        result.computeIfAbsent(data.canonicalKey(), ignored -> new FieldReferences()).add(role, node);
     }
 
-    private String legacyCustomName(String viewType, String fieldKey, List<ObjectNode> refs,
+    private String legacyCustomName(String viewType, String fieldKey, FieldReferences refs,
                                     SourceSchemaIndex.Index source) {
-        ObjectNode column = refs.isEmpty() ? null : refs.get(0);
-        ObjectNode hierarchy = refs.size() > 1 ? refs.get(1) : null;
-        ResolvedFieldMeta resolved = legacyResolver.resolve(fieldKey, column, hierarchy, source, viewType);
+        ResolvedFieldMeta resolved = legacyResolver.resolve(fieldKey, refs.resolverColumn(), refs.hierarchy(), source, viewType);
         return resolved.displayNameCustom() ? trimToNull(resolved.customDisplayName()) : null;
     }
 
-    private String sourceComment(String viewType, FieldData data, List<ObjectNode> refs,
-                                 SourceSchemaIndex.Index source, ViewField existing) {
+    private String sourceComment(String viewType, FieldData data, FieldReferences refs,
+                                 SourceSchemaIndex.Index source) {
         if ("COMPUTED".equalsIgnoreCase(data.category())) {
             return null;
         }
         SourceSchemaIndex.ColumnMeta schema = source == null ? null : source.exact(data.sourcePath());
         String schemaComment = schema == null ? null : trimToNull(schema.comment());
-        if (schemaComment != null && ("STRUCT".equalsIgnoreCase(viewType) || "SQL".equalsIgnoreCase(viewType))) {
-            return schemaComment;
+        ResolvedFieldMeta resolved = legacyResolver.resolve(data.canonicalKey(), refs.resolverColumn(), refs.hierarchy(),
+                source, viewType);
+        String modelComment = trimToNull(resolved.comment());
+        if ("SQL".equalsIgnoreCase(viewType)) {
+            return modelComment == null ? schemaComment : modelComment;
         }
-        ObjectNode column = refs.isEmpty() ? null : refs.get(0);
-        ObjectNode hierarchy = refs.size() > 1 ? refs.get(1) : null;
-        ResolvedFieldMeta resolved = legacyResolver.resolve(data.canonicalKey(), column, hierarchy, source, viewType);
-        String comment = trimToNull(resolved.comment());
-        return comment == null && existing != null ? trimToNull(existing.getSourceComment()) : comment;
+        if ("STRUCT".equalsIgnoreCase(viewType)) {
+            return schemaComment == null ? modelComment : schemaComment;
+        }
+        return modelComment == null ? schemaComment : modelComment;
     }
 
     private ViewFieldDTO toDTO(ViewField field) {
@@ -270,6 +288,51 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
 
     private static String trimToNull(String value) {
         return value == null || value.trim().isEmpty() ? null : value.trim();
+    }
+
+    private enum ReferenceRole {
+        COLUMN,
+        HIERARCHY,
+        COMPUTED
+    }
+
+    private static final class FieldReferences {
+        private final List<ObjectNode> columns = new ArrayList<>();
+        private final List<ObjectNode> hierarchies = new ArrayList<>();
+        private final List<ObjectNode> computed = new ArrayList<>();
+
+        private void add(ReferenceRole role, ObjectNode node) {
+            switch (role) {
+                case COLUMN -> columns.add(node);
+                case HIERARCHY -> hierarchies.add(node);
+                case COMPUTED -> computed.add(node);
+            }
+        }
+
+        private ObjectNode primary() {
+            ObjectNode resolverColumn = resolverColumn();
+            return resolverColumn == null ? hierarchy() : resolverColumn;
+        }
+
+        private ObjectNode resolverColumn() {
+            return columns.isEmpty() && !computed.isEmpty() ? computed.get(0) : column();
+        }
+
+        private ObjectNode column() {
+            return columns.isEmpty() ? null : columns.get(0);
+        }
+
+        private ObjectNode hierarchy() {
+            return hierarchies.isEmpty() ? null : hierarchies.get(0);
+        }
+
+        private List<ObjectNode> nodes() {
+            List<ObjectNode> nodes = new ArrayList<>();
+            nodes.addAll(columns);
+            nodes.addAll(hierarchies);
+            nodes.addAll(computed);
+            return nodes;
+        }
     }
 
     private record FieldData(String canonicalKey, String originName, List<String> sourcePath,

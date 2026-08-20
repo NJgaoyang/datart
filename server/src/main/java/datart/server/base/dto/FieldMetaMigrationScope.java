@@ -19,4 +19,13 @@ public class FieldMetaMigrationScope {
     private int rowsUpdated;
     private int unmatched;
     private int referenceMismatch;
+    private int sqlViews;
+    private int sqlFields;
+    private int recoverableCustomNames;
+    private int recoverableLegacyComments;
+    private int recoverableExactSchemaComments;
+    private int existingCustomNames;
+    private int preservedExistingComments;
+    private int unresolvedSqlFields;
+    private int blockingSqlConflicts;
 }

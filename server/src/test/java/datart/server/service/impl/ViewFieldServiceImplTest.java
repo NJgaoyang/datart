@@ -17,6 +17,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ViewFieldServiceImplTest {
@@ -122,6 +123,99 @@ class ViewFieldServiceImplTest {
         assertNotSame(first, second);
     }
 
+    @Test
+    void normalReconcileDoesNotReviveClearedLegacyCustomName() {
+        FakeViewFieldMapper mapper = new FakeViewFieldMapper();
+        ViewField existing = field("field-1", "view-1", "SQL|net_increase_users", "net_increase_users");
+        mapper.fields.put(existing.getCanonicalKey(), existing);
+        ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, null);
+        View sql = view("SQL", "{\"columns\":{\"net\":{\"name\":[\"net_increase_users\"],\"displayName\":\"在租用户较昨日净增人数\",\"isDisplayNameCustom\":true}}}");
+
+        service.reconcile(sql);
+
+        assertNull(mapper.fields.get("SQL|net_increase_users").getCustomName());
+        assertEquals("field-1", mapper.fields.get("SQL|net_increase_users").getId());
+    }
+
+    @Test
+    void migrationOnlyBackfillsLegacyCustomNameWithoutChangingFieldId() {
+        FakeViewFieldMapper mapper = new FakeViewFieldMapper();
+        ViewField existing = field("field-1", "view-1", "SQL|net_increase_users", "net_increase_users");
+        mapper.fields.put(existing.getCanonicalKey(), existing);
+        ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, null);
+        View sql = view("SQL", "{\"columns\":{\"net\":{\"name\":[\"net_increase_users\"],\"displayName\":\"在租用户较昨日净增人数\",\"isDisplayNameCustom\":true}}}");
+
+        service.migrateLegacyMetadata(sql);
+
+        ViewField actual = mapper.fields.get("SQL|net_increase_users");
+        assertEquals("field-1", actual.getId());
+        assertEquals("在租用户较昨日净增人数", actual.getCustomName());
+    }
+
+    @Test
+    void migrationOnlyDoesNotOverwriteExistingCustomName() {
+        FakeViewFieldMapper mapper = new FakeViewFieldMapper();
+        ViewField existing = field("field-1", "view-1", "SQL|net_increase_users", "net_increase_users");
+        existing.setCustomName("用户自定义A");
+        mapper.fields.put(existing.getCanonicalKey(), existing);
+        ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, null);
+        View sql = view("SQL", "{\"columns\":{\"net\":{\"name\":[\"net_increase_users\"],\"displayName\":\"历史B\",\"isDisplayNameCustom\":true}}}");
+
+        service.migrateLegacyMetadata(sql);
+
+        assertEquals("用户自定义A", mapper.fields.get("SQL|net_increase_users").getCustomName());
+    }
+
+    @Test
+    void normalReconcilePreservesExistingCommentWhenNoTrustedCommentExists() {
+        FakeViewFieldMapper mapper = new FakeViewFieldMapper();
+        ViewField existing = field("field-1", "view-1", "COMPUTED|amount / count", "avg_price");
+        existing.setSourceComment("平均价格");
+        mapper.fields.put(existing.getCanonicalKey(), existing);
+        ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, null);
+        View view = view("STRUCT", "{\"computedFields\":[{\"name\":\"avg_price\",\"category\":\"COMPUTED\",\"expression\":\"amount / count\"}]}");
+
+        service.reconcile(view);
+
+        assertEquals("平均价格", mapper.fields.get("COMPUTED|amount / count").getSourceComment());
+    }
+
+    @Test
+    void sqlModelCommentWinsOverExactSchemaComment() {
+        FakeViewFieldMapper mapper = new FakeViewFieldMapper();
+        ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, schemaIndex("Schema Comment"));
+        View sql = view("SQL", "{\"columns\":{\"id\":{\"name\":[\"db\",\"user\",\"id\"],\"comment\":\"历史用户编号\"}}}");
+
+        service.reconcile(sql);
+
+        assertEquals("历史用户编号", mapper.fields.get("SQL|id").getSourceComment());
+    }
+
+    @Test
+    void sqlExactSchemaCommentIsUsedWhenModelHasNoComment() {
+        FakeViewFieldMapper mapper = new FakeViewFieldMapper();
+        ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, schemaIndex("Schema Comment"));
+        View sql = view("SQL", "{\"columns\":{\"id\":{\"name\":[\"db\",\"user\",\"id\"]}}}");
+
+        service.reconcile(sql);
+
+        assertEquals("Schema Comment", mapper.fields.get("SQL|id").getSourceComment());
+    }
+
+    @Test
+    void sqlExpressionWithoutTrustedMetadataKeepsOriginName() {
+        FakeViewFieldMapper mapper = new FakeViewFieldMapper();
+        ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, null);
+        View sql = view("SQL", "{\"columns\":{\"efficiency\":{\"name\":[\"cabinet_efficiency\"],\"expression\":\"round(a / b, 2)\"}}}");
+
+        service.reconcile(sql);
+
+        ViewField actual = mapper.fields.get("SQL|cabinet_efficiency");
+        assertNull(actual.getSourceComment());
+        assertNull(actual.getCustomName());
+        assertEquals("cabinet_efficiency", service.resolveDisplayName(actual));
+    }
+
     private static View view(String type, String model) {
         View view = new View();
         view.setId("view-1");
@@ -129,6 +223,18 @@ class ViewFieldServiceImplTest {
         view.setType(type);
         view.setModel(model);
         return view;
+    }
+
+    private static ViewField field(String id, String viewId, String canonicalKey, String originName) {
+        ViewField field = new ViewField();
+        field.setId(id);
+        field.setViewId(viewId);
+        field.setCanonicalKey(canonicalKey);
+        field.setOriginName(originName);
+        field.setFieldType("STRING");
+        field.setFieldCategory("");
+        field.setActive(true);
+        return field;
     }
 
     private static SourceSchemaIndex schemaIndex(String comment) {

@@ -73,6 +73,39 @@ class FieldMetaMigrationTest {
     }
 
     @Test
+    void keepsHierarchyAsHierarchyWhenColumnsAreAbsent() throws Exception {
+        ObjectNode model = (ObjectNode) mapper.readTree("""
+                {
+                  "hierarchy": {"city": {"name": ["city"], "comment": "城市"}}
+                }
+                """);
+
+        ViewModelMigrator.Result result = new ViewModelMigrator().migrate(model, SourceSchemaIndex.Index.empty(), "SQL");
+
+        assertTrue(result.issues().isEmpty());
+        assertEquals("城市", result.fields().get(0).diagnostics().hierarchyComment());
+        assertEquals(null, result.fields().get(0).diagnostics().columnComment());
+    }
+
+    @Test
+    void blocksDuplicateSqlOutputNames() throws Exception {
+        ObjectNode model = (ObjectNode) mapper.readTree("""
+                {
+                  "columns": {
+                    "first": {"name": ["first", "id"]},
+                    "second": {"name": ["second", "id"]}
+                  }
+                }
+                """);
+
+        ViewModelMigrator.Result result = new ViewModelMigrator().migrate(model, SourceSchemaIndex.Index.empty(), "SQL");
+
+        assertEquals(1, result.issues().size());
+        assertEquals("SQL_OUTPUT_COLUMN_DUPLICATED", result.issues().get(0).reason());
+        assertEquals(FieldMetaMigrationIssueSeverity.BLOCKING, result.issues().get(0).severity());
+    }
+
+    @Test
     void reconcilesChartMetadataWithoutTouchingAlias() throws Exception {
         ObjectNode chart = (ObjectNode) mapper.readTree("""
                 {"datas":[{"rows":[

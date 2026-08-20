@@ -21,18 +21,20 @@ public class ViewModelMigrator {
 
     public Result migrate(ObjectNode model, SourceSchemaIndex.Index schemaIndex, String viewType) {
         ObjectNode result = model.deepCopy();
-        Map<String, List<ObjectNode>> nodes = new LinkedHashMap<>();
-        collect(result.path("columns"), nodes);
-        collect(result.path("hierarchy"), nodes);
+        Map<String, FieldReferences> nodes = new LinkedHashMap<>();
+        collectReferences(result.path("columns"), nodes, ReferenceRole.COLUMN);
+        collectReferences(result.path("hierarchy"), nodes, ReferenceRole.HIERARCHY);
         List<ResolvedFieldMeta> fields = new ArrayList<>();
         List<MigrationIssue> issues = new ArrayList<>();
         Set<String> sqlOutputNames = new HashSet<>();
         int changed = 0;
-        for (Map.Entry<String, List<ObjectNode>> entry : nodes.entrySet()) {
-            List<ObjectNode> refs = entry.getValue();
-            ObjectNode column = refs.isEmpty() ? null : refs.get(0);
-            ObjectNode hierarchy = refs.size() > 1 ? refs.get(1) : null;
-            if (refs.size() > 2 && refs.stream().anyMatch(node -> !sameMetadata(refs.get(0), node))) {
+        for (Map.Entry<String, FieldReferences> entry : nodes.entrySet()) {
+            FieldReferences refs = entry.getValue();
+            List<ObjectNode> nodesForField = refs.nodes();
+            ObjectNode column = refs.column();
+            ObjectNode hierarchy = refs.hierarchy();
+            if (nodesForField.size() > 2
+                    && nodesForField.stream().anyMatch(node -> !sameMetadata(nodesForField.get(0), node))) {
                 issues.add(new MigrationIssue("VIEW", entry.getKey(), entry.getKey(), "同一业务字段存在多份不一致元数据"));
                 continue;
             }
@@ -54,7 +56,7 @@ public class ViewModelMigrator {
                         resolved.diagnostics(), FieldMetaMigrationIssueSeverity.BLOCKING));
                 continue;
             }
-            for (ObjectNode node : refs) {
+            for (ObjectNode node : nodesForField) {
                 changed += apply(node, resolved);
             }
         }
@@ -113,6 +115,9 @@ public class ViewModelMigrator {
     }
 
     private static String text(ObjectNode node, String field) {
+        if (node == null) {
+            return null;
+        }
         JsonNode value = node.get(field);
         if (value == null || value.isNull()) {
             return null;
@@ -158,6 +163,40 @@ public class ViewModelMigrator {
         root.fields().forEachRemaining(entry -> collectNode(entry.getKey(), entry.getValue(), nodes));
     }
 
+    private static void collectReferences(JsonNode root, Map<String, FieldReferences> nodes, ReferenceRole role) {
+        if (root == null || !root.isObject()) {
+            return;
+        }
+        root.fields().forEachRemaining(entry -> collectReferenceNode(entry.getKey(), entry.getValue(), nodes, role));
+    }
+
+    private static void collectReferenceNode(String key, JsonNode node, Map<String, FieldReferences> nodes,
+                                             ReferenceRole role) {
+        if (!node.isObject()) {
+            return;
+        }
+        ObjectNode object = (ObjectNode) node;
+        String fieldKey = keyOf(key, object);
+        if (object.has("children") && object.get("children").isArray()) {
+            object.get("children").forEach(child -> collectReferenceChild(fieldKey, child, nodes, role));
+            return;
+        }
+        nodes.computeIfAbsent(fieldKey, ignored -> new FieldReferences()).add(role, object);
+    }
+
+    private static void collectReferenceChild(String parentKey, JsonNode child, Map<String, FieldReferences> nodes,
+                                              ReferenceRole role) {
+        if (!child.isObject()) {
+            return;
+        }
+        ObjectNode object = (ObjectNode) child;
+        String fieldKey = keyOf(parentKey, object);
+        nodes.computeIfAbsent(fieldKey, ignored -> new FieldReferences()).add(role, object);
+        if (object.has("children") && object.get("children").isArray()) {
+            object.get("children").forEach(nested -> collectReferenceChild(fieldKey, nested, nodes, role));
+        }
+    }
+
     private static void collectNode(String key, JsonNode node, Map<String, List<ObjectNode>> nodes) {
         if (!node.isObject()) {
             return;
@@ -190,6 +229,35 @@ public class ViewModelMigrator {
         }
         JsonNode name = node.get("name");
         return name != null && name.isTextual() ? name.asText() : fallback;
+    }
+
+    private enum ReferenceRole {
+        COLUMN,
+        HIERARCHY
+    }
+
+    private static final class FieldReferences {
+        private final List<ObjectNode> columns = new ArrayList<>();
+        private final List<ObjectNode> hierarchies = new ArrayList<>();
+
+        private void add(ReferenceRole role, ObjectNode node) {
+            (role == ReferenceRole.COLUMN ? columns : hierarchies).add(node);
+        }
+
+        private ObjectNode column() {
+            return columns.isEmpty() ? null : columns.get(0);
+        }
+
+        private ObjectNode hierarchy() {
+            return hierarchies.isEmpty() ? null : hierarchies.get(0);
+        }
+
+        private List<ObjectNode> nodes() {
+            List<ObjectNode> result = new ArrayList<>();
+            result.addAll(columns);
+            result.addAll(hierarchies);
+            return result;
+        }
     }
 
     public record Result(ObjectNode model, List<ResolvedFieldMeta> fields,

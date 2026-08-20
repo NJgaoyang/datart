@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import datart.core.base.consts.Const;
 import datart.core.entity.Datachart;
 import datart.core.entity.View;
+import datart.core.entity.ViewField;
 import datart.core.entity.Widget;
 import datart.core.mappers.ext.FieldMetaMigrationMapperExt;
+import datart.core.mappers.ext.ViewFieldMapperExt;
 import datart.security.util.PermissionHelper;
 import datart.server.base.dto.FieldMetaMigrationIssue;
 import datart.server.base.dto.FieldMetaMigrationIssueSeverity;
@@ -49,23 +51,27 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
     private static final String VIEW = "VIEW";
     private static final String WIDGET = "WIDGET";
     private static final String DATACHART = "DATACHART";
+    private static final String VIEW_FIELD_BACKUP = "field_meta_migration_view_field_backup";
 
     private final FieldMetaMigrationMapperExt mapper;
     private final SourceSchemaIndex schemaIndex;
     private final StrictJson strictJson;
     private final JdbcTemplate jdbcTemplate;
     private final ViewFieldService viewFieldService;
+    private final ViewFieldMapperExt viewFieldMapper;
 
     public FieldMetaMigrationServiceImpl(FieldMetaMigrationMapperExt mapper,
                                          SourceSchemaIndex schemaIndex,
                                          StrictJson strictJson,
                                          JdbcTemplate jdbcTemplate,
-                                         ViewFieldService viewFieldService) {
+                                         ViewFieldService viewFieldService,
+                                         ViewFieldMapperExt viewFieldMapper) {
         this.mapper = mapper;
         this.schemaIndex = schemaIndex;
         this.strictJson = strictJson;
         this.jdbcTemplate = jdbcTemplate;
         this.viewFieldService = viewFieldService;
+        this.viewFieldMapper = viewFieldMapper;
     }
 
     @Override
@@ -143,38 +149,50 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
     public FieldMetaMigrationResult rollback(String runId) {
         List<Map<String, Object>> backups = jdbcTemplate.queryForList(
                 "SELECT * FROM field_meta_migration_backup WHERE run_id = ? ORDER BY id", runId);
-        if (backups.isEmpty()) {
+        List<Map<String, Object>> viewFieldBackups = jdbcTemplate.queryForList(
+                "SELECT * FROM " + VIEW_FIELD_BACKUP + " WHERE run_id = ? ORDER BY id", runId);
+        if (backups.isEmpty() && viewFieldBackups.isEmpty()) {
             throw new IllegalArgumentException("MIGRATION_RUN_NOT_FOUND: " + runId);
         }
+        verifyJsonBackups(backups);
+        verifyViewFieldBackups(viewFieldBackups);
+        FieldMetaMigrationResult result = new FieldMetaMigrationResult();
+        result.setRunId(runId);
+        result.setStatus("ROLLED_BACK");
+        restoreJsonBackups(backups, result);
+        restoreViewFieldBackups(viewFieldBackups, result);
+        jdbcTemplate.update("UPDATE field_meta_migration_run SET status='ROLLED_BACK', completed_at=NOW() WHERE id=?", runId);
+        return result;
+    }
+
+    private void verifyJsonBackups(List<Map<String, Object>> backups) {
         for (Map<String, Object> backup : backups) {
-            String table = table((String) value(backup, "entity_type"));
+            String entityType = (String) value(backup, "entity_type");
+            String table = table(entityType);
             String field = (String) value(backup, "json_field");
             String id = (String) value(backup, "entity_id");
             Map<String, Object> current = jdbcTemplate.queryForMap(
                     "SELECT " + field + " AS json_value FROM " + table + " WHERE id = ?", id);
             String currentJson = (String) current.get("json_value");
             if (!Objects.equals(sha256(currentJson == null ? "" : currentJson), value(backup, "migrated_json_hash"))) {
-                throw new IllegalStateException("ROLLBACK_CONFLICT: " + value(backup, "entity_type") + " " + id);
+                throw new IllegalStateException("ROLLBACK_CONFLICT: " + entityType + " " + id);
             }
         }
-        FieldMetaMigrationResult result = new FieldMetaMigrationResult();
-        result.setRunId(runId);
-        result.setStatus("ROLLED_BACK");
+    }
+
+    private void restoreJsonBackups(List<Map<String, Object>> backups, FieldMetaMigrationResult result) {
         for (Map<String, Object> backup : backups) {
             String entityType = (String) value(backup, "entity_type");
             String table = table(entityType);
             String field = (String) value(backup, "json_field");
             String id = (String) value(backup, "entity_id");
-            String original = (String) value(backup, "original_json");
             int affected = jdbcTemplate.update("UPDATE " + table + " SET " + field + " = ?, update_time = NOW() WHERE id = ?",
-                    original, id);
+                    value(backup, "original_json"), id);
             if (affected != 1) {
                 throw new IllegalStateException("ROLLBACK_CONFLICT: " + entityType + " " + id);
             }
             incrementRollbackScope(result, entityType);
         }
-        jdbcTemplate.update("UPDATE field_meta_migration_run SET status='ROLLED_BACK', completed_at=NOW() WHERE id=?", runId);
-        return result;
     }
 
     private Snapshot buildSnapshot(String orgId) {
@@ -192,15 +210,20 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
                     addIssue(snapshot, VIEW, view, null, "INVALID_SCHEMA_JSON", index.getError());
                 }
                 ViewModelMigrator.Result migration = new ViewModelMigrator().migrate(model, index, view.getType());
+                List<ViewFieldDTO> viewFields = viewFieldService.listByViewId(view.getId());
                 ViewSnapshot viewSnapshot = new ViewSnapshot(view, model, migration.model(), fields(migration.fields()),
-                        viewFieldService.listByViewId(view.getId()));
+                        viewFields);
                 views.put(view.getId(), viewSnapshot);
                 snapshot.views.setFields(snapshot.views.getFields() + migration.fields().size());
                 countFields(snapshot.views, migration.fields());
+                countSqlMetadata(snapshot, view, migration.fields(), viewFields, index);
                 snapshot.views.setModified(snapshot.views.getModified() + (migration.changedNodes() > 0 ? 1 : 0));
                 migration.issues().forEach(issue -> {
                     if ("SQL_COMMENT_RESOLVED_FROM_COLUMNS".equals(issue.reason())) {
                         snapshot.views.setResolvedFromColumns(snapshot.views.getResolvedFromColumns() + 1);
+                    }
+                    if ("SQL_OUTPUT_COLUMN_DUPLICATED".equals(issue.reason())) {
+                        snapshot.views.setBlockingSqlConflicts(snapshot.views.getBlockingSqlConflicts() + 1);
                     }
                     addIssue(snapshot, VIEW, view, issue.fieldKey(), issue.reason(), issue.diagnostics(), issue.severity());
                 });
@@ -286,20 +309,81 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
     private void migrateViews(Snapshot snapshot, String runId, String userId, FieldMetaMigrationResult result) {
         for (ViewSnapshot view : snapshot.viewSnapshots.values()) {
             String original = view.view.getModel();
+            Map<String, String> originalViewFields = snapshotViewFields(view.view.getId());
+            view.view.setModel(strictJson.write(view.originalModel));
+            viewFieldService.migrateLegacyMetadata(view.view);
             view.view.setModel(strictJson.write(view.migratedModel));
             viewFieldService.reconcile(view.view);
             ObjectNode reconciledModel = strictJson.readObject(VIEW, view.view.getId(), view.view.getModel());
             view.migratedModel.removeAll();
             view.migratedModel.setAll(reconciledModel);
             view.viewFields = viewFieldService.listByViewId(view.view.getId());
+            boolean viewFieldsChanged = backupViewFields(runId, view.view.getOrgId(), view.view.getId(), originalViewFields);
             String migrated = view.view.getModel();
             if (migrated.equals(original)) {
+                if (viewFieldsChanged) {
+                    result.getViews().setModified(result.getViews().getModified() + 1);
+                }
                 continue;
             }
             backup(runId, view.view.getOrgId(), VIEW, view.view.getId(), "model",
                     original, view.view.getUpdateTime(), migrated);
             if (mapper.updateViewModel(view.view.getId(), migrated, userId, view.view.getUpdateTime()) != 1) {
                 throw new IllegalStateException("CONCURRENT_MODIFICATION: view " + view.view.getId());
+            }
+            result.getViews().setModified(result.getViews().getModified() + 1);
+        }
+    }
+
+    private Map<String, String> snapshotViewFields(String viewId) {
+        Map<String, String> snapshot = new HashMap<>();
+        for (ViewField field : viewFieldMapper.listByViewId(viewId)) {
+            snapshot.put(field.getId(), viewFieldJson(field));
+        }
+        return snapshot;
+    }
+
+    private boolean backupViewFields(String runId, String orgId, String viewId, Map<String, String> originalViewFields) {
+        boolean changed = false;
+        for (ViewField field : viewFieldMapper.listByViewId(viewId)) {
+            String migrated = viewFieldJson(field);
+            String original = originalViewFields.get(field.getId());
+            if (Objects.equals(original, migrated)) {
+                continue;
+            }
+            jdbcTemplate.update("INSERT INTO " + VIEW_FIELD_BACKUP
+                            + " (id, run_id, org_id, view_id, field_id, original_json, migrated_json_hash, create_time)"
+                            + " VALUES (?, ?, ?, ?, ?, ?, ?, NOW())",
+                    id(), runId, orgId, viewId, field.getId(), original, sha256(migrated));
+            changed = true;
+        }
+        return changed;
+    }
+
+    private void verifyViewFieldBackups(List<Map<String, Object>> backups) {
+        for (Map<String, Object> backup : backups) {
+            String viewId = (String) value(backup, "view_id");
+            String fieldId = (String) value(backup, "field_id");
+            ViewField current = viewFieldMapper.selectByViewIdAndId(viewId, fieldId);
+            if (current == null || !Objects.equals(sha256(viewFieldJson(current)), value(backup, "migrated_json_hash"))) {
+                throw new IllegalStateException("ROLLBACK_CONFLICT: VIEW_FIELD " + fieldId);
+            }
+        }
+    }
+
+    private void restoreViewFieldBackups(List<Map<String, Object>> backups, FieldMetaMigrationResult result) {
+        for (Map<String, Object> backup : backups) {
+            String viewId = (String) value(backup, "view_id");
+            String fieldId = (String) value(backup, "field_id");
+            String original = (String) value(backup, "original_json");
+            int affected;
+            if (original == null) {
+                affected = jdbcTemplate.update("DELETE FROM view_field WHERE id = ? AND view_id = ?", fieldId, viewId);
+            } else {
+                affected = viewFieldMapper.update(readViewField(original));
+            }
+            if (affected != 1) {
+                throw new IllegalStateException("ROLLBACK_CONFLICT: VIEW_FIELD " + fieldId);
             }
             result.getViews().setModified(result.getViews().getModified() + 1);
         }
@@ -385,6 +469,22 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
                 backupId, runId, orgId, entityType, entityId, jsonField, original, updateTime, sha256(migrated));
     }
 
+    private static String viewFieldJson(ViewField field) {
+        try {
+            return OBJECT_MAPPER.writeValueAsString(field);
+        } catch (Exception e) {
+            throw new IllegalStateException("VIEW_FIELD_BACKUP_SERIALIZE_FAILED", e);
+        }
+    }
+
+    private static ViewField readViewField(String json) {
+        try {
+            return OBJECT_MAPPER.readValue(json, ViewField.class);
+        } catch (Exception e) {
+            throw new IllegalStateException("VIEW_FIELD_BACKUP_DESERIALIZE_FAILED", e);
+        }
+    }
+
     private void checkAdminPermission(String orgId) {
         securityManager.requireAllPermissions(PermissionHelper.rolePermission(orgId, Const.MANAGE));
     }
@@ -399,6 +499,71 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
                 case AMBIGUOUS -> scope.setAmbiguous(scope.getAmbiguous() + 1);
             }
         }
+    }
+
+    private static void countSqlMetadata(Snapshot snapshot, View view, List<ResolvedFieldMeta> fields,
+                                         List<ViewFieldDTO> viewFields, SourceSchemaIndex.Index index) {
+        if (!"SQL".equalsIgnoreCase(view.getType())) {
+            return;
+        }
+        FieldMetaMigrationScope scope = snapshot.views;
+        scope.setSqlViews(scope.getSqlViews() + 1);
+        scope.setSqlFields(scope.getSqlFields() + fields.size());
+        for (ResolvedFieldMeta field : fields) {
+            ViewFieldDTO existing = findUniqueByOriginName(viewFields, field.rawName());
+            boolean existingCustom = existing != null && hasText(existing.getCustomName());
+            boolean existingComment = existing != null && hasText(existing.getSourceComment());
+            if (existingCustom) {
+                scope.setExistingCustomNames(scope.getExistingCustomNames() + 1);
+            } else if (field.displayNameCustom()) {
+                scope.setRecoverableCustomNames(scope.getRecoverableCustomNames() + 1);
+                addIssue(snapshot, VIEW, view, field.fieldKey(), "SQL_CUSTOM_NAME_RECOVERABLE",
+                        field.diagnostics(), FieldMetaMigrationIssueSeverity.WARNING);
+            }
+
+            FieldMetaDiagnostics diagnostics = field.diagnostics();
+            String modelComment = diagnostics == null ? null
+                    : hasText(diagnostics.columnComment()) ? diagnostics.columnComment() : diagnostics.hierarchyComment();
+            SourceSchemaIndex.ColumnMeta schema = index == null ? null : index.exact(field.path());
+            String schemaComment = schema == null ? null : schema.comment();
+            if (hasText(modelComment)) {
+                scope.setRecoverableLegacyComments(scope.getRecoverableLegacyComments() + 1);
+                String reason = hasText(diagnostics.columnComment())
+                        ? "SQL_COMMENT_RECOVERABLE_FROM_COLUMNS" : "SQL_COMMENT_RECOVERABLE_FROM_HIERARCHY";
+                addIssue(snapshot, VIEW, view, field.fieldKey(), reason, diagnostics,
+                        FieldMetaMigrationIssueSeverity.WARNING);
+            } else if (hasText(schemaComment)) {
+                scope.setRecoverableExactSchemaComments(scope.getRecoverableExactSchemaComments() + 1);
+                addIssue(snapshot, VIEW, view, field.fieldKey(), "SQL_COMMENT_RECOVERABLE_FROM_EXACT_SCHEMA",
+                        diagnostics, FieldMetaMigrationIssueSeverity.WARNING);
+            } else if (existingComment) {
+                scope.setPreservedExistingComments(scope.getPreservedExistingComments() + 1);
+                addIssue(snapshot, VIEW, view, field.fieldKey(), "SQL_COMMENT_PRESERVED_EXISTING",
+                        diagnostics, FieldMetaMigrationIssueSeverity.WARNING);
+            } else if (!existingCustom && !field.displayNameCustom()) {
+                scope.setUnresolvedSqlFields(scope.getUnresolvedSqlFields() + 1);
+                addIssue(snapshot, VIEW, view, field.fieldKey(), "SQL_FIELD_NO_TRUSTED_DISPLAY_METADATA",
+                        diagnostics, FieldMetaMigrationIssueSeverity.WARNING);
+            }
+        }
+    }
+
+    private static ViewFieldDTO findUniqueByOriginName(List<ViewFieldDTO> fields, String originName) {
+        ViewFieldDTO match = null;
+        for (ViewFieldDTO field : fields) {
+            if (!Objects.equals(originName, field.getOriginName())) {
+                continue;
+            }
+            if (match != null) {
+                return null;
+            }
+            match = field;
+        }
+        return match;
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 
     private static void countChart(FieldMetaMigrationScope scope, ChartConfigReconciler.Result result) {
@@ -429,6 +594,15 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
         target.setRowsUpdated(source.getRowsUpdated());
         target.setUnmatched(source.getUnmatched());
         target.setReferenceMismatch(source.getReferenceMismatch());
+        target.setSqlViews(source.getSqlViews());
+        target.setSqlFields(source.getSqlFields());
+        target.setRecoverableCustomNames(source.getRecoverableCustomNames());
+        target.setRecoverableLegacyComments(source.getRecoverableLegacyComments());
+        target.setRecoverableExactSchemaComments(source.getRecoverableExactSchemaComments());
+        target.setExistingCustomNames(source.getExistingCustomNames());
+        target.setPreservedExistingComments(source.getPreservedExistingComments());
+        target.setUnresolvedSqlFields(source.getUnresolvedSqlFields());
+        target.setBlockingSqlConflicts(source.getBlockingSqlConflicts());
         return target;
     }
 
