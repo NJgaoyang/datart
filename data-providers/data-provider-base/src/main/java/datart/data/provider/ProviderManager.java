@@ -273,23 +273,39 @@ public class ProviderManager extends DataProviderExecuteOptimizer implements Dat
         }
         List<ResultFieldMeta> resultFields = new ArrayList<>();
         for (QueryOutputProjection projection : param.getOutputProjections()) {
-            if (projection == null || StringUtils.isBlank(projection.getTechnicalAlias())
-                    || projection.getOrdinal() == null || projection.getOrdinal() < 0
-                    || projection.getOrdinal() >= dataframe.getColumns().size()) {
+            if (projection == null || projection.getOrdinal() == null
+                    || projection.getOrdinal() < 0
+                    || projection.getOrdinal() >= dataframe.getColumns().size()
+                    || StringUtils.isBlank(projection.getTechnicalAlias())) {
                 continue;
             }
+            int ordinal = projection.getOrdinal();
+            String queryAlias = QueryOutputAlias.of(ordinal);
             Column column = dataframe.getColumns().get(projection.getOrdinal());
-            column.setName(projection.getTechnicalAlias());
+            String actualName = column.columnName();
+            boolean rawQueryAlias = StringUtils.equalsIgnoreCase(actualName, queryAlias);
+            boolean normalizedCacheAlias = StringUtils.equalsIgnoreCase(
+                    actualName, projection.getTechnicalAlias());
+            if (!rawQueryAlias && !normalizedCacheAlias) {
+                log.warn("Query output projection mismatch: ordinal={}, expectedQueryAlias={}, "
+                                + "technicalAlias={}, actual={}", ordinal, queryAlias,
+                        projection.getTechnicalAlias(), actualName);
+                continue;
+            }
+
             ResultFieldMeta resultField = new ResultFieldMeta();
             resultField.setFieldId(projection.getFieldId());
+            resultField.setQueryAlias(queryAlias);
             resultField.setTechnicalName(projection.getTechnicalAlias());
-            resultField.setDisplayName(projection.getDisplayAlias());
-            resultField.setOrdinal(projection.getOrdinal());
+            resultField.setDisplayName(StringUtils.defaultIfBlank(
+                    projection.getDisplayAlias(), projection.getTechnicalAlias()));
+            resultField.setOrdinal(ordinal);
             resultFields.add(resultField);
+
+            // Keep the legacy runtime contract: Column.name remains technical.
+            column.setName(projection.getTechnicalAlias());
         }
-        if (!resultFields.isEmpty()) {
-            dataframe.setResultFields(resultFields);
-        }
+        dataframe.setResultFields(resultFields.isEmpty() ? null : resultFields);
     }
 
 }

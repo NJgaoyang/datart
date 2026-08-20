@@ -216,11 +216,7 @@ export class ChartDataRequestBuilder {
         ordinal,
       };
     });
-    return projections.some(
-      projection => projection.displayAlias !== projection.technicalAlias,
-    )
-      ? projections
-      : undefined;
+    return projections.length ? projections : undefined;
   }
 
   private buildColumnName(col) {

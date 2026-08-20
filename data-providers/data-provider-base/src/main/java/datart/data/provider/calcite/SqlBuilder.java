@@ -22,6 +22,7 @@ import datart.core.base.consts.ValueType;
 import datart.core.base.exception.Exceptions;
 import datart.data.provider.base.DataProviderException;
 import datart.core.data.provider.ExecuteParam;
+import datart.core.data.provider.QueryOutputAlias;
 import datart.core.data.provider.QueryOutputProjection;
 import datart.core.data.provider.SelectColumn;
 import datart.core.data.provider.SingleTypedValue;
@@ -58,9 +59,9 @@ public class SqlBuilder {
 
     private boolean quoteIdentifiers;
 
-    private boolean presentationAliases;
+    private boolean outputTechnicalAliases;
 
-    private int presentationOutputOrdinal;
+    private int outputOrdinal;
 
     private boolean withNamePrefix;
 
@@ -115,8 +116,8 @@ public class SqlBuilder {
         return this;
     }
 
-    public SqlBuilder withPresentationAliases(boolean presentationAliases) {
-        this.presentationAliases = presentationAliases;
+    public SqlBuilder withOutputTechnicalAliases(boolean enabled) {
+        this.outputTechnicalAliases = enabled;
         return this;
     }
 
@@ -164,11 +165,11 @@ public class SqlBuilder {
             for (SelectColumn column : executeParam.getColumns()) {
                 if (functionColumnMap.containsKey(column.getColumnKey())) {
                     selectList.add(SqlNodeUtils.createAliasNode(functionColumnMap.get(column.getColumnKey()),
-                            presentationAlias(column.getAlias())));
+                            outputTechnicalAlias(column.getAlias())));
                 } else {
                     selectList.add(SqlNodeUtils.createAliasNode(
                             createColumnIdentifier(column.getColumnNames(withNamePrefix, namePrefix)),
-                            presentationAlias(column.getAlias())));
+                            outputTechnicalAlias(column.getAlias())));
                 }
             }
         }
@@ -199,10 +200,10 @@ public class SqlBuilder {
                 SqlNode sqlNode = null;
                 if (functionColumnMap.containsKey(group.getColumnKey())) {
                     sqlNode = functionColumnMap.get(group.getColumnKey());
-                    selectList.add(SqlNodeUtils.createAliasNode(sqlNode, presentationAlias(group.getAlias())));
+                    selectList.add(SqlNodeUtils.createAliasNode(sqlNode, outputTechnicalAlias(group.getAlias())));
                 } else {
                     sqlNode = createColumnIdentifier(group.getColumnNames(withNamePrefix, namePrefix));
-                    selectList.add(SqlNodeUtils.createAliasNode(sqlNode, presentationAlias(group.getAlias())));
+                    selectList.add(SqlNodeUtils.createAliasNode(sqlNode, outputTechnicalAlias(group.getAlias())));
                 }
                 groupBy.add(sqlNode);
             }
@@ -309,25 +310,25 @@ public class SqlBuilder {
         }
 
         if (StringUtils.isNotBlank(operator.getAlias())) {
-            return SqlNodeUtils.createAliasNode(aggCall, presentationAlias(operator.getAlias()));
+            return SqlNodeUtils.createAliasNode(aggCall, outputTechnicalAlias(operator.getAlias()));
         } else {
             return aggCall;
         }
     }
 
-    private String presentationAlias(String alias) {
-        if (!presentationAliases || executeParam == null
+    private String outputTechnicalAlias(String alias) {
+        if (!outputTechnicalAliases || executeParam == null
                 || CollectionUtils.isEmpty(executeParam.getOutputProjections())) {
             return alias;
         }
-        int ordinal = presentationOutputOrdinal++;
+        int ordinal = outputOrdinal++;
         if (ordinal >= executeParam.getOutputProjections().size()) {
             return alias;
         }
         QueryOutputProjection projection = executeParam.getOutputProjections().get(ordinal);
         if (projection != null && Objects.equals(projection.getTechnicalAlias(), alias)
                 && Objects.equals(projection.getOrdinal(), ordinal)) {
-            return "DATART_RESULT_COL_" + ordinal;
+            return QueryOutputAlias.of(ordinal);
         }
         return alias;
     }

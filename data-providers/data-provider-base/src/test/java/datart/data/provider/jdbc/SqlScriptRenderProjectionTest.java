@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class SqlScriptRenderProjectionTest {
 
     @Test
-    void keepsTechnicalIdentityInsideAndUsesBusinessAliasOnlyOutside() throws Exception {
+    void usesBackendTechnicalOutputAliasWithoutBusinessAliasInSql() throws Exception {
         QueryOutputProjection projection = new QueryOutputProjection();
         projection.setTechnicalAlias("city");
         projection.setDisplayAlias("推荐官城市");
@@ -38,10 +38,13 @@ class SqlScriptRenderProjectionTest {
 
         String sql = render.render(true, false, false);
 
-        assertTrue(sql.contains("AS `推荐官城市`"));
-        assertTrue(sql.contains("`DATART_RESULT`.`DATART_RESULT_COL_0`"));
-        assertTrue(sql.contains("AS `DATART_RESULT_COL_0`"));
-        assertFalse(render.render(true, false, true).contains("推荐官城市"));
+        assertTrue(sql.contains("AS `__fcol_0`"));
+        assertFalse(sql.contains("推荐官城市"));
+        assertFalse(sql.contains("DATART_RESULT"));
+
+        String cacheSql = render.render(true, false, true);
+        assertTrue(cacheSql.contains("AS `city`"));
+        assertFalse(cacheSql.contains("__fcol_0"));
     }
 
     @Test
@@ -66,9 +69,9 @@ class SqlScriptRenderProjectionTest {
                 new StarRocksSqlStdOperatorSupport(), false, false)
                 .render(true, false, false);
 
-        assertTrue(sql.contains("`DATART_RESULT`.`DATART_RESULT_COL_0`"));
-        assertTrue(sql.contains("AS `DATART_RESULT_COL_0`"));
-        assertTrue(sql.contains("AS `年份`"));
+        assertTrue(sql.contains("AS `__fcol_0`"));
+        assertFalse(sql.contains("年份"));
+        assertFalse(sql.contains("DATART_RESULT"));
     }
 
     @Test
@@ -92,9 +95,9 @@ class SqlScriptRenderProjectionTest {
                 new StarRocksSqlStdOperatorSupport(), false, false)
                 .render(true, false, false);
 
-        assertTrue(sql.contains("`DATART_RESULT`.`DATART_RESULT_COL_0`"));
-        assertTrue(sql.contains("AS `DATART_RESULT_COL_0`"));
-        assertTrue(sql.contains("AS `在租用户数`"));
+        assertTrue(sql.contains("AS `__fcol_0`"));
+        assertFalse(sql.contains("在租用户数"));
+        assertFalse(sql.contains("DATART_RESULT"));
     }
 
     private static AggregateOperator technicalColumn(String... column) {

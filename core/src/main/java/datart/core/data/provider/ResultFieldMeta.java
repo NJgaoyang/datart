@@ -15,6 +15,10 @@ public class ResultFieldMeta implements Serializable {
 
     private String fieldId;
 
+    /** JDBC SQL output alias, for example __fcol_0. */
+    private String queryAlias;
+
+    /** Datart runtime technical key, for example city_name_std. */
     private String technicalName;
 
     private String displayName;
