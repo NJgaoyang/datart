@@ -11,7 +11,9 @@ import datart.server.base.dto.ViewFieldDTO;
 import datart.server.common.fieldmeta.FieldMetaResolver;
 import datart.server.common.fieldmeta.ResolvedFieldMeta;
 import datart.server.common.fieldmeta.SourceSchemaIndex;
+import datart.server.common.fieldmeta.SqlFieldLineageResolver;
 import datart.server.common.fieldmeta.ViewFieldKey;
+import org.springframework.beans.factory.annotation.Autowired;
 import datart.server.service.BaseService;
 import datart.server.service.ViewFieldService;
 import org.springframework.stereotype.Service;
@@ -32,11 +34,19 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
 
     private final ViewFieldMapperExt mapper;
     private final SourceSchemaIndex schemaIndex;
+    private final SqlFieldLineageResolver sqlFieldLineageResolver;
     private final FieldMetaResolver legacyResolver = new FieldMetaResolver();
 
-    public ViewFieldServiceImpl(ViewFieldMapperExt mapper, SourceSchemaIndex schemaIndex) {
+    @Autowired
+    public ViewFieldServiceImpl(ViewFieldMapperExt mapper, SourceSchemaIndex schemaIndex,
+                                SqlFieldLineageResolver sqlFieldLineageResolver) {
         this.mapper = mapper;
         this.schemaIndex = schemaIndex;
+        this.sqlFieldLineageResolver = sqlFieldLineageResolver;
+    }
+
+    public ViewFieldServiceImpl(ViewFieldMapperExt mapper, SourceSchemaIndex schemaIndex) {
+        this(mapper, schemaIndex, new SqlFieldLineageResolver());
     }
 
     @Override
@@ -84,6 +94,8 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
             Set<String> seen = new HashSet<>();
             Set<String> sqlOutputNames = new HashSet<>();
             SourceSchemaIndex.Index source = schemaIndex == null ? null : schemaIndex.forSource(view.getSourceId());
+            Map<String, SqlFieldLineageResolver.SqlFieldLineage> sqlLineages = "SQL".equalsIgnoreCase(view.getType())
+                    ? sqlFieldLineageResolver.resolve(view.getScript(), source) : Map.of();
             int ordinal = 0;
             for (Map.Entry<String, FieldReferences> entry : references.entrySet()) {
                 FieldReferences refs = entry.getValue();
@@ -104,16 +116,17 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
                     field.setCreateBy(currentUserId());
                     field.setCreateTime(new Date());
                 }
+                List<String> physicalSourcePath = physicalSourcePath(view.getType(), data, sqlLineages);
                 field.setViewId(view.getId());
                 field.setCanonicalKey(data.canonicalKey());
                 field.setOriginName(data.originName());
-                field.setSourcePath(toJson(data.sourcePath()));
+                field.setSourcePath(toJson(physicalSourcePath));
                 field.setFieldType(data.type());
                 field.setFieldCategory(data.category());
                 field.setExpression(data.expression());
                 field.setOrdinal(ordinal++);
                 field.setActive(true);
-                String sourceComment = sourceComment(view.getType(), data, refs, source);
+                String sourceComment = sourceComment(view.getType(), data, refs, source, physicalSourcePath);
                 if (sourceComment != null) {
                     field.setSourceComment(sourceComment);
                 }
@@ -232,11 +245,11 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
     }
 
     private String sourceComment(String viewType, FieldData data, FieldReferences refs,
-                                 SourceSchemaIndex.Index source) {
+                                 SourceSchemaIndex.Index source, List<String> physicalSourcePath) {
         if ("COMPUTED".equalsIgnoreCase(data.category())) {
             return null;
         }
-        SourceSchemaIndex.ColumnMeta schema = source == null ? null : source.exact(data.sourcePath());
+        SourceSchemaIndex.ColumnMeta schema = source == null ? null : source.exact(physicalSourcePath);
         String schemaComment = schema == null ? null : trimToNull(schema.comment());
         ResolvedFieldMeta resolved = legacyResolver.resolve(data.canonicalKey(), refs.resolverColumn(), refs.hierarchy(),
                 source, viewType);
@@ -248,6 +261,15 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
             return schemaComment == null ? modelComment : schemaComment;
         }
         return modelComment == null ? schemaComment : modelComment;
+    }
+
+    private List<String> physicalSourcePath(String viewType, FieldData data,
+                                             Map<String, SqlFieldLineageResolver.SqlFieldLineage> sqlLineages) {
+        if (!"SQL".equalsIgnoreCase(viewType)) {
+            return data.sourcePath();
+        }
+        SqlFieldLineageResolver.SqlFieldLineage lineage = sqlLineages.get(data.originName());
+        return lineage != null && lineage.hasPhysicalPath() ? lineage.sourcePath() : List.of();
     }
 
     private ViewFieldDTO toDTO(ViewField field) {

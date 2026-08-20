@@ -103,6 +103,7 @@ export interface ViewViewModel<T = object>
   fragment: string;
   isSaveAs?: Boolean;
   warnings?: string[] | null;
+  fields?: View['fields'];
 }
 
 export interface QueryResult {

@@ -47,6 +47,7 @@ import {
   ViewType,
   ViewViewModel,
 } from './slice/types';
+import { ViewFieldMeta } from '../../../../types/View';
 
 export function generateEditingView(
   attrs?: Partial<ViewViewModel>,
@@ -123,6 +124,41 @@ export function resolveSchemaColumnComment(
   });
 
   return matches.length === 1 ? matches[0].comment?.trim() : undefined;
+}
+
+export function findViewFieldMeta(
+  field: { fieldId?: string; name?: string | string[]; path?: string[] },
+  fields?: ViewFieldMeta[],
+): ViewFieldMeta | undefined {
+  if (!fields?.length) {
+    return undefined;
+  }
+  if (field.fieldId) {
+    const byId = fields.find(item => item.fieldId === field.fieldId);
+    if (byId) {
+      return byId;
+    }
+  }
+
+  const path = field.path?.length
+    ? field.path
+    : Array.isArray(field.name) && field.name.length >= 2
+    ? field.name
+    : undefined;
+  if (path?.length) {
+    const byPath = fields.filter(
+      item =>
+        item.sourcePath?.length === path.length &&
+        item.sourcePath.every((part, index) => part === path[index]),
+    );
+    if (byPath.length === 1) {
+      return byPath[0];
+    }
+  }
+
+  const originName = getSchemaColumnName(field.name);
+  const byOriginName = fields.filter(item => item.originName === originName);
+  return byOriginName.length === 1 ? byOriginName[0] : undefined;
 }
 
 export function getHierarchyColumnByField(

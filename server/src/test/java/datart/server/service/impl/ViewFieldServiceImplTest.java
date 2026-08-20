@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -196,10 +197,13 @@ class ViewFieldServiceImplTest {
         FakeViewFieldMapper mapper = new FakeViewFieldMapper();
         ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, schemaIndex("Schema Comment"));
         View sql = view("SQL", "{\"columns\":{\"id\":{\"name\":[\"db\",\"user\",\"id\"]}}}");
+        sql.setScript("SELECT t.id FROM db.`user` t");
 
         service.reconcile(sql);
 
-        assertEquals("Schema Comment", mapper.fields.get("SQL|id").getSourceComment());
+        ViewField actual = mapper.fields.get("SQL|id");
+        assertEquals("[\"db\",\"user\",\"id\"]", actual.getSourcePath());
+        assertEquals("Schema Comment", actual.getSourceComment());
     }
 
     @Test
@@ -213,6 +217,7 @@ class ViewFieldServiceImplTest {
                   "path":["ads","daily","renting_users"]
                 }}}
                 """);
+        sql.setScript("SELECT t.renting_users AS current_users FROM ads.daily t");
 
         service.reconcile(sql);
 
@@ -220,6 +225,22 @@ class ViewFieldServiceImplTest {
         assertEquals("current_users", actual.getOriginName());
         assertEquals("在租用户数", actual.getSourceComment());
         assertEquals("在租用户数", service.resolveDisplayName(actual));
+    }
+
+    @Test
+    void resolvesSqlPhysicalPathWithoutWritingItToModel() {
+        FakeViewFieldMapper mapper = new FakeViewFieldMapper();
+        ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper,
+                schemaIndex("ads", "daily", "renting_users", "在租用户数"));
+        View sql = view("SQL", "{\"columns\":{\"current_users\":{\"name\":[\"current_users\"]}}}");
+        sql.setScript("SELECT t.renting_users AS current_users FROM ads.daily t");
+
+        service.reconcile(sql);
+
+        ViewField actual = mapper.fields.get("SQL|current_users");
+        assertEquals("[\"ads\",\"daily\",\"renting_users\"]", actual.getSourcePath());
+        assertEquals("在租用户数", actual.getSourceComment());
+        assertFalse(sql.getModel().contains("\"path\""));
     }
 
     @Test

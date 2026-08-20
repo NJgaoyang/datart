@@ -43,8 +43,6 @@ import datart.server.base.dto.ViewDetailDTO;
 import datart.server.base.dto.ViewLineageDTO;
 import datart.server.base.dto.ViewFieldDTO;
 import datart.server.base.params.*;
-import datart.server.common.fieldmeta.SourceSchemaIndex;
-import datart.server.common.fieldmeta.SqlFieldLineageResolver;
 import datart.server.base.transfer.ImportStrategy;
 import datart.server.base.transfer.TransferConfig;
 import datart.server.base.transfer.model.ViewResourceModel;
@@ -80,10 +78,6 @@ public class ViewServiceImpl extends BaseService implements ViewService {
 
     private final ViewFieldService viewFieldService;
 
-    private final SourceSchemaIndex schemaIndex;
-
-    private final SqlFieldLineageResolver sqlFieldLineageResolver;
-
     public ViewServiceImpl(ViewMapperExt viewMapper,
                            RelSubjectColumnsMapperExt rscMapper,
                            RelRoleResourceMapperExt rrrMapper,
@@ -93,9 +87,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
                            RelVariableSubjectMapperExt rvsMapper,
                            DashboardMapperExt dashboardMapper,
                            DatachartMapperExt datachartMapper,
-                           ViewFieldService viewFieldService,
-                           SourceSchemaIndex schemaIndex,
-                           SqlFieldLineageResolver sqlFieldLineageResolver) {
+                           ViewFieldService viewFieldService) {
         this.viewMapper = viewMapper;
         this.rscMapper = rscMapper;
         this.rrrMapper = rrrMapper;
@@ -106,8 +98,6 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         this.dashboardMapper = dashboardMapper;
         this.datachartMapper = datachartMapper;
         this.viewFieldService = viewFieldService;
-        this.schemaIndex = schemaIndex;
-        this.sqlFieldLineageResolver = sqlFieldLineageResolver;
     }
 
     @Override
@@ -353,7 +343,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         view.setCreateTime(new Date());
         view.setId(UUIDGenerator.generate());
         view.setStatus(Const.DATA_STATUS_ACTIVE);
-        view.setModel(normalizeModelDisplayNames(enrichSqlFieldLineage(view)));
+        view.setModel(normalizeModelDisplayNames(view.getModel()));
         requirePermission(view, Const.CREATE);
         viewFieldService.reconcile(view);
         viewMapper.insert(view);
@@ -642,7 +632,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         Application.getBean(DataProviderService.class).updateSource(retrieve(view.getSourceId(), Source.class, false));
         BeanUtils.copyProperties(updateParam, view);
         view.setType(viewUpdateParam.getType().name());
-        view.setModel(normalizeModelDisplayNames(enrichSqlFieldLineage(view)));
+        view.setModel(normalizeModelDisplayNames(view.getModel()));
         viewFieldService.reconcile(view);
         view.setUpdateBy(getCurrentUser().getId());
         view.setUpdateTime(new Date());
@@ -661,22 +651,6 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         } catch (Exception ignored) {
             return model;
         }
-    }
-
-    private String enrichSqlFieldLineage(View view) {
-        if (!"SQL".equalsIgnoreCase(view.getType()) || !hasText(view.getScript()) || !hasText(view.getModel())) {
-            return view.getModel();
-        }
-        try {
-            com.fasterxml.jackson.databind.JsonNode root = OBJECT_MAPPER.readTree(view.getModel());
-            if (root instanceof com.fasterxml.jackson.databind.node.ObjectNode model) {
-                sqlFieldLineageResolver.enrichModel(view.getScript(), model, schemaIndex.forSource(view.getSourceId()));
-                return OBJECT_MAPPER.writeValueAsString(model);
-            }
-        } catch (Exception ignored) {
-            // Invalid or unsupported SQL keeps the submitted model unchanged.
-        }
-        return view.getModel();
     }
 
     private void normalizeFieldMap(JSONObject fields) {

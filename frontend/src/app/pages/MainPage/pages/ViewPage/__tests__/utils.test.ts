@@ -22,6 +22,7 @@ import {
   addPathToHierarchyStructureAndChangeName,
   dataModelColumnSorter,
   diffMergeHierarchyModel,
+  findViewFieldMeta,
   normalizeModelDisplayNames,
   resolveSchemaColumnComment,
 } from '../utils';
@@ -80,6 +81,36 @@ describe('field display metadata', () => {
     ).toBe('订单ID');
     expect(resolveSchemaColumnComment(schemas, { name: 'id' })).toBeUndefined();
     expect(resolveSchemaColumnComment(schemas, { name: ['id'] })).toBeUndefined();
+  });
+
+  test('matches ViewField by id, then path, then unique origin name', () => {
+    const fields = [
+      {
+        fieldId: 'field-1',
+        originName: 'city',
+        displayName: '城市',
+        sourcePath: ['db', 'users', 'city'],
+      },
+      {
+        fieldId: 'field-2',
+        originName: 'amount',
+        displayName: '金额',
+        sourcePath: ['db', 'orders', 'amount'],
+      },
+    ];
+    expect(
+      findViewFieldMeta({ fieldId: 'field-1', name: 'city' }, fields)
+        ?.displayName,
+    ).toBe('城市');
+    expect(
+      findViewFieldMeta(
+        { fieldId: 'stale', path: ['db', 'orders', 'amount'], name: 'amount' },
+        fields,
+      )?.displayName,
+    ).toBe('金额');
+    expect(findViewFieldMeta({ name: 'city' }, fields)?.displayName).toBe(
+      '城市',
+    );
   });
 });
 

@@ -26,6 +26,7 @@ import { ToolbarButton } from 'app/components';
 import { VirtualTable } from 'app/components/VirtualTable';
 import { DataViewFieldType } from 'app/constants';
 import { TABLE_DATA_INDEX } from 'globalConstants';
+import { ViewFieldMeta } from 'app/types/View';
 import { memo, ReactElement, useMemo } from 'react';
 import styled from 'styled-components';
 import {
@@ -40,6 +41,7 @@ import {
   getColumnWidthMap,
   getHierarchyColumn,
   resolveSchemaColumnComment,
+  findViewFieldMeta,
 } from '../utils';
 import SetFieldType from './SetFieldType';
 
@@ -55,6 +57,7 @@ interface SchemaTableProps extends TableProps<object> {
   hasFormat?: boolean;
   sourceId?: string;
   databaseSchemas?: DatabaseSchema[];
+  viewFields?: ViewFieldMeta[];
   getExtraHeaderActions?: (
     name: string,
     column: Omit<Column, 'name'>,
@@ -76,6 +79,7 @@ export const SchemaTable = memo(
     hasCategory,
     sourceId,
     databaseSchemas,
+    viewFields,
     getExtraHeaderActions,
     onSchemaTypeChange,
     ...tableProps
@@ -127,19 +131,29 @@ export const SchemaTable = memo(
         const extraActions =
           getExtraHeaderActions && getExtraHeaderActions(name, hierarchyColumn);
 
-        const displayText = getFieldDisplayName({
-          name,
-          path: hierarchyMeta.path,
-          displayName: hierarchyColumn.displayName,
-          comment:
-            column.comment ||
-            hierarchyMeta.comment ||
-            resolveSchemaColumnComment(databaseSchemas, {
-              name,
-              path: hierarchyMeta.path,
-            }),
-          isDisplayNameCustom: hierarchyMeta.isDisplayNameCustom,
-        });
+        const viewField = findViewFieldMeta(
+          {
+            fieldId: hierarchyMeta.fieldId || column.fieldId,
+            name,
+            path: hierarchyMeta.path,
+          },
+          viewFields,
+        );
+        const displayText =
+          viewField?.displayName ||
+          getFieldDisplayName({
+            name,
+            path: hierarchyMeta.path,
+            displayName: hierarchyColumn.displayName,
+            comment:
+              column.comment ||
+              hierarchyMeta.comment ||
+              resolveSchemaColumnComment(databaseSchemas, {
+                name,
+                path: hierarchyMeta.path,
+              }),
+            isDisplayNameCustom: hierarchyMeta.isDisplayNameCustom,
+          });
 
         const title = (
           <>
@@ -191,6 +205,7 @@ export const SchemaTable = memo(
       hasCategory,
       hasFormat,
       databaseSchemas,
+      viewFields,
       getExtraHeaderActions,
       onSchemaTypeChange,
     ]);

@@ -1,8 +1,5 @@
 package datart.server.common.fieldmeta;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.sql.SqlBasicCall;
@@ -49,15 +46,6 @@ public class SqlFieldLineageResolver {
             // Unsupported SQL must remain untouched; never infer a source path from output names.
             return Map.of();
         }
-    }
-
-    public void enrichModel(String sql, ObjectNode model, SourceSchemaIndex.Index schema) {
-        Map<String, SqlFieldLineage> lineages = resolve(sql, schema);
-        if (lineages.isEmpty() || model == null) {
-            return;
-        }
-        enrichFields(model.path("columns"), lineages);
-        enrichFields(model.path("hierarchy"), lineages);
     }
 
     private static SqlParser.Config parserConfig() {
@@ -151,36 +139,6 @@ public class SqlFieldLineageResolver {
     private static TableReference tableFor(List<TableReference> tables, List<String> qualifier) {
         List<TableReference> matches = tables.stream().filter(table -> table.matches(qualifier)).toList();
         return matches.size() == 1 ? matches.get(0) : null;
-    }
-
-    private static void enrichFields(JsonNode fields, Map<String, SqlFieldLineage> lineages) {
-        if (fields == null || !fields.isObject()) {
-            return;
-        }
-        fields.fields().forEachRemaining(entry -> enrichField(entry.getKey(), entry.getValue(), lineages));
-    }
-
-    private static void enrichField(String fallbackName, JsonNode node, Map<String, SqlFieldLineage> lineages) {
-        if (!(node instanceof ObjectNode field)) {
-            return;
-        }
-        SqlFieldLineage lineage = lineages.get(outputName(field, fallbackName));
-        if (lineage != null && lineage.hasPhysicalPath()) {
-            ArrayNode path = field.putArray("path");
-            lineage.sourcePath().forEach(path::add);
-        }
-        JsonNode children = field.get("children");
-        if (children != null && children.isArray()) {
-            children.forEach(child -> enrichField(outputName(child, fallbackName), child, lineages));
-        }
-    }
-
-    private static String outputName(JsonNode node, String fallback) {
-        JsonNode name = node == null ? null : node.get("name");
-        if (name != null && name.isArray() && !name.isEmpty()) {
-            return name.get(name.size() - 1).asText(fallback);
-        }
-        return name != null && name.isTextual() ? name.asText() : fallback;
     }
 
     private static String lastName(SqlNode node) {

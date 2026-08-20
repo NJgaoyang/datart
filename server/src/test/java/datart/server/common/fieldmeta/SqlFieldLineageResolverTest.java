@@ -1,7 +1,6 @@
 package datart.server.common.fieldmeta;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import datart.core.entity.SourceSchemas;
 import datart.core.mappers.ext.SourceSchemasMapperExt;
 import org.junit.jupiter.api.Test;
@@ -11,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SqlFieldLineageResolverTest {
@@ -47,23 +45,15 @@ class SqlFieldLineageResolverTest {
                   {"name":["ads","daily","renting_users"],"comment":"在租用户数"}
                 ]}]}]
                 """);
-        ObjectNode model = (ObjectNode) json.readTree("""
-                {"columns":{
-                  "city":{"name":["city"]},
-                  "renting_users":{"name":["renting_users"]},
-                  "net_increase_users":{"name":["net_increase_users"]}
-                }}
-                """);
-
-        resolver.enrichModel("""
+        Map<String, SqlFieldLineageResolver.SqlFieldLineage> lineages = resolver.resolve("""
                 SELECT t.*, t.renting_users - t.yesterday_users AS net_increase_users
                 FROM ads.daily t
-                """, model, schema);
+                """, schema);
 
-        assertEquals("ads", model.at("/columns/city/path/0").asText());
-        assertEquals("city", model.at("/columns/city/path/2").asText());
-        assertEquals("renting_users", model.at("/columns/renting_users/path/2").asText());
-        assertFalse(model.at("/columns/net_increase_users/path").isArray());
+        assertEquals(List.of("ads", "daily", "city"), lineages.get("city").sourcePath());
+        assertEquals(List.of("ads", "daily", "renting_users"), lineages.get("renting_users").sourcePath());
+        assertEquals(SqlFieldLineageResolver.Status.EXPRESSION, lineages.get("net_increase_users").status());
+        assertTrue(lineages.get("net_increase_users").sourcePath().isEmpty());
     }
 
     @Test
