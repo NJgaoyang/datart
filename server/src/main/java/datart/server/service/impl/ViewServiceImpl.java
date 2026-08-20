@@ -46,6 +46,8 @@ import datart.server.base.params.*;
 import datart.server.base.transfer.ImportStrategy;
 import datart.server.base.transfer.TransferConfig;
 import datart.server.base.transfer.model.ViewResourceModel;
+import datart.server.common.fieldmeta.SqlModelQueryPathSanitizer;
+import datart.server.common.fieldmeta.SourceSchemaIndex;
 import datart.server.service.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -78,6 +80,10 @@ public class ViewServiceImpl extends BaseService implements ViewService {
 
     private final ViewFieldService viewFieldService;
 
+    private final SourceSchemaIndex schemaIndex;
+
+    private final SqlModelQueryPathSanitizer sqlModelQueryPathSanitizer;
+
     public ViewServiceImpl(ViewMapperExt viewMapper,
                            RelSubjectColumnsMapperExt rscMapper,
                            RelRoleResourceMapperExt rrrMapper,
@@ -87,7 +93,9 @@ public class ViewServiceImpl extends BaseService implements ViewService {
                            RelVariableSubjectMapperExt rvsMapper,
                            DashboardMapperExt dashboardMapper,
                            DatachartMapperExt datachartMapper,
-                           ViewFieldService viewFieldService) {
+                           ViewFieldService viewFieldService,
+                           SourceSchemaIndex schemaIndex,
+                           SqlModelQueryPathSanitizer sqlModelQueryPathSanitizer) {
         this.viewMapper = viewMapper;
         this.rscMapper = rscMapper;
         this.rrrMapper = rrrMapper;
@@ -98,6 +106,8 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         this.dashboardMapper = dashboardMapper;
         this.datachartMapper = datachartMapper;
         this.viewFieldService = viewFieldService;
+        this.schemaIndex = schemaIndex;
+        this.sqlModelQueryPathSanitizer = sqlModelQueryPathSanitizer;
     }
 
     @Override
@@ -343,6 +353,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         view.setCreateTime(new Date());
         view.setId(UUIDGenerator.generate());
         view.setStatus(Const.DATA_STATUS_ACTIVE);
+        sanitizeSqlQueryPaths(view);
         view.setModel(normalizeModelDisplayNames(view.getModel()));
         requirePermission(view, Const.CREATE);
         viewFieldService.reconcile(view);
@@ -632,6 +643,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         Application.getBean(DataProviderService.class).updateSource(retrieve(view.getSourceId(), Source.class, false));
         BeanUtils.copyProperties(updateParam, view);
         view.setType(viewUpdateParam.getType().name());
+        sanitizeSqlQueryPaths(view);
         view.setModel(normalizeModelDisplayNames(view.getModel()));
         viewFieldService.reconcile(view);
         view.setUpdateBy(getCurrentUser().getId());
@@ -650,6 +662,22 @@ public class ViewServiceImpl extends BaseService implements ViewService {
             return root.toJSONString();
         } catch (Exception ignored) {
             return model;
+        }
+    }
+
+    private void sanitizeSqlQueryPaths(View view) {
+        if (!"SQL".equalsIgnoreCase(view.getType()) || !hasText(view.getScript()) || !hasText(view.getModel())) {
+            return;
+        }
+        try {
+            com.fasterxml.jackson.databind.JsonNode root = OBJECT_MAPPER.readTree(view.getModel());
+            if (root instanceof com.fasterxml.jackson.databind.node.ObjectNode model) {
+                sqlModelQueryPathSanitizer.sanitize(view.getScript(), model,
+                        schemaIndex.forSource(view.getSourceId()));
+                view.setModel(OBJECT_MAPPER.writeValueAsString(model));
+            }
+        } catch (Exception ignored) {
+            // Invalid or unsupported SQL keeps the submitted model unchanged.
         }
     }
 

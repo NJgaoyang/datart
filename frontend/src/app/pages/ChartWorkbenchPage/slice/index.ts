@@ -176,7 +176,11 @@ const workbenchSlice = createSlice({
         const index = state.dataviews?.findIndex(
           view => view.id === payload.id,
         );
-        const meta = transformHierarchyMeta(payload.model, payload.fields);
+        const meta = transformHierarchyMeta(
+          payload.model,
+          payload.fields,
+          payload.type,
+        );
         let computedFields: ChartDataViewMeta[] = [];
         if (payload.id === state?.backendChart?.view?.id) {
           computedFields = state?.backendChart?.config?.computedFields || [];

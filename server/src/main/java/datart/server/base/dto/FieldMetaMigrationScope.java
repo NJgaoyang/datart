@@ -28,4 +28,6 @@ public class FieldMetaMigrationScope {
     private int preservedExistingComments;
     private int unresolvedSqlFields;
     private int blockingSqlConflicts;
+    private int pollutedSqlModels;
+    private int pollutedSqlColumns;
 }

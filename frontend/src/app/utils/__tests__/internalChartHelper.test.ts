@@ -1593,6 +1593,50 @@ describe('Internal Chart Helper ', () => {
       expect(metas).toEqual([]);
     });
 
+    test('uses SQL output names as query paths even when model has physical paths', () => {
+      const model = {
+        columns: {
+          recommender_city_name_std: {
+            name: 'recommender_city_name_std',
+            path: ['ads', 'daily', 'recommender_city_name_std'],
+            fieldId: 'field-1',
+          },
+        },
+      };
+      const metas = transformHierarchyMeta(
+        JSON.stringify(model),
+        [
+          {
+            fieldId: 'field-1',
+            originName: 'recommender_city_name_std',
+            displayName: '推荐官城市',
+            sourcePath: ['ads', 'daily', 'recommender_city_name_std'],
+          },
+        ],
+        'SQL',
+      );
+
+      expect(metas[0].path).toEqual(['recommender_city_name_std']);
+      expect(metas[0].displayName).toBe('推荐官城市');
+    });
+
+    test('keeps physical paths for STRUCT views', () => {
+      const metas = transformHierarchyMeta(
+        JSON.stringify({
+          columns: {
+            city: {
+              name: ['ads', 'daily', 'city'],
+              path: ['ads', 'daily', 'city'],
+            },
+          },
+        }),
+        undefined,
+        'STRUCT',
+      );
+
+      expect(metas[0].path).toEqual(['ads', 'daily', 'city']);
+    });
+
     test('should get columns when hierarchy is null or empty', () => {
       const model = {
         hierarchy: {},

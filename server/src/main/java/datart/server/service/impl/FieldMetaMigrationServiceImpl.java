@@ -24,6 +24,7 @@ import datart.server.common.fieldmeta.FieldMetaDiagnostics;
 import datart.server.common.fieldmeta.InvalidMigrationJsonException;
 import datart.server.common.fieldmeta.ResolvedFieldMeta;
 import datart.server.common.fieldmeta.SourceSchemaIndex;
+import datart.server.common.fieldmeta.SqlModelQueryPathSanitizer;
 import datart.server.common.fieldmeta.StrictJson;
 import datart.server.common.fieldmeta.ViewModelMigrator;
 import datart.server.service.BaseService;
@@ -59,6 +60,7 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
     private final JdbcTemplate jdbcTemplate;
     private final ViewFieldService viewFieldService;
     private final ViewFieldMapperExt viewFieldMapper;
+    private final SqlModelQueryPathSanitizer sqlModelQueryPathSanitizer = new SqlModelQueryPathSanitizer();
 
     public FieldMetaMigrationServiceImpl(FieldMetaMigrationMapperExt mapper,
                                          SourceSchemaIndex schemaIndex,
@@ -209,6 +211,15 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
                 if (index.getError() != null) {
                     addIssue(snapshot, VIEW, view, null, "INVALID_SCHEMA_JSON", index.getError());
                 }
+                int pollutedPaths = "SQL".equalsIgnoreCase(view.getType())
+                        ? sqlModelQueryPathSanitizer.count(view.getScript(), model, index) : 0;
+                if (pollutedPaths > 0) {
+                    snapshot.views.setPollutedSqlModels(snapshot.views.getPollutedSqlModels() + 1);
+                    snapshot.views.setPollutedSqlColumns(snapshot.views.getPollutedSqlColumns() + pollutedPaths);
+                    addIssue(snapshot, VIEW, view, null, "SQL_PHYSICAL_LINEAGE_IN_QUERY_PATH",
+                            "detected " + pollutedPaths + " polluted model path(s)",
+                            FieldMetaMigrationIssueSeverity.WARNING);
+                }
                 ViewModelMigrator.Result migration = new ViewModelMigrator().migrate(model, index, view.getType());
                 List<ViewFieldDTO> viewFields = viewFieldService.listByViewId(view.getId());
                 ViewSnapshot viewSnapshot = new ViewSnapshot(view, model, migration.model(), fields(migration.fields()),
@@ -311,7 +322,12 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
             String original = view.view.getModel();
             Map<String, String> originalViewFields = snapshotViewFields(view.view.getId());
             view.view.setModel(strictJson.write(view.originalModel));
+            sqlModelQueryPathSanitizer.sanitize(view.view.getScript(), view.originalModel,
+                    schemaIndex.forSource(view.view.getSourceId()));
+            view.view.setModel(strictJson.write(view.originalModel));
             viewFieldService.migrateLegacyMetadata(view.view);
+            sqlModelQueryPathSanitizer.sanitize(view.view.getScript(), view.migratedModel,
+                    schemaIndex.forSource(view.view.getSourceId()));
             view.view.setModel(strictJson.write(view.migratedModel));
             viewFieldService.reconcile(view.view);
             ObjectNode reconciledModel = strictJson.readObject(VIEW, view.view.getId(), view.view.getModel());
@@ -603,6 +619,8 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
         target.setPreservedExistingComments(source.getPreservedExistingComments());
         target.setUnresolvedSqlFields(source.getUnresolvedSqlFields());
         target.setBlockingSqlConflicts(source.getBlockingSqlConflicts());
+        target.setPollutedSqlModels(source.getPollutedSqlModels());
+        target.setPollutedSqlColumns(source.getPollutedSqlColumns());
         return target;
     }
 
@@ -731,6 +749,12 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
 
     private static void addIssue(Snapshot snapshot, String entityType, View view, String fieldKey, String reason, String detail) {
         addIssue(snapshot, entityType, view.getId(), view.getName(), fieldKey, reason, detail);
+    }
+
+    private static void addIssue(Snapshot snapshot, String entityType, View view, String fieldKey,
+                                 String reason, String detail, FieldMetaMigrationIssueSeverity severity) {
+        snapshot.issues.add(new FieldMetaMigrationIssue(entityType, view.getId(), view.getName(), fieldKey,
+                reason, detail, severity));
     }
 
     private static void addIssue(Snapshot snapshot, String entityType, String entityId, String fieldKey, String reason, String detail) {

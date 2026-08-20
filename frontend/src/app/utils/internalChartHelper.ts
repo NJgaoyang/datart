@@ -388,7 +388,11 @@ export function flattenHeaderRowsWithoutGroupRow<
   return [groupedHeaderRow].concat(childRows);
 }
 
-export function transformMeta(model?: string, viewFields?: ViewFieldMeta[]) {
+export function transformMeta(
+  model?: string,
+  viewFields?: ViewFieldMeta[],
+  viewType?: string,
+) {
   if (!model) {
     return undefined;
   }
@@ -398,28 +402,29 @@ export function transformMeta(model?: string, viewFields?: ViewFieldMeta[]) {
       ? jsonObj.hierarchy
       : jsonObj.columns || jsonObj,
   );
-  const flatMeta: any[] = (transformHierarchyMeta(model, viewFields) as any[]).flatMap(
-    (column, index) => {
-      if (!isEmptyArray(column?.children)) {
-        return (column.children || []).map(c => ({
-          ...c,
-          path: c.path,
-          category: ChartDataViewFieldCategory.Field,
-        }));
-      }
-      return {
-        ...column,
-        path: column.path || hierarchyKeys[index],
+  const flatMeta: any[] = (
+    transformHierarchyMeta(model, viewFields, viewType) as any[]
+  ).flatMap((column, index) => {
+    if (!isEmptyArray(column?.children)) {
+      return (column.children || []).map(c => ({
+        ...c,
+        path: c.path,
         category: ChartDataViewFieldCategory.Field,
-      };
-    },
-  );
+      }));
+    }
+    return {
+      ...column,
+      path: column.path || hierarchyKeys[index],
+      category: ChartDataViewFieldCategory.Field,
+    };
+  });
   return flatMeta;
 }
 
 export function transformHierarchyMeta(
   model?: string,
   viewFields?: ViewFieldMeta[],
+  viewType?: string,
 ): ChartDataViewMeta[] {
   if (!model) {
     return [];
@@ -450,7 +455,9 @@ export function transformHierarchyMeta(
     : modelObj.hierarchy;
 
   const normalizedViewFields = Array.isArray(viewFields) ? viewFields : [];
-  const fieldsById = new Map(normalizedViewFields.map(field => [field.fieldId, field]));
+  const fieldsById = new Map(
+    normalizedViewFields.map(field => [field.fieldId, field]),
+  );
   const fieldsByPath = new Map(
     normalizedViewFields
       .filter(field => field.sourcePath?.length)
@@ -465,11 +472,13 @@ export function transformHierarchyMeta(
     }
   });
   return Object.keys(hierarchyMeta || {}).map(key => {
-    return getMeta(key, hierarchyMeta?.[key], columnMetadata, {
-      fieldsById,
-      fieldsByPath,
-      fieldsByName,
-    });
+    return getMeta(
+      key,
+      hierarchyMeta?.[key],
+      columnMetadata,
+      { fieldsById, fieldsByPath, fieldsByName },
+      viewType,
+    );
   });
 }
 
@@ -482,6 +491,7 @@ function getMeta(
     fieldsByPath: Map<string, ViewFieldMeta>;
     fieldsByName: Map<string, ViewFieldMeta | undefined>;
   },
+  viewType?: string,
 ) {
   let children;
   let isHierarchy = false;
@@ -499,7 +509,7 @@ function getMeta(
   if (!isEmptyArray(column?.children)) {
     isHierarchy = true;
     children = column?.children.map(child =>
-      getMeta(child?.name, child, columnMetadata, fieldMaps),
+      getMeta(child?.name, child, columnMetadata, fieldMaps, viewType),
     );
   }
   const fieldName = Array.isArray(column?.name)
@@ -508,9 +518,11 @@ function getMeta(
   const sourcePath = column?.path || column?.name;
   const serverField =
     (column?.fieldId && fieldMaps?.fieldsById.get(column.fieldId)) ||
-    (Array.isArray(sourcePath) && fieldMaps?.fieldsByPath.get(sourcePath.join('.'))) ||
+    (Array.isArray(sourcePath) &&
+      fieldMaps?.fieldsByPath.get(sourcePath.join('.'))) ||
     fieldMaps?.fieldsByName.get(fieldName);
-  const rawDisplayName = serverField?.displayName ?? column?.displayName ?? metadata?.displayName;
+  const rawDisplayName =
+    serverField?.displayName ?? column?.displayName ?? metadata?.displayName;
   const comment = column?.comment ?? metadata?.comment;
   const isDisplayNameCustom =
     column?.isDisplayNameCustom ?? metadata?.isDisplayNameCustom;
@@ -524,12 +536,14 @@ function getMeta(
   const displayName =
     serverField?.displayName ??
     legacyDisplayName ??
-    (rawDisplayName && Array.isArray(column?.path) &&
+    (rawDisplayName &&
+    Array.isArray(column?.path) &&
     rawDisplayName === column.path.join('.')
       ? rawDisplayName
       : undefined);
   return {
     ...column,
+    ...(viewType === 'SQL' ? { path: [fieldName] } : {}),
     ...(serverField
       ? {
           fieldId: serverField.fieldId,
@@ -887,7 +901,9 @@ export function reconcileChartConfigFieldMeta(
           fieldId: latestMeta.fieldId || row.fieldId,
           path: latestMeta.path || row.path,
           displayName:
-            legacyCustomDisplayName ?? latestMeta.displayName ?? row.displayName,
+            legacyCustomDisplayName ??
+            latestMeta.displayName ??
+            row.displayName,
           comment: latestMeta.comment ?? row.comment,
           isDisplayNameCustom: legacyCustomDisplayName
             ? true
