@@ -42,6 +42,8 @@ import datart.security.util.AESUtil;
 import datart.server.base.dto.VariableValue;
 import datart.server.base.params.TestExecuteParam;
 import datart.server.base.params.ViewExecuteParam;
+import datart.server.common.fieldmeta.SourceSchemaIndex;
+import datart.server.common.fieldmeta.SqlPreviewFieldMetadataResolver;
 import datart.server.service.BaseService;
 import datart.server.service.DataProviderService;
 import datart.server.service.SourceService;
@@ -87,18 +89,26 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
 
     private final QueryExecutionTracePersistence queryExecutionTracePersistence;
 
+    private final SourceSchemaIndex sourceSchemaIndex;
+
+    private final SqlPreviewFieldMetadataResolver sqlPreviewFieldMetadataResolver;
+
     public DataProviderServiceImpl(DataProviderManager dataProviderManager,
                                    RelSubjectColumnsMapperExt rscMapper,
                                    VariableService variableService,
                                    ViewService viewService,
                                    SourceService sourceService,
-                                   QueryExecutionTracePersistence queryExecutionTracePersistence) {
+                                   QueryExecutionTracePersistence queryExecutionTracePersistence,
+                                   SourceSchemaIndex sourceSchemaIndex,
+                                   SqlPreviewFieldMetadataResolver sqlPreviewFieldMetadataResolver) {
         this.dataProviderManager = dataProviderManager;
         this.rscMapper = rscMapper;
         this.variableService = variableService;
         this.viewService = viewService;
         this.sourceService = sourceService;
         this.queryExecutionTracePersistence = queryExecutionTracePersistence;
+        this.sourceSchemaIndex = sourceSchemaIndex;
+        this.sqlPreviewFieldMetadataResolver = sqlPreviewFieldMetadataResolver;
     }
 
     @PostConstruct
@@ -222,7 +232,14 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
                 .queryOwner(getCurrentUser().getId())
                 .reportName("数据集预览")
                 .build();
-        return dataProviderManager.execute(providerSource, queryScript, executeParam);
+        Dataframe dataframe = dataProviderManager.execute(providerSource, queryScript, executeParam);
+        if (testExecuteParam.getScriptType() == ScriptType.SQL) {
+            dataframe.setPreviewFields(sqlPreviewFieldMetadataResolver.resolve(
+                    testExecuteParam.getScript(),
+                    dataframe.getColumns(),
+                    sourceSchemaIndex.forSource(source.getId())));
+        }
+        return dataframe;
     }
 
     @Override

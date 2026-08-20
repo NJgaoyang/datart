@@ -286,6 +286,7 @@ export const saveView = createAsyncThunk<
         ...v,
         relVariableSubjects: data.relVariableSubjects,
       })),
+      previewFields: undefined,
       isSaveAs,
     };
   };

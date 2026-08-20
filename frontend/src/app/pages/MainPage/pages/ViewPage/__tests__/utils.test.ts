@@ -112,6 +112,15 @@ describe('field display metadata', () => {
       '城市',
     );
   });
+
+  test('matches read-only preview metadata without a field id', () => {
+    expect(
+      findViewFieldMeta(
+        { name: 'city' },
+        [{ originName: 'city', displayName: '城市', sourcePath: ['ads', 'users', 'city'] }],
+      )?.displayName,
+    ).toBe('城市');
+  });
 });
 
 describe('normalizeModelDisplayNames test', () => {

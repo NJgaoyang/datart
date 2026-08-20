@@ -26,7 +26,7 @@ import { ToolbarButton } from 'app/components';
 import { VirtualTable } from 'app/components/VirtualTable';
 import { DataViewFieldType } from 'app/constants';
 import { TABLE_DATA_INDEX } from 'globalConstants';
-import { ViewFieldMeta } from 'app/types/View';
+import { PreviewFieldMeta, ViewFieldMeta } from 'app/types/View';
 import { memo, ReactElement, useMemo } from 'react';
 import styled from 'styled-components';
 import {
@@ -57,7 +57,8 @@ interface SchemaTableProps extends TableProps<object> {
   hasFormat?: boolean;
   sourceId?: string;
   databaseSchemas?: DatabaseSchema[];
-  viewFields?: ViewFieldMeta[];
+  viewFields?: Array<ViewFieldMeta | PreviewFieldMeta>;
+  previewFields?: PreviewFieldMeta[];
   getExtraHeaderActions?: (
     name: string,
     column: Omit<Column, 'name'>,
@@ -80,6 +81,7 @@ export const SchemaTable = memo(
     sourceId,
     databaseSchemas,
     viewFields,
+    previewFields,
     getExtraHeaderActions,
     onSchemaTypeChange,
     ...tableProps
@@ -131,14 +133,14 @@ export const SchemaTable = memo(
         const extraActions =
           getExtraHeaderActions && getExtraHeaderActions(name, hierarchyColumn);
 
-        const viewField = findViewFieldMeta(
-          {
-            fieldId: hierarchyMeta.fieldId || column.fieldId,
-            name,
-            path: hierarchyMeta.path,
-          },
-          viewFields,
-        );
+        const fieldIdentity = {
+          fieldId: hierarchyMeta.fieldId || column.fieldId,
+          name,
+          path: hierarchyMeta.path,
+        };
+        const viewField =
+          findViewFieldMeta(fieldIdentity, viewFields) ||
+          findViewFieldMeta(fieldIdentity, previewFields);
         const displayText =
           viewField?.displayName ||
           getFieldDisplayName({
@@ -206,6 +208,7 @@ export const SchemaTable = memo(
       hasFormat,
       databaseSchemas,
       viewFields,
+      previewFields,
       getExtraHeaderActions,
       onSchemaTypeChange,
     ]);

@@ -42,6 +42,9 @@ public class Dataframe implements Serializable {
 
     private List<List<Object>> rows;
 
+    /** Read-only metadata for fields returned by an unsaved SQL preview. */
+    private List<PreviewFieldMeta> previewFields;
+
     private PageInfo pageInfo;
 
     private String script;

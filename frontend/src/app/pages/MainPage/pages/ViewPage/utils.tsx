@@ -47,7 +47,7 @@ import {
   ViewType,
   ViewViewModel,
 } from './slice/types';
-import { ViewFieldMeta } from '../../../../types/View';
+import { PreviewFieldMeta, ViewFieldMeta } from '../../../../types/View';
 
 export function generateEditingView(
   attrs?: Partial<ViewViewModel>,
@@ -128,8 +128,8 @@ export function resolveSchemaColumnComment(
 
 export function findViewFieldMeta(
   field: { fieldId?: string; name?: string | string[]; path?: string[] },
-  fields?: ViewFieldMeta[],
-): ViewFieldMeta | undefined {
+  fields?: Array<ViewFieldMeta | PreviewFieldMeta>,
+): (ViewFieldMeta | PreviewFieldMeta) | undefined {
   if (!fields?.length) {
     return undefined;
   }

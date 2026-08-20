@@ -20,7 +20,7 @@ import { TreeDataNode, TreeNodeProps } from 'antd';
 import { DataViewFieldType, DateFormat } from 'app/constants';
 import { ChartDataViewMeta } from 'app/types/ChartDataViewMeta';
 import { ReactElement } from 'react';
-import { View } from '../../../../../types/View';
+import { PreviewFieldMeta, View } from '../../../../../types/View';
 import { SubjectTypes } from '../../PermissionPage/constants';
 import { RowPermissionRaw, Variable } from '../../VariablePage/slice/types';
 import {
@@ -104,6 +104,7 @@ export interface ViewViewModel<T = object>
   isSaveAs?: Boolean;
   warnings?: string[] | null;
   fields?: View['fields'];
+  previewFields?: PreviewFieldMeta[];
 }
 
 export interface QueryResult {
@@ -113,6 +114,7 @@ export interface QueryResult {
   script?: string;
   warnings?: string[] | null;
   reqColumns?: { column: []; alias: string }[];
+  previewFields?: PreviewFieldMeta[];
 }
 export interface PageInfo {
   pageNo: number;

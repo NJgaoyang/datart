@@ -298,6 +298,7 @@ const slice = createSlice({
           currentEditingView.type!,
         );
         currentEditingView.previewResults = dataSource;
+        currentEditingView.previewFields = action.payload.previewFields || [];
         if (!action.meta.arg.isFragment) {
           currentEditingView.stage = ViewViewModelStages.Saveable;
         } else {

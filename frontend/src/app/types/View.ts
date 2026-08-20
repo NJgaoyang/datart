@@ -40,6 +40,10 @@ export type ViewFieldMeta = {
   active?: boolean;
 };
 
+export type PreviewFieldMeta = Omit<ViewFieldMeta, 'fieldId'> & {
+  fieldId?: string;
+};
+
 export interface View extends ViewSimple {
   config: string;
   model: string;
