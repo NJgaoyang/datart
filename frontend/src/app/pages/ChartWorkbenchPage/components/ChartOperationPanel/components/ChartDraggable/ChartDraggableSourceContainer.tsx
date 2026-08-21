@@ -132,6 +132,8 @@ export const ChartDraggableSourceContainer: FC<
         ? selectedItems.map(item => buildDragItem(item))
         : buildDragItem(
             {
+              fieldId,
+              originName,
               type,
               subType,
               category,
@@ -156,7 +158,9 @@ export const ChartDraggableSourceContainer: FC<
       comment,
       dateFormat,
       displayName,
+      fieldId,
       isDisplayNameCustom,
+      originName,
       path,
       selectedItems,
       subType,
@@ -371,6 +375,8 @@ export const ChartDraggableSourceContainer: FC<
       .map(item => (
         <ChartDraggableSourceContainer
           key={item.name}
+          fieldId={item.fieldId}
+          originName={item.originName}
           name={item.name}
           path={item.path}
           displayName={item.displayName}

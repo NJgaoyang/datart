@@ -468,9 +468,9 @@ export function transformHierarchyMeta(
     ? modelObj.columns || modelObj
     : modelObj.hierarchy;
 
-  const normalizedViewFields = (Array.isArray(viewFields) ? viewFields : []).filter(
-    field => field.active !== false,
-  );
+  const normalizedViewFields = (
+    Array.isArray(viewFields) ? viewFields : []
+  ).filter(field => field.active !== false);
   const fieldsById = new Map(
     normalizedViewFields.map(field => [field.fieldId, field]),
   );

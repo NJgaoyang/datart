@@ -55,6 +55,7 @@ export interface renderMataProps extends Omit<ChartDataViewMeta, 'children'> {
 
 export interface dateLevelFieldsProps {
   fieldId?: string;
+  originName?: string;
   name: string;
   category: string;
   expression: string;

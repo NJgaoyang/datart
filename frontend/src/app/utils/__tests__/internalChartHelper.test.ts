@@ -20,6 +20,7 @@ import { ChartDataSectionType, DataViewFieldType } from 'app/constants';
 import { ChartDataSectionField, ChartStyleConfig } from 'app/types/ChartConfig';
 import { ChartStyleConfigDTO } from 'app/types/ChartConfigDTO';
 import {
+  buildDragItem,
   diffHeaderRows,
   flattenHeaderRowsWithoutGroupRow,
   getColumnRenderOriginName,
@@ -1585,6 +1586,37 @@ describe('Internal Chart Helper ', () => {
       const result = getColumnRenderOriginName(config as ChartDataSectionField);
       expect(result).toEqual('AVG(a)');
     });
+
+    test('should keep the original aggregate function with dataset display name', () => {
+      const result = getColumnRenderOriginName({
+        colName: 'order_cnt',
+        fieldId: 'field-1',
+        originName: 'order_cnt',
+        displayName: '订单数',
+        aggregate: 'SUM',
+      } as ChartDataSectionField);
+
+      expect(result).toEqual('SUM(订单数)');
+      expect(result).not.toContain('order_cnt订单数');
+    });
+  });
+
+  describe('buildDragItem Test', () => {
+    test('preserves dataset identity metadata while dragging', () => {
+      expect(
+        buildDragItem({
+          fieldId: 'field-1',
+          originName: 'city',
+          name: 'city',
+          displayName: '城市',
+        }),
+      ).toMatchObject({
+        fieldId: 'field-1',
+        originName: 'city',
+        colName: 'city',
+        displayName: '城市',
+      });
+    });
   });
 
   describe('transformHierarchyMeta Test', () => {
@@ -2014,9 +2046,7 @@ describe('Internal Chart Helper ', () => {
     const result = reconcileChartConfigFieldMeta(config, []);
 
     expect(result.datas?.[0].rows?.[0].type).toBe(DataViewFieldType.DATE);
-    expect(result.datas?.[0].rows?.[1].type).toBe(
-      DataViewFieldType.DATETIME,
-    );
+    expect(result.datas?.[0].rows?.[1].type).toBe(DataViewFieldType.DATETIME);
   });
 
   test('ignores non-array view field metadata', () => {

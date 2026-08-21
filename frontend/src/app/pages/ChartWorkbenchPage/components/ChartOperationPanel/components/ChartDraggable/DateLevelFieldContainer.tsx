@@ -25,6 +25,7 @@ function DateLevelFieldContainer({
       item: {
         field: item.field,
         fieldId: item?.fieldId,
+        originName: item?.originName,
         colName: item?.name,
         type: item?.type,
         category: item?.category,
