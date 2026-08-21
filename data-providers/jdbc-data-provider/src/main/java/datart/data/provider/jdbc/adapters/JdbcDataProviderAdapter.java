@@ -650,10 +650,17 @@ public class JdbcDataProviderAdapter implements Closeable {
     }
 
     protected Object getObjFromResultSet(ResultSet rs, int columnIndex) throws SQLException {
-        if (isYearType(rs.getMetaData().getColumnTypeName(columnIndex))) {
+        ResultSetMetaData metadata = rs.getMetaData();
+        if (isYearType(metadata.getColumnTypeName(columnIndex))) {
             int year = rs.getInt(columnIndex);
             return rs.wasNull() ? null : year;
         }
+
+        if (metadata.getColumnType(columnIndex) == Types.DATE) {
+            java.sql.Date date = rs.getDate(columnIndex);
+            return rs.wasNull() ? null : date;
+        }
+
         Object obj = rs.getObject(columnIndex);
         if (obj instanceof Boolean) {
             obj = rs.getObject(columnIndex).toString();

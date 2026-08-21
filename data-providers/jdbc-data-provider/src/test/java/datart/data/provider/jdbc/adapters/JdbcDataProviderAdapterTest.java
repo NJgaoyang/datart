@@ -62,6 +62,28 @@ class JdbcDataProviderAdapterTest {
     }
 
     @Test
+    void shouldReadJdbcDateAsSqlDateWithoutTime() throws Exception {
+        ResultSet resultSet = mockDateResultSet(java.sql.Date.valueOf("2026-08-01"), false);
+
+        Dataframe dataframe = adapter.parse(resultSet);
+
+        Object value = dataframe.getRows().get(0).get(0);
+        assertEquals(java.sql.Date.class, value.getClass());
+        assertEquals("2026-08-01", value.toString());
+        verify(resultSet).getDate(1);
+        verify(resultSet, never()).getObject(1);
+    }
+
+    @Test
+    void shouldKeepNullJdbcDateValue() throws Exception {
+        ResultSet resultSet = mockDateResultSet(null, true);
+
+        Dataframe dataframe = adapter.parse(resultSet);
+
+        assertNull(dataframe.getRows().get(0).get(0));
+    }
+
+    @Test
     void shouldCloseConnectionAfterTestingDataSource() throws Exception {
         Connection connection = mock(Connection.class);
         Driver driver = new CloseTrackingDriver(connection);
@@ -119,6 +141,20 @@ class JdbcDataProviderAdapterTest {
         when(metadata.getColumnLabel(1)).thenReturn("report_year");
         when(resultSet.next()).thenReturn(true, false);
         when(resultSet.getInt(1)).thenReturn(year);
+        when(resultSet.wasNull()).thenReturn(wasNull);
+        return resultSet;
+    }
+
+    private ResultSet mockDateResultSet(java.sql.Date date, boolean wasNull) throws Exception {
+        ResultSet resultSet = mock(ResultSet.class);
+        ResultSetMetaData metadata = mock(ResultSetMetaData.class);
+        when(resultSet.getMetaData()).thenReturn(metadata);
+        when(metadata.getColumnCount()).thenReturn(1);
+        when(metadata.getColumnType(1)).thenReturn(Types.DATE);
+        when(metadata.getColumnTypeName(1)).thenReturn("DATE");
+        when(metadata.getColumnLabel(1)).thenReturn("created_date");
+        when(resultSet.next()).thenReturn(true, false);
+        when(resultSet.getDate(1)).thenReturn(date);
         when(resultSet.wasNull()).thenReturn(wasNull);
         return resultSet;
     }
