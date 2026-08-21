@@ -109,18 +109,18 @@ const ViewDetailPanel: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
             <Form.Item label=" " colon={false} name="custom">
               <Select
                 mode="multiple"
-                optionFilterProp="children"
+                optionFilterProp="label"
+                optionLabelProp="label"
+                optionRender={option => <span>{option.label}</span>}
                 allowClear
                 onChange={handleViewDetailCustomFieldsChange}
-              >
-                {getAllColumnInMeta(context?.dataview?.meta || []).map(f => {
-                  return (
-                    <Select.Option key={f.fieldId || f.name} value={f.name}>
-                      {getDatasetFieldDisplayName(f)}
-                    </Select.Option>
-                  );
-                })}
-              </Select>
+                options={getAllColumnInMeta(context?.dataview?.meta || []).map(
+                  f => ({
+                    value: f.name,
+                    label: getDatasetFieldDisplayName(f),
+                  }),
+                )}
+              />
             </Form.Item>
           )}
         </Form>

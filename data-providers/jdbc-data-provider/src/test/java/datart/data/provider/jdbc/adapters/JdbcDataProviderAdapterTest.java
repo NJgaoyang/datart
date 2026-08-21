@@ -62,7 +62,7 @@ class JdbcDataProviderAdapterTest {
     }
 
     @Test
-    void shouldReadJdbcDateAsSqlDateWithoutTime() throws Exception {
+    void shouldReadJdbcDateAsSqlDate() throws Exception {
         ResultSet resultSet = mockDateResultSet(java.sql.Date.valueOf("2026-08-01"), false);
 
         Dataframe dataframe = adapter.parse(resultSet);

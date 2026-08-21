@@ -35,15 +35,4 @@ public class JacksonSerializer {
         }
     }
 
-    public static class SqlDateSerialize extends JsonSerializer<java.sql.Date> {
-        @Override
-        public void serialize(java.sql.Date value, JsonGenerator gen, SerializerProvider serializers)
-                throws IOException {
-            if (value == null) {
-                gen.writeNull();
-                return;
-            }
-            gen.writeString(value.toLocalDate().toString());
-        }
-    }
 }
