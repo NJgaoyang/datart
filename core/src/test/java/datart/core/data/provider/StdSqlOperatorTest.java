@@ -44,4 +44,24 @@ class StdSqlOperatorTest {
         assertEquals(3, timeSlice.getMaxArgs());
         assertEquals("2.3.0", timeSlice.getMinStarRocksVersion());
     }
+
+    @Test
+    void exposesLogicalTypesForNativeDateLevels() {
+        assertEquals("DATE", FunctionDefinitionRegistry
+                .definition(StdSqlOperator.AGG_DATE_YEAR_NATIVE).getReturnType());
+        assertEquals("DATE", FunctionDefinitionRegistry
+                .definition(StdSqlOperator.AGG_DATE_QUARTER_NATIVE).getReturnType());
+        assertEquals("DATE", FunctionDefinitionRegistry
+                .definition(StdSqlOperator.AGG_DATE_MONTH_NATIVE).getReturnType());
+        assertEquals("DATE", FunctionDefinitionRegistry
+                .definition(StdSqlOperator.AGG_DATE_WEEK_NATIVE).getReturnType());
+        assertEquals("DATE", FunctionDefinitionRegistry
+                .definition(StdSqlOperator.AGG_DATE_DAY_NATIVE).getReturnType());
+        assertEquals("DATETIME", FunctionDefinitionRegistry
+                .definition(StdSqlOperator.AGG_DATE_HOUR_NATIVE).getReturnType());
+        assertEquals("DATETIME", FunctionDefinitionRegistry
+                .definition(StdSqlOperator.AGG_DATE_MINUTE_NATIVE).getReturnType());
+        assertEquals("DATETIME", FunctionDefinitionRegistry
+                .definition(StdSqlOperator.AGG_DATE_SECOND_NATIVE).getReturnType());
+    }
 }

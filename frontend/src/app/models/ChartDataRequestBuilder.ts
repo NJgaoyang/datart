@@ -220,6 +220,13 @@ export class ChartDataRequestBuilder {
   }
 
   private buildColumnName(col) {
+    if (
+      col.category ===
+      ChartDataViewFieldCategory.DateLevelComputedField
+    ) {
+      return [col.colName];
+    }
+
     if (col.fieldId) {
       const field = findFieldByIdInMeta(this.dataView.meta, col.fieldId);
       if (field) {

@@ -169,6 +169,42 @@ describe('ChartDataRequestBuild Test', () => {
     ]);
   });
 
+  test('keeps date level query identity ahead of source fieldId', () => {
+    const monthFieldName = `dt${DATE_LEVEL_DELIMITER}AGG_DATE_MONTH`;
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'view-id',
+        meta: [
+          {
+            name: 'dt',
+            fieldId: 'field-dt',
+            path: ['DATART_VTABLE', 'dt'],
+            type: DataViewFieldType.DATETIME,
+          },
+        ],
+        computedFields: [],
+      } as any,
+      [
+        {
+          type: ChartDataSectionType.Group,
+          key: 'group',
+          rows: [
+            {
+              fieldId: 'field-dt',
+              colName: monthFieldName,
+              category: ChartDataViewFieldCategory.DateLevelComputedField,
+              type: DataViewFieldType.DATE,
+            },
+          ],
+        },
+      ] as any,
+    ).build();
+
+    expect(request.groups).toEqual([
+      { alias: monthFieldName, column: [monthFieldName] },
+    ]);
+  });
+
   test('should include native date levels in the function columns used by drill filters', () => {
     const yearFieldName = `dt${DATE_LEVEL_DELIMITER}AGG_DATE_YEAR_NATIVE`;
     const dayFieldName = `dt${DATE_LEVEL_DELIMITER}AGG_DATE_DAY_NATIVE`;

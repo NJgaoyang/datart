@@ -63,6 +63,7 @@ const DateLevelMenuItems = memo(
                 delete draft.field;
                 draft.category = selectedConfig.category;
                 draft.colName = selectedConfig.colName;
+                draft.type = selectedConfig.type;
                 draft[RUNTIME_DATE_LEVEL_KEY] = null;
               }),
             );
@@ -72,6 +73,7 @@ const DateLevelMenuItems = memo(
             ...config,
             colName: selectedConfig.colName,
             expression: selectedConfig.expression,
+            type: selectedConfig.type,
             [RUNTIME_DATE_LEVEL_KEY]: null,
           });
         } else {
@@ -89,6 +91,7 @@ const DateLevelMenuItems = memo(
                 draft.category =
                   ChartDataViewFieldCategory.DateLevelComputedField;
                 draft.colName = selectedConfig.colName;
+                draft.type = selectedConfig.type;
                 draft[RUNTIME_DATE_LEVEL_KEY] = null;
               }),
             );
@@ -109,6 +112,9 @@ const DateLevelMenuItems = memo(
               handleChangeFn({
                 category: ChartDataViewFieldCategory.Field,
                 colName: config.field,
+                type: getAllColumnInMeta(metas)?.find(
+                  v => v.name === config.field,
+                )?.type,
               });
           }}
         >
@@ -144,6 +150,7 @@ const DateLevelMenuItems = memo(
                     colName:
                       configColName + DATE_LEVEL_DELIMITER + expressionName,
                     expression,
+                    type: item.type,
                   })
                 }
               >

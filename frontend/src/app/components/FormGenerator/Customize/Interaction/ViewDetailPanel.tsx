@@ -18,7 +18,7 @@
 
 import { Form, Radio, Select, Space } from 'antd';
 import { ChartStyleConfig } from 'app/types/ChartConfig';
-import { getFieldDisplayName } from 'utils/utils';
+import { getDatasetFieldDisplayName } from 'utils/utils';
 import { FC, memo, useState } from 'react';
 import styled from 'styled-components';
 import { isEmptyArray } from 'utils/object';
@@ -122,7 +122,7 @@ const ViewDetailPanel: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
                   ?.map(f => {
                     return (
                       <Select.Option value={f.name}>
-                        {getFieldDisplayName(f)}
+                        {getDatasetFieldDisplayName(f)}
                       </Select.Option>
                     );
                   })}

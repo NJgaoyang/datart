@@ -70,7 +70,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { getFieldDisplayName } from 'utils/utils';
+import { getDatasetFieldDisplayName } from 'utils/utils';
 import {
   ORANGE,
   SPACE,
@@ -135,7 +135,12 @@ const ChartDataViewPanel: FC<{
   const { filteredData: filteredTreeData, debouncedSearch: treeSearch } =
     useDebouncedSearch(allMetaFields, (keywords, d) => {
       const lowerKeyword = keywords.toLowerCase();
-      return [getFieldDisplayName(d), d?.name, d?.comment, d?.path?.join('.')]
+      return [
+        getDatasetFieldDisplayName(d),
+        d?.name,
+        d?.comment,
+        d?.path?.join('.'),
+      ]
         .filter(Boolean)
         .some(value => String(value).toLowerCase().includes(lowerKeyword));
     });
@@ -290,7 +295,7 @@ const ChartDataViewPanel: FC<{
           const tableName = path?.slice(0, path?.length - 1).join('.') || '';
           if (tableNameList.includes(tableName)) {
             const fieldName = path?.[path.length - 1];
-            const displayLabel = getFieldDisplayName({
+            const displayLabel = getDatasetFieldDisplayName({
               name: fieldName,
               path: v.path,
               displayName: v.displayName,

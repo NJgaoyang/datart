@@ -50,7 +50,11 @@ import {
   WARNING,
 } from 'styles/StyleConstants';
 import { isEmpty } from 'utils/object';
-import { getFieldDisplayName, stopPPG } from 'utils/utils';
+import {
+  getDatasetFieldDisplayName,
+  getFieldDisplayName,
+  stopPPG,
+} from 'utils/utils';
 import { renderMataProps } from '../../../../slice/types';
 import DateLevelFieldContainer from './DateLevelFieldContainer';
 
@@ -83,6 +87,8 @@ export const ChartDraggableSourceContainer: FC<
   isViewComputedFields,
   viewType,
   path,
+  fieldId,
+  originName,
   displayName,
   comment,
   isDisplayNameCustom,
@@ -94,13 +100,24 @@ export const ChartDraggableSourceContainer: FC<
   onClearCheckedList,
 }) {
   const t = useI18NPrefix(`viz.workbench.dataview`);
-  const fieldDisplayName = getFieldDisplayName({
-    name: colName,
-    path,
-    displayName,
-    comment,
-    isDisplayNameCustom,
-  });
+  const fieldDisplayName = [
+    ChartDataViewFieldCategory.Field,
+    ChartDataViewFieldCategory.Hierarchy,
+  ].includes(category as ChartDataViewFieldCategory)
+    ? getDatasetFieldDisplayName({
+        fieldId,
+        originName,
+        name: colName,
+        path,
+        displayName,
+      })
+    : getFieldDisplayName({
+        name: colName,
+        path,
+        displayName,
+        comment,
+        isDisplayNameCustom,
+      });
   const [showChild, setShowChild] = useToggle(false);
   const isHierarchyFieldOrTable =
     role === ColumnRole.Hierarchy || role === ColumnRole.Table;

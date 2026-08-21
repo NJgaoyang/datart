@@ -87,8 +87,12 @@ public final class FunctionDefinitionRegistry {
         for (StdSqlOperator operator : new StdSqlOperator[]{
                 StdSqlOperator.AGG_DATE_YEAR_NATIVE, StdSqlOperator.AGG_DATE_QUARTER_NATIVE,
                 StdSqlOperator.AGG_DATE_MONTH_NATIVE, StdSqlOperator.AGG_DATE_WEEK_NATIVE,
-                StdSqlOperator.AGG_DATE_DAY_NATIVE, StdSqlOperator.AGG_DATE_HOUR_NATIVE,
-                StdSqlOperator.AGG_DATE_MINUTE_NATIVE, StdSqlOperator.AGG_DATE_SECOND_NATIVE}) {
+                StdSqlOperator.AGG_DATE_DAY_NATIVE}) {
+            define(operator, 1, 1, "DATE");
+        }
+        for (StdSqlOperator operator : new StdSqlOperator[]{
+                StdSqlOperator.AGG_DATE_HOUR_NATIVE, StdSqlOperator.AGG_DATE_MINUTE_NATIVE,
+                StdSqlOperator.AGG_DATE_SECOND_NATIVE}) {
             define(operator, 1, 1, "DATETIME");
         }
         define(StdSqlOperator.IF, 3, 3, "ANY");

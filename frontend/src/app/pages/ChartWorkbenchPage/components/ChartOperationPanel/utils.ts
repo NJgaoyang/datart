@@ -29,10 +29,7 @@ import { updateBy } from 'app/utils/mutation';
 import { DATE_LEVEL_DELIMITER } from 'globalConstants';
 import i18n from 'i18next';
 import { CloneValueDeep } from 'utils/object';
-import {
-  getDatasetFieldDisplayName,
-  getFieldDisplayName,
-} from 'utils/utils';
+import { getDatasetFieldDisplayName } from 'utils/utils';
 import { DATE_LEVELS } from '../../slice/constant';
 
 export const getAllFieldsOfEachType = (args: {
@@ -139,7 +136,10 @@ export const buildDateLevelFields = (args: {
 export const fieldsSortByType = (fields, sortType) => {
   return fields.sort((a, b) => {
     if (sortType === 'byNameSort') {
-      return getFieldDisplayName(a).localeCompare(getFieldDisplayName(b));
+      return getDatasetFieldDisplayName(a).localeCompare(
+        getDatasetFieldDisplayName(b),
+        'zh-CN',
+      );
     } else {
       return null;
     }
@@ -249,7 +249,7 @@ export const handleDateLevelsName = (
       const sourceDisplayName = col.displayName.slice(0, -levelSuffix.length);
       return `${
         parentDisplayName ||
-        getFieldDisplayName({
+        getDatasetFieldDisplayName({
           name: col.field || colList[0],
           path: col.path,
           displayName: sourceDisplayName,
@@ -260,7 +260,7 @@ export const handleDateLevelsName = (
     }
     return `${
       parentDisplayName ||
-      getFieldDisplayName({
+      getDatasetFieldDisplayName({
         name: col.field || colList[0],
         path: col.path,
         displayName: col.displayName,

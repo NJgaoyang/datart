@@ -88,6 +88,7 @@ import {
   isInRange,
 } from './internalChartHelper';
 import { isNumber } from './number';
+import { getDateLevelFieldType } from './dateLevel';
 
 /**
  * [中文] 获取格式聚合数据
@@ -1221,6 +1222,11 @@ export const getRuntimeDateLevelFields = (rows: any) => {
     if (symbolData) {
       _rows[i] = symbolData;
     }
+    if (
+      _rows[i]?.category === ChartDataViewFieldCategory.DateLevelComputedField
+    ) {
+      _rows[i].type = getDateLevelFieldType(_rows[i]);
+    }
   });
   return _rows;
 };
@@ -1246,12 +1252,18 @@ export const getRuntimeComputedFields = (
       const dateLevelConfig = dateLevelComputedFields[replacedConfigIndex];
 
       if (dateLevelConfig) {
-        draft[index][RUNTIME_DATE_LEVEL_KEY] = {
+        const runtimeMeta = {
           category: dateLevelConfig.category,
           name: dateLevelConfig.colName,
-          type: dateLevelConfig.type,
+          type: getDateLevelFieldType(dateLevelConfig),
           expression: dateLevelConfig.expression,
         };
+
+        if (index >= 0 && draft[index]) {
+          draft[index][RUNTIME_DATE_LEVEL_KEY] = runtimeMeta;
+        } else {
+          draft.push(runtimeMeta);
+        }
       }
     });
   } else {
@@ -1270,7 +1282,7 @@ export const getRuntimeComputedFields = (
             draft.push({
               category: v.category,
               name: v.colName,
-              type: v.type,
+              type: getDateLevelFieldType(v),
               expression: v.expression,
             });
           });
@@ -1473,7 +1485,7 @@ export function createDateLevelComputedFieldForConfigComputedFields(
         allDateLevelComputedFields.push({
           category: ChartDataViewFieldCategory.DateLevelComputedField,
           name: field.name + DATE_LEVEL_DELIMITER + expression,
-          type: field.type,
+          type: v.type as DataViewFieldType,
           expression: `${expression}(${FieldTemplate(field.path)})`,
           path: field.path,
           displayName: field.displayName,

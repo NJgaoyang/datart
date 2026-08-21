@@ -26,7 +26,7 @@ import { ChartComputedFieldHandle } from 'app/types/ComputedFieldEditor';
 import { hasAggregationFunction } from 'app/utils/chartHelper';
 import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
-import { getFieldDisplayName } from 'utils/utils';
+import { getDatasetFieldDisplayName } from 'utils/utils';
 import { fetchSourceFunctionDefinitionsAsync } from 'app/utils/fetch';
 import ChartComputedFieldEditor from './ChartComputedFieldEditor/ChartComputedFieldEditor';
 import ChartSearchableList from './ChartSearchableList';
@@ -79,8 +79,10 @@ const ChartComputedFieldSettingPanel: FC<{
       return;
     }
     fetchSourceFunctionDefinitionsAsync(sourceId)
-      .then(definitions =>
-        active && setAvailableSourceFunctions(definitions.map(item => item.name)),
+      .then(
+        definitions =>
+          active &&
+          setAvailableSourceFunctions(definitions.map(item => item.name)),
       )
       .catch(() => active && setAvailableSourceFunctions(undefined));
     return () => {
@@ -96,7 +98,9 @@ const ChartComputedFieldSettingPanel: FC<{
       return ComputedFunctionDescriptions;
     }
     const supported = new Set(availableSourceFunctions);
-    return ComputedFunctionDescriptions.filter(item => supported.has(item.name));
+    return ComputedFunctionDescriptions.filter(item =>
+      supported.has(item.name),
+    );
   }, [availableSourceFunctions, sourceId]);
 
   const editorFieldNames = useMemo<ComputedFieldDisplayName[]>(() => {
@@ -114,7 +118,9 @@ const ChartComputedFieldSettingPanel: FC<{
         );
         if (!name) return;
 
-        const label = String(item?.title || getFieldDisplayName(item) || name);
+        const label = String(
+          item?.title || getDatasetFieldDisplayName(item) || name,
+        );
         result.push({ name, label });
       });
     };
@@ -239,15 +245,17 @@ const ChartComputedFieldSettingPanel: FC<{
   };
 
   const getFunctionList = () => {
-    return supportedFunctionDescriptions.filter(
-      item =>
-        item.type === selectedFunctionCategory ||
-        !selectedFunctionCategory ||
-        selectedFunctionCategory === defaultFunctionCategory,
-    ).map(item => ({
-      label: item.name,
-      value: item.name,
-    }));
+    return supportedFunctionDescriptions
+      .filter(
+        item =>
+          item.type === selectedFunctionCategory ||
+          !selectedFunctionCategory ||
+          selectedFunctionCategory === defaultFunctionCategory,
+      )
+      .map(item => ({
+        label: item.name,
+        value: item.name,
+      }));
   };
 
   const getInputText = (value, type) => {
@@ -357,7 +365,7 @@ const ChartComputedFieldSettingPanel: FC<{
                 <ChartSearchableList
                   source={(fields || []).map(f => ({
                     value: f.name,
-                    label: getFieldDisplayName(f),
+                    label: getDatasetFieldDisplayName(f),
                   }))}
                   onItemSelected={handleFieldSelected}
                 />

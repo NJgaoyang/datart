@@ -73,6 +73,7 @@ import {
   getFieldDisplayName,
 } from 'utils/utils';
 import { getDrillableRows, round } from './chartHelper';
+import { getDateLevelFieldType } from './dateLevel';
 
 export const transferChartConfigs = (
   targetConfig?: ChartConfig,
@@ -908,13 +909,20 @@ export function reconcileChartConfigFieldMeta(
       rows: section.rows?.map(row => {
         const latestMeta = findLatestFieldMeta(row, fields);
         if (!latestMeta) {
-          return row;
+          return row.category ===
+            ChartDataViewFieldCategory.DateLevelComputedField
+            ? { ...row, type: getDateLevelFieldType(row) || row.type }
+            : row;
         }
         return {
           ...row,
           fieldId: latestMeta.fieldId ?? row.fieldId,
           originName: latestMeta.originName ?? row.originName ?? row.colName,
           path: latestMeta.path ?? row.path,
+          type:
+            row.category === ChartDataViewFieldCategory.DateLevelComputedField
+              ? getDateLevelFieldType(row, latestMeta.type) || row.type
+              : row.type,
           displayName:
             latestMeta.displayName ??
             row.displayName ??

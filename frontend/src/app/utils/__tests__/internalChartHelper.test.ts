@@ -1991,6 +1991,34 @@ describe('Internal Chart Helper ', () => {
     });
   });
 
+  test('normalizes legacy date level types from their logical level', () => {
+    const config = {
+      datas: [
+        {
+          rows: [
+            {
+              category: 'dateLevelComputedField',
+              colName: 'created_at@date_level_delimiter@AGG_DATE_MONTH_NATIVE',
+              type: DataViewFieldType.DATETIME,
+            },
+            {
+              category: 'dateLevelComputedField',
+              colName: 'created_at@date_level_delimiter@AGG_DATE_HOUR_NATIVE',
+              type: DataViewFieldType.DATE,
+            },
+          ],
+        },
+      ],
+    } as any;
+
+    const result = reconcileChartConfigFieldMeta(config, []);
+
+    expect(result.datas?.[0].rows?.[0].type).toBe(DataViewFieldType.DATE);
+    expect(result.datas?.[0].rows?.[1].type).toBe(
+      DataViewFieldType.DATETIME,
+    );
+  });
+
   test('ignores non-array view field metadata', () => {
     const metas = transformHierarchyMeta(
       JSON.stringify({ columns: { id: { name: 'id' } } }),
