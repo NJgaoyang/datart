@@ -33,7 +33,7 @@ import static datart.core.data.provider.StdSqlOperator.*;
 
 /**
  * StarRocks SQL dialect with datart custom operator support.
- * Extends Calcite 1.37's built-in StarRocksSqlDialect.
+ * Extends Calcite 1.42's built-in StarRocksSqlDialect.
  */
 public class StarRocksSqlStdOperatorSupport extends StarRocksSqlDialect
         implements SqlStdOperatorSupport, FetchAndOffsetSupport {

@@ -100,6 +100,39 @@ class SqlScriptRenderProjectionTest {
         assertFalse(sql.contains("DATART_RESULT"));
     }
 
+    @Test
+    void preservesOutputOrdinalForMultipleTechnicalAliases() throws Exception {
+        QueryOutputProjection city = new QueryOutputProjection();
+        city.setTechnicalAlias("city");
+        city.setDisplayAlias("城市");
+        city.setOrdinal(0);
+
+        QueryOutputProjection orderCount = new QueryOutputProjection();
+        orderCount.setTechnicalAlias("SUM(order_cnt)");
+        orderCount.setDisplayAlias("订单数");
+        orderCount.setOrdinal(1);
+
+        String sql = new SqlScriptRender(
+                QueryScript.builder()
+                        .scriptType(ScriptType.SQL)
+                        .script("SELECT city, order_cnt FROM ads.daily_report")
+                        .variables(List.of())
+                        .build(),
+                ExecuteParam.builder()
+                        .columns(List.of(SelectColumn.of("city", "city")))
+                        .aggregators(List.of(technicalColumn("order_cnt", AggregateOperator.SqlOperator.SUM,
+                                "SUM(order_cnt)")))
+                        .outputProjections(List.of(city, orderCount))
+                        .build(),
+                new StarRocksSqlStdOperatorSupport(), false, false)
+                .render(true, false, false);
+
+        assertTrue(sql.contains("AS `__fcol_0`"));
+        assertTrue(sql.contains("AS `__fcol_1`"));
+        assertFalse(sql.contains("城市"));
+        assertFalse(sql.contains("订单数"));
+    }
+
     private static AggregateOperator technicalColumn(String... column) {
         AggregateOperator aggregate = new AggregateOperator();
         aggregate.setColumn(column);

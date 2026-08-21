@@ -10,9 +10,9 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests that Calcite 1.37.0 natively parses StarRocks/MySQL-compatible SQL expressions.
+ * Tests that Calcite 1.42.0 natively parses StarRocks/MySQL-compatible SQL expressions.
  * The previous convertStarRocksDateIntervalSyntax workaround has been removed because
- * Calcite 1.37+ natively supports DATE_SUB/DATE_ADD/SUBDATE/ADDDATE with INTERVAL args.
+ * Calcite 1.42+ natively supports DATE_SUB/DATE_ADD/SUBDATE/ADDDATE with INTERVAL args.
  */
 public class SqlStringUtilsTest {
 

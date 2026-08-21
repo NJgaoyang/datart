@@ -49,7 +49,7 @@ public class StarRocksDataProviderAdapter extends JdbcDataProviderAdapter {
         if (StringUtils.isNotBlank(driverInfo.getSqlDialect())) {
             return super.getSqlDialect();
         }
-        // Use StarRocksSqlStdOperatorSupport (Calcite 1.37+ built-in StarRocksDialect)
+        // Use StarRocksSqlStdOperatorSupport (Calcite 1.42+ built-in StarRocksDialect)
         // which supports AGG_DATE_YEAR, AGG_DATE_QUARTER, AGG_DATE_MONTH,
         // AGG_DATE_WEEK, AGG_DATE_DAY, plus native StarRocks syntax
         sqlDialect = new StarRocksSqlStdOperatorSupport();
