@@ -18,6 +18,7 @@
 
 package datart.server.config;
 
+import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONWriter;
 import com.alibaba.fastjson2.support.config.FastJsonConfig;
 import com.alibaba.fastjson2.support.spring6.http.converter.FastJsonHttpMessageConverter;
@@ -78,6 +79,14 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
+        JSON.register(java.sql.Date.class, (writer, object, fieldName, fieldType, features) -> {
+            if (object == null) {
+                writer.writeNull();
+                return;
+            }
+            writer.writeString(((java.sql.Date) object).toLocalDate().toString());
+        });
+
         FastJsonHttpMessageConverter fastConverter = new FastJsonHttpMessageConverter();
         FastJsonConfig fastJsonConfig = new FastJsonConfig();
         fastJsonConfig.setWriterFeatures(JSONWriter.Feature.WriteMapNullValue,
