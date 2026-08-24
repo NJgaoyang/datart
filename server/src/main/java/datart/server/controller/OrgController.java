@@ -23,6 +23,7 @@ import datart.core.base.consts.TenantManagementMode;
 import datart.core.base.exception.Exceptions;
 import datart.core.common.Application;
 import datart.core.entity.Organization;
+import datart.core.entity.Download;
 import datart.core.entity.ext.RoleBaseInfo;
 import datart.core.entity.ext.UserBaseInfo;
 import datart.security.exception.PermissionDeniedException;
@@ -33,6 +34,7 @@ import datart.server.base.params.OrgCreateParam;
 import datart.server.base.params.OrgUpdateParam;
 import datart.server.base.dto.ResponseData;
 import datart.server.service.OrgService;
+import datart.server.service.OrganizationTransferService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;
@@ -48,8 +50,11 @@ public class OrgController extends BaseController {
 
     private final OrgService orgService;
 
-    public OrgController(OrgService orgService) {
+    private final OrganizationTransferService organizationTransferService;
+
+    public OrgController(OrgService orgService, OrganizationTransferService organizationTransferService) {
         this.orgService = orgService;
+        this.organizationTransferService = organizationTransferService;
     }
 
 
@@ -148,6 +153,13 @@ public class OrgController extends BaseController {
         Organization organization = new Organization();
         organization.setName(param.getName());
         return ResponseData.success(orgService.checkUnique(organization));
+    }
+
+    @Operation(summary = "export organization package")
+    @PostMapping("/{orgId}/export")
+    public ResponseData<Download> exportOrganization(@PathVariable String orgId) {
+        checkBlank(orgId, "orgId");
+        return ResponseData.success(organizationTransferService.exportPackage(orgId));
     }
 
 

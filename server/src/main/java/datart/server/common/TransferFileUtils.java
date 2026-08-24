@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import datart.core.common.FileUtils;
 import datart.server.base.transfer.model.*;
+import datart.server.base.transfer.model.organization.OrganizationTransferModel;
 
 import java.io.*;
 import java.util.Collections;
@@ -38,6 +39,7 @@ public final class TransferFileUtils {
         register(types, FolderTransferModel.class);
         register(types, SourceResourceModel.class);
         register(types, ViewResourceModel.class);
+        register(types, OrganizationTransferModel.class);
         ALLOWED_TYPES = Collections.unmodifiableMap(types);
     }
 
@@ -48,7 +50,8 @@ public final class TransferFileUtils {
         FileUtils.mkdirParentIfNotExist(path);
         TransferEnvelope envelope = new TransferEnvelope();
         envelope.setType(model.getClass().getName());
-        envelope.setFormatVersion(CURRENT_FORMAT_VERSION);
+        envelope.setPackageType(model.getPackageType());
+        envelope.setFormatVersion(model.getFormatVersion());
         envelope.setPayload(OBJECT_MAPPER.valueToTree(model));
         try (OutputStream output = new GZIPOutputStream(new FileOutputStream(path))) {
             OBJECT_MAPPER.writeValue(output, envelope);
@@ -72,27 +75,38 @@ public final class TransferFileUtils {
                 int formatVersion = root.hasNonNull("formatVersion")
                         ? OBJECT_MAPPER.treeToValue(root.get("formatVersion"), Integer.class)
                         : 1;
+                String packageType = root.hasNonNull("packageType")
+                        ? root.get("packageType").asText()
+                        : "RESOURCE";
                 ObjectMapper mapper = formatVersion <= 1 ? LEGACY_OBJECT_MAPPER : OBJECT_MAPPER;
                 TransferEnvelope envelope = mapper.treeToValue(root, TransferEnvelope.class);
                 Class<? extends TransferModel> type = ALLOWED_TYPES.get(envelope.getType());
                 if (type == null || envelope.getPayload() == null) {
                     throw new InvalidObjectException("Unsupported transfer file type");
                 }
+                if (!packageType.equals(type == OrganizationTransferModel.class
+                        ? OrganizationTransferModel.PACKAGE_TYPE : "RESOURCE")) {
+                    throw new InvalidObjectException("Transfer package type does not match payload type");
+                }
+                if (type == OrganizationTransferModel.class && !root.hasNonNull("packageType")) {
+                    throw new InvalidObjectException("Organization package type is required");
+                }
                 TransferModel model = mapper.treeToValue(envelope.getPayload(), type);
                 return new TransferReadResult(model,
-                        formatVersion);
+                        formatVersion,
+                        packageType);
             }
             try (SecureObjectInputStream legacyInput = new SecureObjectInputStream(input)) {
                 Object value = legacyInput.readObject();
                 if (!(value instanceof TransferModel)) {
                     throw new InvalidObjectException("Invalid legacy transfer file");
                 }
-                return new TransferReadResult((TransferModel) value, 1);
+                return new TransferReadResult((TransferModel) value, 1, "RESOURCE");
             }
         }
     }
 
-    public record TransferReadResult(TransferModel model, int formatVersion) {
+    public record TransferReadResult(TransferModel model, int formatVersion, String packageType) {
     }
 
     private static void register(Map<String, Class<? extends TransferModel>> types,
@@ -103,6 +117,8 @@ public final class TransferFileUtils {
     public static class TransferEnvelope {
 
         private Integer formatVersion = 1;
+
+        private String packageType = "RESOURCE";
 
         private String type;
 
@@ -118,6 +134,14 @@ public final class TransferFileUtils {
 
         public void setFormatVersion(Integer formatVersion) {
             this.formatVersion = formatVersion;
+        }
+
+        public String getPackageType() {
+            return packageType;
+        }
+
+        public void setPackageType(String packageType) {
+            this.packageType = packageType;
         }
 
         public void setType(String type) {

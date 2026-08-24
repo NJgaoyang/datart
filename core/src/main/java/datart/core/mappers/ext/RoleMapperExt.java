@@ -71,6 +71,11 @@ public interface RoleMapperExt extends RoleMapper {
     })
     List<Role> listByOrgId(@Param("orgId") String orgId);
 
+    @Select({
+            "SELECT * FROM `role` r WHERE r.org_id = #{orgId} ORDER BY create_time ASC"
+    })
+    List<Role> listAllByOrgId(@Param("orgId") String orgId);
+
 
     @Select({
             "SELECT " +

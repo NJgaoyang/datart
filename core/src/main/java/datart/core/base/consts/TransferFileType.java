@@ -20,6 +20,7 @@ package datart.core.base.consts;
 public enum TransferFileType {
 
     DATART_RESOURCE_FILE(".drr"),
+    DATART_ORGANIZATION_FILE(".dor"),
     DATART_TEMPLATE_FILE(".drt");
 
     private final String suffix;

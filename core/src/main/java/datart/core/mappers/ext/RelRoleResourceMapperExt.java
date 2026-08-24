@@ -49,6 +49,12 @@ public interface RelRoleResourceMapperExt extends RelRoleResourceMapper {
     })
     List<RelRoleResource> selectByRoleIds(Set<String> roleIds);
 
+    @Select({
+            "SELECT rrr.* FROM rel_role_resource rrr " +
+                    "WHERE rrr.org_id = #{orgId} ORDER BY rrr.create_time ASC"
+    })
+    List<RelRoleResource> listByOrgId(@Param("orgId") String orgId);
+
 
     @Delete({
             "DELETE ",
