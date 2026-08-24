@@ -21,7 +21,7 @@
     <groupId>datart</groupId>
     <artifactId>datart-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.0-rc.5</version>
+    <version>1.0.0-rc.6</version>
 
     <dependencies>
         <dependency>
