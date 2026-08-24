@@ -23,7 +23,7 @@ public class AccessLogColumnMigration {
         try {
             Boolean exists = jdbcTemplate.execute((Connection conn) -> {
                 ResultSet rs = conn.getMetaData()
-                        .getColumns(null, null, "access_log", "resource_name");
+                        .getColumns(conn.getCatalog(), null, "access_log", "resource_name");
                 return rs.next();
             });
             if (Boolean.TRUE.equals(exists)) {
