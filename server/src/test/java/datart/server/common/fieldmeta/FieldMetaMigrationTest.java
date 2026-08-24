@@ -150,6 +150,24 @@ class FieldMetaMigrationTest {
         assertEquals("FIELD_INACTIVE", result.issues().get(0).reason());
     }
 
+    @Test
+    void strictValidationRequiresCanonicalFieldId() throws Exception {
+        ObjectNode chart = (ObjectNode) mapper.readTree("""
+                {"datas":[{"rows":[
+                  {"category":"field","colName":"city","path":["city"]},
+                  {"category":"field","colName":"old","fieldId":"missing","path":["city"]}
+                ]}]}
+                """);
+        ViewFieldDTO field = field("field-city", "city", List.of("city"), true);
+
+        ChartConfigReconciler.Result result = new ChartConfigReconciler()
+                .validateStrict(chart, List.of(field));
+
+        assertEquals(2, result.rows());
+        assertEquals("STRICT_FIELD_ID_REQUIRED", result.issues().get(0).reason());
+        assertEquals("STRICT_FIELD_NOT_FOUND", result.issues().get(1).reason());
+    }
+
     private static ViewFieldDTO field(String id, String name, List<String> path, boolean active) {
         ViewFieldDTO field = new ViewFieldDTO();
         field.setFieldId(id);

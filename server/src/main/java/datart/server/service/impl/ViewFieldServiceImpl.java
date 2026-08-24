@@ -77,6 +77,16 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
 
     @Override
     @Transactional
+    public void rebuild(View view) {
+        if (view == null || view.getId() == null) {
+            return;
+        }
+        mapper.deleteByViewId(view.getId());
+        reconcile(view);
+    }
+
+    @Override
+    @Transactional
     public void migrateLegacyMetadata(View view) {
         reconcile(view, true);
     }

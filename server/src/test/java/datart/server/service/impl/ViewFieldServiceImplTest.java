@@ -1,5 +1,6 @@
 package datart.server.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import datart.core.entity.SourceSchemas;
 import datart.core.entity.View;
 import datart.core.entity.ViewField;
@@ -20,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ViewFieldServiceImplTest {
 
@@ -125,6 +127,21 @@ class ViewFieldServiceImplTest {
     }
 
     @Test
+    void canonicalViewFieldDtoDoesNotExposeLegacyMetadata() throws Exception {
+        ViewFieldDTO field = new ViewFieldDTO();
+        field.setFieldId("field-city");
+        field.setOriginName("city");
+        field.setSourceComment("城市");
+        field.setDisplayName("城市");
+
+        String json = new ObjectMapper().writeValueAsString(field);
+
+        assertTrue(json.contains("\"displayName\":\"城市\""));
+        assertFalse(json.contains("isDisplayNameCustom"));
+        assertFalse(json.contains("\"comment\""));
+    }
+
+    @Test
     void normalReconcileDoesNotReviveClearedLegacyCustomName() {
         FakeViewFieldMapper mapper = new FakeViewFieldMapper();
         ViewField existing = field("field-1", "view-1", "SQL|net_increase_users", "net_increase_users");
@@ -136,6 +153,22 @@ class ViewFieldServiceImplTest {
 
         assertNull(mapper.fields.get("SQL|net_increase_users").getCustomName());
         assertEquals("field-1", mapper.fields.get("SQL|net_increase_users").getId());
+    }
+
+    @Test
+    void rebuildDropsImportedTargetMetadataBeforeReconciling() {
+        FakeViewFieldMapper mapper = new FakeViewFieldMapper();
+        ViewField existing = field("old-id", "view-1", "SQL|city_name_std", "city_name_std");
+        existing.setCustomName("旧环境名称");
+        mapper.fields.put(existing.getCanonicalKey(), existing);
+        ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, null);
+        View sql = view("SQL", "{\"columns\":{\"city\":{\"fieldId\":\"new-id\",\"name\":[\"city_name_std\"]}}}");
+
+        service.rebuild(sql);
+
+        ViewField actual = mapper.fields.get("SQL|city_name_std");
+        assertEquals("new-id", actual.getId());
+        assertNull(actual.getCustomName());
     }
 
     @Test
@@ -296,12 +329,23 @@ class ViewFieldServiceImplTest {
         private final Map<String, ViewField> fields = new LinkedHashMap<>();
 
         @Override
+        public int deleteByViewId(String viewId) {
+            fields.values().removeIf(field -> viewId.equals(field.getViewId()));
+            return 1;
+        }
+
+        @Override
         public List<ViewField> listByViewId(String viewId) {
             return fields.values().stream().filter(field -> viewId.equals(field.getViewId())).toList();
         }
 
         @Override
         public ViewField selectByViewIdAndId(String viewId, String fieldId) {
+            return fields.values().stream().filter(field -> field.getId().equals(fieldId)).findFirst().orElse(null);
+        }
+
+        @Override
+        public ViewField selectById(String fieldId) {
             return fields.values().stream().filter(field -> field.getId().equals(fieldId)).findFirst().orElse(null);
         }
 

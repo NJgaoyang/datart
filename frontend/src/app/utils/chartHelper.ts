@@ -1490,7 +1490,6 @@ export function createDateLevelComputedFieldForConfigComputedFields(
           path: field.path,
           displayName: field.displayName,
           comment: field.comment,
-          isDisplayNameCustom: field.isDisplayNameCustom,
         });
       });
     });

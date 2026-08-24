@@ -118,6 +118,7 @@ export type ChartDataSectionField = {
   alias?: AliasFieldAction;
   comment?: string;
   displayName?: string;
+  /** Legacy chart configuration only; canonical requests use fieldId/displayName. */
   isDisplayNameCustom?: boolean;
   format?: FormatFieldAction;
   aggregate?: AggregateFieldActionType;

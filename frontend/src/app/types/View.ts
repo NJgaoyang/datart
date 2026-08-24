@@ -27,6 +27,8 @@ import {
   ViewType,
 } from '../pages/MainPage/pages/ViewPage/slice/types';
 
+export type MigrationMode = 'COMPAT' | 'STRICT';
+
 export type ViewFieldMeta = {
   fieldId: string;
   originName: string;
@@ -53,4 +55,5 @@ export interface View extends ViewSimple {
   relSubjectColumns: ColumnPermissionRaw[];
   fields?: ViewFieldMeta[];
   type?: ViewType;
+  migrationMode?: MigrationMode;
 }

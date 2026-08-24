@@ -80,7 +80,10 @@ export class ChartDataRequestBuilder {
   drillOption?: IChartDrillOption;
   variableParams?: Record<string, any[]>;
   constructor(
-    dataView: Pick<ChartDataView, 'id' | 'computedFields' | 'type' | 'meta'> & {
+    dataView: Pick<
+      ChartDataView,
+      'id' | 'computedFields' | 'type' | 'meta' | 'migrationMode'
+    > & {
       config: string | object;
     },
     dataConfigs?: ChartDataConfig[],
@@ -194,9 +197,10 @@ export class ChartDataRequestBuilder {
     if (isEmptyArray(outputs)) {
       return undefined;
     }
-    const candidates = this.chartDataConfigs.flatMap(
-      config => getRuntimeDateLevelFields(config.rows) || [],
-    );
+    const candidates = this.chartDataConfigs.flatMap(config => [
+      ...(config.rows || []),
+      ...(getRuntimeDateLevelFields(config.rows) || []),
+    ]);
     const projections = outputs.map((output, ordinal) => {
       const candidate = candidates.find(field => {
         if (
@@ -209,6 +213,11 @@ export class ChartDataRequestBuilder {
           ? field.aggregate === output.sqlOperator
           : true;
       });
+      if (this.dataView.migrationMode === 'STRICT' && !candidate?.fieldId) {
+        throw new Error(
+          `STRICT_FIELD_ID_REQUIRED: ${candidate?.colName || output.alias}`,
+        );
+      }
       return {
         fieldId: candidate?.fieldId,
         technicalAlias: output.alias,

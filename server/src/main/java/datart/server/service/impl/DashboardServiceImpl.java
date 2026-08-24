@@ -19,6 +19,7 @@
 package datart.server.service.impl;
 
 import datart.core.base.consts.Const;
+import datart.core.base.consts.MigrationMode;
 import datart.core.base.consts.FileOwner;
 import datart.core.base.exception.BaseException;
 import datart.core.base.exception.Exceptions;
@@ -40,6 +41,7 @@ import datart.server.base.transfer.TransferConfig;
 import datart.server.base.transfer.model.DashboardResourceModel;
 import datart.server.base.transfer.model.DashboardTemplateModel;
 import datart.server.service.*;
+import datart.server.common.strict.StrictFieldReferenceException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -87,6 +89,8 @@ public class DashboardServiceImpl extends BaseService implements DashboardServic
 
     private final DatachartService datachartService;
 
+    private final MigrationModeService migrationModeService;
+
 
     public DashboardServiceImpl(DashboardMapperExt dashboardMapper,
                                 WidgetMapperExt widgetMapper,
@@ -101,7 +105,8 @@ public class DashboardServiceImpl extends BaseService implements DashboardServic
                                 FolderService folderService,
                                 VariableService variableService,
                                 ViewService viewService,
-                                DatachartService datachartService) {
+                                DatachartService datachartService,
+                                MigrationModeService migrationModeService) {
         this.dashboardMapper = dashboardMapper;
         this.widgetMapper = widgetMapper;
         this.rweMapper = rweMapper;
@@ -117,6 +122,7 @@ public class DashboardServiceImpl extends BaseService implements DashboardServic
         this.variableService = variableService;
         this.viewService = viewService;
         this.datachartService = datachartService;
+        this.migrationModeService = migrationModeService;
     }
 
 
@@ -176,15 +182,24 @@ public class DashboardServiceImpl extends BaseService implements DashboardServic
         } else {
             dashboardDetail.setDatacharts(Collections.emptyList());
         }
+        MigrationMode migrationMode = migrationModeService.getMode(dashboard.getOrgId());
+        if (migrationMode == MigrationMode.STRICT
+                && dashboardDetail.getDatacharts().size() != datachartIds.size()) {
+            throw new StrictFieldReferenceException("STRICT_DASHBOARD_DATACHART_NOT_FOUND", dashboardId);
+        }
         //views
         List<String> chartViews = dashboardDetail.getDatacharts().stream().map(Datachart::getViewId).collect(Collectors.toList());
         viewIds.addAll(chartViews);
         if (!CollectionUtils.isEmpty(viewIds)) {
-            dashboardDetail.setViews(viewMapper.listByIds(viewIds).stream()
-                    .map(view -> (View) viewService.buildViewDetail(view))
+                dashboardDetail.setViews(viewMapper.listByIds(viewIds).stream()
+                    .map(view -> (View) viewService.buildViewDetail(view, migrationMode))
                     .toList());
         } else {
             dashboardDetail.setViews(Collections.emptyList());
+        }
+        if (migrationMode == MigrationMode.STRICT
+                && dashboardDetail.getViews().size() != viewIds.size()) {
+            throw new StrictFieldReferenceException("STRICT_DASHBOARD_VIEW_NOT_FOUND", dashboardId);
         }
 
         //variables

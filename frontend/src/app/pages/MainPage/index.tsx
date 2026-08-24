@@ -46,6 +46,7 @@ import { OrgSettingPage } from './pages/OrgSettingPage';
 import { PermissionPage } from './pages/PermissionPage';
 import { ResourceTypes } from './pages/PermissionPage/constants';
 import { ResourceMigrationPage } from './pages/ResourceMigrationPage';
+import { ReadinessPage } from './pages/ReadinessPage';
 import { SchedulePage } from './pages/SchedulePage';
 import { SourcePage } from './pages/SourcePage';
 import { VariablePage } from './pages/VariablePage';
@@ -278,6 +279,14 @@ export function MainPage() {
             element={
               <AccessRoute module={ResourceTypes.Manager}>
                 <ResourceMigrationPage />
+              </AccessRoute>
+            }
+          />
+          <Route
+            path="/organizations/:orgId/readiness"
+            element={
+              <AccessRoute module={ResourceTypes.Manager}>
+                <ReadinessPage />
               </AccessRoute>
             }
           />

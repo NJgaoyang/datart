@@ -1652,6 +1652,34 @@ describe('Internal Chart Helper ', () => {
       expect(metas[0].displayName).toBe('推荐官城市');
     });
 
+    test('does not copy legacy display-name flags from canonical ViewField metadata', () => {
+      const metas = transformHierarchyMeta(
+        JSON.stringify({
+          columns: {
+            city: {
+              name: ['city'],
+              displayName: 'city',
+              isDisplayNameCustom: false,
+            },
+          },
+        }),
+        [
+          {
+            fieldId: 'field-city',
+            originName: 'city',
+            displayName: '城市',
+            customName: '城市',
+          },
+        ],
+      );
+
+      expect(metas[0]).toMatchObject({
+        fieldId: 'field-city',
+        displayName: '城市',
+      });
+      expect(metas[0].isDisplayNameCustom).toBeUndefined();
+    });
+
     test('keeps physical paths for STRUCT views', () => {
       const metas = transformHierarchyMeta(
         JSON.stringify({
@@ -1931,7 +1959,7 @@ describe('Internal Chart Helper ', () => {
     });
   });
 
-  test('falls back when a chart fieldId is stale', () => {
+  test('does not rebind a stale chart fieldId through legacy metadata', () => {
     const config = {
       datas: [
         {
@@ -1950,11 +1978,7 @@ describe('Internal Chart Helper ', () => {
 
     const result = reconcileChartConfigFieldMeta(config as any, fields);
 
-    expect(result.datas?.[0].rows?.[0]).toMatchObject({
-      fieldId: 'current',
-      path: ['users', 'id'],
-      displayName: '用户编号',
-    });
+    expect(result.datas?.[0].rows?.[0]).toEqual(config.datas[0].rows[0]);
   });
 
   test('synchronizes cached chart displayName from the latest ViewField metadata', () => {

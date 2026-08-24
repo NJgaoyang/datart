@@ -17,8 +17,11 @@
  */
 package datart.server.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import datart.core.base.consts.Const;
 import datart.core.base.consts.FileOwner;
+import datart.core.base.consts.MigrationMode;
 import datart.core.base.exception.Exceptions;
 import datart.core.base.exception.NotFoundException;
 import datart.core.base.exception.ParamException;
@@ -33,12 +36,15 @@ import datart.core.mappers.ext.RelRoleResourceMapperExt;
 import datart.security.base.ResourceType;
 import datart.security.util.PermissionHelper;
 import datart.server.base.dto.DatachartDetail;
+import datart.server.base.dto.ViewFieldDTO;
 import datart.server.base.params.BaseCreateParam;
 import datart.server.base.params.DatachartCreateParam;
 import datart.server.base.transfer.ImportStrategy;
 import datart.server.base.transfer.TransferConfig;
 import datart.server.base.transfer.model.DatachartResourceModel;
 import datart.server.base.transfer.model.DatachartTemplateModel;
+import datart.server.common.fieldmeta.ChartConfigReconciler;
+import datart.server.common.strict.StrictFieldReferenceException;
 import datart.server.service.*;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -67,6 +73,12 @@ public class DatachartServiceImpl extends BaseService implements DatachartServic
 
     private final VariableService variableService;
 
+    private final ViewFieldService viewFieldService;
+
+    private final MigrationModeService migrationModeService;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     public DatachartServiceImpl(RoleService roleService,
                                 FileService fileService,
                                 FolderMapperExt folderMapper,
@@ -74,7 +86,9 @@ public class DatachartServiceImpl extends BaseService implements DatachartServic
                                 FolderService folderService,
                                 DatachartMapperExt datachartMapper,
                                 ViewService viewService,
-                                VariableService variableService) {
+                                VariableService variableService,
+                                ViewFieldService viewFieldService,
+                                MigrationModeService migrationModeService) {
         this.roleService = roleService;
         this.fileService = fileService;
         this.folderMapper = folderMapper;
@@ -83,6 +97,8 @@ public class DatachartServiceImpl extends BaseService implements DatachartServic
         this.datachartMapper = datachartMapper;
         this.viewService = viewService;
         this.variableService = variableService;
+        this.viewFieldService = viewFieldService;
+        this.migrationModeService = migrationModeService;
     }
 
     @Override
@@ -216,15 +232,16 @@ public class DatachartServiceImpl extends BaseService implements DatachartServic
         if (model == null) {
             return true;
         }
+        MigrationMode migrationMode = migrationModeService.getMode(orgId);
         switch (strategy) {
             case OVERWRITE:
-                importDatachart(model, orgId, true);
+                importDatachart(model, orgId, true, migrationMode);
                 break;
             case ROLLBACK:
-                importDatachart(model, orgId, false);
+                importDatachart(model, orgId, false, migrationMode);
                 break;
             default:
-                importDatachart(model, orgId, false);
+                importDatachart(model, orgId, false, migrationMode);
         }
         return true;
     }
@@ -264,7 +281,8 @@ public class DatachartServiceImpl extends BaseService implements DatachartServic
 
     private void importDatachart(DatachartResourceModel model,
                                  String orgId,
-                                 boolean deleteFirst) {
+                                 boolean deleteFirst,
+                                 MigrationMode migrationMode) {
         if (model == null || CollectionUtils.isEmpty(model.getMainModels())) {
             return;
         }
@@ -297,7 +315,27 @@ public class DatachartServiceImpl extends BaseService implements DatachartServic
             datachart.setOrgId(orgId);
             datachart.setUpdateBy(getCurrentUser().getId());
             datachart.setUpdateTime(new Date());
+            normalizeImportedConfig(datachart, migrationMode);
             datachartMapper.insert(datachart);
+        }
+    }
+
+    private void normalizeImportedConfig(Datachart datachart, MigrationMode migrationMode) {
+        try {
+            ObjectNode root = (ObjectNode) objectMapper.readTree(datachart.getConfig());
+            List<ViewFieldDTO> fields = viewFieldService.listByViewId(datachart.getViewId());
+            ChartConfigReconciler.Result result = new ChartConfigReconciler().reconcile(root, fields);
+            if (migrationMode == MigrationMode.STRICT && !result.issues().isEmpty()) {
+                throw new StrictFieldReferenceException("STRICT_IMPORT_FIELD_NOT_RESOLVED",
+                        result.issues().get(0).detail());
+            }
+            datachart.setConfig(root.toString());
+        } catch (StrictFieldReferenceException e) {
+            throw e;
+        } catch (Exception e) {
+            if (migrationMode == MigrationMode.STRICT) {
+                throw new StrictFieldReferenceException("STRICT_IMPORT_CONFIG_INVALID", datachart.getId());
+            }
         }
     }
 

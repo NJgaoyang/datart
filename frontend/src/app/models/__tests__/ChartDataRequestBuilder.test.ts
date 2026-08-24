@@ -38,6 +38,7 @@ describe('ChartDataRequestBuild Test', () => {
   test('keeps technical query aliases and emits business output projections', () => {
     const dataView = {
       id: 'view-id',
+      migrationMode: 'STRICT',
       meta: [
         {
           name: 'city',
@@ -112,6 +113,85 @@ describe('ChartDataRequestBuild Test', () => {
         ordinal: 1,
       },
     ]);
+  });
+
+  test('keeps legacy no-fieldId requests in COMPAT mode', () => {
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'view-id',
+        migrationMode: 'COMPAT',
+        meta: [{ name: 'city', path: ['city'], type: DataViewFieldType.STRING }],
+        computedFields: [],
+      } as any,
+      [
+        {
+          type: ChartDataSectionType.Group,
+          key: 'group',
+          rows: [
+            {
+              colName: 'city',
+              type: DataViewFieldType.STRING,
+              category: ChartDataViewFieldCategory.Field as any,
+            },
+          ],
+        },
+      ] as any,
+    ).build();
+
+    expect(request.outputProjections?.[0].fieldId).toBeUndefined();
+  });
+
+  test('rejects no-fieldId chart requests in STRICT mode', () => {
+    expect(() =>
+      new ChartDataRequestBuilder(
+        {
+          id: 'view-id',
+          migrationMode: 'STRICT',
+          meta: [{ name: 'city', path: ['city'], type: DataViewFieldType.STRING }],
+          computedFields: [],
+        } as any,
+        [
+          {
+            type: ChartDataSectionType.Group,
+            key: 'group',
+            rows: [
+              {
+                colName: 'city',
+                type: DataViewFieldType.STRING,
+                category: ChartDataViewFieldCategory.Field as any,
+              },
+            ],
+          },
+        ] as any,
+      ).build(),
+    ).toThrow('STRICT_FIELD_ID_REQUIRED');
+  });
+
+  test('keeps invalid fieldId for backend STRICT validation', () => {
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'view-id',
+        migrationMode: 'STRICT',
+        meta: [{ name: 'city', path: ['city'], type: DataViewFieldType.STRING }],
+        computedFields: [],
+      } as any,
+      [
+        {
+          type: ChartDataSectionType.Group,
+          key: 'group',
+          rows: [
+            {
+              fieldId: 'stale-field',
+              colName: 'city',
+              type: DataViewFieldType.STRING,
+              category: ChartDataViewFieldCategory.Field as any,
+            },
+          ],
+        },
+      ] as any,
+    ).build();
+
+    expect(request.outputProjections?.[0].fieldId).toBe('stale-field');
   });
 
   test('should use runtime date level for a drillable group order', () => {

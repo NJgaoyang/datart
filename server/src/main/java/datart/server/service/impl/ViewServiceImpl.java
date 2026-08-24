@@ -22,6 +22,7 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import datart.core.base.consts.Const;
+import datart.core.base.consts.MigrationMode;
 import datart.core.base.exception.Exceptions;
 import datart.core.base.exception.NotFoundException;
 import datart.core.base.exception.ParamException;
@@ -48,6 +49,7 @@ import datart.server.base.transfer.TransferConfig;
 import datart.server.base.transfer.model.ViewResourceModel;
 import datart.server.common.fieldmeta.SqlModelQueryPathSanitizer;
 import datart.server.common.fieldmeta.SourceSchemaIndex;
+import datart.server.common.fieldmeta.ViewModelExportSanitizer;
 import datart.server.service.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -84,6 +86,8 @@ public class ViewServiceImpl extends BaseService implements ViewService {
 
     private final SqlModelQueryPathSanitizer sqlModelQueryPathSanitizer;
 
+    private final MigrationModeService migrationModeService;
+
     public ViewServiceImpl(ViewMapperExt viewMapper,
                            RelSubjectColumnsMapperExt rscMapper,
                            RelRoleResourceMapperExt rrrMapper,
@@ -95,7 +99,8 @@ public class ViewServiceImpl extends BaseService implements ViewService {
                            DatachartMapperExt datachartMapper,
                            ViewFieldService viewFieldService,
                            SourceSchemaIndex schemaIndex,
-                           SqlModelQueryPathSanitizer sqlModelQueryPathSanitizer) {
+                           SqlModelQueryPathSanitizer sqlModelQueryPathSanitizer,
+                           MigrationModeService migrationModeService) {
         this.viewMapper = viewMapper;
         this.rscMapper = rscMapper;
         this.rrrMapper = rrrMapper;
@@ -108,6 +113,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         this.viewFieldService = viewFieldService;
         this.schemaIndex = schemaIndex;
         this.sqlModelQueryPathSanitizer = sqlModelQueryPathSanitizer;
+        this.migrationModeService = migrationModeService;
     }
 
     @Override
@@ -402,7 +408,15 @@ public class ViewServiceImpl extends BaseService implements ViewService {
 
     @Override
     public ViewDetailDTO buildViewDetail(View view) {
+        MigrationMode mode = migrationModeService == null
+                ? MigrationMode.COMPAT : migrationModeService.getMode(view.getOrgId());
+        return buildViewDetail(view, mode == null ? MigrationMode.COMPAT : mode);
+    }
+
+    @Override
+    public ViewDetailDTO buildViewDetail(View view, MigrationMode migrationMode) {
         ViewDetailDTO viewDetailDTO = new ViewDetailDTO(view);
+        viewDetailDTO.setMigrationMode(migrationMode == null ? MigrationMode.COMPAT : migrationMode);
         List<ViewFieldDTO> fields = viewFieldService.listByViewId(view.getId());
         viewDetailDTO.setFields(fields == null ? new ArrayList<>() : new ArrayList<>(fields));
         return viewDetailDTO;
@@ -525,7 +539,10 @@ public class ViewServiceImpl extends BaseService implements ViewService {
             ViewResourceModel.MainModel mainModel = new ViewResourceModel.MainModel();
             View view = retrieve(viewId);
             securityManager.requireOrgOwner(view.getOrgId());
-            mainModel.setView(view);
+            View exportView = new View();
+            BeanUtils.copyProperties(view, exportView);
+            exportView.setModel(ViewModelExportSanitizer.sanitize(view.getModel()));
+            mainModel.setView(exportView);
             // variables
             mainModel.setVariables(variableService.listByView(viewId));
             mainModels.add(mainModel);
@@ -573,13 +590,15 @@ public class ViewServiceImpl extends BaseService implements ViewService {
             return;
         }
         Map<String, String> parentIdMapping = new HashMap<>();
-        for (View parent : model.getParents()) {
-            String newId = UUIDGenerator.generate();
-            parentIdMapping.put(parent.getId(), newId);
-            parent.setId(newId);
-        }
-        for (View parent : model.getParents()) {
-            parent.setParentId(parentIdMapping.get(parent.getParentId()));
+        if (!CollectionUtils.isEmpty(model.getParents())) {
+            for (View parent : model.getParents()) {
+                String newId = UUIDGenerator.generate();
+                parentIdMapping.put(parent.getId(), newId);
+                parent.setId(newId);
+            }
+            for (View parent : model.getParents()) {
+                parent.setParentId(parentIdMapping.get(parent.getParentId()));
+            }
         }
         for (ViewResourceModel.MainModel mainModel : model.getMainModels()) {
             String newId = UUIDGenerator.generate();
@@ -587,9 +606,11 @@ public class ViewServiceImpl extends BaseService implements ViewService {
             mainModel.getView().setId(newId);
             mainModel.getView().setSourceId(sourceIdMapping.get(mainModel.getView().getSourceId()));
             mainModel.getView().setParentId(parentIdMapping.get(mainModel.getView().getParentId()));
-            for (Variable variable : mainModel.getVariables()) {
-                variable.setId(UUIDGenerator.generate());
-                variable.setViewId(newId);
+            if (!CollectionUtils.isEmpty(mainModel.getVariables())) {
+                for (Variable variable : mainModel.getVariables()) {
+                    variable.setId(UUIDGenerator.generate());
+                    variable.setViewId(newId);
+                }
             }
         }
     }
@@ -712,6 +733,14 @@ public class ViewServiceImpl extends BaseService implements ViewService {
             if (!hasText(displayName) || (displayName.equals(name) && hasText(comment))) {
                 field.put("displayName", hasText(comment) ? comment : name);
             }
+            String normalizedDisplayName = field.getString("displayName");
+            boolean custom = hasText(normalizedDisplayName) && !normalizedDisplayName.equals(name);
+            field.put("isDisplayNameCustom", custom);
+            if (custom) {
+                field.put("displayName", normalizedDisplayName);
+            } else {
+                field.remove("displayName");
+            }
         }
 
         JSONArray children = field.getJSONArray("children");
@@ -820,10 +849,13 @@ public class ViewServiceImpl extends BaseService implements ViewService {
             }
             // insert view
             view.setOrgId(orgId);
-            view.setOrgId(orgId);
             view.setUpdateBy(getCurrentUser().getId());
             view.setUpdateTime(new Date());
+            sanitizeSqlQueryPaths(view);
+            view.setModel(normalizeModelDisplayNames(view.getModel()));
             viewMapper.insert(view);
+            viewFieldService.rebuild(view);
+            viewMapper.updateByPrimaryKey(view);
 
             // insert variables
             if (!CollectionUtils.isEmpty(mainModel.getVariables())) {

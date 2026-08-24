@@ -1,30 +1,26 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import { vi } from 'vitest';
 
-describe('ChartComputedFieldEditor browser integration', () => {
-  it('renders an empty expression', async () => {
-    Object.defineProperty(window, 'matchMedia', {
-      configurable: true,
-      value: () => ({
-        matches: false,
-        media: '',
-        onchange: null,
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        addListener: () => {},
-        removeListener: () => {},
-        dispatchEvent: () => false,
-      }),
-    });
+vi.mock('react-monaco-editor', () => ({
+  default: ({ language, value }: { language?: string; value?: string }) => (
+    <div data-testid="monaco-editor" data-language={language}>
+      {value}
+    </div>
+  ),
+}));
 
-    const { default: ChartComputedFieldEditor } = await import(
-      '../ChartComputedFieldEditor'
-    );
-    const { container } = render(
+import ChartComputedFieldEditor from '../ChartComputedFieldEditor';
+
+describe('ChartComputedFieldEditor', () => {
+  it('renders an empty expression with the editor contract', () => {
+    render(
       <ChartComputedFieldEditor value="" onChange={() => {}} />,
     );
 
-    expect(
-      container.querySelector('.react-monaco-editor-container'),
-    ).not.toBeNull();
+    expect(screen.getByTestId('monaco-editor')).toHaveAttribute(
+      'data-language',
+      'dql',
+    );
+    expect(screen.getByTestId('monaco-editor')).toBeEmptyDOMElement();
   });
 });

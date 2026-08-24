@@ -557,8 +557,10 @@ function getMeta(
     rawDisplayName === column.path.join('.')
       ? rawDisplayName
       : undefined);
+  const columnMeta = { ...(column || {}) };
+  delete columnMeta.isDisplayNameCustom;
   return {
-    ...column,
+    ...columnMeta,
     ...(viewType === 'SQL' ? { path: [fieldName] } : {}),
     ...(serverField
       ? {
@@ -571,9 +573,8 @@ function getMeta(
       : {}),
     ...(rawDisplayName !== undefined ? { displayName } : {}),
     ...(comment !== undefined ? { comment } : {}),
-    ...(serverField
-      ? { isDisplayNameCustom: serverField.customName ? true : undefined }
-      : isDisplayNameCustom !== undefined || legacyDisplayName
+    ...(!serverField &&
+    (isDisplayNameCustom !== undefined || legacyDisplayName)
       ? { isDisplayNameCustom: Boolean(displayName) }
       : {}),
     subType: column?.category,
@@ -865,7 +866,9 @@ export const buildDragItem = (item, children: any[] = []) => {
     path: item?.path,
     displayName: item?.displayName,
     comment: item?.comment,
-    isDisplayNameCustom: item?.isDisplayNameCustom,
+    ...(item?.fieldId
+      ? {}
+      : { isDisplayNameCustom: item?.isDisplayNameCustom }),
     children: children.map(c => buildDragItem(c)),
   };
 };
@@ -882,6 +885,12 @@ function findLatestFieldMeta(
     if (fieldById) {
       return fieldById;
     }
+
+    // A stale canonical id must not be rebound to a different field by a
+    // legacy path/name match. COMPAT execution can still use the original
+    // row, while STRICT execution must preserve the stale id so the backend
+    // can reject it explicitly.
+    return undefined;
   }
   if (row.path?.length) {
     const pathMatches = activeFields.filter(

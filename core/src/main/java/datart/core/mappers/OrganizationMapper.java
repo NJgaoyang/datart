@@ -21,11 +21,11 @@ public interface OrganizationMapper extends CRUDMapper {
 
     @Insert({
         "insert into organization (id, `name`, ",
-        "avatar, description, ",
+        "avatar, description, migration_mode, ",
         "create_time, create_by, ",
         "update_time, update_by)",
         "values (#{id,jdbcType=VARCHAR}, #{name,jdbcType=VARCHAR}, ",
-        "#{avatar,jdbcType=VARCHAR}, #{description,jdbcType=VARCHAR}, ",
+        "#{avatar,jdbcType=VARCHAR}, #{description,jdbcType=VARCHAR}, #{migrationMode,jdbcType=VARCHAR}, ",
         "#{createTime,jdbcType=TIMESTAMP}, #{createBy,jdbcType=VARCHAR}, ",
         "#{updateTime,jdbcType=TIMESTAMP}, #{updateBy,jdbcType=VARCHAR})"
     })
@@ -36,7 +36,7 @@ public interface OrganizationMapper extends CRUDMapper {
 
     @Select({
         "select",
-        "id, `name`, avatar, description, create_time, create_by, update_time, update_by",
+        "id, `name`, avatar, description, migration_mode, create_time, create_by, update_time, update_by",
         "from organization",
         "where id = #{id,jdbcType=VARCHAR}"
     })
@@ -45,6 +45,7 @@ public interface OrganizationMapper extends CRUDMapper {
         @Result(column="name", property="name", jdbcType=JdbcType.VARCHAR),
         @Result(column="avatar", property="avatar", jdbcType=JdbcType.VARCHAR),
         @Result(column="description", property="description", jdbcType=JdbcType.VARCHAR),
+        @Result(column="migration_mode", property="migrationMode", jdbcType=JdbcType.VARCHAR),
         @Result(column="create_time", property="createTime", jdbcType=JdbcType.TIMESTAMP),
         @Result(column="create_by", property="createBy", jdbcType=JdbcType.VARCHAR),
         @Result(column="update_time", property="updateTime", jdbcType=JdbcType.TIMESTAMP),
@@ -60,6 +61,7 @@ public interface OrganizationMapper extends CRUDMapper {
         "set `name` = #{name,jdbcType=VARCHAR},",
           "avatar = #{avatar,jdbcType=VARCHAR},",
           "description = #{description,jdbcType=VARCHAR},",
+          "migration_mode = #{migrationMode,jdbcType=VARCHAR},",
           "create_time = #{createTime,jdbcType=TIMESTAMP},",
           "create_by = #{createBy,jdbcType=VARCHAR},",
           "update_time = #{updateTime,jdbcType=TIMESTAMP},",

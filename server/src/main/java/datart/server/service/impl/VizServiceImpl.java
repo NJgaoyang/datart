@@ -343,8 +343,11 @@ public class VizServiceImpl extends BaseService implements VizService {
     @Transactional
     public boolean importResource(MultipartFile file, ImportStrategy importStrategy, String orgId) throws IOException {
         ResourceModel model = null;
+        int formatVersion = 1;
         try {
-            model = (ResourceModel) extractModel(file);
+            TransferFileUtils.TransferReadResult result = extractModelWithMetadata(file);
+            model = (ResourceModel) result.model();
+            formatVersion = result.formatVersion();
         } catch (Exception e) {
             log.error("viz model extract error ", e);
             Exceptions.e(e);
@@ -352,6 +355,9 @@ public class VizServiceImpl extends BaseService implements VizService {
         if (model == null) {
             Exceptions.msg("message.viz.import.invalid");
             return false;
+        }
+        if (formatVersion < 1 || formatVersion > TransferFileUtils.CURRENT_FORMAT_VERSION) {
+            throw new IllegalArgumentException("Unsupported resource format version: " + formatVersion);
         }
         Organization organization = retrieve(orgId, Organization.class);
         if (organization == null) {
@@ -375,10 +381,11 @@ public class VizServiceImpl extends BaseService implements VizService {
             //replace dashboard id
             dashboardService.replaceId(model.getDashboardResourceModel(), sourceIdMapping, viewIdMapping, datachartIdMapping, boardIdMapping, folderIdMapping);
         }
-        dashboardService.importResource(model.getDashboardResourceModel(), importStrategy, orgId);
-        datachartService.importResource(model.getDatachartResourceModel(), importStrategy, orgId);
-        viewService.importResource(model.getViewResourceModel(), importStrategy, orgId);
+        // Dependencies must exist before canonicalizing imported view metadata.
         sourceService.importResource(model.getSourceResourceModel(), importStrategy, orgId);
+        viewService.importResource(model.getViewResourceModel(), importStrategy, orgId);
+        datachartService.importResource(model.getDatachartResourceModel(), importStrategy, orgId);
+        dashboardService.importResource(model.getDashboardResourceModel(), importStrategy, orgId);
         folderService.importResource(model.getFolderTransferModel(), importStrategy, orgId);
         return true;
     }
@@ -595,9 +602,14 @@ public class VizServiceImpl extends BaseService implements VizService {
     }
 
     public TransferModel extractModel(MultipartFile file) throws IOException, ClassNotFoundException {
+        return extractModelWithMetadata(file).model();
+    }
+
+    private TransferFileUtils.TransferReadResult extractModelWithMetadata(MultipartFile file)
+            throws IOException, ClassNotFoundException {
         if (file == null || file.isEmpty() || file.getSize() > MAX_IMPORT_FILE_SIZE) {
             throw new IllegalArgumentException("Invalid or oversized import file");
         }
-        return TransferFileUtils.read(file.getInputStream(), MAX_DECOMPRESSED_IMPORT_SIZE);
+        return TransferFileUtils.readWithMetadata(file.getInputStream(), MAX_DECOMPRESSED_IMPORT_SIZE);
     }
 }

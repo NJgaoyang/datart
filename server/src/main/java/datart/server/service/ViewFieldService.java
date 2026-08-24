@@ -17,6 +17,8 @@ public interface ViewFieldService {
 
     void reconcile(View view);
 
+    void rebuild(View view);
+
     void migrateLegacyMetadata(View view);
 
     ViewFieldDTO updateCustomName(String viewId, String fieldId, String customName);

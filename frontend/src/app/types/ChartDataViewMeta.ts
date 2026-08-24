@@ -34,6 +34,7 @@ export type ChartDataViewMeta = {
   active?: boolean;
   displayName?: string;
   comment?: string;
+  /** V1/COMPAT input only; canonical ViewField metadata does not use this flag. */
   isDisplayNameCustom?: boolean;
   selectedItems?: Array<ChartDataViewMeta>;
   primaryKey?: boolean;

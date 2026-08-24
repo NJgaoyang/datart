@@ -37,6 +37,7 @@ import datart.core.entity.RelSubjectColumns;
 import datart.core.entity.Source;
 import datart.core.entity.View;
 import datart.core.mappers.ext.RelSubjectColumnsMapperExt;
+import datart.core.mappers.ext.ViewFieldMapperExt;
 import datart.security.util.PermissionHelper;
 import datart.security.util.AESUtil;
 import datart.server.base.dto.VariableValue;
@@ -44,8 +45,10 @@ import datart.server.base.params.TestExecuteParam;
 import datart.server.base.params.ViewExecuteParam;
 import datart.server.common.fieldmeta.SourceSchemaIndex;
 import datart.server.common.fieldmeta.SqlPreviewFieldMetadataResolver;
+import datart.server.common.strict.StrictRuntimeValidator;
 import datart.server.service.BaseService;
 import datart.server.service.DataProviderService;
+import datart.server.service.MigrationModeService;
 import datart.server.service.SourceService;
 import datart.server.service.VariableService;
 import datart.server.service.ViewService;
@@ -93,6 +96,10 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
 
     private final SqlPreviewFieldMetadataResolver sqlPreviewFieldMetadataResolver;
 
+    private final MigrationModeService migrationModeService;
+
+    private final StrictRuntimeValidator strictRuntimeValidator;
+
     public DataProviderServiceImpl(DataProviderManager dataProviderManager,
                                    RelSubjectColumnsMapperExt rscMapper,
                                    VariableService variableService,
@@ -100,7 +107,9 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
                                    SourceService sourceService,
                                    QueryExecutionTracePersistence queryExecutionTracePersistence,
                                    SourceSchemaIndex sourceSchemaIndex,
-                                   SqlPreviewFieldMetadataResolver sqlPreviewFieldMetadataResolver) {
+                                   SqlPreviewFieldMetadataResolver sqlPreviewFieldMetadataResolver,
+                                   MigrationModeService migrationModeService,
+                                   ViewFieldMapperExt viewFieldMapper) {
         this.dataProviderManager = dataProviderManager;
         this.rscMapper = rscMapper;
         this.variableService = variableService;
@@ -109,6 +118,8 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
         this.queryExecutionTracePersistence = queryExecutionTracePersistence;
         this.sourceSchemaIndex = sourceSchemaIndex;
         this.sqlPreviewFieldMetadataResolver = sqlPreviewFieldMetadataResolver;
+        this.migrationModeService = migrationModeService;
+        this.strictRuntimeValidator = new StrictRuntimeValidator(viewFieldMapper);
     }
 
     @PostConstruct
@@ -300,6 +311,10 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
             providerSource = parseDataProviderConfig(source);
             columns = parseColumnPermission(view);
             variables = parseVariables(view, viewExecuteParam);
+        }
+
+        if (migrationModeService.isStrict(view.getOrgId())) {
+            strictRuntimeValidator.validate(view, viewExecuteParam);
         }
 
         boolean scriptPermission = true;

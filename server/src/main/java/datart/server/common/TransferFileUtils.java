@@ -16,6 +16,8 @@ import java.util.zip.GZIPOutputStream;
 
 public final class TransferFileUtils {
 
+    public static final int CURRENT_FORMAT_VERSION = 2;
+
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
             .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
             .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
@@ -42,6 +44,7 @@ public final class TransferFileUtils {
         FileUtils.mkdirParentIfNotExist(path);
         TransferEnvelope envelope = new TransferEnvelope();
         envelope.setType(model.getClass().getName());
+        envelope.setFormatVersion(CURRENT_FORMAT_VERSION);
         envelope.setPayload(OBJECT_MAPPER.valueToTree(model));
         try (OutputStream output = new GZIPOutputStream(new FileOutputStream(path))) {
             OBJECT_MAPPER.writeValue(output, envelope);
@@ -49,6 +52,11 @@ public final class TransferFileUtils {
     }
 
     public static TransferModel read(InputStream source, long maxDecompressedBytes)
+            throws IOException, ClassNotFoundException {
+        return readWithMetadata(source, maxDecompressedBytes).model();
+    }
+
+    public static TransferReadResult readWithMetadata(InputStream source, long maxDecompressedBytes)
             throws IOException, ClassNotFoundException {
         try (BufferedInputStream input = new BufferedInputStream(
                 new LimitedInputStream(new GZIPInputStream(source), maxDecompressedBytes))) {
@@ -61,16 +69,21 @@ public final class TransferFileUtils {
                 if (type == null || envelope.getPayload() == null) {
                     throw new InvalidObjectException("Unsupported transfer file type");
                 }
-                return OBJECT_MAPPER.treeToValue(envelope.getPayload(), type);
+                TransferModel model = OBJECT_MAPPER.treeToValue(envelope.getPayload(), type);
+                return new TransferReadResult(model,
+                        envelope.getFormatVersion() == null ? 1 : envelope.getFormatVersion());
             }
             try (SecureObjectInputStream legacyInput = new SecureObjectInputStream(input)) {
                 Object value = legacyInput.readObject();
                 if (!(value instanceof TransferModel)) {
                     throw new InvalidObjectException("Invalid legacy transfer file");
                 }
-                return (TransferModel) value;
+                return new TransferReadResult((TransferModel) value, 1);
             }
         }
+    }
+
+    public record TransferReadResult(TransferModel model, int formatVersion) {
     }
 
     private static void register(Map<String, Class<? extends TransferModel>> types,
@@ -80,12 +93,22 @@ public final class TransferFileUtils {
 
     public static class TransferEnvelope {
 
+        private Integer formatVersion = 1;
+
         private String type;
 
         private JsonNode payload;
 
         public String getType() {
             return type;
+        }
+
+        public Integer getFormatVersion() {
+            return formatVersion;
+        }
+
+        public void setFormatVersion(Integer formatVersion) {
+            this.formatVersion = formatVersion;
         }
 
         public void setType(String type) {

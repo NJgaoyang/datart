@@ -49,6 +49,52 @@ public class ChartConfigReconciler {
         return new Result(rows, changed, issues);
     }
 
+    public Result validateStrict(ObjectNode root, List<ViewFieldDTO> fields) {
+        List<MigrationIssue> issues = new ArrayList<>();
+        int rows = 0;
+        ObjectNode chartConfig = chartConfig(root);
+        JsonNode datas = chartConfig == null ? null : chartConfig.get("datas");
+        if (datas == null || !datas.isArray()) {
+            return new Result(0, 0, issues);
+        }
+        for (JsonNode data : datas) {
+            JsonNode rowNodes = data.get("rows");
+            if (rowNodes == null || !rowNodes.isArray()) {
+                continue;
+            }
+            for (JsonNode rowNode : rowNodes) {
+                if (!rowNode.isObject()) {
+                    continue;
+                }
+                ObjectNode row = (ObjectNode) rowNode;
+                String category = text(row, "category");
+                if (!"field".equals(category) && !"dateLevelComputedField".equals(category)) {
+                    continue;
+                }
+                rows++;
+                String fieldId = text(row, "fieldId");
+                String lookup = "dateLevelComputedField".equals(category)
+                        ? text(row, "field") : text(row, "colName");
+                if (fieldId == null) {
+                    issues.add(new MigrationIssue("CHART_ROW", lookup, lookup,
+                            "STRICT_FIELD_ID_REQUIRED"));
+                    continue;
+                }
+                ViewFieldDTO field = fields.stream()
+                        .filter(candidate -> fieldId.equals(candidate.getFieldId()))
+                        .findFirst().orElse(null);
+                if (field == null) {
+                    issues.add(new MigrationIssue("CHART_ROW", lookup, fieldId,
+                            "STRICT_FIELD_NOT_FOUND"));
+                } else if (Boolean.FALSE.equals(field.getActive())) {
+                    issues.add(new MigrationIssue("CHART_ROW", lookup, fieldId,
+                            "STRICT_FIELD_INACTIVE"));
+                }
+            }
+        }
+        return new Result(rows, 0, issues);
+    }
+
     public Result reconcile(ObjectNode root, Map<String, ResolvedFieldMeta> fields) {
         List<MigrationIssue> issues = new ArrayList<>();
         int rows = 0;

@@ -5,10 +5,14 @@ import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
+import org.apache.ibatis.annotations.Delete;
 
 import java.util.List;
 
 public interface ViewFieldMapper {
+
+    @Delete("DELETE FROM view_field WHERE view_id = #{viewId}")
+    int deleteByViewId(@Param("viewId") String viewId);
 
     @Select({
             "SELECT id, view_id, canonical_key, origin_name, source_comment, custom_name,",
@@ -25,6 +29,15 @@ public interface ViewFieldMapper {
             "FROM view_field WHERE view_id = #{viewId} AND id = #{fieldId}"
     })
     ViewField selectByViewIdAndId(@Param("viewId") String viewId, @Param("fieldId") String fieldId);
+
+    @Select({
+            "SELECT id, view_id, canonical_key, origin_name, source_comment, custom_name,",
+            "source_path, field_type, field_category, expression, ordinal, active,",
+            "create_by, create_time, update_by, update_time",
+            "FROM view_field WHERE id = #{fieldId}"
+    })
+    ViewField selectById(@Param("fieldId") String fieldId);
+
 
     @Insert({
             "INSERT INTO view_field (id, view_id, canonical_key, origin_name, source_comment,",
