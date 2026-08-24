@@ -151,6 +151,24 @@ class FieldMetaMigrationTest {
     }
 
     @Test
+    void resolvesLegacyQualifiedColumnNameAgainstCanonicalSourcePath() throws Exception {
+        ObjectNode chart = (ObjectNode) mapper.readTree("""
+                {"datas":[{"rows":[
+                  {"category":"field","colName":"dim_date.month_start_date"}
+                ]}]}
+                """);
+        ViewFieldDTO field = field("field-month", "month_start_date",
+                List.of("dim_date", "month_start_date"), true);
+
+        ChartConfigReconciler.Result result = new ChartConfigReconciler()
+                .reconcile(chart, List.of(field));
+
+        assertEquals(1, result.rows());
+        assertEquals(0, result.issues().size());
+        assertEquals("field-month", chart.at("/datas/0/rows/0/fieldId").asText());
+    }
+
+    @Test
     void strictValidationRequiresCanonicalFieldId() throws Exception {
         ObjectNode chart = (ObjectNode) mapper.readTree("""
                 {"datas":[{"rows":[

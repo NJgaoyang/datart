@@ -14,4 +14,5 @@ public class FieldMetaMigrationScan {
     private FieldMetaMigrationScope widgets = new FieldMetaMigrationScope();
     private FieldMetaMigrationScope datacharts = new FieldMetaMigrationScope();
     private List<FieldMetaMigrationIssue> issues = new ArrayList<>();
+    private List<String> autoUpgradeableViewIds = new ArrayList<>();
 }

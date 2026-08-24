@@ -21,4 +21,5 @@ public class MetadataUpgradeCounts {
     private int needFieldIdRepair;
     private int needUpgradeDatacharts;
     private int needUpgradeDashboards;
+    private int autoUpgradeRequired;
 }

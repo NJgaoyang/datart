@@ -53,6 +53,16 @@ public class FieldMetaResolver {
         boolean hasTrue = Boolean.TRUE.equals(columnCustom) || Boolean.TRUE.equals(hierarchyCustom);
         boolean hasFalse = Boolean.FALSE.equals(columnCustom) || Boolean.FALSE.equals(hierarchyCustom);
         if (hasTrue && hasFalse) {
+            String customDisplayName = explicitCustoms.size() == 1
+                    ? explicitCustoms.iterator().next() : null;
+            if (customDisplayName != null
+                    && (compatibleNonCustomNode(column, columnCustom, customDisplayName)
+                    || compatibleNonCustomNode(hierarchy, hierarchyCustom, customDisplayName))) {
+                String comment = canonicalComment(struct, schemaComment, columnComment, hierarchyComment);
+                return new ResolvedFieldMeta(fieldKey, path, rawName, comment, customDisplayName, true,
+                        ResolvedFieldMeta.Status.ALREADY_FORMAL_CUSTOM,
+                        "一侧为空的非自定义节点，另一侧保留明确自定义名称", diagnostics);
+            }
             return ambiguous(fieldKey, path, rawName, viewType, "CUSTOM_MARKER_DIVERGENCE",
                     column, hierarchy, schemaComment);
         }
@@ -160,6 +170,12 @@ public class FieldMetaResolver {
             return null;
         }
         return node.get("isDisplayNameCustom").isBoolean() ? node.get("isDisplayNameCustom").asBoolean() : null;
+    }
+
+    private static boolean compatibleNonCustomNode(JsonNode node, Boolean custom, String customDisplayName) {
+        return Boolean.FALSE.equals(custom)
+                && text(node, "displayName") == null
+                && (text(node, "comment") == null || text(node, "comment").equals(customDisplayName));
     }
 
     private static String text(JsonNode node, String field) {

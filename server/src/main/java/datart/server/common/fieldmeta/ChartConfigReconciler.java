@@ -214,6 +214,21 @@ public class ChartConfigReconciler {
         if (name == null) {
             return null;
         }
+        ViewFieldDTO qualifiedPathMatch = null;
+        for (ViewFieldDTO field : fields) {
+            if (Boolean.FALSE.equals(field.getActive())
+                    || !name.equals(String.join(".", field.getSourcePath() == null
+                    ? List.of() : field.getSourcePath()))) {
+                continue;
+            }
+            if (qualifiedPathMatch != null) {
+                return null;
+            }
+            qualifiedPathMatch = field;
+        }
+        if (qualifiedPathMatch != null) {
+            return qualifiedPathMatch;
+        }
         ViewFieldDTO match = null;
         for (ViewFieldDTO field : fields) {
             if (Boolean.FALSE.equals(field.getActive()) || !name.equals(field.getOriginName())) {

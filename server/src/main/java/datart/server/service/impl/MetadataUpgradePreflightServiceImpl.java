@@ -3,7 +3,9 @@ package datart.server.service.impl;
 import datart.core.mappers.ext.*;
 import datart.server.base.dto.*;
 import datart.server.common.metadata.MetadataSnapshotHasher;
+import datart.server.common.readiness.ReadinessIssueCode;
 import datart.server.service.BaseService;
+import datart.server.service.FieldMetaMigrationService;
 import datart.server.service.MetadataUpgradePreflightService;
 import datart.server.service.ReadinessService;
 import org.springframework.dao.DataAccessException;
@@ -21,11 +23,14 @@ public class MetadataUpgradePreflightServiceImpl extends BaseService implements 
 
     private final JdbcTemplate jdbcTemplate;
     private final ReadinessService readinessService;
+    private final FieldMetaMigrationService fieldMetaMigrationService;
 
     public MetadataUpgradePreflightServiceImpl(JdbcTemplate jdbcTemplate,
-                                               ReadinessService readinessService) {
+                                               ReadinessService readinessService,
+                                               FieldMetaMigrationService fieldMetaMigrationService) {
         this.jdbcTemplate = jdbcTemplate;
         this.readinessService = readinessService;
+        this.fieldMetaMigrationService = fieldMetaMigrationService;
     }
 
     @Override
@@ -37,8 +42,9 @@ public class MetadataUpgradePreflightServiceImpl extends BaseService implements 
         MetadataIntegritySnapshot snapshot = snapshot(orgId, report);
         report.setSnapshot(snapshot);
         populateCounts(report.getCounts(), snapshot);
+        FieldMetaMigrationScan migrationPlan = migrationPlan(orgId, report);
         scanRelationIntegrity(orgId, report);
-        scanResourceReadiness(orgId, report);
+        scanResourceReadiness(orgId, report, migrationPlan);
 
         int blockers = (int) report.getIssues().stream()
                 .filter(issue -> issue.getSeverity() == ReadinessSeverity.BLOCKER)
@@ -50,6 +56,23 @@ public class MetadataUpgradePreflightServiceImpl extends BaseService implements 
         report.setWarnings(warnings);
         report.setApplyAllowed(blockers == 0);
         return report;
+    }
+
+    private FieldMetaMigrationScan migrationPlan(String orgId, MetadataUpgradePreflightReport report) {
+        try {
+            FieldMetaMigrationScan plan = fieldMetaMigrationService.scan(orgId);
+            plan.getIssues().stream()
+                    .filter(issue -> issue.getSeverity() == null
+                            || issue.getSeverity() == FieldMetaMigrationIssueSeverity.BLOCKING)
+                    .forEach(issue -> addIssue(report, ReadinessSeverity.BLOCKER,
+                            "FIELD_META_MIGRATION_BLOCKED", issue.getEntityType(), issue.getEntityId(),
+                            issue.getReason() + ": " + issue.getDetail()));
+            return plan;
+        } catch (RuntimeException e) {
+            addIssue(report, ReadinessSeverity.BLOCKER, "FIELD_META_MIGRATION_PLAN_FAILED",
+                    "RESOURCE", null, "Cannot build field metadata upgrade plan");
+            return new FieldMetaMigrationScan();
+        }
     }
 
     private MetadataIntegritySnapshot snapshot(String orgId, MetadataUpgradePreflightReport report) {
@@ -151,23 +174,23 @@ public class MetadataUpgradePreflightServiceImpl extends BaseService implements 
     }
 
     private void scanRelationIntegrity(String orgId, MetadataUpgradePreflightReport report) {
-        addOrphanIssue(report, "ORPHAN_MEMBERSHIP", "rel_user_organization", """
+        addOrphanIssue(report, ReadinessSeverity.WARNING, "ORPHAN_MEMBERSHIP", "rel_user_organization", """
                 SELECT COUNT(*) FROM rel_user_organization ruo
                 LEFT JOIN `user` u ON u.id = ruo.user_id
                 WHERE ruo.org_id = ? AND u.id IS NULL
                 """, orgId);
-        addOrphanIssue(report, "ORPHAN_USER_ROLE", "rel_role_user", """
+        addOrphanIssue(report, ReadinessSeverity.WARNING, "ORPHAN_USER_ROLE", "rel_role_user", """
                 SELECT COUNT(*) FROM rel_role_user rru
                 LEFT JOIN `user` u ON u.id = rru.user_id
                 LEFT JOIN role r ON r.id = rru.role_id AND r.org_id = ?
                 WHERE rru.role_id IS NOT NULL AND (u.id IS NULL OR r.id IS NULL)
                 """, orgId);
-        addOrphanIssue(report, "ORPHAN_ROLE_PERMISSION", "rel_role_resource", """
+        addOrphanIssue(report, ReadinessSeverity.WARNING, "ORPHAN_ROLE_PERMISSION", "rel_role_resource", """
                 SELECT COUNT(*) FROM rel_role_resource rrr
                 LEFT JOIN role r ON r.id = rrr.role_id AND r.org_id = ?
                 WHERE rrr.org_id = ? AND r.id IS NULL
                 """, orgId, orgId);
-        addOrphanIssue(report, "MISSING_RESOURCE_PERMISSION_TARGET", "rel_role_resource", """
+        addOrphanIssue(report, ReadinessSeverity.WARNING, "MISSING_RESOURCE_PERMISSION_TARGET", "rel_role_resource", """
                 SELECT COUNT(*) FROM rel_role_resource rrr
                 LEFT JOIN source s ON rrr.resource_type = 'SOURCE' AND s.id = rrr.resource_id
                 LEFT JOIN `view` v ON rrr.resource_type = 'VIEW' AND v.id = rrr.resource_id
@@ -181,12 +204,12 @@ public class MetadataUpgradePreflightServiceImpl extends BaseService implements 
                      (rrr.resource_type = 'DASHBOARD' AND d.id IS NULL) OR
                      (rrr.resource_type = 'FOLDER' AND f.id IS NULL))
                 """, orgId);
-        addOrphanIssue(report, "ORPHAN_VIEW_COLUMN_PERMISSION", "rel_subject_columns", """
+        addOrphanIssue(report, ReadinessSeverity.BLOCKER, "ORPHAN_VIEW_COLUMN_PERMISSION", "rel_subject_columns", """
                 SELECT COUNT(*) FROM rel_subject_columns rsc
                 LEFT JOIN `view` v ON v.id = rsc.view_id AND v.org_id = ?
                 WHERE v.id IS NULL
                 """, orgId);
-        addOrphanIssue(report, "ORPHAN_VARIABLE_PERMISSION", "rel_variable_subject", """
+        addOrphanIssue(report, ReadinessSeverity.BLOCKER, "ORPHAN_VARIABLE_PERMISSION", "rel_variable_subject", """
                 SELECT COUNT(*) FROM rel_variable_subject rvs
                 LEFT JOIN variable v ON v.id = rvs.variable_id AND v.org_id = ?
                 WHERE v.id IS NULL
@@ -194,6 +217,7 @@ public class MetadataUpgradePreflightServiceImpl extends BaseService implements 
     }
 
     private void addOrphanIssue(MetadataUpgradePreflightReport report,
+                                ReadinessSeverity severity,
                                 String code,
                                 String resourceType,
                                 String sql,
@@ -201,8 +225,10 @@ public class MetadataUpgradePreflightServiceImpl extends BaseService implements 
         try {
             Integer count = jdbcTemplate.queryForObject(sql, Integer.class, args);
             if (count != null && count > 0) {
-                addIssue(report, ReadinessSeverity.BLOCKER, code, resourceType, null,
-                        "Found " + count + " unresolved metadata relation(s)");
+                addIssue(report, severity, code, resourceType, null,
+                        severity == ReadinessSeverity.WARNING
+                                ? "Legacy relation retained; unresolved rows are ignored by existing JOIN semantics: " + count
+                                : "Found " + count + " unresolved metadata relation(s)");
             }
         } catch (DataAccessException e) {
             addIssue(report, ReadinessSeverity.BLOCKER, "METADATA_SCHEMA_UNAVAILABLE",
@@ -210,19 +236,34 @@ public class MetadataUpgradePreflightServiceImpl extends BaseService implements 
         }
     }
 
-    private void scanResourceReadiness(String orgId, MetadataUpgradePreflightReport report) {
+    private void scanResourceReadiness(String orgId, MetadataUpgradePreflightReport report,
+                                       FieldMetaMigrationScan migrationPlan) {
         try {
             ReadinessReport readiness = readinessService.scan(orgId);
             Set<String> upgradeViews = new LinkedHashSet<>();
+            Set<String> autoUpgradeableViews = new LinkedHashSet<>(
+                    migrationPlan.getAutoUpgradeableViewIds() == null
+                            ? List.of() : migrationPlan.getAutoUpgradeableViewIds());
             Set<String> fieldIdRepair = new LinkedHashSet<>();
             Set<String> upgradeDatacharts = new LinkedHashSet<>();
             Set<String> upgradeDashboards = new LinkedHashSet<>();
+            int autoUpgradeRequired = 0;
             for (ReadinessIssue issue : readiness.getIssues()) {
-                addIssue(report, issue.getSeverity(), issue.getCode(), issue.getResourceType(),
-                        issue.getResourceId(), issue.getMessage());
+                String alignedCode = alignedCode(issue, autoUpgradeableViews);
+                if (ReadinessIssueCode.VIEW_FIELD_AUTO_UPGRADE_REQUIRED.equals(alignedCode)) {
+                    addIssue(report, ReadinessSeverity.WARNING, alignedCode,
+                            issue.getResourceType(), issue.getResourceId(),
+                            "M2 will rebuild this ViewField: " + issue.getMessage());
+                    autoUpgradeRequired++;
+                } else {
+                    addIssue(report, issue.getSeverity(), issue.getCode(), issue.getResourceType(),
+                            issue.getResourceId(), issue.getMessage());
+                }
                 if ("VIEW".equals(issue.getResourceType())
                         && ("VIEW_LEGACY_MODEL_METADATA".equals(issue.getCode())
-                        || "VIEW_LEGACY_SQL_PATH".equals(issue.getCode()))) {
+                        || "VIEW_LEGACY_SQL_PATH".equals(issue.getCode())
+                        || "VIEW_FIELD_MISSING".equals(issue.getCode())
+                        || ReadinessIssueCode.VIEW_SCHEMA_REFERENCE_NOT_FOUND.equals(issue.getCode()))) {
                     upgradeViews.add(issue.getResourceId());
                 }
                 if (issue.getCode().startsWith("VIEW_FIELD_ID_")
@@ -240,10 +281,22 @@ public class MetadataUpgradePreflightServiceImpl extends BaseService implements 
             report.getCounts().setNeedFieldIdRepair(fieldIdRepair.size());
             report.getCounts().setNeedUpgradeDatacharts(upgradeDatacharts.size());
             report.getCounts().setNeedUpgradeDashboards(upgradeDashboards.size());
+            report.getCounts().setAutoUpgradeRequired(autoUpgradeRequired);
         } catch (RuntimeException e) {
             addIssue(report, ReadinessSeverity.BLOCKER, "METADATA_READINESS_SCAN_FAILED",
                     "RESOURCE", null, "Resource readiness scan failed");
         }
+    }
+
+    static String alignedCode(ReadinessIssue issue, Set<String> autoUpgradeableViewIds) {
+        if (issue == null || !"VIEW".equals(issue.getResourceType())
+                || !autoUpgradeableViewIds.contains(issue.getResourceId())) {
+            return issue == null ? null : issue.getCode();
+        }
+        if (ReadinessIssueCode.VIEW_FIELD_MISSING.equals(issue.getCode())) {
+            return ReadinessIssueCode.VIEW_FIELD_AUTO_UPGRADE_REQUIRED;
+        }
+        return issue.getCode();
     }
 
     private void addIssue(MetadataUpgradePreflightReport report,

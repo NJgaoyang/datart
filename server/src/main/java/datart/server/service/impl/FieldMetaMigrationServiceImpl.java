@@ -40,9 +40,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -87,6 +89,15 @@ public class FieldMetaMigrationServiceImpl extends BaseService implements FieldM
         scan.setDatacharts(snapshot.datacharts);
         scan.setIssues(snapshot.issues);
         scan.setScanToken(scanToken(snapshot.tokens));
+        Set<String> blockedViewIds = snapshot.issues.stream()
+                .filter(FieldMetaMigrationServiceImpl::isBlocking)
+                .filter(issue -> VIEW.equals(issue.getEntityType()))
+                .map(FieldMetaMigrationIssue::getEntityId)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        scan.setAutoUpgradeableViewIds(snapshot.viewSnapshots.keySet().stream()
+                .filter(viewId -> !blockedViewIds.contains(viewId))
+                .sorted()
+                .toList());
         scan.setCanMigrate(snapshot.issues.stream().noneMatch(FieldMetaMigrationServiceImpl::isBlocking));
         return scan;
     }

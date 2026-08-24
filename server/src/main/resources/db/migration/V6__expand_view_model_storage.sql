@@ -1,0 +1,2 @@
+ALTER TABLE `view`
+    MODIFY COLUMN `model` LONGTEXT NULL;

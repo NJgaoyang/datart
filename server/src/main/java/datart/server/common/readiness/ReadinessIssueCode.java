@@ -9,6 +9,7 @@ public final class ReadinessIssueCode {
     public static final String VIEW_LEGACY_MODEL_METADATA = "VIEW_LEGACY_MODEL_METADATA";
     public static final String VIEW_SCHEMA_INVALID = "VIEW_SCHEMA_INVALID";
     public static final String VIEW_SCHEMA_REFERENCE_NOT_FOUND = "VIEW_SCHEMA_REFERENCE_NOT_FOUND";
+    public static final String VIEW_FIELD_AUTO_UPGRADE_REQUIRED = "VIEW_FIELD_AUTO_UPGRADE_REQUIRED";
     public static final String VIEW_FIELD_MISSING = "VIEW_FIELD_MISSING";
     public static final String VIEW_FIELD_ORPHAN = "VIEW_FIELD_ORPHAN";
     public static final String VIEW_FIELD_ID_MISSING = "VIEW_FIELD_ID_MISSING";
