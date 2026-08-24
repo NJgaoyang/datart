@@ -351,6 +351,8 @@ export function getColumnRenderOriginName(c?: ChartDataSectionField) {
           name: c.colName,
           path: c.path,
           displayName: c.displayName,
+          customName: c.customName,
+          sourceComment: c.sourceComment,
         })
       : getFieldDisplayName({
           name: c.colName,
@@ -928,6 +930,8 @@ export function reconcileChartConfigFieldMeta(
           fieldId: latestMeta.fieldId ?? row.fieldId,
           originName: latestMeta.originName ?? row.originName ?? row.colName,
           path: latestMeta.path ?? row.path,
+          sourceComment: latestMeta.sourceComment ?? row.sourceComment,
+          customName: latestMeta.customName ?? row.customName,
           type:
             row.category === ChartDataViewFieldCategory.DateLevelComputedField
               ? getDateLevelFieldType(row, latestMeta.type) || row.type

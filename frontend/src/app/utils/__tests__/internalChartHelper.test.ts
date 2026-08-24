@@ -35,6 +35,7 @@ import {
   transformHierarchyMeta,
   transformMeta,
 } from '../internalChartHelper';
+import { getColumnRenderName } from '../chartHelper';
 
 describe('Internal Chart Helper ', () => {
   describe.each([
@@ -1557,6 +1558,74 @@ describe('Internal Chart Helper ', () => {
       expect(result).toEqual('a');
     });
 
+    test('uses ViewField displayName when a canonical fieldId is available', () => {
+      const result = getColumnRenderName({
+        colName: 'city',
+        fieldId: 'field-city',
+        originName: 'city',
+        displayName: '城市',
+      } as ChartDataSectionField);
+
+      expect(result).toEqual('城市');
+    });
+
+    test('keeps an explicit chart alias ahead of ViewField displayName', () => {
+      const result = getColumnRenderName({
+        colName: 'city',
+        fieldId: 'field-city',
+        originName: 'city',
+        displayName: '城市',
+        alias: { name: '报表城市' },
+      } as ChartDataSectionField);
+
+      expect(result).toEqual('报表城市');
+    });
+
+    test('uses customName and sourceComment before originName', () => {
+      expect(
+        getColumnRenderName({
+          colName: 'city',
+          fieldId: 'field-city',
+          originName: 'city',
+          displayName: 'city',
+          customName: '用户自定义城市',
+        } as ChartDataSectionField),
+      ).toEqual('用户自定义城市');
+
+      expect(
+        getColumnRenderName({
+          colName: 'city',
+          fieldId: 'field-city',
+          originName: 'city',
+          displayName: 'city',
+          sourceComment: '城市',
+        } as ChartDataSectionField),
+      ).toEqual('城市');
+    });
+
+    test.each(['COMPAT', 'STRICT'])(
+      'uses the same canonical display name in %s mode',
+      mode => {
+        const result = getColumnRenderName({
+          colName: 'city',
+          fieldId: 'field-city',
+          originName: 'city',
+          displayName: '城市',
+        } as ChartDataSectionField);
+
+        expect({ mode, result }).toEqual({ mode, result: '城市' });
+      },
+    );
+
+    test('falls back to colName when ViewField cannot be resolved', () => {
+      const result = getColumnRenderName({
+        colName: 'unresolved_city',
+        fieldId: 'missing-field',
+      } as ChartDataSectionField);
+
+      expect(result).toEqual('unresolved_city');
+    });
+
     test('should fall back to the legacy comment when displayName is the origin name', () => {
       const result = getColumnRenderOriginName({
         colName: 'created_date',
@@ -1598,6 +1667,55 @@ describe('Internal Chart Helper ', () => {
 
       expect(result).toEqual('SUM(订单数)');
       expect(result).not.toContain('order_cnt订单数');
+    });
+
+    test('renders the legacy 用户日报数据 widget with ViewField names', () => {
+      const config = {
+        datas: [
+          {
+            rows: [
+              'city',
+              'renting_users',
+              'new_users',
+              'storage_users',
+              'churned_users',
+              'overdue_users',
+              'net_increase_users',
+            ].map(colName => ({
+              category: 'field',
+              colName,
+              fieldId: `field-${colName}`,
+            })),
+          },
+        ],
+      } as any;
+      const fields = [
+        ['city', '城市'],
+        ['renting_users', '在租用户数'],
+        ['new_users', '新增用户数'],
+        ['storage_users', '寄存用户数'],
+        ['churned_users', '退租用户数'],
+        ['overdue_users', '逾期用户数'],
+        ['net_increase_users', '净增用户数'],
+      ].map(([originName, displayName]) => ({
+        fieldId: `field-${originName}`,
+        name: originName,
+        originName,
+        displayName,
+      }));
+
+      const reconciled = reconcileChartConfigFieldMeta(config, fields);
+      const rows = reconciled.datas?.[0].rows || [];
+
+      expect(rows.map(row => getColumnRenderName(row))).toEqual([
+        '城市',
+        '在租用户数',
+        '新增用户数',
+        '寄存用户数',
+        '退租用户数',
+        '逾期用户数',
+        '净增用户数',
+      ]);
     });
   });
 

@@ -431,6 +431,8 @@ export type FieldDisplayMeta = {
   name?: string;
   path?: string[];
   displayName?: string;
+  customName?: string;
+  sourceComment?: string;
   comment?: string;
   isDisplayNameCustom?: boolean;
 };
@@ -438,6 +440,8 @@ export type FieldDisplayMeta = {
 /** Dataset/ViewField is authoritative once it is available. */
 export function getDatasetFieldDisplayName(field?: FieldDisplayMeta): string {
   return (
+    field?.customName?.trim() ||
+    field?.sourceComment?.trim() ||
     field?.displayName?.trim() ||
     field?.originName?.trim() ||
     field?.name?.trim() ||
