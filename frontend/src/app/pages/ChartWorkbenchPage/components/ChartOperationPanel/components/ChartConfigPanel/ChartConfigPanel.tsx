@@ -38,7 +38,8 @@ import {
   ChartStyleConfig,
 } from 'app/types/ChartConfig';
 import ChartDataView from 'app/types/ChartDataView';
-import { FC, memo } from 'react';
+import { reconcileChartConfigFieldMeta } from 'app/utils/internalChartHelper';
+import { FC, memo, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import styled from 'styled-components';
 import {
@@ -71,6 +72,15 @@ const ChartConfigPanel: FC<{
     const t = useI18NPrefix(`viz.palette`);
     const vizs = useSelector(selectVizs);
     const dataview = useSelector(currentDataViewSelector);
+    const editorChartConfig = useMemo(() => {
+      const fields = [
+        ...(dataview?.meta || []),
+        ...(dataview?.computedFields || []),
+      ];
+      return chartConfig && fields.length
+        ? reconcileChartConfigFieldMeta(chartConfig, fields)
+        : chartConfig;
+    }, [chartConfig, dataview?.computedFields, dataview?.meta]);
     const [tabActiveKey, setTabActiveKey] = useComputedState(
       () => {
         return cond(
@@ -174,7 +184,7 @@ const ChartConfigPanel: FC<{
               </Tabs>
               <Pane selected={tabActiveKey === CONFIG_PANEL_TABS.DATA}>
                 <ChartDataConfigPanel
-                  dataConfigs={chartConfig?.datas}
+                  dataConfigs={editorChartConfig?.datas}
                   expensiveQuery={expensiveQuery}
                   onChange={onDataConfigChanged}
                 />
