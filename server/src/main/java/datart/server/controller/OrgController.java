@@ -36,7 +36,9 @@ import datart.server.base.dto.ResponseData;
 import datart.server.service.OrgService;
 import datart.server.service.OrganizationTransferService;
 import datart.server.service.MetadataUpgradePreflightService;
+import datart.server.service.MetadataUpgradeService;
 import datart.server.base.dto.MetadataUpgradePreflightReport;
+import datart.server.base.dto.MetadataUpgradeApplyReport;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;
@@ -56,12 +58,16 @@ public class OrgController extends BaseController {
 
     private final MetadataUpgradePreflightService metadataUpgradePreflightService;
 
+    private final MetadataUpgradeService metadataUpgradeService;
+
     public OrgController(OrgService orgService,
                          OrganizationTransferService organizationTransferService,
-                         MetadataUpgradePreflightService metadataUpgradePreflightService) {
+                         MetadataUpgradePreflightService metadataUpgradePreflightService,
+                         MetadataUpgradeService metadataUpgradeService) {
         this.orgService = orgService;
         this.organizationTransferService = organizationTransferService;
         this.metadataUpgradePreflightService = metadataUpgradePreflightService;
+        this.metadataUpgradeService = metadataUpgradeService;
     }
 
 
@@ -174,6 +180,13 @@ public class OrgController extends BaseController {
     public ResponseData<MetadataUpgradePreflightReport> metadataUpgradePreflight(@PathVariable String orgId) {
         checkBlank(orgId, "orgId");
         return ResponseData.success(metadataUpgradePreflightService.preflight(orgId));
+    }
+
+    @Operation(summary = "apply in-place metadata upgrade")
+    @PostMapping("/{orgId}/metadata-upgrade/apply")
+    public ResponseData<MetadataUpgradeApplyReport> applyMetadataUpgrade(@PathVariable String orgId) {
+        checkBlank(orgId, "orgId");
+        return ResponseData.success(metadataUpgradeService.apply(orgId));
     }
 
 
