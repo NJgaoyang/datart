@@ -1,5 +1,6 @@
 package datart.server.common;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
@@ -21,6 +22,9 @@ public final class TransferFileUtils {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
             .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
             .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+
+    private static final ObjectMapper LEGACY_OBJECT_MAPPER = OBJECT_MAPPER.copy()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private static final Map<String, Class<? extends TransferModel>> ALLOWED_TYPES;
 
@@ -64,14 +68,19 @@ public final class TransferFileUtils {
             int firstByte = input.read();
             input.reset();
             if (firstByte == '{') {
-                TransferEnvelope envelope = OBJECT_MAPPER.readValue(input, TransferEnvelope.class);
+                JsonNode root = OBJECT_MAPPER.readTree(input);
+                int formatVersion = root.hasNonNull("formatVersion")
+                        ? OBJECT_MAPPER.treeToValue(root.get("formatVersion"), Integer.class)
+                        : 1;
+                ObjectMapper mapper = formatVersion <= 1 ? LEGACY_OBJECT_MAPPER : OBJECT_MAPPER;
+                TransferEnvelope envelope = mapper.treeToValue(root, TransferEnvelope.class);
                 Class<? extends TransferModel> type = ALLOWED_TYPES.get(envelope.getType());
                 if (type == null || envelope.getPayload() == null) {
                     throw new InvalidObjectException("Unsupported transfer file type");
                 }
-                TransferModel model = OBJECT_MAPPER.treeToValue(envelope.getPayload(), type);
+                TransferModel model = mapper.treeToValue(envelope.getPayload(), type);
                 return new TransferReadResult(model,
-                        envelope.getFormatVersion() == null ? 1 : envelope.getFormatVersion());
+                        formatVersion);
             }
             try (SecureObjectInputStream legacyInput = new SecureObjectInputStream(input)) {
                 Object value = legacyInput.readObject();
