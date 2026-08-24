@@ -344,8 +344,8 @@ export function ReadinessPage() {
 
 const Page = styled.div`
   flex: 1;
-  overflow-y: auto;
   padding: ${SPACE_MD};
+  overflow-y: auto;
 `;
 
 const Header = styled.div`
@@ -357,8 +357,8 @@ const Header = styled.div`
 
 const HeaderActions = styled.div`
   display: flex;
-  align-items: center;
   gap: ${SPACE_SM};
+  align-items: center;
 `;
 
 const Loading = styled.div`
@@ -373,8 +373,8 @@ const ScopeCard = styled(Card)`
 
 const ScopeStats = styled.div`
   display: flex;
-  justify-content: space-between;
   gap: ${SPACE_SM};
+  justify-content: space-between;
   color: ${p => p.theme.textColorLight};
 `;
 

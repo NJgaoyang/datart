@@ -151,9 +151,9 @@ const ChartComputedFieldEditor: ForwardRefRenderFunction<
 export default forwardRef(ChartComputedFieldEditor);
 
 const StyledChartComputedFieldEditor = styled.div`
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  box-sizing: border-box;
   height: 100%;
   padding: 10px;
   overflow: hidden;

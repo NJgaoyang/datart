@@ -57,8 +57,8 @@ function DateLevelFieldContainer({
 export default DateLevelFieldContainer;
 
 const ItemWrapper = styled.div`
-  color: ${p => p.theme.textColorSnd};
   width: max-content;
   min-width: 100%;
+  color: ${p => p.theme.textColorSnd};
   white-space: nowrap;
 `;

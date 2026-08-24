@@ -550,23 +550,23 @@ const PageWrapper = styled.div`
 /* ========== 顶部导航栏：类似小程序 navigationBar ========== */
 const NavBar = styled.div`
   position: relative;
+  box-sizing: content-box;
   display: flex;
-  align-items: center;
   flex-shrink: 0;
+  align-items: center;
   min-height: 40px;
   padding: 0 ${SPACE}px;
   padding-top: calc(env(safe-area-inset-top, 0px) + 0px);
   background-color: #fff;
-  box-sizing: content-box;
 
   /* 细分割线 */
   &::after {
-    content: '';
     position: absolute;
-    left: 0;
     right: 0;
     bottom: 0;
+    left: 0;
     height: 0.5px;
+    content: '';
     background-color: rgba(0, 0, 0, 0.08);
   }
 `;
@@ -574,19 +574,19 @@ const NavBar = styled.div`
 const NavTitle = styled.h1`
   flex: 1;
   margin: 0;
+  overflow: hidden;
   font-size: 15px;
   font-weight: 600;
+  line-height: 40px;
   color: #1a1a1a;
   text-align: center;
-  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 40px;
 `;
 
 const NavSpacer = styled.div`
-  width: 28px;
   flex-shrink: 0;
+  width: 28px;
 `;
 
 const BackBtn = styled(Button)`
@@ -601,16 +601,17 @@ const BackBtn = styled(Button)`
 /* ========== 可滚动主体 ========== */
 const ScrollBody = styled.div`
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
   padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
   font-size: 13px;
+  -webkit-overflow-scrolling: touch;
 `;
 
 /* ========== DataEase 风格移动端画布 ========== */
 const MobileCanvas = styled.div`
   position: relative;
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: repeat(${MOBILE_GRID_COLS}, minmax(0, 1fr));
   grid-auto-rows: ${MOBILE_ROW_HEIGHT}px;
@@ -618,7 +619,6 @@ const MobileCanvas = styled.div`
   align-content: start;
   min-height: 100%;
   padding: ${MOBILE_PADDING}px;
-  box-sizing: border-box;
   background: #edf4ff;
 
   .mobile-widget {
@@ -633,8 +633,8 @@ const MobileCanvas = styled.div`
   .mobile-widget > .widget,
   .mobile-widget .widget > div {
     width: 100%;
-    height: 100%;
     min-width: 0;
+    height: 100%;
     min-height: 0;
     padding: 0 !important;
     border: 0 !important;
@@ -653,9 +653,9 @@ const MobileCanvas = styled.div`
   }
 
   .ant-select-multiple .ant-select-selection-overflow {
+    flex-wrap: nowrap !important;
     max-height: 36px;
     overflow: hidden;
-    flex-wrap: nowrap !important;
   }
 
   .ant-table-wrapper {
@@ -665,8 +665,8 @@ const MobileCanvas = styled.div`
 `;
 
 const MobileWidget = styled.div<{ rect: RectConfig }>`
-  grid-column: ${p => `${p.rect.x + 1} / span ${p.rect.width}`};
   grid-row: ${p => `${p.rect.y + 1} / span ${p.rect.height}`};
+  grid-column: ${p => `${p.rect.x + 1} / span ${p.rect.width}`};
 `;
 
 /* ========== 底部安全区占位 ========== */

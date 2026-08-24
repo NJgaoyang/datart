@@ -91,13 +91,13 @@ const StyledMultiDropdownListFilter = styled(TreeSelect)`
 
   .ant-select-selection-overflow {
     flex-wrap: nowrap !important;
-    overflow: hidden;
-    max-height: 32px;
     min-width: 0;
+    max-height: 32px;
+    overflow: hidden;
   }
 
   .ant-select-selection-overflow-item {
-    min-width: 0;
     flex-shrink: 1;
+    min-width: 0;
   }
 `;

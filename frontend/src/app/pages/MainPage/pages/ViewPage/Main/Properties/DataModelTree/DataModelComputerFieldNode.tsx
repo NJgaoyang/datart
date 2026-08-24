@@ -134,12 +134,12 @@ const DataModelComputerFieldNode: FC<{
 export default DataModelComputerFieldNode;
 
 const StyledDataModelComputerFieldNode = styled.div`
-  display: flex;
-  width: 100%;
-  min-width: 0;
   box-sizing: border-box;
+  display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
+  min-width: 0;
   padding: 0 ${SPACE_MD};
   margin: ${SPACE} 0;
   font-size: ${FONT_SIZE_BASE};
@@ -152,8 +152,8 @@ const StyledDataModelComputerFieldNode = styled.div`
 
   & .content {
     display: flex;
-    min-width: 0;
     align-items: center;
+    min-width: 0;
 
     span {
       overflow: hidden;
@@ -165,8 +165,8 @@ const StyledDataModelComputerFieldNode = styled.div`
   & .action {
     display: none;
     flex-shrink: 0;
-    margin-left: auto;
     padding-right: ${SPACE_XS};
+    margin-left: auto;
   }
   &:hover {
     .action {

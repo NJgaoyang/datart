@@ -35,11 +35,11 @@ export const WidgetWrapper: React.FC<{
   return <Wrapper style={style}>{children}</Wrapper>;
 });
 const Wrapper = styled.div`
+  box-sizing: border-box;
   display: flex;
   flex: 1;
-  min-height: 0;
   min-width: 0;
-  box-sizing: border-box;
+  min-height: 0;
   overflow: hidden;
 
   &:hover .widget-tool-dropdown {

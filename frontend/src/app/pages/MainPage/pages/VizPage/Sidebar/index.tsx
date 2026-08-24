@@ -152,33 +152,33 @@ const Wrapper = styled.div<{
   }
 
   .sidebar-content {
-    flex: 1;
-    min-height: 0;
     display: flex;
+    flex: 1;
     flex-direction: column;
+    min-height: 0;
   }
 
   .sidebar-toolbar {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: space-between;
-    flex-shrink: 0;
     padding: 0 4px;
 
     .collapse-btn {
       display: flex;
+      flex-shrink: 0;
       align-items: center;
       justify-content: center;
       width: 28px;
       height: 28px;
-      border-radius: 4px;
-      cursor: pointer;
       color: ${p => p.theme.textColorLight};
-      flex-shrink: 0;
+      cursor: pointer;
+      border-radius: 4px;
 
       &:hover {
-        background-color: ${p => p.theme.emphasisBackground};
         color: ${p => p.theme.textColor};
+        background-color: ${p => p.theme.emphasisBackground};
       }
     }
   }

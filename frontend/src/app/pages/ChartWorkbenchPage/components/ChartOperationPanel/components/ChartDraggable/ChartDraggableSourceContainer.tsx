@@ -440,8 +440,8 @@ export default ChartDraggableSourceContainer;
 const Container = styled.div<{ flexDirection?: string }>`
   display: flex;
   flex: 1;
-  min-width: max-content;
   flex-direction: ${p => p.flexDirection || 'row'};
+  min-width: max-content;
   padding: ${SPACE_TIMES(0.5)} ${SPACE} ${SPACE_TIMES(0.5)} ${SPACE_TIMES(2)};
   font-size: ${FONT_SIZE_BODY};
   font-weight: ${FONT_WEIGHT_MEDIUM};
@@ -477,8 +477,8 @@ const Container = styled.div<{ flexDirection?: string }>`
 
 const CollapseWrapper = styled(Collapse)`
   .ant-collapse-header {
-    padding: 0 !important;
     min-width: 0;
+    padding: 0 !important;
 
     .ant-collapse-header-text {
       flex: 1;
@@ -507,10 +507,10 @@ const CollapseWrapper = styled(Collapse)`
 `;
 const DateFieldHeader = styled.div`
   display: flex;
+  gap: ${SPACE};
   align-items: center;
   width: max-content;
   min-width: 100%;
-  gap: ${SPACE};
   white-space: nowrap;
 `;
 const StyledDateFieldContent = styled.p`

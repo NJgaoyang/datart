@@ -254,8 +254,8 @@ const TH = styled.th`
     .content {
       flex: 1;
       overflow: hidden;
-      white-space: nowrap;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .prefix {

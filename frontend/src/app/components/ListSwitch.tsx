@@ -67,10 +67,10 @@ const Container = styled.ul`
   padding: ${SPACE_XS} ${SPACE_MD};
 
   li {
-    height: 36px;
-    padding: 0 ${SPACE_LG};
     display: flex;
     align-items: center;
+    height: 36px;
+    padding: 0 ${SPACE_LG};
     font-size: ${FONT_SIZE_SUBHEADING};
     font-weight: ${FONT_WEIGHT_MEDIUM};
     color: ${p => p.theme.textColor};

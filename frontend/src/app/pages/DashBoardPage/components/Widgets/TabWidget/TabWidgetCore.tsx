@@ -211,8 +211,8 @@ const TabsBoxWrap = styled.div<{ tabsAlign: string }>`
   & .ant-tabs-tabpane,
   & .TabPane,
   & .MapWrapper {
-    min-height: 0;
     box-sizing: border-box;
+    min-height: 0;
     padding: 0 !important;
     margin: 0 !important;
   }

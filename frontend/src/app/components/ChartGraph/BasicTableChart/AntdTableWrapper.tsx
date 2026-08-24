@@ -99,15 +99,15 @@ const AntdTableWrapper: FC<{
 
 const TableHost = styled.div`
   width: 100%;
-  height: 100%;
   min-width: 0;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
 `;
 
 const StyledTable = styled(Table)<{ tableStyleConfig?: TableStyleConfigProps }>`
-  height: 100%;
   min-width: 0;
+  height: 100%;
   overflow: hidden;
 
   .ant-table {
@@ -198,8 +198,8 @@ const StyledTable = styled(Table)<{ tableStyleConfig?: TableStyleConfigProps }>`
 
   /* 极窄边分页区域 */
   .ant-table-footer {
-    padding: 2px 8px !important;
     flex-shrink: 0;
+    padding: 2px 8px !important;
   }
   .ant-pagination {
     margin: 0 !important;
@@ -211,8 +211,8 @@ const StyledTable = styled(Table)<{ tableStyleConfig?: TableStyleConfigProps }>`
   .ant-pagination-next {
     min-width: 24px !important;
     height: 24px !important;
-    line-height: 22px !important;
     margin-inline-start: 4px !important;
+    line-height: 22px !important;
   }
   .ant-pagination-options {
     margin-inline-start: 8px !important;

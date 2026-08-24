@@ -291,13 +291,19 @@ const StyledContainer = styled(StyledBackground)`
     width: 100%;
   }
 
+  .grid-wrap {
+    flex: 1;
+    overflow-y: auto;
+    -ms-overflow-style: none;
+  }
+
   &.mobile {
     flex: 0 0 auto;
     width: min(340px, calc(100% - 32px));
     height: calc(100% - 24px);
     min-height: 560px;
-    margin: 12px auto;
     padding: 0;
+    margin: 12px auto;
     overflow: hidden;
     background: #edf4ff !important;
     border: 8px solid #1f2329;
@@ -305,8 +311,8 @@ const StyledContainer = styled(StyledBackground)`
     box-shadow: 0 8px 28px rgb(31 35 41 / 22%);
 
     .grid-wrap {
-      height: calc(100% - 44px);
       flex: 0 0 auto;
+      height: calc(100% - 44px);
       overflow-y: auto;
       background: #edf4ff;
     }
@@ -314,12 +320,6 @@ const StyledContainer = styled(StyledBackground)`
     .react-grid-layout {
       min-height: 100%;
     }
-  }
-
-  .grid-wrap {
-    flex: 1;
-    overflow-y: auto;
-    -ms-overflow-style: none;
   }
 
   .grid-wrap::-webkit-scrollbar {
@@ -341,9 +341,9 @@ const MobilePreviewHeader = styled.div`
   flex: 0 0 44px;
   align-items: center;
   justify-content: center;
-  background: #fff;
-  color: #1f2329;
   font-size: 16px;
+  color: #1f2329;
+  background: #fff;
 
   .anticon {
     position: absolute;

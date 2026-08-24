@@ -444,17 +444,17 @@ const StyledChartComputedFieldSettingPanel = styled(Space)`
 
 const StyledRow = styled.div`
   display: flex;
-  height: 400px;
-  margin-top: 16px;
   gap: 8px;
   align-items: stretch;
+  height: 400px;
   max-height: 400px;
+  margin-top: 16px;
 `;
 
 const StyledLeftPane = styled.div`
-  flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   .ant-tabs {
     display: flex;
     flex-direction: column;
@@ -462,18 +462,18 @@ const StyledLeftPane = styled.div`
   }
   .ant-tabs-content-holder {
     flex: 1;
-    overflow: auto;
     min-height: 0;
+    overflow: auto;
   }
 `;
 
 const StyledResizer = styled.div`
-  flex-shrink: 0;
-  width: 6px;
-  cursor: col-resize;
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
+  width: 6px;
+  cursor: col-resize;
   background: transparent;
   border-radius: 3px;
   transition: background 0.15s;
@@ -496,20 +496,20 @@ const StyledMiddlePane = styled.div`
 `;
 
 const StyledRightPane = styled.div`
-  flex-shrink: 0;
-  width: 200px;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
+  width: 200px;
   .ant-space {
-    flex: 1;
     display: flex;
+    flex: 1;
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
   }
   .ant-space-item:last-child {
     flex: 1;
-    overflow: auto;
     min-height: 0;
+    overflow: auto;
   }
 `;

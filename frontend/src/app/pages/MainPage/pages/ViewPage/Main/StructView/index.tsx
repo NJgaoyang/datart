@@ -578,8 +578,8 @@ export const StructView = memo(
 const StructContainer = styled.div`
   display: flex;
   flex: 1;
-  min-height: 0;
   flex-direction: column;
+  min-height: 0;
   background: ${p => p.theme.componentBackground};
 `;
 

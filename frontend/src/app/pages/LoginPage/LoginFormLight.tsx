@@ -150,44 +150,44 @@ const LoggedInPanel = styled.div`
 `;
 
 const LoggedInTitle = styled.h3`
+  margin-bottom: clamp(14px, 1.8vh, 24px);
   font-size: clamp(16px, 1.3vw, 21px);
   font-weight: 600;
   color: #1e293b;
   text-align: center;
-  margin-bottom: clamp(14px, 1.8vh, 24px);
 `;
 
 const UserPanel = styled.div`
   display: flex;
-  align-items: center;
   gap: clamp(12px, 1vw, 18px);
+  align-items: center;
   padding: clamp(16px, 1.4vw, 24px);
-  background: #f8fafc;
-  border-radius: clamp(12px, 1vw, 18px);
-  border: 1px solid #e2e8f0;
-  cursor: pointer;
-  transition: all 0.3s ease;
   margin-bottom: clamp(12px, 1.5vh, 20px);
+  cursor: pointer;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: clamp(12px, 1vw, 18px);
+  transition: all 0.3s ease;
 
   &:hover {
     background: #eff6ff;
-    transform: translateY(-2px);
+    border-color: #bfdbfe;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
       0 2px 4px -2px rgba(0, 0, 0, 0.1);
-    border-color: #bfdbfe;
+    transform: translateY(-2px);
   }
 `;
 
 const UserAvatar = styled.div`
-  width: clamp(42px, 3.2vw, 56px);
-  height: clamp(42px, 3.2vw, 56px);
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  border-radius: clamp(12px, 1vw, 16px);
   display: flex;
   align-items: center;
   justify-content: center;
+  width: clamp(42px, 3.2vw, 56px);
+  height: clamp(42px, 3.2vw, 56px);
   font-size: clamp(16px, 1.4vw, 22px);
   color: white;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: clamp(12px, 1vw, 16px);
 `;
 
 const UserInfo = styled.div`
@@ -196,21 +196,21 @@ const UserInfo = styled.div`
 `;
 
 const UserName = styled.p`
+  margin: 0 0 3px;
   font-size: clamp(15px, 1.05vw, 18px);
   font-weight: 600;
   color: #1e293b;
-  margin: 0 0 3px;
 `;
 
 const EnterHint = styled.p`
+  margin: 0;
   font-size: clamp(12px, 0.8vw, 14px);
   color: #64748b;
-  margin: 0;
 `;
 
 const SwitchButton = styled(Button)`
-  color: #64748b !important;
   font-size: clamp(13px, 0.9vw, 15px);
+  color: #64748b !important;
 
   &:hover {
     color: #3b82f6 !important;
@@ -233,9 +233,9 @@ const StyledInput = styled(Input)`
   }
 
   .ant-input {
-    background: transparent !important;
-    color: #1e293b !important;
     font-size: clamp(14px, 1vw, 17px);
+    color: #1e293b !important;
+    background: transparent !important;
 
     &::placeholder {
       color: #94a3b8 !important;
@@ -243,40 +243,40 @@ const StyledInput = styled(Input)`
   }
 
   .ant-input-prefix {
-    color: #64748b !important;
     margin-right: clamp(10px, 0.7vw, 14px);
     font-size: clamp(16px, 1.2vw, 20px);
+    color: #64748b !important;
   }
 `;
 
 const LoginButton = styled(Button)`
   height: clamp(46px, 4vw, 60px) !important;
+  font-size: clamp(16px, 1.1vw, 19px) !important;
+  font-weight: 600 !important;
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
   border: none !important;
   border-radius: clamp(12px, 1vw, 16px) !important;
-  font-size: clamp(16px, 1.1vw, 19px) !important;
-  font-weight: 600 !important;
   box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3) !important;
   transition: all 0.3s ease !important;
 
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
   &:hover:not(:disabled) {
-    transform: translateY(-2px) !important;
     box-shadow: 0 15px 40px rgba(37, 99, 235, 0.4) !important;
+    transform: translateY(-2px) !important;
   }
 
   &:active:not(:disabled) {
     transform: translateY(0) !important;
   }
-
-  &:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
 `;
 
 const AdminTip = styled.p`
-  text-align: center;
+  margin: clamp(12px, 1.5vh, 20px) 0 0;
   font-size: clamp(12px, 0.8vw, 14px);
   color: #64748b;
-  margin: clamp(12px, 1.5vh, 20px) 0 0;
+  text-align: center;
 `;

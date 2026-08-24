@@ -63,28 +63,28 @@ export const MobileAppearancePanel: FC = memo(() => {
 });
 
 const Panel = styled.div`
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
   padding: 16px;
-  background: ${p => p.theme.componentBackground};
-  box-sizing: border-box;
   overflow: hidden;
+  background: ${p => p.theme.componentBackground};
 `;
 
 const Title = styled.div`
   flex: 0 0 auto;
-  color: ${p => p.theme.textColor};
   font-size: 14px;
   font-weight: 600;
+  color: ${p => p.theme.textColor};
 `;
 
 const Hint = styled.div`
   flex: 0 0 auto;
   margin-top: 8px;
-  color: ${p => p.theme.textColorSnd};
   font-size: 12px;
+  color: ${p => p.theme.textColorSnd};
 `;
 
 const List = styled.div`
@@ -104,8 +104,8 @@ const Item = styled.div`
   .ant-checkbox-wrapper {
     display: flex;
     flex: 1;
-    min-width: 0;
     align-items: center;
+    min-width: 0;
   }
 `;
 
@@ -120,6 +120,6 @@ const Name = styled.span`
 const Type = styled.span`
   flex: 0 0 auto;
   margin-left: 8px;
-  color: ${p => p.theme.textColorLight};
   font-size: 11px;
+  color: ${p => p.theme.textColorLight};
 `;

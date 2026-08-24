@@ -195,8 +195,8 @@ export function MonitorPage() {
 
 const Page = styled.div`
   flex: 1;
-  overflow: auto;
   padding: 24px;
+  overflow: auto;
 
   > .ant-card + .ant-card {
     margin-top: 16px;
@@ -226,8 +226,8 @@ const SqlCell = styled.div`
   min-width: 0;
 
   > span {
-    overflow: hidden;
     flex: 1;
+    overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -240,10 +240,10 @@ const SqlCell = styled.div`
 
 const SqlPreview = styled.pre`
   max-height: 60vh;
-  margin: 0;
   padding: 12px;
+  margin: 0;
   overflow: auto;
-  white-space: pre-wrap;
   word-break: break-word;
+  white-space: pre-wrap;
   background: #f5f5f5;
 `;
