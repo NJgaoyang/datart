@@ -35,6 +35,8 @@ import datart.server.base.params.OrgUpdateParam;
 import datart.server.base.dto.ResponseData;
 import datart.server.service.OrgService;
 import datart.server.service.OrganizationTransferService;
+import datart.server.service.MetadataUpgradePreflightService;
+import datart.server.base.dto.MetadataUpgradePreflightReport;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;
@@ -52,9 +54,14 @@ public class OrgController extends BaseController {
 
     private final OrganizationTransferService organizationTransferService;
 
-    public OrgController(OrgService orgService, OrganizationTransferService organizationTransferService) {
+    private final MetadataUpgradePreflightService metadataUpgradePreflightService;
+
+    public OrgController(OrgService orgService,
+                         OrganizationTransferService organizationTransferService,
+                         MetadataUpgradePreflightService metadataUpgradePreflightService) {
         this.orgService = orgService;
         this.organizationTransferService = organizationTransferService;
+        this.metadataUpgradePreflightService = metadataUpgradePreflightService;
     }
 
 
@@ -160,6 +167,13 @@ public class OrgController extends BaseController {
     public ResponseData<Download> exportOrganization(@PathVariable String orgId) {
         checkBlank(orgId, "orgId");
         return ResponseData.success(organizationTransferService.exportPackage(orgId));
+    }
+
+    @Operation(summary = "preflight metadata in-place upgrade without modifying data")
+    @GetMapping("/{orgId}/metadata-upgrade/preflight")
+    public ResponseData<MetadataUpgradePreflightReport> metadataUpgradePreflight(@PathVariable String orgId) {
+        checkBlank(orgId, "orgId");
+        return ResponseData.success(metadataUpgradePreflightService.preflight(orgId));
     }
 
 
