@@ -17,6 +17,76 @@ datart 是新一代数据可视化开放平台，支持各类企业数据可视�
 
 ![datart 技术架构图](./docs/datart-architecture.png)
 
+## 数据架构
+
+datart 的数据模型分为数据资产、可视化应用、组织权限和运行元数据四个层次。各层通过稳定的资源 ID 和关系表关联，数据内容与字段元数据分离保存。
+
+```text
+组织与权限域
+Organization
+├── User ── OrganizationMember
+├── Role ── UserRole
+└── RoleResourcePermission
+    ├── Source / View / Datachart / Dashboard
+    ├── 行权限、变量权限
+    └── 列权限
+
+数据资产域
+Source（数据源连接与类型）
+├── SourceSchema（数据源结构缓存）
+└── View（结构化视图或 SQL 视图）
+    └── ViewField（规范化字段元数据）
+        ├── fieldId / canonicalKey
+        ├── originName / displayName
+        ├── sourceComment / sourcePath
+        ├── fieldType / fieldCategory
+        └── expression / ordinal / active
+
+可视化应用域
+View
+└── Datachart（图表配置，字段通过 fieldId 关联 ViewField）
+    └── Dashboard
+        └── Widget（组件、布局、筛选、联动和嵌入关系）
+```
+
+### 数据查询链路
+
+```text
+React 前端
+    ↓ REST API
+Server Controller / Service
+    ↓
+Data Provider
+    ├── JDBC：MySQL、StarRocks、Doris、PostgreSQL 等
+    ├── HTTP：HTTP API 数据源
+    └── File：CSV / Excel 数据源
+    ↓
+数据源执行查询 → 结果集与字段类型 → 图表 / 表格 / 仪表板渲染
+```
+
+`ViewField` 是当前运行时的规范字段元数据来源：图表字段优先通过 `fieldId` 解析到对应 ViewField，再使用字段的显示名称、物理来源和类型信息。SQL 视图保存或迁移时，会根据 SQL 输出字段和物理字段注释补充 lineage；表达式字段无法确认来源时保持保守，不根据字段名猜测注释。
+
+### 元数据升级与兼容架构
+
+```text
+旧资源包 V1 / 当前资源
+        ↓
+资源格式识别与兼容读取
+        ↓
+View / ViewField 规范化与 reconcile
+        ↓
+Readiness Scanner
+        ├── READY / WARNING / BLOCKER
+        ├── fieldId coverage
+        └── resolved fieldId coverage
+        ↓
+Organization MigrationMode
+        ├── COMPAT：允许历史无 fieldId 资源兼容解析
+        └── STRICT：只允许 canonical fieldId，失败时明确报错
+```
+
+数据库升级由项目内置 `DatabaseMigration` 执行，脚本位于 `server/src/main/resources/db/migration/`，当前包含 V1–V6。迁移历史记录在 `migration_history` 表中；该机制不是运行时依赖 Flyway。
+
 ---
 
 ## 技术栈总览
@@ -38,7 +108,7 @@ datart 是新一代数据可视化开放平台，支持各类企业数据可视�
 | **连接池** | Druid Spring Boot 3 Starter | 1.2.24 | 数据库连接池 + 监控 |
 | **JSON** | Fastjson2 | 2.0.57 | 高性能 JSON 序列化（safeMode 已开启） |
 | **JSON** | Jackson | Boot 管理 | REST 序列化主力 |
-| **SQL 解析** | Apache Calcite | 1.37.0 | SQL 方言转换与优化 |
+| **SQL 解析** | Apache Calcite | 1.42.0 | SQL 方言转换与优化 |
 | **SQL 格式化** | sql-formatter (Java) | 2.0.1 | SQL 美化输出 |
 | **JS 引擎** | GraalVM JavaScript | 22.3.5 | 替代 Nashorn，执行 parser.js |
 | **缓存** | Spring Data Redis | Boot 管理 | 可选缓存层 |
@@ -108,14 +178,14 @@ datart 是新一代数据可视化开放平台，支持各类企业数据可视�
 
 ```
 datart
-├── core/                    # 核心模块：实体、Mapper、数据模型、迁移脚本
+├── core/                    # 核心模块：实体、Mapper、数据模型、数据库迁移基础设施
 ├── security/                # 安全模块：认证、授权、OAuth2、JWT、LDAP、钉钉登录
 ├── data-providers/          # 数据源适配层
 │   ├── data-provider-base/  #   基础层：Calcite SQL 解析、变量系统
 │   ├── jdbc-data-provider/  #   JDBC 数据源（MySQL/StarRocks/Doris/PostgreSQL...）
 │   ├── http-data-provider/  #   HTTP API 数据源
 │   └── file-data-provider/  #   文件数据源（CSV/Excel）
-├── server/                  # 服务端：Controller、Service、定时任务
+├── server/                  # 服务端：Controller、Service、定时任务、迁移脚本与安装包组装
 ├── frontend/                # 前端：React SPA（4 个入口：main/shareChart/shareDashboard/shareStoryPlayer）
 ├── config/                  # 配置文件
 ├── bin/                     # 启动/停止脚本
@@ -134,7 +204,7 @@ datart
 - **权限体系**：组织-角色-资源三级权限模型，行级/列级数据权限
 - **分享与嵌入**：仪表板/图表独立分享链接，支持 iframe 嵌入第三方系统
 - **多语言**：中文 / 英文国际化
-- **数据库自动迁移**：Flyway 管理 Schema 版本，升级零手动 SQL
+- **数据库自动迁移**：内置 DatabaseMigration 管理 V1–V6 Schema 版本，升级零手动 SQL
 
 ---
 
