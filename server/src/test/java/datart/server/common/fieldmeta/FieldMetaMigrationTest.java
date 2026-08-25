@@ -36,6 +36,43 @@ class FieldMetaMigrationTest {
     }
 
     @Test
+    void canonicalModelIsIdempotentAndPreservesFieldIdentity() throws Exception {
+        ObjectNode model = (ObjectNode) mapper.readTree("""
+                {
+                  "columns": {"renting_users": {"fieldId": "field-renting", "name": ["daily", "renting_users"], "displayName": "在租用户数", "comment": "在租用户数", "isDisplayNameCustom": false}},
+                  "hierarchy": {"renting_users": {"fieldId": "field-renting", "name": ["daily", "renting_users"], "displayName": "在租用户数", "comment": "在租用户数", "isDisplayNameCustom": false}}
+                }
+                """);
+
+        ViewModelMigrator migrator = new ViewModelMigrator();
+        ViewModelMigrator.Result first = migrator.migrate(model, SourceSchemaIndex.Index.empty());
+        ViewModelMigrator.Result second = migrator.migrate(first.model(), SourceSchemaIndex.Index.empty());
+
+        assertEquals(2, first.changedNodes());
+        assertEquals(0, second.changedNodes());
+        assertEquals("field-renting", second.model().at("/columns/renting_users/fieldId").asText());
+        assertFalse(second.model().at("/columns/renting_users/displayName").isTextual());
+        assertFalse(second.model().at("/hierarchy/renting_users/displayName").isTextual());
+        assertEquals("在租用户数", second.model().at("/columns/renting_users/comment").asText());
+    }
+
+    @Test
+    void preservesExplicitCustomNameWhileCanonicalizingModel() throws Exception {
+        ObjectNode model = (ObjectNode) mapper.readTree("""
+                {
+                  "columns": {"renting_users": {"fieldId": "field-renting", "name": ["daily", "renting_users"], "displayName": "当前租用人数", "comment": "在租用户数", "isDisplayNameCustom": true}}
+                }
+                """);
+
+        ViewModelMigrator.Result result = new ViewModelMigrator().migrate(model, SourceSchemaIndex.Index.empty());
+
+        assertTrue(result.issues().isEmpty());
+        assertEquals("当前租用人数", result.model().at("/columns/renting_users/displayName").asText());
+        assertEquals("在租用户数", result.model().at("/columns/renting_users/comment").asText());
+        assertTrue(result.model().at("/columns/renting_users/isDisplayNameCustom").asBoolean());
+    }
+
+    @Test
     void blocksConflictingColumnsAndHierarchyCustomNames() throws Exception {
         ObjectNode model = (ObjectNode) mapper.readTree("""
                 {

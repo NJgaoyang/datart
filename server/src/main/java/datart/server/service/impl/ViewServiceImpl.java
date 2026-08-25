@@ -50,6 +50,7 @@ import datart.server.base.transfer.model.ViewResourceModel;
 import datart.server.common.fieldmeta.SqlModelQueryPathSanitizer;
 import datart.server.common.fieldmeta.SourceSchemaIndex;
 import datart.server.common.fieldmeta.ViewModelExportSanitizer;
+import datart.server.common.fieldmeta.ViewModelMigrator;
 import datart.server.service.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -87,6 +88,8 @@ public class ViewServiceImpl extends BaseService implements ViewService {
     private final SqlModelQueryPathSanitizer sqlModelQueryPathSanitizer;
 
     private final MigrationModeService migrationModeService;
+
+    private final ViewModelMigrator modelMigrator = new ViewModelMigrator();
 
     public ViewServiceImpl(ViewMapperExt viewMapper,
                            RelSubjectColumnsMapperExt rscMapper,
@@ -360,7 +363,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         view.setId(UUIDGenerator.generate());
         view.setStatus(Const.DATA_STATUS_ACTIVE);
         sanitizeSqlQueryPaths(view);
-        view.setModel(normalizeModelDisplayNames(view.getModel()));
+        canonicalizeModelMetadata(view);
         requirePermission(view, Const.CREATE);
         viewFieldService.reconcile(view);
         viewMapper.insert(view);
@@ -392,11 +395,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
     @Override
     public ViewDetailDTO getViewDetail(String viewId) {
         View view = retrieve(viewId);
-        View responseView = new View();
-        BeanUtils.copyProperties(view, responseView);
-        responseView.setModel(normalizeModelDisplayNames(view.getModel()));
-
-        ViewDetailDTO viewDetailDTO = buildViewDetail(responseView);
+        ViewDetailDTO viewDetailDTO = buildViewDetail(view);
         // column permission
         viewDetailDTO.setRelSubjectColumns(rscMapper.listByView(viewId));
         //view variables
@@ -665,25 +664,35 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         BeanUtils.copyProperties(updateParam, view);
         view.setType(viewUpdateParam.getType().name());
         sanitizeSqlQueryPaths(view);
-        view.setModel(normalizeModelDisplayNames(view.getModel()));
+        canonicalizeModelMetadata(view);
         viewFieldService.reconcile(view);
         view.setUpdateBy(getCurrentUser().getId());
         view.setUpdateTime(new Date());
         return 1 == viewMapper.updateByPrimaryKey(view);
     }
 
-    private String normalizeModelDisplayNames(String model) {
+    private void canonicalizeModelMetadata(View view) {
+        String model = view.getModel();
         if (model == null || model.trim().isEmpty()) {
-            return model;
+            return;
         }
         try {
-            JSONObject root = JSON.parseObject(model);
-            normalizeFieldMap(root.getJSONObject("columns"));
-            normalizeFieldMap(root.getJSONObject("hierarchy"));
-            return root.toJSONString();
+            com.fasterxml.jackson.databind.JsonNode parsed = OBJECT_MAPPER.readTree(model);
+            if (!(parsed instanceof com.fasterxml.jackson.databind.node.ObjectNode objectModel)) {
+                return;
+            }
+            SourceSchemaIndex.Index source = schemaIndex == null || view.getSourceId() == null
+                    ? null
+                    : schemaIndex.forSource(view.getSourceId());
+            ViewModelMigrator.Result result = modelMigrator.migrate(objectModel, source, view.getType());
+            view.setModel(OBJECT_MAPPER.writeValueAsString(result.model()));
         } catch (Exception ignored) {
-            return model;
+            // Keep the submitted model unchanged when it cannot be canonicalized.
         }
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 
     private void sanitizeSqlQueryPaths(View view) {
@@ -700,61 +709,6 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         } catch (Exception ignored) {
             // Invalid or unsupported SQL keeps the submitted model unchanged.
         }
-    }
-
-    private void normalizeFieldMap(JSONObject fields) {
-        if (fields == null) {
-            return;
-        }
-        for (Map.Entry<String, Object> entry : fields.entrySet()) {
-            if (entry.getValue() instanceof JSONObject field) {
-                normalizeField(field, entry.getKey());
-            }
-        }
-    }
-
-    private void normalizeField(JSONObject field, String fallbackName) {
-        Object rawName = field.get("name");
-        String name = fallbackName;
-        if (rawName instanceof JSONArray names && !names.isEmpty()) {
-            name = names.getString(names.size() - 1);
-        } else if (rawName != null && !rawName.toString().isEmpty()) {
-            name = rawName.toString();
-        }
-
-        Boolean isDisplayNameCustom = field.getBoolean("isDisplayNameCustom");
-        if (Boolean.FALSE.equals(isDisplayNameCustom)) {
-            // Formal metadata: non-custom fields must not persist displayName.
-            field.remove("displayName");
-        } else if (isDisplayNameCustom == null) {
-            // Legacy metadata without the marker keeps the historical fallback behavior.
-            String displayName = field.getString("displayName");
-            String comment = field.getString("comment");
-            if (!hasText(displayName) || (displayName.equals(name) && hasText(comment))) {
-                field.put("displayName", hasText(comment) ? comment : name);
-            }
-            String normalizedDisplayName = field.getString("displayName");
-            boolean custom = hasText(normalizedDisplayName) && !normalizedDisplayName.equals(name);
-            field.put("isDisplayNameCustom", custom);
-            if (custom) {
-                field.put("displayName", normalizedDisplayName);
-            } else {
-                field.remove("displayName");
-            }
-        }
-
-        JSONArray children = field.getJSONArray("children");
-        if (children != null) {
-            for (Object child : children) {
-                if (child instanceof JSONObject childField) {
-                    normalizeField(childField, childField.getString("name"));
-                }
-            }
-        }
-    }
-
-    private boolean hasText(String value) {
-        return value != null && !value.trim().isEmpty();
     }
 
     @Override
@@ -852,7 +806,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
             view.setUpdateBy(getCurrentUser().getId());
             view.setUpdateTime(new Date());
             sanitizeSqlQueryPaths(view);
-            view.setModel(normalizeModelDisplayNames(view.getModel()));
+            canonicalizeModelMetadata(view);
             viewMapper.insert(view);
             viewFieldService.rebuild(view);
             viewMapper.updateByPrimaryKey(view);

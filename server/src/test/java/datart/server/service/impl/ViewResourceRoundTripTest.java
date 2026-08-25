@@ -79,7 +79,8 @@ class ViewResourceRoundTripTest {
             verify(viewFieldService).rebuild(any(View.class));
             verify(viewMapper).insert(argThat(imported ->
                     "target-org".equals(imported.getOrgId())
-                            && imported.getModel().contains("\"displayName\":\"城市\"")));
+                            && imported.getModel().contains("\"isDisplayNameCustom\":false")
+                            && !imported.getModel().contains("\"displayName\":\"城市\"")));
             assertEquals(2, importedPackage.formatVersion());
         } finally {
             Files.deleteIfExists(file);
