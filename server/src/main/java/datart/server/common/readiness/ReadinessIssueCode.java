@@ -28,6 +28,7 @@ public final class ReadinessIssueCode {
     public static final String DASHBOARD_CONFIG_INVALID = "DASHBOARD_CONFIG_INVALID";
     public static final String DASHBOARD_DATACHART_NOT_FOUND = "DASHBOARD_DATACHART_NOT_FOUND";
     public static final String DASHBOARD_WIDGET_RESOURCE_NOT_FOUND = "DASHBOARD_WIDGET_RESOURCE_NOT_FOUND";
+    public static final String DASHBOARD_WIDGET_CONFIG_INVALID = "DASHBOARD_WIDGET_CONFIG_INVALID";
     public static final String DASHBOARD_LEGACY_REFERENCE = "DASHBOARD_LEGACY_REFERENCE";
 
     private ReadinessIssueCode() {

@@ -22,6 +22,7 @@ import datart.server.base.dto.ReadinessReport;
 import datart.server.base.dto.ReadinessScopeReport;
 import datart.server.base.dto.ReadinessSeverity;
 import datart.server.common.fieldmeta.FieldMetaResolver;
+import datart.server.common.fieldmeta.ChartComputedFieldInspector;
 import datart.server.common.fieldmeta.InvalidMigrationJsonException;
 import datart.server.common.fieldmeta.SourceSchemaIndex;
 import datart.server.common.fieldmeta.SqlModelQueryPathSanitizer;
@@ -128,7 +129,7 @@ public class ReadinessScanner {
                 ResourceState state = resources.computeIfAbsent(
                         resourceKey("DASHBOARD", dashboard.getId()),
                         ignored -> new ResourceState("DASHBOARD", dashboard.getId(), dashboard.getName()));
-                scanDashboard(dashboard, views, datacharts, state);
+                scanDashboard(dashboard, views, viewFields, datacharts, state, coverage);
             }
         }
         return report(resources, coverage);
@@ -304,6 +305,14 @@ public class ReadinessScanner {
                     "Datachart config is not valid JSON");
             return;
         }
+        List<ViewField> fields = view == null ? List.of()
+                : viewFields.getOrDefault(view.getId(), List.of());
+        scanChartRows(root, fields, datachart.getViewId(), viewFields, state, coverage);
+    }
+
+    private void scanChartRows(ObjectNode root, List<ViewField> fields, String viewId,
+                               Map<String, List<ViewField>> allViewFields,
+                               ResourceState state, ChartCoverage coverage) {
         JsonNode chartConfig = root.get("chartConfig");
         if (chartConfig == null || !chartConfig.isObject()) {
             chartConfig = root;
@@ -312,8 +321,10 @@ public class ReadinessScanner {
         if (datas == null || !datas.isArray()) {
             return;
         }
-        List<ViewField> fields = view == null ? List.of()
-                : viewFields.getOrDefault(view.getId(), List.of());
+        JsonNode computedFields = root.get("computedFields");
+        if (computedFields == null) {
+            computedFields = chartConfig.get("computedFields");
+        }
         for (JsonNode data : datas) {
             if (!data.isObject()) {
                 issue(state, ReadinessSeverity.BLOCKER, ReadinessIssueCode.DATACHART_CONFIG_INVALID,
@@ -330,15 +341,25 @@ public class ReadinessScanner {
                             "Datachart field row is invalid");
                     continue;
                 }
-                scanDatachartRow((ObjectNode) rowNode, fields, datachart.getViewId(), state, coverage);
+                scanDatachartRow((ObjectNode) rowNode, fields, viewId, allViewFields,
+                        computedFields, state, coverage);
             }
         }
     }
 
     private void scanDatachartRow(ObjectNode row, List<ViewField> fields, String viewId,
+                                  Map<String, List<ViewField>> allViewFields, JsonNode computedFields,
                                   ResourceState state, ChartCoverage coverage) {
         String category = trim(row.path("category").asText(null));
-        if (!isFieldCategory(category)) {
+        if ("computedField".equals(category)) {
+            if (!ChartComputedFieldInspector.isValidPersistedRow(row, computedFields)) {
+                issue(state, ReadinessSeverity.BLOCKER, ReadinessIssueCode.DATACHART_COMPUTED_FIELD_INVALID,
+                        "Computed chart field definition is missing or ambiguous: "
+                                + trim(row.path("colName").asText(null)));
+            }
+            return;
+        }
+        if (!isViewFieldCategory(category)) {
             return;
         }
         coverage.fieldReferences++;
@@ -347,27 +368,23 @@ public class ReadinessScanner {
                 ? trim(row.path("field").asText(null))
                 : trim(row.path("colName").asText(null));
         if (fieldId == null) {
-            if ("computedField".equals(category) && trim(row.path("expression").asText(null)) == null) {
-                issue(state, ReadinessSeverity.BLOCKER, ReadinessIssueCode.DATACHART_COMPUTED_FIELD_INVALID,
-                        "Computed chart field has no expression: " + lookup);
-            }
-            ViewField legacy = resolveLegacyField(fields, lookup, row.get("path"));
-            if (legacy == null) {
-                issue(state, ReadinessSeverity.BLOCKER, ReadinessIssueCode.DATACHART_FIELD_NOT_FOUND,
-                        "Datachart field cannot be resolved: " + lookup);
-            } else if (isActive(legacy)) {
-                issue(state, ReadinessSeverity.WARNING, ReadinessIssueCode.DATACHART_LEGACY_FIELD_REFERENCE,
-                        "Datachart field has no fieldId and was resolved by legacy metadata: " + lookup);
-            } else {
-                issue(state, ReadinessSeverity.BLOCKER, ReadinessIssueCode.DATACHART_FIELD_INACTIVE,
-                        "Datachart field is inactive: " + lookup);
-            }
+            issue(state, ReadinessSeverity.BLOCKER, ReadinessIssueCode.DATACHART_FIELD_ID_MISSING,
+                    "Datachart field has no fieldId: " + lookup);
             return;
         }
 
         coverage.fieldIdReferences++;
         List<ViewField> matches = fields.stream().filter(field -> fieldId.equals(field.getId())).toList();
         if (matches.isEmpty()) {
+            ViewField foreign = allViewFields.values().stream()
+                    .flatMap(List::stream)
+                    .filter(field -> fieldId.equals(field.getId()))
+                    .findFirst().orElse(null);
+            if (foreign != null && viewId != null && !viewId.equals(foreign.getViewId())) {
+                issue(state, ReadinessSeverity.BLOCKER, ReadinessIssueCode.DATACHART_FIELD_VIEW_MISMATCH,
+                        "Datachart field belongs to another View: " + fieldId);
+                return;
+            }
             issue(state, ReadinessSeverity.BLOCKER, ReadinessIssueCode.DATACHART_FIELD_NOT_FOUND,
                     "Datachart fieldId does not exist: " + fieldId);
             return;
@@ -387,7 +404,9 @@ public class ReadinessScanner {
     }
 
     private void scanDashboard(Dashboard dashboard, Map<String, View> views,
-                               Map<String, Datachart> datacharts, ResourceState state) {
+                               Map<String, List<ViewField>> viewFields,
+                               Map<String, Datachart> datacharts, ResourceState state,
+                               ChartCoverage coverage) {
         try {
             strictJson.readObject("DASHBOARD", dashboard.getId(), dashboard.getConfig());
         } catch (InvalidMigrationJsonException e) {
@@ -403,6 +422,9 @@ public class ReadinessScanner {
                 .map(Widget::getId).filter(id -> !blank(id)).toList();
         if (widgetIds.isEmpty()) {
             return;
+        }
+        for (Widget widget : safe(widgets)) {
+            scanEmbeddedWidget(widget, views, viewFields, state, coverage);
         }
         List<RelWidgetElement> elements = widgetElementMapper.listWidgetElementsByIds(widgetIds);
         for (RelWidgetElement element : safe(elements)) {
@@ -422,54 +444,47 @@ public class ReadinessScanner {
         }
     }
 
-    private ViewField resolveLegacyField(List<ViewField> fields, String name, JsonNode pathNode) {
-        if (pathNode != null && pathNode.isArray()) {
-            String path = join(pathNode);
-            List<ViewField> exact = fields.stream()
-                    .filter(field -> path.equals(String.join(".", readSourcePath(field.getSourcePath()))))
-                    .filter(ReadinessScanner::isActive).toList();
-            if (exact.size() == 1) {
-                return exact.get(0);
-            }
+    private void scanEmbeddedWidget(Widget widget, Map<String, View> views,
+                                    Map<String, List<ViewField>> viewFields,
+                                    ResourceState state, ChartCoverage coverage) {
+        if (widget == null) {
+            return;
         }
-        if (name == null) {
-            return null;
+        ObjectNode root;
+        try {
+            root = strictJson.readObject("WIDGET", widget.getId(), widget.getConfig());
+        } catch (InvalidMigrationJsonException e) {
+            issue(state, ReadinessSeverity.BLOCKER, ReadinessIssueCode.DASHBOARD_WIDGET_CONFIG_INVALID,
+                    "Dashboard widget config is not valid JSON: " + widget.getId());
+            return;
         }
-        List<ViewField> matches = fields.stream()
-                .filter(field -> name.equals(field.getOriginName())).toList();
-        return matches.size() == 1 ? matches.get(0) : null;
+        JsonNode dataChart = root.at("/content/dataChart");
+        if (!dataChart.isObject()) {
+            return;
+        }
+        String viewId = trim(dataChart.path("viewId").asText(null));
+        View view = blank(viewId) ? null : views.get(viewId);
+        if (view == null) {
+            issue(state, ReadinessSeverity.BLOCKER, ReadinessIssueCode.DASHBOARD_WIDGET_RESOURCE_NOT_FOUND,
+                    "Dashboard widget View does not exist: " + viewId);
+            return;
+        }
+        JsonNode config = dataChart.get("config");
+        if (config == null || !config.isObject()) {
+            issue(state, ReadinessSeverity.BLOCKER, ReadinessIssueCode.DASHBOARD_WIDGET_CONFIG_INVALID,
+                    "Dashboard widget has no chart config: " + widget.getId());
+            return;
+        }
+        scanChartRows((ObjectNode) config, viewFields.getOrDefault(view.getId(), List.of()),
+                viewId, viewFields, state, coverage);
     }
 
-    private static boolean isFieldCategory(String category) {
-        return "field".equals(category) || "dateLevelComputedField".equals(category)
-                || "computedField".equals(category);
+    private static boolean isViewFieldCategory(String category) {
+        return "field".equals(category) || "dateLevelComputedField".equals(category);
     }
 
     private static boolean isActive(ViewField field) {
         return !Boolean.FALSE.equals(field.getActive());
-    }
-
-    private List<String> readSourcePath(String json) {
-        if (blank(json)) {
-            return List.of();
-        }
-        try {
-            JsonNode node = objectMapper.readTree(json);
-            if (node != null && node.isArray()) {
-                List<String> result = new ArrayList<>();
-                node.forEach(value -> result.add(value.asText()));
-                return result;
-            }
-        } catch (Exception ignored) {
-            // An invalid path cannot be a deterministic legacy match.
-        }
-        return List.of();
-    }
-
-    private static String join(JsonNode values) {
-        List<String> path = new ArrayList<>();
-        values.forEach(value -> path.add(value.asText()));
-        return String.join(".", path);
     }
 
     private Map<String, ExpectedField> expectedFields(ObjectNode model, String viewType) {

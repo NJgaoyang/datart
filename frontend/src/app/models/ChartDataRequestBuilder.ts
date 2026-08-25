@@ -190,6 +190,34 @@ export class ChartDataRequestBuilder {
     );
   }
 
+  private isValidStrictComputedField(candidate?: ChartDataSectionField) {
+    const computedCategories = [
+      ChartDataViewFieldCategory.ComputedField,
+      ChartDataViewFieldCategory.AggregateComputedField,
+    ];
+    if (
+      !candidate ||
+      !computedCategories.includes(
+        candidate.category as ChartDataViewFieldCategory,
+      )
+    ) {
+      return false;
+    }
+
+    const definitions = (this.dataView.computedFields || []).filter(
+      field => field?.name === candidate.colName,
+    );
+    if (definitions.length !== 1) {
+      return false;
+    }
+
+    const definition = definitions[0];
+    return (
+      definition.category === candidate.category &&
+      Boolean(definition.expression?.trim())
+    );
+  }
+
   private buildOutputProjections(outputs =
     this.aggregation === false
       ? this.buildSelectColumns()
@@ -213,7 +241,11 @@ export class ChartDataRequestBuilder {
           ? field.aggregate === output.sqlOperator
           : true;
       });
-      if (this.dataView.migrationMode === 'STRICT' && !candidate?.fieldId) {
+      if (
+        this.dataView.migrationMode === 'STRICT' &&
+        !candidate?.fieldId &&
+        !this.isValidStrictComputedField(candidate)
+      ) {
         throw new Error(
           `STRICT_FIELD_ID_REQUIRED: ${candidate?.colName || output.alias}`,
         );

@@ -73,6 +73,24 @@ class FieldMetaMigrationTest {
     }
 
     @Test
+    void doesNotCreateViewFieldIdentityForChartComputedField() throws Exception {
+        ObjectNode chart = (ObjectNode) mapper.readTree("""
+                {"chartConfig":{"datas":[{"rows":[
+                  {"category":"computedField","colName":"直营总订单数"}
+                ]}],"computedFields":[
+                  {"name":"直营总订单数","category":"computedField","expression":"[channel_orders]+[direct_orders]"}
+                ]}}
+                """);
+
+        ChartConfigReconciler.Result result = new ChartConfigReconciler()
+                .reconcile(chart, List.of());
+
+        assertEquals(0, result.rows());
+        assertEquals(0, result.issues().size());
+        assertFalse(chart.at("/chartConfig/datas/0/rows/0/fieldId").isValueNode());
+    }
+
+    @Test
     void blocksConflictingColumnsAndHierarchyCustomNames() throws Exception {
         ObjectNode model = (ObjectNode) mapper.readTree("""
                 {

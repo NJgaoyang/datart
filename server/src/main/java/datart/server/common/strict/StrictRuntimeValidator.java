@@ -5,6 +5,7 @@ import datart.core.entity.View;
 import datart.core.entity.ViewField;
 import datart.core.mappers.ext.ViewFieldMapperExt;
 import datart.server.base.params.ViewExecuteParam;
+import datart.server.common.fieldmeta.ChartComputedFieldInspector;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
@@ -31,6 +32,10 @@ public class StrictRuntimeValidator {
         for (QueryOutputProjection projection : projections) {
             String fieldId = StringUtils.trimToNull(projection.getFieldId());
             if (fieldId == null) {
+                boolean computedMatched = ChartComputedFieldInspector.isValidProjection(param, projection);
+                if (computedMatched) {
+                    continue;
+                }
                 throw new StrictFieldReferenceException("STRICT_FIELD_ID_REQUIRED",
                         projection.getTechnicalAlias());
             }

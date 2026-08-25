@@ -45,7 +45,7 @@ public class SqlParserUtils {
                 && !supportedOperators.contains(StdSqlOperator.PERCENTILE_APPROX)) {
             Exceptions.msg("Function 'PERCENTILE_APPROX' is not supported by this data source");
         }
-        SqlNode node = createParser(String.format(SELECT_SQL, normalizeSnippet(snippet)), sqlDialect).parseQuery();
+        SqlNode node = parseSnippet(snippet);
         node.accept(new SqlBasicVisitor<Void>() {
             @Override
             public Void visit(SqlCall call) {

@@ -35,6 +35,68 @@ import dayjs from 'dayjs';
 import { ChartDataRequestBuilder } from '../ChartDataRequestBuilder';
 
 describe('ChartDataRequestBuild Test', () => {
+  const strictComputedField = {
+    colName: '直营总订单数',
+    type: DataViewFieldType.NUMERIC,
+    category: ChartDataViewFieldCategory.ComputedField,
+    aggregate: AggregateFieldActionType.Sum,
+    alias: { name: '直营总订单数' },
+  };
+
+  const strictComputedConfig = (row = strictComputedField) => [
+    {
+      type: ChartDataSectionType.Aggregate,
+      key: 'aggregate',
+      rows: [row],
+    },
+  ] as any;
+
+  const strictComputedView = (computedFields = [
+    {
+      name: '直营总订单数',
+      category: ChartDataViewFieldCategory.ComputedField,
+      expression: '[channel_orders]+[direct_orders]+[douyin_orders]',
+    },
+  ]) => ({
+    id: 'view-id',
+    migrationMode: 'STRICT',
+    meta: [],
+    computedFields,
+  }) as any;
+
+  const strictAggregateComputedField = {
+    uid: '814636d5-c02e-4f36-8a75-37f80d214a1d',
+    colName: '汇总离线率',
+    type: DataViewFieldType.NUMERIC,
+    category: ChartDataViewFieldCategory.AggregateComputedField,
+    displayName: '汇总离线率',
+    children: [],
+  };
+
+  const strictAggregateComputedConfig = (
+    row = strictAggregateComputedField,
+  ) => [
+    {
+      type: ChartDataSectionType.Aggregate,
+      key: 'metrics',
+      rows: [row],
+    },
+  ] as any;
+
+  const strictAggregateComputedView = (computedFields = [
+    {
+      name: '汇总离线率',
+      category: ChartDataViewFieldCategory.AggregateComputedField,
+      expression: 'sum(pbi_offline_zero_turnover_box_cnt)/sum([box_total_cnt])',
+      type: DataViewFieldType.NUMERIC,
+    },
+  ]) => ({
+    id: 'c55bd701acf142f19f4022fcfa02893a',
+    migrationMode: 'STRICT',
+    meta: [],
+    computedFields,
+  }) as any;
+
   test('keeps technical query aliases and emits business output projections', () => {
     const dataView = {
       id: 'view-id',
@@ -161,6 +223,195 @@ describe('ChartDataRequestBuild Test', () => {
                 category: ChartDataViewFieldCategory.Field as any,
               },
             ],
+          },
+        ] as any,
+      ).build(),
+    ).toThrow('STRICT_FIELD_ID_REQUIRED');
+  });
+
+  test('allows a valid STRICT computed field without fieldId', () => {
+    const request = new ChartDataRequestBuilder(
+      strictComputedView(),
+      strictComputedConfig(),
+    ).build();
+
+    expect(request.aggregators).toEqual([
+      {
+        alias: 'SUM(直营总订单数)',
+        column: ['直营总订单数'],
+        sqlOperator: AggregateFieldActionType.Sum,
+      },
+    ]);
+    expect(request.functionColumns).toEqual([
+      {
+        alias: '直营总订单数',
+        snippet: '[channel_orders]+[direct_orders]+[douyin_orders]',
+      },
+    ]);
+    expect(request.outputProjections).toEqual([
+      {
+        fieldId: undefined,
+        technicalAlias: 'SUM(直营总订单数)',
+        displayAlias: '直营总订单数',
+        ordinal: 0,
+      },
+    ]);
+  });
+
+  test('allows a valid STRICT aggregate computed field without fieldId', () => {
+    const request = new ChartDataRequestBuilder(
+      strictAggregateComputedView(),
+      strictAggregateComputedConfig(),
+      [],
+      {},
+      false,
+      true,
+    ).build();
+
+    expect(request.functionColumns).toEqual([
+      {
+        alias: '汇总离线率',
+        snippet: 'sum(pbi_offline_zero_turnover_box_cnt)/sum([box_total_cnt])',
+      },
+    ]);
+    expect(request.aggregators).toEqual([
+      {
+        alias: '汇总离线率',
+        column: ['汇总离线率'],
+        sqlOperator: undefined,
+      },
+    ]);
+    expect(request.columns).toEqual([]);
+    expect(request.outputProjections).toEqual([
+      {
+        fieldId: undefined,
+        technicalAlias: '汇总离线率',
+        displayAlias: '汇总离线率',
+        ordinal: 0,
+      },
+    ]);
+  });
+
+  test.each([
+    ['missing definition', []],
+    ['blank expression', [{
+      name: '汇总离线率',
+      category: ChartDataViewFieldCategory.AggregateComputedField,
+      expression: '  ',
+    }]],
+    ['duplicate definition', [
+      {
+        name: '汇总离线率',
+        category: ChartDataViewFieldCategory.AggregateComputedField,
+        expression: '[a]',
+      },
+      {
+        name: '汇总离线率',
+        category: ChartDataViewFieldCategory.AggregateComputedField,
+        expression: '[b]',
+      },
+    ]],
+    ['candidate aggregate with computed definition', [{
+      name: '汇总离线率',
+      category: ChartDataViewFieldCategory.ComputedField,
+      expression: '[a]',
+    }]],
+  ])('rejects STRICT aggregate computed field with %s', (_, definitions) => {
+    expect(() =>
+      new ChartDataRequestBuilder(
+        strictAggregateComputedView(definitions as any),
+        strictAggregateComputedConfig(),
+        [],
+        {},
+        false,
+        true,
+      ).build(),
+    ).toThrow('STRICT_FIELD_ID_REQUIRED');
+  });
+
+  test('rejects a computed candidate with an aggregate definition', () => {
+    const computedCandidate = {
+      ...strictComputedField,
+      colName: '直营总订单数',
+    };
+    expect(() =>
+      new ChartDataRequestBuilder(
+        strictComputedView([
+          {
+            name: '直营总订单数',
+            category: ChartDataViewFieldCategory.AggregateComputedField,
+            expression: '[a]',
+          },
+        ]),
+        strictComputedConfig(computedCandidate),
+      ).build(),
+    ).toThrow('STRICT_FIELD_ID_REQUIRED');
+  });
+
+  test.each([
+    ['missing definition', []],
+    ['blank expression', [{ name: '直营总订单数', expression: '  ' }]],
+    [
+      'ambiguous definition',
+      [
+        { name: '直营总订单数', expression: '[a]' },
+        { name: '直营总订单数', expression: '[b]' },
+      ],
+    ],
+    [
+      'wrong definition category',
+      [
+        {
+          name: '直营总订单数',
+          category: ChartDataViewFieldCategory.AggregateComputedField,
+          expression: '[a]',
+        },
+      ],
+    ],
+  ])('rejects STRICT computed field with %s', (_, definitions) => {
+    expect(() =>
+      new ChartDataRequestBuilder(
+        strictComputedView(definitions as any),
+        strictComputedConfig(),
+      ).build(),
+    ).toThrow('STRICT_FIELD_ID_REQUIRED');
+  });
+
+  test('requires fieldId for STRICT date level computed fields', () => {
+    const dateLevelRow = {
+      colName: 'created_date@date_level_delimiter@AGG_DATE_DAY',
+      fieldId: 'date-level-field',
+      type: DataViewFieldType.DATE,
+      category: ChartDataViewFieldCategory.DateLevelComputedField,
+    };
+    expect(
+      new ChartDataRequestBuilder(
+        strictComputedView([]),
+        [
+          {
+            type: ChartDataSectionType.Group,
+            key: 'group',
+            rows: [dateLevelRow],
+          },
+        ] as any,
+      ).build().outputProjections,
+    ).toEqual([
+      {
+        fieldId: 'date-level-field',
+        technicalAlias: dateLevelRow.colName,
+        displayAlias: dateLevelRow.colName,
+        ordinal: 0,
+      },
+    ]);
+
+    expect(() =>
+      new ChartDataRequestBuilder(
+        strictComputedView([]),
+        [
+          {
+            type: ChartDataSectionType.Group,
+            key: 'group',
+            rows: [{ ...dateLevelRow, fieldId: undefined }],
           },
         ] as any,
       ).build(),

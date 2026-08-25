@@ -178,10 +178,78 @@ class ReadinessScannerTest {
 
         ReadinessReport report = scanner.scan("org-1");
 
-        assertEquals(1, report.getWarnings());
-        assertEquals(0, report.getBlockers());
+        assertEquals(0, report.getWarnings());
+        assertEquals(1, report.getBlockers());
         assertEquals(0D, report.getChartFieldIdCoverage());
-        assertTrue(hasIssue(report, ReadinessIssueCode.DATACHART_LEGACY_FIELD_REFERENCE));
+        assertTrue(hasIssue(report, ReadinessIssueCode.DATACHART_FIELD_ID_MISSING));
+    }
+
+    @Test
+    void embeddedWidgetCountsViewFieldsButValidComputedFieldIsNotAViewFieldReference() {
+        DashboardMapperExt dashboardMapper = mock(DashboardMapperExt.class);
+        WidgetMapperExt widgetMapper = mock(WidgetMapperExt.class);
+        RelWidgetElementMapperExt elementMapper = mock(RelWidgetElementMapperExt.class);
+        ReadinessScanner scanner = scanner(null, dashboardMapper, widgetMapper, elementMapper);
+        View view = view("view-1", "View", canonicalModel(), "source-1");
+        Dashboard dashboard = dashboard("dashboard-1", "Dashboard");
+        Widget widget = new Widget();
+        widget.setId("widget-1");
+        widget.setConfig("""
+                {"content":{"dataChart":{"viewId":"view-1","config":{
+                  "chartConfig":{"datas":[{"rows":[
+                    {"category":"field","colName":"city_name","fieldId":"field-city"},
+                    {"category":"computedField","colName":"直营总订单数"}
+                  ]}]},
+                  "computedFields":[{"name":"直营总订单数","category":"computedField","expression":"[channel_orders]+[direct_orders]"}]
+                }}}}
+                """);
+        when(viewMapper.listByOrgId("org-1")).thenReturn(List.of(view));
+        when(viewFieldMapper.listByViewId("view-1")).thenReturn(List.of(field("view-1")));
+        when(dashboardMapper.listByOrgId("org-1")).thenReturn(List.of(dashboard));
+        when(widgetMapper.listByDashboard("dashboard-1")).thenReturn(List.of(widget));
+        when(elementMapper.listWidgetElementsByIds(List.of("widget-1"))).thenReturn(List.of());
+
+        ReadinessReport report = scanner.scan("org-1");
+
+        assertEquals(2, report.getTotal());
+        assertEquals(2, report.getReady());
+        assertEquals(0, report.getBlockers());
+        assertEquals(1, report.getChartFieldReferences());
+        assertEquals(1, report.getChartFieldIdReferences());
+        assertEquals(1, report.getResolvedChartFieldIdReferences());
+        assertEquals(100D, report.getChartFieldIdCoverage());
+        assertEquals(100D, report.getResolvedChartFieldIdCoverage());
+        assertTrue(report.isStrictEligible());
+    }
+
+    @Test
+    void embeddedWidgetComputedFieldWithoutDefinitionBlocksReadiness() {
+        DashboardMapperExt dashboardMapper = mock(DashboardMapperExt.class);
+        WidgetMapperExt widgetMapper = mock(WidgetMapperExt.class);
+        RelWidgetElementMapperExt elementMapper = mock(RelWidgetElementMapperExt.class);
+        ReadinessScanner scanner = scanner(null, dashboardMapper, widgetMapper, elementMapper);
+        View view = view("view-1", "View", canonicalModel(), "source-1");
+        Dashboard dashboard = dashboard("dashboard-1", "Dashboard");
+        Widget widget = new Widget();
+        widget.setId("widget-1");
+        widget.setConfig("""
+                {"content":{"dataChart":{"viewId":"view-1","config":{
+                  "chartConfig":{"datas":[{"rows":[{"category":"computedField","colName":"missing_computed"}]}]},
+                  "computedFields":[]
+                }}}}
+                """);
+        when(viewMapper.listByOrgId("org-1")).thenReturn(List.of(view));
+        when(viewFieldMapper.listByViewId("view-1")).thenReturn(List.of(field("view-1")));
+        when(dashboardMapper.listByOrgId("org-1")).thenReturn(List.of(dashboard));
+        when(widgetMapper.listByDashboard("dashboard-1")).thenReturn(List.of(widget));
+        when(elementMapper.listWidgetElementsByIds(List.of("widget-1"))).thenReturn(List.of());
+
+        ReadinessReport report = scanner.scan("org-1");
+
+        assertEquals(1, report.getBlockers());
+        assertFalse(report.isStrictEligible());
+        assertTrue(hasIssue(report, ReadinessIssueCode.DATACHART_COMPUTED_FIELD_INVALID));
+        assertEquals(0, report.getChartFieldReferences());
     }
 
     @Test

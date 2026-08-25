@@ -8,7 +8,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Locale;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SqlStdOperatorSupportTest {
@@ -51,6 +53,24 @@ class SqlStdOperatorSupportTest {
                 .toSqlString(dialect).getSql();
         assertTrue(percentile3.contains("PERCENTILE_APPROX"));
         assertTrue(percentile3.contains("10000"));
+    }
+
+    @Test
+    void shouldValidateDatartBracketComputedFieldExpressions() {
+        StarRocksSqlStdOperatorSupport starRocks = new StarRocksSqlStdOperatorSupport();
+        MysqlSqlStdOperatorSupport mysql = new MysqlSqlStdOperatorSupport();
+
+        assertBracketExpressionsValidate(starRocks, starRocks);
+        assertBracketExpressionsValidate(mysql, mysql);
+    }
+
+    @Test
+    void shouldRejectInvalidDatartBracketComputedFieldExpressions() {
+        StarRocksSqlStdOperatorSupport starRocks = new StarRocksSqlStdOperatorSupport();
+        MysqlSqlStdOperatorSupport mysql = new MysqlSqlStdOperatorSupport();
+
+        assertBracketExpressionsReject(starRocks, starRocks);
+        assertBracketExpressionsReject(mysql, mysql);
     }
 
     @Test
@@ -106,6 +126,30 @@ class SqlStdOperatorSupportTest {
         assertTrue(sql.contains("DAYOFWEEK"));
         assertTrue(sql.contains("DAYOFMONTH"));
         assertTrue(sql.contains("DAYOFYEAR"));
+    }
+
+    private void assertBracketExpressionsValidate(SqlDialect dialect, SqlStdOperatorSupport operatorSupport) {
+        assertDoesNotThrow(() -> SqlParserUtils.validateSnippet(
+                "[抖音季卡订单数] / [渠道月订单数]", dialect, operatorSupport.supportedOperators()));
+        assertDoesNotThrow(() -> SqlParserUtils.validateSnippet(
+                "[channel_orders]+[direct_orders]+[douyin_orders]", dialect, operatorSupport.supportedOperators()));
+        assertDoesNotThrow(() -> SqlParserUtils.validateSnippet(
+                "[当日总收入] - [企业包消耗金额]", dialect, operatorSupport.supportedOperators()));
+        assertDoesNotThrow(() -> SqlParserUtils.validateSnippet(
+                "1 + 2", dialect, operatorSupport.supportedOperators()));
+        assertDoesNotThrow(() -> SqlParserUtils.validateSnippet(
+                "ROUND([available_batteries] / NULLIF([renting_users], 0), 2)",
+                dialect,
+                operatorSupport.supportedOperators()));
+    }
+
+    private void assertBracketExpressionsReject(SqlDialect dialect, SqlStdOperatorSupport operatorSupport) {
+        assertThrows(Exception.class, () -> SqlParserUtils.validateSnippet(
+                "[a] /", dialect, operatorSupport.supportedOperators()));
+        assertThrows(Exception.class, () -> SqlParserUtils.validateSnippet(
+                "([a] + [b]", dialect, operatorSupport.supportedOperators()));
+        assertThrows(Exception.class, () -> SqlParserUtils.validateSnippet(
+                "[a] + )", dialect, operatorSupport.supportedOperators()));
     }
 
     private String render(SqlDialect dialect, String expression) throws Exception {
