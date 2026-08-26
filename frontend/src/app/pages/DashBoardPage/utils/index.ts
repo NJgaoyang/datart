@@ -510,6 +510,14 @@ export const getChartWidgetRequestParams = (obj: {
     view: chartDataView,
     widgetId: curWidget.id,
   });
+  const {
+    filterParams: controllerRuntimeFilters,
+    variableParams,
+  } = getTheWidgetFiltersAndParams<PendingChartDataRequestFilter>({
+    chartWidget: curWidget,
+    widgetMap,
+    params: undefined,
+  });
 
   let requestParams = getDataChartRequestParams({
     dataChart,
@@ -519,19 +527,9 @@ export const getChartWidgetRequestParams = (obj: {
     tempFilters: [
       ...(widgetInfo?.linkInfo?.tempFilters || []),
       ...legacyRuntimeFilters,
+      ...controllerRuntimeFilters,
     ],
   });
-  const { filterParams, variableParams } =
-    getTheWidgetFiltersAndParams<ChartDataRequestFilter>({
-      chartWidget: curWidget,
-      widgetMap,
-      params: requestParams.params,
-      view: chartDataView,
-    });
-
-  // 全局过滤 filter
-  // TODO
-  requestParams.filters = requestParams.filters.concat(filterParams);
 
   // splitRangerDateFilters
   requestParams.filters = splitRangerDateFilters(requestParams.filters);

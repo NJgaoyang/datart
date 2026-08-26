@@ -705,6 +705,186 @@ describe('getChartGroupColumns', () => {
   });
 });
 describe('getTheWidgetFiltersAndParams', () => {
+  const computedFieldName = 'computed_region';
+
+  const buildComputedControllerCase = (
+    fieldValue = computedFieldName,
+  ) => {
+    const chartWidget = {
+      id: 'computed-chart-widget',
+      datachartId: 'computed-datachart',
+      config: { type: 'chart' },
+      relations: [],
+      viewIds: ['computed-view'],
+    };
+    const controllerWidget = {
+      id: 'computed-controller-widget',
+      config: {
+        type: 'controller',
+        content: {
+          type: ControllerFacadeTypes.DropdownList,
+          relatedViews: [
+            {
+              viewId: 'computed-view',
+              relatedCategory: ChartDataViewFieldCategory.Field,
+              fieldValue,
+              fieldValueType: DataViewFieldType.STRING,
+            },
+          ],
+          config: {
+            controllerValues: ['华东'],
+            sqlOperator: FilterSqlOperator.In,
+          },
+        },
+      },
+      relations: [{ targetId: 'computed-chart-widget' }],
+      viewIds: ['computed-view'],
+    };
+    const view = {
+      id: 'computed-view',
+      meta: [
+        {
+          name: 'region_code',
+          path: ['DATART_VTABLE', 'region_code'],
+          type: DataViewFieldType.STRING,
+        },
+      ],
+      computedFields: [
+        {
+          name: computedFieldName,
+          category: ChartDataViewFieldCategory.ComputedField,
+          expression: '[region_code]',
+          type: DataViewFieldType.STRING,
+          isViewComputedFields: true,
+        },
+      ],
+    };
+
+    const dataChart = {
+      id: 'computed-datachart',
+      viewId: view.id,
+      config: {
+        chartConfig: {
+          datas: [],
+          styles: [],
+          settings: [],
+          i18ns: [],
+        },
+        computedFields: view.computedFields,
+        aggregation: true,
+      },
+    };
+
+    return { chartWidget, controllerWidget, view, dataChart };
+  };
+
+  const buildRequest = (fieldValue = computedFieldName) => {
+    const { chartWidget, controllerWidget, view, dataChart } =
+      buildComputedControllerCase(fieldValue);
+
+    return getChartWidgetRequestParams({
+      widgetId: chartWidget.id,
+      widgetMap: {
+        [chartWidget.id]: chartWidget,
+        [controllerWidget.id]: controllerWidget,
+      } as any,
+      widgetInfo: undefined,
+      option: undefined,
+      viewMap: { [view.id]: view } as any,
+      dashboardDataChartMap: { [dataChart.id]: dataChart } as any,
+      drillOption: undefined,
+    });
+  };
+
+  test('should keep computed controller filter in Pending form before Builder', () => {
+    const { chartWidget, controllerWidget } =
+      buildComputedControllerCase();
+
+    const result = getTheWidgetFiltersAndParams({
+      chartWidget,
+      widgetMap: {
+        [chartWidget.id]: chartWidget,
+        [controllerWidget.id]: controllerWidget,
+      },
+      params: undefined,
+    } as any);
+
+    expect(result.filterParams[0]?.column).toBe(computedFieldName);
+  });
+
+  test('should not append an empty column for a computed controller filter', () => {
+    const request = buildRequest();
+
+    expect(request?.filters.every(filter => filter.column.length > 0)).toBe(
+      true,
+    );
+  });
+
+  test('should resolve a physical controller filter without a function column', () => {
+    const request = buildRequest('region_code');
+
+    expect(request?.filters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          column: ['DATART_VTABLE', 'region_code'],
+        }),
+      ]),
+    );
+    expect(request?.functionColumns).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ alias: 'region_code' }),
+      ]),
+    );
+  });
+
+  test('should ignore an unknown controller field without an empty column', () => {
+    const request = buildRequest('missing_controller_field');
+
+    expect(request?.filters.every(filter => filter.column.length > 0)).toBe(
+      true,
+    );
+    expect(request?.filters).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          column: ['missing_controller_field'],
+        }),
+      ]),
+    );
+  });
+
+  test('should resolve the same computed field through the Builder runtime path', () => {
+    const { view, dataChart } = buildComputedControllerCase();
+
+    const request = getDataChartRequestParams({
+      dataChart: dataChart as any,
+      view: view as any,
+      option: undefined,
+      tempFilters: [
+        {
+          column: computedFieldName,
+          sqlOperator: FilterSqlOperator.In,
+          values: [{ value: '华东', valueType: DataViewFieldType.STRING }],
+        },
+      ],
+    });
+
+    expect(request.filters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          column: [computedFieldName],
+        }),
+      ]),
+    );
+    expect(request.functionColumns).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          alias: computedFieldName,
+          snippet: '[region_code]',
+        }),
+      ]),
+    );
+  });
+
   it.skip('should has Params', () => {
     const obj = {
       chartWidget: {
