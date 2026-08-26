@@ -32,7 +32,7 @@ import {
 } from 'app/pages/DashBoardPage/pages/BoardEditor/components/ControllerWidgetPanel/types';
 import { ChartDataConfig } from 'app/types/ChartConfig';
 import ChartDataView from 'app/types/ChartDataView';
-import { FilterSqlOperator } from 'globalConstants';
+import { DATE_LEVEL_DELIMITER, FilterSqlOperator } from 'globalConstants';
 import dayjs from 'dayjs';
 import {
   adaptBoardImageUrl,
@@ -45,6 +45,7 @@ import {
   getChartGroupColumns,
   getControllerDateValues,
   getDataChartRequestParams,
+  getChartWidgetRequestParams,
   getRGBAColor,
   getTheWidgetFiltersAndParams,
   getWidgetControlValues,
@@ -440,6 +441,138 @@ describe('should getDataChartRequestParams', () => {
     expect(res.filters).toEqual(targetFilter);
   });
 });
+
+describe('getChartWidgetRequestParams legacy board links', () => {
+  const targetWidgetId = 'target-widget';
+  const triggerWidgetId = 'trigger-widget';
+  const targetDataChartId = 'target-datachart';
+  const viewId = 'view-id';
+  const dayFieldName = `snapshot_dt${DATE_LEVEL_DELIMITER}AGG_DATE_DAY`;
+
+  const buildRequest = (linkerColumn?: string) => {
+    const targetWidget = {
+      id: targetWidgetId,
+      datachartId: targetDataChartId,
+      config: { type: 'chart' },
+      relations: [],
+      viewIds: [viewId],
+    };
+    const triggerWidget = {
+      id: triggerWidgetId,
+      datachartId: 'trigger-datachart',
+      config: { type: 'chart' },
+      relations: [
+        {
+          targetId: targetWidgetId,
+          config: {
+            widgetToWidget:
+              linkerColumn === undefined ? {} : { linkerColumn },
+          },
+        },
+      ],
+      viewIds: [viewId],
+    };
+    const dataChart = {
+      id: targetDataChartId,
+      viewId,
+      config: {
+        chartConfig: {
+          datas: [],
+          styles: [],
+          settings: [],
+          i18ns: [],
+        },
+        computedFields: [],
+        aggregation: true,
+      },
+    };
+
+    return getChartWidgetRequestParams({
+      widgetId: targetWidgetId,
+      widgetMap: {
+        [targetWidgetId]: targetWidget,
+        [triggerWidgetId]: triggerWidget,
+      } as any,
+      widgetInfo: undefined,
+      option: undefined,
+      viewMap: {
+        [viewId]: {
+          id: viewId,
+          meta: [
+            {
+              name: 'snapshot_dt',
+              path: ['DATART_VTABLE', 'snapshot_dt'],
+              type: DataViewFieldType.DATE,
+            },
+          ],
+          computedFields: [],
+        },
+      } as any,
+      dashboardDataChartMap: {
+        [targetDataChartId]: dataChart,
+      } as any,
+      boardLinkFilters: [
+        {
+          triggerWidgetId,
+          triggerValue: '2026-08-25',
+          triggerDataChartId: 'trigger-datachart',
+          linkerWidgetId: targetWidgetId,
+        },
+      ],
+      drillOption: undefined,
+    });
+  };
+
+  test('should include function column for date-level legacy board link filter', () => {
+    const request = buildRequest(JSON.stringify([dayFieldName]));
+
+    expect(request?.filters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          column: [dayFieldName],
+        }),
+      ]),
+    );
+    expect(request?.functionColumns).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          alias: dayFieldName,
+          snippet: expect.stringContaining('AGG_DATE_DAY'),
+        }),
+      ]),
+    );
+  });
+
+  test('should preserve physical legacy board link filter without function column', () => {
+    const request = buildRequest(
+      JSON.stringify(['DATART_VTABLE', 'snapshot_dt']),
+    );
+
+    expect(request?.filters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          column: ['DATART_VTABLE', 'snapshot_dt'],
+        }),
+      ]),
+    );
+    expect(request?.functionColumns).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          alias: dayFieldName,
+        }),
+      ]),
+    );
+  });
+
+  test('should ignore legacy board link when linked column is empty', () => {
+    expect(() => buildRequest()).not.toThrow();
+  });
+
+  test('should ignore legacy board link when linked column JSON is invalid', () => {
+    expect(() => buildRequest('[invalid-json')).not.toThrow();
+  });
+});
+
 describe('getChartGroupColumns', () => {
   it('should datas is undefined', () => {
     const datas = undefined;
