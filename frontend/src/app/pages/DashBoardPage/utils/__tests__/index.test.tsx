@@ -50,6 +50,7 @@ import {
   getTheWidgetFiltersAndParams,
   getWidgetControlValues,
 } from '..';
+import { getControlOptionQueryParams } from 'app/pages/DashBoardPage/components/Widgets/ControllerWidget/config';
 import { BOARD_FILE_IMG_PREFIX } from '../../constants';
 
 const oldBoardId = 'xxxBoardIdXxx555';
@@ -1249,6 +1250,100 @@ describe('getTheWidgetFiltersAndParams', () => {
     expect(getTheWidgetFiltersAndParams(obj as any)).toEqual(res);
   });
 });
+
+describe('getControlOptionQueryParams computed distinct fields', () => {
+  const computedFieldName = '类型';
+  const computedExpression = "if([invite_cnt]>50,'优秀','一般')";
+
+  const buildView = () => ({
+    id: 'computed-view',
+    meta: [
+      {
+        name: 'invite_cnt',
+        path: ['ads_invite_sales_di', 'invite_cnt'],
+        type: DataViewFieldType.STRING,
+      },
+    ],
+    computedFields: [
+      {
+        name: computedFieldName,
+        category: ChartDataViewFieldCategory.ComputedField,
+        expression: computedExpression,
+        type: DataViewFieldType.STRING,
+      },
+    ],
+  });
+
+  const buildRequest = (columns: string[]) => {
+    const chartWidget = {
+      id: 'controller-widget',
+      config: { type: 'controller' },
+      relations: [],
+      viewIds: ['computed-view'],
+    };
+    const view = buildView();
+
+    return getControlOptionQueryParams({
+      view: view as any,
+      columns,
+      curWidget: chartWidget as any,
+      widgetMap: { [chartWidget.id]: chartWidget } as any,
+    });
+  };
+
+  test('should resolve a non-aggregate computed field in a DISTINCT request', () => {
+    const request = buildRequest([computedFieldName]);
+
+    expect(request.columns).toEqual([
+      {
+        alias: computedFieldName,
+        column: [computedFieldName],
+      },
+    ]);
+  });
+
+  test('should include the computed expression in a DISTINCT request', () => {
+    const request = buildRequest([computedFieldName]);
+
+    expect(request.functionColumns).toEqual([
+      {
+        alias: computedFieldName,
+        snippet: computedExpression,
+      },
+    ]);
+  });
+
+  test('should keep a physical field path in a DISTINCT request', () => {
+    const request = buildRequest(['invite_cnt']);
+
+    expect(request.columns).toEqual([
+      {
+        alias: 'invite_cnt',
+        column: ['ads_invite_sales_di', 'invite_cnt'],
+      },
+    ]);
+    expect(request.functionColumns || []).toEqual([]);
+  });
+
+  test('should reject an unknown field instead of sending an empty column', () => {
+    const request = buildRequest(['missing_field']);
+
+    expect(request.columns).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ column: [] }),
+      ]),
+    );
+    expect(request.columns).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          alias: 'missing_field',
+          column: ['missing_field'],
+        }),
+      ]),
+    );
+  });
+});
+
 describe('getWidgetControlValues', () => {
   test('control DropdownList value', () => {
     const type = ControllerFacadeTypes.DropdownList;

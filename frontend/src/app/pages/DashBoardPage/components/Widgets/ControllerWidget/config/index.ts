@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 
+import { ChartDataViewFieldCategory } from 'app/constants';
 import {
   Relation,
   RelationConfigType,
@@ -183,21 +184,39 @@ export const getControlOptionQueryParams = (obj: {
       params: undefined,
       view: obj.view,
     });
+  const functionColumns: NonNullable<ChartDataRequest['functionColumns']> = [];
+  const columns = [...new Set(obj.columns)].flatMap(columnName => {
+    const physicalField = getAllColumnInMeta(obj.view?.meta)?.find(
+      field => field.name === columnName,
+    );
+    if (physicalField?.path?.length) {
+      return [{ alias: columnName, column: physicalField.path }];
+    }
+
+    const computedField = obj.view?.computedFields?.find(
+      field =>
+        field.name === columnName &&
+        field.category === ChartDataViewFieldCategory.ComputedField &&
+        Boolean(field.expression?.trim()),
+    );
+    if (!computedField) {
+      return [];
+    }
+
+    functionColumns.push({
+      alias: computedField.name,
+      snippet: computedField.expression!,
+    });
+    return [{ alias: columnName, column: [columnName] }];
+  });
 
   const requestParams: ChartDataRequest = {
     ...viewConfigs,
     aggregators: [],
     filters: filterParams,
     groups: [],
-    columns: [...new Set(obj.columns)].map(columnName => {
-      const row = getAllColumnInMeta(obj.view?.meta)?.find(
-        v => v.name === columnName,
-      );
-      return {
-        alias: columnName,
-        column: row?.path || [],
-      };
-    }),
+    columns,
+    functionColumns,
     pageInfo: {
       pageNo: 1,
       pageSize: 99999999,
