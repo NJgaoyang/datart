@@ -101,7 +101,7 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
             Map<String, ViewField> existing = mapper.listByViewId(view.getId()).stream()
                     .collect(Collectors.toMap(ViewField::getCanonicalKey, item -> item,
                             (left, right) -> left, LinkedHashMap::new));
-            Set<String> seen = new HashSet<>();
+            Set<String> seenFieldIds = new HashSet<>();
             Set<String> sqlOutputNames = new HashSet<>();
             SourceSchemaIndex.Index source = schemaIndex == null ? null : schemaIndex.forSource(view.getSourceId());
             Map<String, SqlFieldLineageResolver.SqlFieldLineage> sqlLineages = "SQL".equalsIgnoreCase(view.getType())
@@ -115,16 +115,29 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
                     throw new IllegalArgumentException("SQL_OUTPUT_COLUMN_DUPLICATED: " + data.originName());
                 }
                 ViewField field = existing.get(data.canonicalKey());
+                boolean persisted = field != null;
                 if (field == null) {
-                    field = new ViewField();
-                    field.setId(first.path("fieldId").asText(null));
-                    if (field.getId() == null || field.getId().isBlank()) {
-                        field.setId(UUIDGenerator.generate());
+                    String requestedFieldId = trimToNull(first.path("fieldId").asText(null));
+                    ViewField fieldById = requestedFieldId == null
+                            ? null
+                            : mapper.selectById(requestedFieldId);
+                    if (fieldById != null && Objects.equals(fieldById.getViewId(), view.getId())) {
+                        field = fieldById;
+                        persisted = true;
+                    } else {
+                        field = new ViewField();
+                        if (fieldById != null) {
+                            field.setId(UUIDGenerator.generate());
+                        } else if (requestedFieldId != null) {
+                            field.setId(requestedFieldId);
+                        } else {
+                            field.setId(UUIDGenerator.generate());
+                        }
+                        field.setViewId(view.getId());
+                        field.setCreateBy(currentUserId());
+                        field.setCreateTime(new Date());
                     }
-                    field.setViewId(view.getId());
                     field.setCanonicalKey(data.canonicalKey());
-                    field.setCreateBy(currentUserId());
-                    field.setCreateTime(new Date());
                 }
                 List<String> physicalSourcePath = physicalSourcePath(view.getType(), data, sqlLineages);
                 field.setViewId(view.getId());
@@ -148,18 +161,18 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
                 }
                 field.setUpdateBy(currentUserId());
                 field.setUpdateTime(new Date());
-                if (existing.containsKey(data.canonicalKey())) {
+                if (persisted) {
                     mapper.update(field);
                 } else {
                     mapper.insert(field);
                 }
-                seen.add(data.canonicalKey());
+                seenFieldIds.add(field.getId());
                 for (ObjectNode node : refs.nodes()) {
                     node.put("fieldId", field.getId());
                 }
             }
             existing.values().stream()
-                    .filter(field -> !seen.contains(field.getCanonicalKey()) && Boolean.TRUE.equals(field.getActive()))
+                    .filter(field -> !seenFieldIds.contains(field.getId()) && Boolean.TRUE.equals(field.getActive()))
                     .forEach(field -> {
                         field.setActive(false);
                         field.setUpdateBy(currentUserId());

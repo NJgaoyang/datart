@@ -74,6 +74,53 @@ class ViewFieldServiceImplTest {
     }
 
     @Test
+    void doesNotReuseFieldIdFromAnotherViewWhenCopyingAView() {
+        FakeViewFieldMapper mapper = new FakeViewFieldMapper();
+        ViewField original = field("field-from-source-view", "source-view", "FIELD|db.user.id", "id");
+        mapper.fields.put(original.getCanonicalKey(), original);
+        ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, null);
+        View copied = view("STRUCT", "{\"columns\":{\"id\":{\"fieldId\":\"field-from-source-view\",\"name\":[\"db\",\"user\",\"id\"]}}}");
+        copied.setId("copied-view");
+
+        service.reconcile(copied);
+
+        assertEquals(1, mapper.insertCount);
+        assertEquals(1, mapper.insertedFields.size());
+        assertNotEquals(original.getId(), mapper.insertedFields.get(0).getId());
+        assertEquals("copied-view", mapper.insertedFields.get(0).getViewId());
+        assertEquals("field-from-source-view", original.getId());
+    }
+
+    @Test
+    void updatesExistingFieldWhenCanonicalKeyChangesWithinTheSameView() {
+        FakeViewFieldMapper mapper = new FakeViewFieldMapper();
+        ViewField existing = field("field-1", "view-1", "FIELD|db.user.old_name", "old_name");
+        mapper.fields.put(existing.getCanonicalKey(), existing);
+        ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, null);
+        View view = view("STRUCT", "{\"columns\":{\"renamed\":{\"fieldId\":\"field-1\",\"name\":[\"db\",\"user\",\"new_name\"]}}}");
+
+        service.reconcile(view);
+
+        assertEquals(0, mapper.insertCount);
+        assertEquals(1, mapper.updateCount);
+        ViewField actual = mapper.fields.get("FIELD|db.user.new_name");
+        assertEquals("field-1", actual.getId());
+        assertEquals("FIELD|db.user.new_name", actual.getCanonicalKey());
+        assertTrue(actual.getActive());
+    }
+
+    @Test
+    void preservesAFieldIdThatDoesNotExistYetDuringImport() {
+        FakeViewFieldMapper mapper = new FakeViewFieldMapper();
+        ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, null);
+        View view = view("STRUCT", "{\"columns\":{\"id\":{\"fieldId\":\"imported-field-id\",\"name\":[\"db\",\"user\",\"id\"]}}}");
+
+        service.reconcile(view);
+
+        assertEquals("imported-field-id", mapper.fields.get("FIELD|db.user.id").getId());
+    }
+
+    @Test
     void marksMissingFieldsInactiveAndSupportsComputedAndSqlAlias() {
         FakeViewFieldMapper mapper = new FakeViewFieldMapper();
         ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, null);
@@ -327,6 +374,9 @@ class ViewFieldServiceImplTest {
 
     private static class FakeViewFieldMapper implements ViewFieldMapperExt {
         private final Map<String, ViewField> fields = new LinkedHashMap<>();
+        private final List<ViewField> insertedFields = new java.util.ArrayList<>();
+        private int insertCount;
+        private int updateCount;
 
         @Override
         public int deleteByViewId(String viewId) {
@@ -351,12 +401,15 @@ class ViewFieldServiceImplTest {
 
         @Override
         public int insert(ViewField field) {
+            insertCount++;
+            insertedFields.add(field);
             fields.put(field.getCanonicalKey(), field);
             return 1;
         }
 
         @Override
         public int update(ViewField field) {
+            updateCount++;
             fields.put(field.getCanonicalKey(), field);
             return 1;
         }
