@@ -717,7 +717,7 @@ export class ChartDataRequestBuilder {
   }
 
   private removeInvalidFilter(filters: ChartDataRequestFilter[]) {
-    const dataViewFieldsNames = (
+    const fields = (
       getAllColumnInMeta(this.dataView?.meta) as ChartDataViewMeta[]
     )
       .concat(
@@ -725,11 +725,17 @@ export class ChartDataRequestBuilder {
           this.dataView?.meta,
           this.dataView?.computedFields,
         ),
-      )
-      .map(c => c?.name);
+      );
 
-    return (filters || []).filter(f => {
-      return dataViewFieldsNames.includes(f.column.join('.'));
+    return (filters || []).filter(filter => {
+      return fields.some(field => {
+        const matchedByName =
+          filter.column.length === 1 && field?.name === filter.column[0];
+        const matchedByPath =
+          Boolean(field?.path?.length) &&
+          isEqualObject(field.path, filter.column);
+        return matchedByName || matchedByPath;
+      });
     });
   }
 

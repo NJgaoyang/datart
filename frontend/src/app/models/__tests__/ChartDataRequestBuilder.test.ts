@@ -608,6 +608,106 @@ describe('ChartDataRequestBuild Test', () => {
     expect(request.functionColumns).toEqual([]);
   });
 
+  test('should keep physical runtime filter after resolving field name to path', () => {
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'view-id',
+        meta: [
+          {
+            name: 'snapshot_dt',
+            path: ['DATART_VTABLE', 'snapshot_dt'],
+            type: DataViewFieldType.DATE,
+          },
+        ],
+        computedFields: [],
+      } as any,
+      [],
+    )
+      .addRuntimeFilters([
+        {
+          column: 'snapshot_dt',
+          sqlOperator: FilterSqlOperator.In,
+          values: [
+            {
+              value: '2026-08-25',
+              valueType: DataViewFieldType.DATE,
+            },
+          ],
+        },
+      ])
+      .build();
+
+    expect(request.filters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          column: ['DATART_VTABLE', 'snapshot_dt'],
+        }),
+      ]),
+    );
+
+    expect(request.functionColumns).toEqual([]);
+  });
+
+  test('should remove unknown physical runtime filter', () => {
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'view-id',
+        meta: [
+          {
+            name: 'snapshot_dt',
+            path: ['DATART_VTABLE', 'snapshot_dt'],
+            type: DataViewFieldType.DATE,
+          },
+        ],
+        computedFields: [],
+      } as any,
+      [],
+    )
+      .addRuntimeFilters([
+        {
+          column: 'missing_field',
+          sqlOperator: FilterSqlOperator.In,
+          values: [{ value: 'x', valueType: DataViewFieldType.STRING }],
+        },
+      ])
+      .build();
+
+    expect(request.filters).toEqual([]);
+  });
+
+  test('should validate physical path without relying on dot-joined names', () => {
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'view-id',
+        meta: [
+          {
+            name: 'biz.amount',
+            path: ['DATART_VTABLE', 'biz.amount'],
+            type: DataViewFieldType.NUMERIC,
+          },
+        ],
+        computedFields: [],
+      } as any,
+      [],
+    )
+      .addRuntimeFilters([
+        {
+          column: 'biz.amount',
+          sqlOperator: FilterSqlOperator.In,
+          values: [{ value: '1', valueType: DataViewFieldType.NUMERIC }],
+        },
+      ])
+      .build();
+
+    expect(request.filters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          column: ['DATART_VTABLE', 'biz.amount'],
+        }),
+      ]),
+    );
+  });
+
   test('keeps date level query identity ahead of source fieldId', () => {
     const monthFieldName = `dt${DATE_LEVEL_DELIMITER}AGG_DATE_MONTH`;
     const request = new ChartDataRequestBuilder(
