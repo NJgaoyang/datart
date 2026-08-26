@@ -500,6 +500,114 @@ describe('ChartDataRequestBuild Test', () => {
     ]);
   });
 
+  test('should include date level function column referenced only by runtime filter', () => {
+    const dayFieldName = `dt${DATE_LEVEL_DELIMITER}AGG_DATE_DAY`;
+
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'view-id',
+        meta: [
+          {
+            name: 'dt',
+            path: ['DATART_VTABLE', 'dt'],
+            type: DataViewFieldType.DATE,
+          },
+        ],
+        computedFields: [],
+      } as any,
+      [],
+    )
+      .addRuntimeFilters([
+        {
+          column: dayFieldName,
+          sqlOperator: FilterSqlOperator.In,
+          values: [
+            {
+              value: '2026-08-25',
+              valueType: DataViewFieldType.DATE,
+            },
+          ],
+        },
+      ] as any)
+      .build();
+
+    expect(request.filters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          column: [dayFieldName],
+        }),
+      ]),
+    );
+
+    expect(request.functionColumns).toEqual(
+      expect.arrayContaining([
+        {
+          alias: dayFieldName,
+          snippet: expect.stringContaining('AGG_DATE_DAY'),
+        },
+      ]),
+    );
+  });
+
+  test('should not create function column for physical runtime filter path', () => {
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'view-id',
+        meta: [
+          {
+            name: 'snapshot_dt',
+            path: ['DATART_VTABLE', 'snapshot_dt'],
+            type: DataViewFieldType.DATE,
+          },
+        ],
+        computedFields: [],
+      } as any,
+      [],
+    )
+      .addRuntimeFilters([
+        {
+          column: ['DATART_VTABLE', 'snapshot_dt'],
+          sqlOperator: FilterSqlOperator.In,
+          values: [
+            {
+              value: '2026-08-25',
+              valueType: DataViewFieldType.DATE,
+            },
+          ],
+        },
+      ] as any)
+      .build();
+
+    expect(request.functionColumns).toEqual([]);
+  });
+
+  test('should not create function column for unknown runtime alias', () => {
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'view-id',
+        meta: [
+          {
+            name: 'dt',
+            path: ['DATART_VTABLE', 'dt'],
+            type: DataViewFieldType.DATE,
+          },
+        ],
+        computedFields: [],
+      } as any,
+      [],
+    )
+      .addRuntimeFilters([
+        {
+          column: 'not_a_real_computed_field',
+          sqlOperator: FilterSqlOperator.In,
+          values: [{ value: 'x', valueType: DataViewFieldType.STRING }],
+        },
+      ] as any)
+      .build();
+
+    expect(request.functionColumns).toEqual([]);
+  });
+
   test('keeps date level query identity ahead of source fieldId', () => {
     const monthFieldName = `dt${DATE_LEVEL_DELIMITER}AGG_DATE_MONTH`;
     const request = new ChartDataRequestBuilder(

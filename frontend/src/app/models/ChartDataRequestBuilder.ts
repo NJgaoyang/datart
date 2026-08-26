@@ -587,11 +587,23 @@ export class ChartDataRequestBuilder {
         this.dataView.computedFields,
       );
     const computedFields = getRuntimeDateLevelFields(enrichedComputedFields);
-    const fieldsNameList = (this.chartDataConfigs || [])
+    const chartFieldNames = (this.chartDataConfigs || [])
       .flatMap(config => getRuntimeDateLevelFields(config.rows) || [])
-      .flatMap(row => row?.colName || []);
+      .map(row => row?.colName)
+      .filter(Boolean);
+    const runtimeFilterFieldNames = (this.extraRuntimeFilters || [])
+      .map(filter =>
+        Array.isArray(filter.column) && filter.column.length === 1
+          ? filter.column[0]
+          : undefined,
+      )
+      .filter(Boolean);
+    const requiredFieldNames = new Set([
+      ...chartFieldNames,
+      ...runtimeFilterFieldNames,
+    ]);
     const currentUsedComputedFields = computedFields?.filter(v =>
-      fieldsNameList.includes(v.name),
+      requiredFieldNames.has(v.name),
     );
 
     return (currentUsedComputedFields || []).map(f => ({
