@@ -37,6 +37,8 @@ export interface BoardContextProps {
   allowDownload?: boolean;
   allowShare?: boolean;
   allowManage?: boolean;
+  isMobile?: boolean;
+  isEmbedded?: boolean;
   queryVariables: Dashboard['queryVariables'];
 }
 
@@ -56,6 +58,8 @@ export const BoardProvider: FC<PropsWithChildren<BoardContextProps>> = memo(
     allowDownload,
     allowShare,
     allowManage,
+    isMobile,
+    isEmbedded,
     queryVariables,
     children,
   }) => {
@@ -73,6 +77,8 @@ export const BoardProvider: FC<PropsWithChildren<BoardContextProps>> = memo(
         allowDownload,
         allowShare,
         allowManage,
+        isMobile,
+        isEmbedded,
       };
     }, [
       allowDownload,
@@ -87,6 +93,8 @@ export const BoardProvider: FC<PropsWithChildren<BoardContextProps>> = memo(
       queryVariables,
       renderMode,
       status,
+      isMobile,
+      isEmbedded,
     ]);
 
     return (

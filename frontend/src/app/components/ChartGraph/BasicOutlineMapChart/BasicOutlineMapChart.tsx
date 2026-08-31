@@ -39,6 +39,7 @@ import {
   transformToDataSet,
 } from 'app/utils/chartHelper';
 import { ECharts, init, registerMap } from 'echarts';
+import { applyMobileChartOption } from 'app/utils/mobileChartOption';
 import { CloneValueDeep } from 'utils/object';
 import Config from './config';
 import geoChinaCity from './geo-china-city.map.json';
@@ -122,7 +123,13 @@ class BasicOutlineMapChart extends Chart {
       options.selectedItems,
       context,
     );
-    this.chart?.setOption(Object.assign({}, newOptions), true);
+    this.chart?.setOption(
+      applyMobileChartOption(Object.assign({}, newOptions), {
+        isMobile: Boolean(options.widgetSpecialConfig?.isMobile),
+        isEmbedded: Boolean(options.widgetSpecialConfig?.isEmbedded),
+      }),
+      true,
+    );
   }
 
   onResize(options: BrokerOption, context: BrokerContext) {

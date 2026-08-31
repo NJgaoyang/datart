@@ -160,7 +160,13 @@ const StyledTable = styled(Table)<{ tableStyleConfig?: TableStyleConfigProps }>`
     .ant-table-body > table,
     .ant-table-content > table {
       width: max-content !important;
-      min-width: 100% !important;
+      min-width: 0 !important;
+      table-layout: auto !important;
+    }
+
+    .ant-table-body > table > colgroup > col,
+    .ant-table-content > table > colgroup > col {
+      width: auto !important;
     }
 
     .ant-table-body::-webkit-scrollbar,
@@ -176,6 +182,9 @@ const StyledTable = styled(Table)<{ tableStyleConfig?: TableStyleConfigProps }>`
 
     .ant-table-thead > tr > th,
     .ant-table-tbody > tr > td {
+      width: max-content !important;
+      min-width: 0 !important;
+      padding: 8px !important;
       white-space: nowrap;
     }
 
@@ -183,7 +192,11 @@ const StyledTable = styled(Table)<{ tableStyleConfig?: TableStyleConfigProps }>`
     .ant-table-tbody > tr > td:first-child {
       position: sticky;
       left: 0;
-      min-width: 88px;
+      width: 88px !important;
+      min-width: 88px !important;
+      max-width: 96px !important;
+      padding-right: 8px !important;
+      padding-left: 8px !important;
       background: #fff;
     }
 

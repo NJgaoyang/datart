@@ -56,6 +56,10 @@ const ScorecardBox = styled.div<ScorecardBoxProp>`
   height: 100%;
   min-height: 0;
   padding: ${p => p.padding};
+
+  .datart-mobile-board & {
+    padding: 8px 12px;
+  }
 `;
 
 const AggregateBox = styled.div<AggregateBoxProp>`
@@ -75,6 +79,12 @@ const ValueBox = styled.div`
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
+
+  .datart-mobile-board & {
+    font-size: 24px !important;
+    font-weight: 600;
+    line-height: 30px;
+  }
 `;
 
 const NameBox = styled.div`
@@ -83,4 +93,9 @@ const NameBox = styled.div`
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
+
+  .datart-mobile-board & {
+    font-size: 12px !important;
+    line-height: 18px;
+  }
 `;

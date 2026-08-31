@@ -1,7 +1,7 @@
 /**
  * MobileBoard - 移动端仪表板视图（小程序风格）
  *
- * 移动端使用独立 6 列画布，按照组件 mRect 渲染。
+ * 移动端使用独立 24 列画布，按照组件 mRect 渲染。
  */
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { BoardLoading } from 'app/pages/DashBoardPage/components/BoardLoading';
@@ -37,6 +37,7 @@ import {
 import { boardDrillManager } from 'app/pages/DashBoardPage/components/BoardDrillManager/BoardDrillManager';
 import { dispatchResize } from 'app/utils/dispatchResize';
 import { urlSearchTransfer } from 'utils/urlSearchTransfer';
+import { MOBILE_BOARD_THEME } from './mobileTheme';
 import {
   MobileControlContext,
   MobileControlContextValue,
@@ -69,8 +70,8 @@ const WIDGET_INNER_STYLE: React.CSSProperties = {
 };
 
 const MOBILE_ROW_HEIGHT = 24;
-const MOBILE_GAP = 2;
-const MOBILE_PADDING = 4;
+const MOBILE_GAP = MOBILE_BOARD_THEME.gridGap;
+const MOBILE_PADDING = MOBILE_BOARD_THEME.pagePadding;
 const MOBILE_TABLE_MIN_HEIGHT = 6;
 const MOBILE_TABLE_MAX_VISIBLE_ROWS = 5;
 const MOBILE_TABLE_INITIAL_HEIGHT = 16;
@@ -137,6 +138,8 @@ export interface MobileBoardProps {
   allowDownload?: boolean;
   allowShare?: boolean;
   allowManage?: boolean;
+  /** 是否被外部 App / 微信小程序 WebView 嵌入。 */
+  embedded?: boolean;
 }
 
 export const MobileBoard: FC<MobileBoardProps> = memo(
@@ -147,6 +150,7 @@ export const MobileBoard: FC<MobileBoardProps> = memo(
     allowDownload,
     allowShare,
     allowManage,
+    embedded = false,
   }) => {
     const boardId = id;
     const dispatch = useDispatch();
@@ -211,6 +215,8 @@ export const MobileBoard: FC<MobileBoardProps> = memo(
           allowDownload={allowDownload}
           allowShare={allowShare}
           allowManage={allowManage}
+          isMobile
+          isEmbedded={embedded}
         >
           <MobileBoardContent
             widgets={widgets}
@@ -220,6 +226,7 @@ export const MobileBoard: FC<MobileBoardProps> = memo(
             boardName={dashboard.name}
             onBack={handleBack}
             wrapperRef={wrapperRef}
+            embedded={embedded}
           />
         </BoardInitProvider>
       );
@@ -233,10 +240,16 @@ export const MobileBoard: FC<MobileBoardProps> = memo(
       allowDownload,
       allowShare,
       allowManage,
+      embedded,
     ]);
 
     return (
-      <MobileWrapper ref={wrapperRef} className="datart-mobile-board">
+      <MobileWrapper
+        ref={wrapperRef}
+        className={`datart-mobile-board${
+          embedded ? ' datart-weapp-embed' : ''
+        }`}
+      >
         <DndProvider backend={HTML5Backend}>{viewBoard}</DndProvider>
       </MobileWrapper>
     );
@@ -251,6 +264,7 @@ interface MobileBoardContentProps {
   boardName: string;
   onBack: () => void;
   wrapperRef: React.RefObject<HTMLDivElement>;
+  embedded: boolean;
 }
 
 const MobileBoardContent: FC<MobileBoardContentProps> = memo(
@@ -262,6 +276,7 @@ const MobileBoardContent: FC<MobileBoardContentProps> = memo(
     boardName,
     onBack,
     wrapperRef,
+    embedded,
   }) => {
     const dispatch = useDispatch();
     const widgetDataMap = useSelector(
@@ -484,11 +499,17 @@ const MobileBoardContent: FC<MobileBoardContentProps> = memo(
     return (
       <PageWrapper>
         {/* 顶部导航栏 */}
-        <NavBar>
-          <BackBtn type="text" icon={<ArrowLeftOutlined />} onClick={onBack} />
-          <NavTitle>{boardName}</NavTitle>
-          <NavSpacer />
-        </NavBar>
+        {!embedded && (
+          <NavBar>
+            <BackBtn
+              type="text"
+              icon={<ArrowLeftOutlined />}
+              onClick={onBack}
+            />
+            <NavTitle>{boardName}</NavTitle>
+            <NavSpacer />
+          </NavBar>
+        )}
 
         <ScrollBody>
           <MobileControlContext.Provider value={mobileControlValue}>
@@ -536,7 +557,29 @@ const MobileWrapper = styled.div`
   left: 0;
   display: flex;
   flex-direction: column;
-  background-color: #f5f5f5;
+  min-width: 0;
+  min-height: 0;
+  background-color: ${MOBILE_BOARD_THEME.pageBackground};
+
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  .ant-select-dropdown,
+  .ant-picker-dropdown {
+    max-width: calc(100vw - 16px);
+  }
+
+  .ant-select-item,
+  .ant-picker-cell {
+    min-height: 32px;
+  }
 `;
 
 /* ========== 页面布局：导航栏 + 可滚动主体 ========== */
@@ -601,9 +644,12 @@ const BackBtn = styled(Button)`
 /* ========== 可滚动主体 ========== */
 const ScrollBody = styled.div`
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   padding: 0;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   font-size: 13px;
   -webkit-overflow-scrolling: touch;
 `;
@@ -619,15 +665,18 @@ const MobileCanvas = styled.div`
   align-content: start;
   min-height: 100%;
   padding: ${MOBILE_PADDING}px;
-  background: #edf4ff;
+  background: ${MOBILE_BOARD_THEME.pageBackground};
 
   .mobile-widget {
     min-width: 0;
     min-height: 0;
     overflow: hidden;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgb(31 35 41 / 12%);
+    background: ${MOBILE_BOARD_THEME.cardBackground};
+    border: 1px solid ${MOBILE_BOARD_THEME.cardBorder};
+    border-radius: ${MOBILE_BOARD_THEME.cardRadius}px;
+    box-shadow: ${MOBILE_BOARD_THEME.cardShadow};
+
+    -webkit-tap-highlight-color: transparent;
   }
 
   .mobile-widget > .widget,
@@ -642,14 +691,33 @@ const MobileCanvas = styled.div`
     box-shadow: none !important;
   }
 
+  .mobile-widget .widget-name {
+    display: inline-block;
+    padding: 8px 12px 4px;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    line-height: 22px;
+    color: ${MOBILE_BOARD_THEME.titleColor} !important;
+  }
+
   .ant-select,
   .ant-picker {
     width: 100%;
+    height: 40px;
   }
 
   .ant-select-selector,
+  .ant-input,
+  .ant-input-number,
   .ant-picker-input > input {
+    min-height: 40px;
     font-size: 16px;
+  }
+
+  .ant-select-selector {
+    display: flex;
+    align-items: center;
+    min-height: 40px !important;
   }
 
   .ant-select-multiple .ant-select-selection-overflow {

@@ -35,6 +35,7 @@ import {
   transformToDataSet,
 } from 'app/utils/chartHelper';
 import { init } from 'echarts';
+import { applyMobileChartOption } from 'app/utils/mobileChartOption';
 import 'echarts-wordcloud';
 import Config from './config';
 import { WordCloudConfig, WordCloudLabelConfig } from './types';
@@ -89,7 +90,13 @@ class WordCloudChart extends Chart {
       options.config,
       options.selectedItems,
     );
-    this.chart?.setOption(Object.assign({}, newOptions), true);
+    this.chart?.setOption(
+      applyMobileChartOption(Object.assign({}, newOptions), {
+        isMobile: Boolean(options.widgetSpecialConfig?.isMobile),
+        isEmbedded: Boolean(options.widgetSpecialConfig?.isEmbedded),
+      }),
+      true,
+    );
   }
 
   onUnMount(options: BrokerOption, context: BrokerContext) {
@@ -106,7 +113,13 @@ class WordCloudChart extends Chart {
       options.config!,
       options.selectedItems,
     );
-    this.chart?.setOption(Object.assign({}, newOptions), true);
+    this.chart?.setOption(
+      applyMobileChartOption(Object.assign({}, newOptions), {
+        isMobile: Boolean(options.widgetSpecialConfig?.isMobile),
+        isEmbedded: Boolean(options.widgetSpecialConfig?.isEmbedded),
+      }),
+      true,
+    );
   }
 
   getOptions(

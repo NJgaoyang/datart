@@ -9,18 +9,17 @@ import { useBoardSlice } from 'app/pages/DashBoardPage/pages/Board/slice';
 import { useEditBoardSlice } from 'app/pages/DashBoardPage/pages/BoardEditor/slice';
 import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
 import { useStoryBoardSlice } from 'app/pages/StoryBoardPage/slice';
+import { useIsWeappEmbed } from 'app/hooks/useEmbedMode';
 import { FC, useCallback, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  Route,
-  Routes,
-  useNavigate,
-  useParams,
-} from 'react-router-dom';
+import { Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { SPACE_MD, SPACE_SM, SPACE_XS, SPACE_LG } from 'styles/StyleConstants';
 import { useVizSlice } from './pages/VizPage/slice';
-import { selectVizs, selectVizListLoading } from './pages/VizPage/slice/selectors';
+import {
+  selectVizs,
+  selectVizListLoading,
+} from './pages/VizPage/slice/selectors';
 import { getFolders } from './pages/VizPage/slice/thunks';
 import { FolderViewModel } from './pages/VizPage/slice/types';
 
@@ -33,14 +32,8 @@ export const MobileVizPage: FC = () => {
   return (
     <MobileContainer>
       <Routes>
-        <Route
-          path=":vizId"
-          element={<MobileDashboardView />}
-        />
-        <Route
-          index
-          element={<MobileDashboardList />}
-        />
+        <Route path=":vizId" element={<MobileDashboardView />} />
+        <Route index element={<MobileDashboardList />} />
       </Routes>
     </MobileContainer>
   );
@@ -53,6 +46,7 @@ const MobileDashboardList: FC = () => {
   const orgId = useSelector(selectOrgId);
   const vizs = useSelector(selectVizs);
   const loading = useSelector(selectVizListLoading);
+  const isWeappEmbed = useIsWeappEmbed();
 
   useEffect(() => {
     if (orgId) {
@@ -68,9 +62,13 @@ const MobileDashboardList: FC = () => {
 
   const navigateToDashboard = useCallback(
     (vizId: string) => {
-      navigate(`/organizations/${orgId}/vizs/${vizId}`);
+      navigate(
+        `/organizations/${orgId}/vizs/${vizId}${
+          isWeappEmbed ? '?embed=weapp' : ''
+        }`,
+      );
     },
-    [navigate, orgId],
+    [isWeappEmbed, navigate, orgId],
   );
 
   return (
@@ -88,10 +86,12 @@ const MobileDashboardList: FC = () => {
           <EmptyHint>暂无报表</EmptyHint>
         ) : (
           <CardGrid>
-            {dashboards.map((item) => (
+            {dashboards.map(item => (
               <DashboardCard
                 key={(item as FolderViewModel).id}
-                onClick={() => navigateToDashboard((item as FolderViewModel).relId)}
+                onClick={() =>
+                  navigateToDashboard((item as FolderViewModel).relId)
+                }
               >
                 <CardIcon>
                   <BarChartOutlined />
@@ -112,6 +112,7 @@ const MobileDashboardList: FC = () => {
 const MobileDashboardView: FC = () => {
   const params = useParams<{ vizId: string }>();
   const vizId = params.vizId;
+  const isWeappEmbed = useIsWeappEmbed();
 
   if (!vizId) {
     return (
@@ -124,9 +125,10 @@ const MobileDashboardView: FC = () => {
   return (
     <MobileBoard
       id={vizId}
-      allowDownload={true}
-      allowShare={true}
-      allowManage={true}
+      allowDownload={!isWeappEmbed}
+      allowShare={!isWeappEmbed}
+      allowManage={!isWeappEmbed}
+      embedded={isWeappEmbed}
     />
   );
 };
@@ -158,7 +160,11 @@ const ListHeader = styled.div`
   justify-content: center;
   padding: ${SPACE_LG} ${SPACE_MD} ${SPACE_MD};
   color: #fff;
-  background: linear-gradient(135deg, ${p => p.theme.primary} 0%, ${p => p.theme.primary}88 100%);
+  background: linear-gradient(
+    135deg,
+    ${p => p.theme.primary} 0%,
+    ${p => p.theme.primary}88 100%
+  );
 `;
 
 const LogoTitle = styled.h1`
@@ -251,5 +257,3 @@ const EmptyHint = styled.div`
   color: ${p => p.theme.textColorDisabled};
   text-align: center;
 `;
-
-

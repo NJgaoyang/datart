@@ -47,6 +47,7 @@ import {
   valueFormatter,
 } from 'app/utils/chartHelper';
 import { init } from 'echarts';
+import { applyMobileChartOption } from 'app/utils/mobileChartOption';
 import Config from './config';
 import { PieSeries, PieSeriesImpl, PieSeriesStyle } from './types';
 
@@ -103,7 +104,13 @@ class BasicPieChart extends Chart {
       options.drillOption,
       options.selectedItems,
     );
-    this.chart?.setOption(Object.assign({}, newOptions), true);
+    this.chart?.setOption(
+      applyMobileChartOption(Object.assign({}, newOptions), {
+        isMobile: Boolean(options.widgetSpecialConfig?.isMobile),
+        isEmbedded: Boolean(options.widgetSpecialConfig?.isEmbedded),
+      }),
+      true,
+    );
   }
 
   onUnMount(options: BrokerOption, context: BrokerContext) {
