@@ -25,6 +25,7 @@ import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
 import i18n from 'i18next';
 import { monaco } from 'react-monaco-editor';
 import { RootState } from 'types';
+import { startQuery } from 'utils/queryCancellation';
 import { request2 } from 'utils/request';
 import { errorHandle, getErrorMessage, rejectHandle } from 'utils/utils';
 import { viewActions } from '.';
@@ -208,53 +209,60 @@ export const runSql = createAsyncThunk<
     reqColumns = buildRequestColumns(structure!);
   }
 
-  const response = await request2<QueryResult>(
-    {
-      url: '/data-provider/execute/test',
-      method: 'POST',
-      data: {
-        script,
-        sourceId,
-        size,
-        scriptType: type,
-        columns: reqColumns,
-        variables: variables.map(
-          ({ name, type, valueType, defaultValue, expression }) => {
-            let values = null;
-            if (defaultValue) {
-              if (typeof defaultValue === 'object') {
-                values = defaultValue;
-              } else {
-                try {
-                  values = JSON.parse(defaultValue);
-                } catch (err) {
-                  console.error('runSql JSON.parse defaultValue error:', err);
-                  values = null;
+  const query = startQuery('view-preview');
+  try {
+    const response = await request2<QueryResult>(
+      {
+        url: '/data-provider/execute/test',
+        method: 'POST',
+        signal: query.signal,
+        data: {
+          queryId: query.queryId,
+          script,
+          sourceId,
+          size,
+          scriptType: type,
+          columns: reqColumns,
+          variables: variables.map(
+            ({ name, type, valueType, defaultValue, expression }) => {
+              let values = null;
+              if (defaultValue) {
+                if (typeof defaultValue === 'object') {
+                  values = defaultValue;
+                } else {
+                  try {
+                    values = JSON.parse(defaultValue);
+                  } catch (err) {
+                    console.error('runSql JSON.parse defaultValue error:', err);
+                    values = null;
+                  }
                 }
               }
-            }
-            return { name, type, valueType, values, expression };
-          },
-        ),
+              return { name, type, valueType, values, expression };
+            },
+          ),
+        },
       },
-    },
-    undefined,
-    {
-      onRejected: error => {
-        dispatch(
-          viewActions.changeCurrentEditingView({
-            stage: ViewViewModelStages.Initialized,
-            error: getErrorMessage(error),
-          }),
-        );
+      undefined,
+      {
+        onRejected: error => {
+          dispatch(
+            viewActions.changeCurrentEditingView({
+              stage: ViewViewModelStages.Initialized,
+              error: getErrorMessage(error),
+            }),
+          );
+        },
       },
-    },
-  );
-  return {
-    ...response?.data,
-    warnings: response?.warnings,
-    reqColumns: reqColumns,
-  };
+    );
+    return {
+      ...response?.data,
+      warnings: response?.warnings,
+      reqColumns: reqColumns,
+    };
+  } finally {
+    query.finish();
+  }
 });
 
 export const saveView = createAsyncThunk<
@@ -278,6 +286,7 @@ export const saveView = createAsyncThunk<
         ...v,
         relVariableSubjects: data.relVariableSubjects,
       })),
+      previewFields: undefined,
       isSaveAs,
     };
   };
@@ -448,7 +457,7 @@ export const getEditorProvideCompletionItems = createAsyncThunk<
         db.tables?.forEach(table => {
           tableKeywords.add(table.tableName);
           table.columns?.forEach(column => {
-            schemaKeywords.add(column.name as string);
+            schemaKeywords.add(column.name?.[column.name.length - 1] || '');
           });
         });
       });

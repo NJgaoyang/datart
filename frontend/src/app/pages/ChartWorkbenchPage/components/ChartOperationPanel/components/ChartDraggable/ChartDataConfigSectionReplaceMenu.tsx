@@ -20,7 +20,7 @@ import { Menu } from 'antd';
 import { ChartDataSectionField } from 'app/types/ChartConfig';
 import { ChartDataViewMeta } from 'app/types/ChartDataViewMeta';
 import { FC } from 'react';
-import { getFieldDisplayName } from 'utils/utils';
+import { getDatasetFieldDisplayName } from 'utils/utils';
 import { getDefaultAggregate, updateDataConfigByField } from './utils';
 
 export const ChartDataConfigSectionReplaceMenu: FC<{
@@ -61,7 +61,7 @@ export const ChartDataConfigSectionReplaceMenu: FC<{
   };
 
   const renderMenuItem = (item: ChartDataViewMeta) => {
-    const displayName = getFieldDisplayName(item);
+    const displayName = getDatasetFieldDisplayName(item);
     if (item.children && item.children.length) {
       return (
         <Menu.SubMenu key={item.name} title={displayName}>

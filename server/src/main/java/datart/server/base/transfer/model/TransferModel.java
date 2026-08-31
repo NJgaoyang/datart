@@ -28,6 +28,14 @@ import java.io.Serializable;
 @Data
 public abstract class TransferModel implements Serializable {
 
+    public String getPackageType() {
+        return "RESOURCE";
+    }
+
+    public int getFormatVersion() {
+        return 2;
+    }
+
     private String orgId;
 
     public String getFileName() {

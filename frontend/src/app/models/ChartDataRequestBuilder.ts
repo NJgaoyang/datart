@@ -41,6 +41,7 @@ import { ChartDataViewMeta } from 'app/types/ChartDataViewMeta';
 import { IChartDrillOption } from 'app/types/ChartDrillOption';
 import {
   createDateLevelComputedFieldForConfigComputedFields,
+  findFieldByIdInMeta,
   findPathByNameInMeta,
   getAllColumnInMeta,
   getRuntimeDateLevelFields,
@@ -79,7 +80,10 @@ export class ChartDataRequestBuilder {
   drillOption?: IChartDrillOption;
   variableParams?: Record<string, any[]>;
   constructor(
-    dataView: Pick<ChartDataView, 'id' | 'computedFields' | 'type' | 'meta'> & {
+    dataView: Pick<
+      ChartDataView,
+      'id' | 'computedFields' | 'type' | 'meta' | 'migrationMode'
+    > & {
       config: string | object;
     },
     dataConfigs?: ChartDataConfig[],
@@ -178,7 +182,100 @@ export class ChartDataRequestBuilder {
     return c.colName;
   }
 
+  private buildBusinessAlias(c?: ChartDataSectionField) {
+    return (
+      c?.alias?.name?.trim() ||
+      c?.displayName?.trim() ||
+      c?.originName?.trim()
+    );
+  }
+
+  private isValidStrictComputedField(candidate?: ChartDataSectionField) {
+    const computedCategories = [
+      ChartDataViewFieldCategory.ComputedField,
+      ChartDataViewFieldCategory.AggregateComputedField,
+    ];
+    if (
+      !candidate ||
+      !computedCategories.includes(
+        candidate.category as ChartDataViewFieldCategory,
+      )
+    ) {
+      return false;
+    }
+
+    const definitions = (this.dataView.computedFields || []).filter(
+      field => field?.name === candidate.colName,
+    );
+    if (definitions.length !== 1) {
+      return false;
+    }
+
+    const definition = definitions[0];
+    return (
+      definition.category === candidate.category &&
+      Boolean(definition.expression?.trim())
+    );
+  }
+
+  private buildOutputProjections(outputs =
+    this.aggregation === false
+      ? this.buildSelectColumns()
+      : this.buildGroups().concat(this.buildAggregators())) {
+    if (isEmptyArray(outputs)) {
+      return undefined;
+    }
+    const candidates = this.chartDataConfigs.flatMap(config => [
+      ...(config.rows || []),
+      ...(getRuntimeDateLevelFields(config.rows) || []),
+    ]);
+    const projections = outputs.map((output, ordinal) => {
+      const candidate = candidates.find(field => {
+        if (
+          this.buildAliasName(field) !== output.alias ||
+          !isEqualObject(this.buildColumnName(field), output.column)
+        ) {
+          return false;
+        }
+        return 'sqlOperator' in output
+          ? field.aggregate === output.sqlOperator
+          : true;
+      });
+      if (
+        this.dataView.migrationMode === 'STRICT' &&
+        !candidate?.fieldId &&
+        !this.isValidStrictComputedField(candidate)
+      ) {
+        throw new Error(
+          `STRICT_FIELD_ID_REQUIRED: ${candidate?.colName || output.alias}`,
+        );
+      }
+      return {
+        fieldId: candidate?.fieldId,
+        technicalAlias: output.alias,
+        displayAlias: this.buildBusinessAlias(candidate) || output.alias,
+        ordinal,
+      };
+    });
+    return projections.length ? projections : undefined;
+  }
+
   private buildColumnName(col) {
+    if (
+      col.category ===
+      ChartDataViewFieldCategory.DateLevelComputedField
+    ) {
+      return [col.colName];
+    }
+
+    if (col.fieldId) {
+      const field = findFieldByIdInMeta(this.dataView.meta, col.fieldId);
+      if (field) {
+        return field.path || [field.originName || field.name];
+      }
+    }
+
+    // LEGACY COMPATIBILITY ONLY: old charts do not have fieldId yet.
     const row = findPathByNameInMeta(this.dataView.meta, col.colName);
     if (row) {
       return row?.path || [];
@@ -223,7 +320,7 @@ export class ChartDataRequestBuilder {
         }
         if (cur.type === ChartDataSectionType.Mixed) {
           const dateAndStringFields = cur.rows?.filter(v =>
-            [DataViewFieldType.DATE, DataViewFieldType.STRING].includes(v.type),
+            [DataViewFieldType.DATE, DataViewFieldType.DATETIME, DataViewFieldType.STRING].includes(v.type),
           );
           //zh: 判断数据中是否含有 DATE 和 STRING 类型 en: Determine whether the data contains DATE and STRING types
           return acc.concat(dateAndStringFields || []);
@@ -425,7 +522,7 @@ export class ChartDataRequestBuilder {
 
           if (cur.drillable) {
             if (this.isInValidDrillOption()) {
-              return acc.concat(cur.rows?.[0] || []);
+              return acc.concat(rows?.[0] || []);
             }
             return acc.concat(
               rows?.filter(field => {
@@ -490,11 +587,23 @@ export class ChartDataRequestBuilder {
         this.dataView.computedFields,
       );
     const computedFields = getRuntimeDateLevelFields(enrichedComputedFields);
-    const fieldsNameList = (this.chartDataConfigs || [])
+    const chartFieldNames = (this.chartDataConfigs || [])
       .flatMap(config => getRuntimeDateLevelFields(config.rows) || [])
-      .flatMap(row => row?.colName || []);
+      .map(row => row?.colName)
+      .filter(Boolean);
+    const runtimeFilterFieldNames = (this.extraRuntimeFilters || [])
+      .map(filter =>
+        Array.isArray(filter.column) && filter.column.length === 1
+          ? filter.column[0]
+          : undefined,
+      )
+      .filter(Boolean);
+    const requiredFieldNames = new Set([
+      ...chartFieldNames,
+      ...runtimeFilterFieldNames,
+    ]);
     const currentUsedComputedFields = computedFields?.filter(v =>
-      fieldsNameList.includes(v.name),
+      requiredFieldNames.has(v.name),
     );
 
     return (currentUsedComputedFields || []).map(f => ({
@@ -608,19 +717,31 @@ export class ChartDataRequestBuilder {
   }
 
   private removeInvalidFilter(filters: ChartDataRequestFilter[]) {
-    const dataViewFieldsNames = (
+    const fields = (
       getAllColumnInMeta(this.dataView?.meta) as ChartDataViewMeta[]
     )
-      .concat(this.dataView?.computedFields || [])
-      .map(c => c?.name);
+      .concat(
+        createDateLevelComputedFieldForConfigComputedFields(
+          this.dataView?.meta,
+          this.dataView?.computedFields,
+        ),
+      );
 
-    return (filters || []).filter(f => {
-      return dataViewFieldsNames.includes(f.column.join('.'));
+    return (filters || []).filter(filter => {
+      return fields.some(field => {
+        const matchedByName =
+          filter.column.length === 1 && field?.name === filter.column[0];
+        const matchedByPath =
+          Boolean(field?.path?.length) &&
+          isEqualObject(field.path, filter.column);
+        return matchedByName || matchedByPath;
+      });
     });
   }
 
   public build(): ChartDataRequest {
     const validFilters = this.removeInvalidFilter(this.buildFilters());
+    const outputProjections = this.buildOutputProjections();
     return {
       ...this.buildViewConfigs(),
       viewId: this.dataView?.id,
@@ -633,12 +754,16 @@ export class ChartDataRequestBuilder {
       columns: this.buildSelectColumns(),
       script: this.script,
       params: this.variableParams,
+      ...(outputProjections ? { outputProjections } : {}),
     };
   }
 
   public buildDetails(): ChartDataRequest {
     const validFilters = this.removeInvalidFilter(
       this.buildFilters().filter(f => !f.aggOperator),
+    );
+    const outputProjections = this.buildOutputProjections(
+      this.buildDetailColumns(),
     );
     return {
       ...this.buildViewConfigs(),
@@ -652,6 +777,7 @@ export class ChartDataRequestBuilder {
       columns: this.buildDetailColumns(),
       script: this.script,
       params: this.variableParams,
+      ...(outputProjections ? { outputProjections } : {}),
     };
   }
 

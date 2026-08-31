@@ -118,10 +118,27 @@ public class DatabaseMigration {
         if (CollectionUtils.isEmpty(migrationHistories)) {
             return migrations;
         } else {
-            Migration lastMigration = migrationHistories.last();
-            migrationsToDo = migrations.tailSet(lastMigration, !lastMigration.isSuccess());
+            Set<String> successfulIds = migrationHistories.stream()
+                    .filter(Migration::isSuccess)
+                    .map(Migration::getId)
+                    .collect(Collectors.toSet());
+            boolean retryInitialSchema = migrationHistories.stream()
+                    .anyMatch(history -> "1".equals(history.getId()) && !history.isSuccess());
+            migrationsToDo = migrations.stream()
+                    .filter(migration -> !successfulIds.contains(migration.getId()))
+                    .filter(migration -> !isInitialSchema(migration) || retryInitialSchema)
+                    .collect(Collectors.toCollection(TreeSet::new));
         }
         return migrationsToDo;
+    }
+
+    /**
+     * Existing installations may only have the legacy migration history and no V1 record.
+     * Their business schema is already present, so V1 must be treated as the baseline and
+     * only genuinely missing upgrade scripts should be executed.
+     */
+    private static boolean isInitialSchema(Migration migration) {
+        return "1".equals(migration.getId()) && "init_schema".equals(migration.getVersion());
     }
 
     private RuntimeException doMigrations(TreeSet<Migration> migrations) throws IOException, SQLException, ClassNotFoundException {
@@ -278,12 +295,23 @@ public class DatabaseMigration {
         String currentVersion = null, lastVersion = null;
         TreeSet<Migration> migrations = queryMigrationHistory();
         if (!CollectionUtils.isEmpty(migrations)) {
-            Migration last = migrations.last();
-            while (last != null && !last.isSuccess()) {
-                last = migrations.lower(last);
-            }
-            if (last != null) {
-                currentVersion = last.getVersion();
+            try {
+                Set<String> successfulIds = migrations.stream()
+                        .filter(Migration::isSuccess)
+                        .map(Migration::getId)
+                        .collect(Collectors.toSet());
+                Migration latestApplied = getAllMigrations().stream()
+                        .filter(migration -> successfulIds.contains(migration.getId()))
+                        .max(Migration::compareTo)
+                        .orElse(null);
+                if (latestApplied != null) {
+                    currentVersion = latestApplied.getVersion();
+                } else {
+                    currentVersion = migrations.last().getVersion();
+                }
+            } catch (IOException e) {
+                log.error("Failed to resolve current migration version", e);
+                currentVersion = migrations.last().getVersion();
             }
         }
 

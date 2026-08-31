@@ -1,6 +1,7 @@
 package datart.data.provider.jdbc.adapters;
 
 import datart.core.base.PageInfo;
+import datart.core.data.provider.QueryExecutionTraceRegistry;
 import datart.core.data.provider.Dataframe;
 import datart.data.provider.script.SqlStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -24,11 +25,28 @@ public class MsSqlDataProviderAdapter extends JdbcDataProviderAdapter {
 
     @Override
     public int executeCountSql(String sql) throws SQLException {
-        try (Connection connection = getConn()) {
-            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-            ResultSet resultSet = statement.executeQuery(sql);
-            resultSet.last();
-            return resultSet.getRow();
+        String traceId = QueryExecutionTraceRegistry.start(jdbcProperties.getSourceId(), null,
+                jdbcProperties.getDbType(), sql);
+        try {
+            try (Connection connection = getConn()) {
+                try (Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+                    configureStatement(statement);
+                    registerStatement(statement);
+                    try {
+                        try (ResultSet resultSet = statement.executeQuery(sql)) {
+                            resultSet.last();
+                            int count = resultSet.getRow();
+                            QueryExecutionTraceRegistry.finish(traceId, "SUCCESS", null);
+                            return count;
+                        }
+                    } finally {
+                        unregisterStatement(statement);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            QueryExecutionTraceRegistry.finish(traceId, "ERROR", e.getMessage());
+            throw e;
         }
     }
 

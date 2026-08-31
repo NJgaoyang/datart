@@ -41,10 +41,12 @@ import { Navbar } from './Navbar';
 import { AuditLogPage } from './pages/AuditLogPage';
 import { ConfirmInvitePage } from './pages/ConfirmInvitePage';
 import { MemberPage } from './pages/MemberPage';
+import { MonitorPage } from './pages/MonitorPage';
 import { OrgSettingPage } from './pages/OrgSettingPage';
 import { PermissionPage } from './pages/PermissionPage';
 import { ResourceTypes } from './pages/PermissionPage/constants';
 import { ResourceMigrationPage } from './pages/ResourceMigrationPage';
+import { ReadinessPage } from './pages/ReadinessPage';
 import { SchedulePage } from './pages/SchedulePage';
 import { SourcePage } from './pages/SourcePage';
 import { VariablePage } from './pages/VariablePage';
@@ -257,6 +259,14 @@ export function MainPage() {
             }
           />
           <Route
+            path="/organizations/:orgId/monitor"
+            element={
+              <AccessRoute module={ResourceTypes.Manager}>
+                <MonitorPage />
+              </AccessRoute>
+            }
+          />
+          <Route
             path="/organizations/:orgId/orgSettings"
             element={
               <AccessRoute module={ResourceTypes.Manager}>
@@ -269,6 +279,14 @@ export function MainPage() {
             element={
               <AccessRoute module={ResourceTypes.Manager}>
                 <ResourceMigrationPage />
+              </AccessRoute>
+            }
+          />
+          <Route
+            path="/organizations/:orgId/readiness"
+            element={
+              <AccessRoute module={ResourceTypes.Manager}>
+                <ReadinessPage />
               </AccessRoute>
             }
           />

@@ -19,6 +19,17 @@
 import { createGlobalStyle } from 'styled-components';
 
 export const Viz = createGlobalStyle`
+  /* 手机预览与实际手机共用同一套表单伸缩规则，不能依赖浏览器视口宽度。 */
+  .datart-mobile-board .control-form .ant-form-item-label {
+    flex: 0 0 auto !important;
+    max-width: none !important;
+  }
+
+  .datart-mobile-board .control-form .ant-form-item-control {
+    flex: 1 1 0 !important;
+    min-width: 0;
+  }
+
   /* 覆盖antd 默认样式 */
   @media (max-width: 575px) {
     .datart-viz .ant-form .ant-form-item .ant-form-item-label,

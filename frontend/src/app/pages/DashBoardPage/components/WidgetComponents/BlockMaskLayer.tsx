@@ -87,35 +87,27 @@ export const BlockMaskLayer: React.FC<BlockMaskLayerProps> = memo(
 
 const MaskLayer = styled.div<{ front: boolean; hideBorder: boolean }>`
   position: absolute;
-  top: -5px;
-  left: -5px;
+  top: 0;
+  left: 0;
   z-index: ${p => (p.front ? LEVEL_20 : LEVEL_5)};
-  width: calc(100% + 10px);
-  height: calc(100% + 10px);
+  width: 100%;
+  height: 100%;
   cursor: move;
 
-  &:hover,
-  &:active {
-    border-color: ${p => p.theme.primary};
-    border-style: dotted;
-    border-width: 2px;
+  &:hover:not(.selected):not(.editing),
+  &:active:not(.selected):not(.editing) {
+    outline: 1px dashed ${p => p.theme.primary};
   }
+
+  /* 与 DataEase 的 .shape-selected 一致：描边不参与盒模型，内容区不会被挤出空隙。 */
   &.selected {
-    border-color: ${p => p.theme.primary};
-    border-style: solid;
-    border-width: 2px;
-    &:hover,
-    &:active {
-      border-style: solid;
-    }
+    outline: 1px solid ${p => p.theme.primary};
+    outline-offset: 0;
   }
+
   &.editing {
-    border-color: ${p => (p.hideBorder ? 'transparent' : p.theme.success)};
-    border-style: solid;
-    border-width: 2px;
-    &:hover,
-    &:active {
-      border-width: ${p => (p.hideBorder ? 0 : '2px')};
-    }
+    outline: ${p =>
+      p.hideBorder ? 'none' : `1px solid ${p.theme.primary}`};
+    outline-offset: 0;
   }
 `;

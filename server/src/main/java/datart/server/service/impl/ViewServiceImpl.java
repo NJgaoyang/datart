@@ -22,6 +22,7 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import datart.core.base.consts.Const;
+import datart.core.base.consts.MigrationMode;
 import datart.core.base.exception.Exceptions;
 import datart.core.base.exception.NotFoundException;
 import datart.core.base.exception.ParamException;
@@ -41,10 +42,15 @@ import datart.security.util.PermissionHelper;
 import datart.server.base.dto.ViewComposeResult;
 import datart.server.base.dto.ViewDetailDTO;
 import datart.server.base.dto.ViewLineageDTO;
+import datart.server.base.dto.ViewFieldDTO;
 import datart.server.base.params.*;
 import datart.server.base.transfer.ImportStrategy;
 import datart.server.base.transfer.TransferConfig;
 import datart.server.base.transfer.model.ViewResourceModel;
+import datart.server.common.fieldmeta.SqlModelQueryPathSanitizer;
+import datart.server.common.fieldmeta.SourceSchemaIndex;
+import datart.server.common.fieldmeta.ViewModelExportSanitizer;
+import datart.server.common.fieldmeta.ViewModelMigrator;
 import datart.server.service.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -75,6 +81,16 @@ public class ViewServiceImpl extends BaseService implements ViewService {
 
     private final DatachartMapperExt datachartMapper;
 
+    private final ViewFieldService viewFieldService;
+
+    private final SourceSchemaIndex schemaIndex;
+
+    private final SqlModelQueryPathSanitizer sqlModelQueryPathSanitizer;
+
+    private final MigrationModeService migrationModeService;
+
+    private final ViewModelMigrator modelMigrator = new ViewModelMigrator();
+
     public ViewServiceImpl(ViewMapperExt viewMapper,
                            RelSubjectColumnsMapperExt rscMapper,
                            RelRoleResourceMapperExt rrrMapper,
@@ -83,7 +99,11 @@ public class ViewServiceImpl extends BaseService implements ViewService {
                            VariableMapperExt variableMapper,
                            RelVariableSubjectMapperExt rvsMapper,
                            DashboardMapperExt dashboardMapper,
-                           DatachartMapperExt datachartMapper) {
+                           DatachartMapperExt datachartMapper,
+                           ViewFieldService viewFieldService,
+                           SourceSchemaIndex schemaIndex,
+                           SqlModelQueryPathSanitizer sqlModelQueryPathSanitizer,
+                           MigrationModeService migrationModeService) {
         this.viewMapper = viewMapper;
         this.rscMapper = rscMapper;
         this.rrrMapper = rrrMapper;
@@ -93,6 +113,10 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         this.rvsMapper = rvsMapper;
         this.dashboardMapper = dashboardMapper;
         this.datachartMapper = datachartMapper;
+        this.viewFieldService = viewFieldService;
+        this.schemaIndex = schemaIndex;
+        this.sqlModelQueryPathSanitizer = sqlModelQueryPathSanitizer;
+        this.migrationModeService = migrationModeService;
     }
 
     @Override
@@ -338,8 +362,10 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         view.setCreateTime(new Date());
         view.setId(UUIDGenerator.generate());
         view.setStatus(Const.DATA_STATUS_ACTIVE);
-        view.setModel(normalizeModelDisplayNames(view.getModel()));
+        sanitizeSqlQueryPaths(view);
+        canonicalizeModelMetadata(view);
         requirePermission(view, Const.CREATE);
+        viewFieldService.reconcile(view);
         viewMapper.insert(view);
 
         getRoleService().grantPermission(viewCreateParam.getPermissions());
@@ -369,17 +395,29 @@ public class ViewServiceImpl extends BaseService implements ViewService {
     @Override
     public ViewDetailDTO getViewDetail(String viewId) {
         View view = retrieve(viewId);
-        View responseView = new View();
-        BeanUtils.copyProperties(view, responseView);
-        responseView.setModel(normalizeModelDisplayNames(view.getModel()));
-
-        ViewDetailDTO viewDetailDTO = new ViewDetailDTO(responseView);
+        ViewDetailDTO viewDetailDTO = buildViewDetail(view);
         // column permission
         viewDetailDTO.setRelSubjectColumns(rscMapper.listByView(viewId));
         //view variables
         viewDetailDTO.setVariables(variableService.listByView(viewId));
         // view variables rel
         viewDetailDTO.setRelVariableSubjects(variableService.listViewVariableRels(viewId));
+        return viewDetailDTO;
+    }
+
+    @Override
+    public ViewDetailDTO buildViewDetail(View view) {
+        MigrationMode mode = migrationModeService == null
+                ? MigrationMode.COMPAT : migrationModeService.getMode(view.getOrgId());
+        return buildViewDetail(view, mode == null ? MigrationMode.COMPAT : mode);
+    }
+
+    @Override
+    public ViewDetailDTO buildViewDetail(View view, MigrationMode migrationMode) {
+        ViewDetailDTO viewDetailDTO = new ViewDetailDTO(view);
+        viewDetailDTO.setMigrationMode(migrationMode == null ? MigrationMode.COMPAT : migrationMode);
+        List<ViewFieldDTO> fields = viewFieldService.listByViewId(view.getId());
+        viewDetailDTO.setFields(fields == null ? new ArrayList<>() : new ArrayList<>(fields));
         return viewDetailDTO;
     }
 
@@ -500,7 +538,10 @@ public class ViewServiceImpl extends BaseService implements ViewService {
             ViewResourceModel.MainModel mainModel = new ViewResourceModel.MainModel();
             View view = retrieve(viewId);
             securityManager.requireOrgOwner(view.getOrgId());
-            mainModel.setView(view);
+            View exportView = new View();
+            BeanUtils.copyProperties(view, exportView);
+            exportView.setModel(ViewModelExportSanitizer.sanitize(view.getModel()));
+            mainModel.setView(exportView);
             // variables
             mainModel.setVariables(variableService.listByView(viewId));
             mainModels.add(mainModel);
@@ -548,13 +589,15 @@ public class ViewServiceImpl extends BaseService implements ViewService {
             return;
         }
         Map<String, String> parentIdMapping = new HashMap<>();
-        for (View parent : model.getParents()) {
-            String newId = UUIDGenerator.generate();
-            parentIdMapping.put(parent.getId(), newId);
-            parent.setId(newId);
-        }
-        for (View parent : model.getParents()) {
-            parent.setParentId(parentIdMapping.get(parent.getParentId()));
+        if (!CollectionUtils.isEmpty(model.getParents())) {
+            for (View parent : model.getParents()) {
+                String newId = UUIDGenerator.generate();
+                parentIdMapping.put(parent.getId(), newId);
+                parent.setId(newId);
+            }
+            for (View parent : model.getParents()) {
+                parent.setParentId(parentIdMapping.get(parent.getParentId()));
+            }
         }
         for (ViewResourceModel.MainModel mainModel : model.getMainModels()) {
             String newId = UUIDGenerator.generate();
@@ -562,9 +605,11 @@ public class ViewServiceImpl extends BaseService implements ViewService {
             mainModel.getView().setId(newId);
             mainModel.getView().setSourceId(sourceIdMapping.get(mainModel.getView().getSourceId()));
             mainModel.getView().setParentId(parentIdMapping.get(mainModel.getView().getParentId()));
-            for (Variable variable : mainModel.getVariables()) {
-                variable.setId(UUIDGenerator.generate());
-                variable.setViewId(newId);
+            if (!CollectionUtils.isEmpty(mainModel.getVariables())) {
+                for (Variable variable : mainModel.getVariables()) {
+                    variable.setId(UUIDGenerator.generate());
+                    variable.setViewId(newId);
+                }
             }
         }
     }
@@ -616,66 +661,54 @@ public class ViewServiceImpl extends BaseService implements ViewService {
             }
         }
         Application.getBean(DataProviderService.class).updateSource(retrieve(view.getSourceId(), Source.class, false));
-        viewUpdateParam.setModel(normalizeModelDisplayNames(viewUpdateParam.getModel()));
         BeanUtils.copyProperties(updateParam, view);
         view.setType(viewUpdateParam.getType().name());
+        sanitizeSqlQueryPaths(view);
+        canonicalizeModelMetadata(view);
+        viewFieldService.reconcile(view);
         view.setUpdateBy(getCurrentUser().getId());
         view.setUpdateTime(new Date());
         return 1 == viewMapper.updateByPrimaryKey(view);
     }
 
-    private String normalizeModelDisplayNames(String model) {
+    private void canonicalizeModelMetadata(View view) {
+        String model = view.getModel();
         if (model == null || model.trim().isEmpty()) {
-            return model;
-        }
-        try {
-            JSONObject root = JSON.parseObject(model);
-            normalizeFieldMap(root.getJSONObject("columns"));
-            normalizeFieldMap(root.getJSONObject("hierarchy"));
-            return root.toJSONString();
-        } catch (Exception ignored) {
-            return model;
-        }
-    }
-
-    private void normalizeFieldMap(JSONObject fields) {
-        if (fields == null) {
             return;
         }
-        for (Map.Entry<String, Object> entry : fields.entrySet()) {
-            if (entry.getValue() instanceof JSONObject field) {
-                normalizeField(field, entry.getKey());
+        try {
+            com.fasterxml.jackson.databind.JsonNode parsed = OBJECT_MAPPER.readTree(model);
+            if (!(parsed instanceof com.fasterxml.jackson.databind.node.ObjectNode objectModel)) {
+                return;
             }
-        }
-    }
-
-    private void normalizeField(JSONObject field, String fallbackName) {
-        Object rawName = field.get("name");
-        String name = fallbackName;
-        if (rawName instanceof JSONArray names && !names.isEmpty()) {
-            name = names.getString(names.size() - 1);
-        } else if (rawName != null && !rawName.toString().isEmpty()) {
-            name = rawName.toString();
-        }
-
-        String displayName = field.getString("displayName");
-        String comment = field.getString("comment");
-        if (!hasText(displayName) || (displayName.equals(name) && hasText(comment))) {
-            field.put("displayName", hasText(comment) ? comment : name);
-        }
-
-        JSONArray children = field.getJSONArray("children");
-        if (children != null) {
-            for (Object child : children) {
-                if (child instanceof JSONObject childField) {
-                    normalizeField(childField, childField.getString("name"));
-                }
-            }
+            SourceSchemaIndex.Index source = schemaIndex == null || view.getSourceId() == null
+                    ? null
+                    : schemaIndex.forSource(view.getSourceId());
+            ViewModelMigrator.Result result = modelMigrator.migrate(objectModel, source, view.getType());
+            view.setModel(OBJECT_MAPPER.writeValueAsString(result.model()));
+        } catch (Exception ignored) {
+            // Keep the submitted model unchanged when it cannot be canonicalized.
         }
     }
 
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
+    }
+
+    private void sanitizeSqlQueryPaths(View view) {
+        if (!"SQL".equalsIgnoreCase(view.getType()) || !hasText(view.getScript()) || !hasText(view.getModel())) {
+            return;
+        }
+        try {
+            com.fasterxml.jackson.databind.JsonNode root = OBJECT_MAPPER.readTree(view.getModel());
+            if (root instanceof com.fasterxml.jackson.databind.node.ObjectNode model) {
+                sqlModelQueryPathSanitizer.sanitize(view.getScript(), model,
+                        schemaIndex.forSource(view.getSourceId()));
+                view.setModel(OBJECT_MAPPER.writeValueAsString(model));
+            }
+        } catch (Exception ignored) {
+            // Invalid or unsupported SQL keeps the submitted model unchanged.
+        }
     }
 
     @Override
@@ -770,10 +803,13 @@ public class ViewServiceImpl extends BaseService implements ViewService {
             }
             // insert view
             view.setOrgId(orgId);
-            view.setOrgId(orgId);
             view.setUpdateBy(getCurrentUser().getId());
             view.setUpdateTime(new Date());
+            sanitizeSqlQueryPaths(view);
+            canonicalizeModelMetadata(view);
             viewMapper.insert(view);
+            viewFieldService.rebuild(view);
+            viewMapper.updateByPrimaryKey(view);
 
             // insert variables
             if (!CollectionUtils.isEmpty(mainModel.getVariables())) {

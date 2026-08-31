@@ -92,8 +92,8 @@ export const widgetToolkit: WidgetToolkit = {
 
     widget.config.rect.width = 100;
     widget.config.rect.height = 60;
-    widget.config.pRect.width = 2;
-    widget.config.pRect.height = 1;
+    widget.config.pRect.width = 12;
+    widget.config.pRect.height = 4;
 
     widget.config.customConfig.props = [
       { ...initTitleTpl(WHITE) },

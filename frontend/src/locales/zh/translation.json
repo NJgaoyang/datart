@@ -62,7 +62,7 @@
         "edit": "编辑"
       }
     },
-    "columnType": {
+  "columnType": {
       "string": "字符",
       "numeric": "数值",
       "date": "日期"
@@ -147,6 +147,7 @@
       "schedules": "定时任务",
       "members": "成员与角色",
       "permissions": "权限",
+      "monitor": "监控",
       "settings": "设置",
       "download": {
         "title": "下载列表",
@@ -202,6 +203,9 @@
       },
       "resourceMigration": {
         "title": "资源迁移管理"
+      },
+      "readiness": {
+        "title": "迁移就绪度"
       },
       "auditLog": {
         "title": "审计日志"
@@ -262,6 +266,8 @@
           "AVG": "平均值",
           "COUNT": "计数",
           "COUNT_DISTINCT": "去重计数",
+          "STDDEV": "标准差",
+          "VARIANCE": "方差",
           "MAX": "最大值",
           "MIN": "最小值"
         },
@@ -445,6 +451,9 @@
         "AGG_DATE_MONTH": "按月",
         "AGG_DATE_WEEK": "按周",
         "AGG_DATE_DAY": "按日",
+        "AGG_DATE_HOUR": "按小时",
+        "AGG_DATE_MINUTE": "按分钟",
+        "AGG_DATE_SECOND": "按秒",
         "default": "默认",
         "cannotDeleteComputerField": "视图中创建的计算字段不能删除",
         "byDataBaseGroup": "按数据库名分组",
@@ -631,6 +640,9 @@
         "AGG_DATE_MONTH": "按月",
         "AGG_DATE_WEEK": "按周",
         "AGG_DATE_DAY": "按日",
+        "AGG_DATE_HOUR": "按小时",
+        "AGG_DATE_MINUTE": "按分钟",
+        "AGG_DATE_SECOND": "按秒",
         "drillable": "可钻取",
         "actions": {
           "sort": {
@@ -975,7 +987,8 @@
       },
       "controlTypes": {
         "common": "常规",
-        "date": "日期",
+    "date": "日期",
+    "datetime": "日期时间",
         "numeric": "数值",
         "button": "按钮"
       },
@@ -1429,6 +1442,27 @@
       "USER": "用户"
     }
   },
+  "monitor": {
+    "title": "监控",
+    "refresh": "刷新",
+    "poolTitle": "连接池运行状态",
+    "queryTitle": "查询执行记录",
+    "reportName": "报表名称",
+    "status": "状态",
+    "duration": "耗时",
+    "sql": "执行 SQL",
+    "detail": "详细",
+    "startedAt": "开始时间",
+    "endedAt": "结束时间",
+    "active": "活跃连接",
+    "idle": "空闲连接",
+    "maxActive": "连接上限",
+    "waiting": "等待线程",
+    "notInitialized": "数据源尚未建立连接",
+    "emptyPool": "暂无可管理的数据源",
+    "emptyQuery": "暂无查询记录",
+    "sqlDetail": "完整 SQL"
+  },
   "source": {
     "source": "数据源",
     "testSuccess": "测试连接成功",
@@ -1773,7 +1807,59 @@
     "deleteOrgDesc": "删除组织时，会将组织内所有资源、成员、角色和其他配置信息一并永久删除，请谨慎操作。",
     "cancel": "取消",
     "delete": "确定删除",
-    "enterOrgName": "输入组织名称确认删除"
+    "enterOrgName": "输入组织名称确认删除",
+    "historyMigration": "历史报表与 SQL 迁移",
+    "historyMigrationDesc": "只读检查历史报表、数据视图和原始 SQL，不会自动修改或删除任何数据。",
+    "historyMigrationPreview": "查看迁移预览",
+    "historyMigrationTotal": "资源总数",
+    "historyMigrationReview": "需要人工复核",
+    "historyMigrationReadonly": "当前操作仅生成预览，确认后仍需人工迁移。",
+    "historyMigrationType": "资源类型",
+    "historyMigrationName": "资源名称",
+    "historyMigrationStatus": "状态",
+    "historyMigrationReason": "复核原因",
+    "historyMigrationError": "迁移预览加载失败"
+  },
+  "readiness": {
+    "title": "迁移就绪度",
+    "refresh": "刷新扫描",
+    "readiness": "就绪度",
+    "strictEligible": "STRICT 条件",
+    "yes": "满足",
+    "no": "未满足",
+    "blockers": "阻塞问题",
+    "warnings": "警告",
+    "ready": "就绪",
+    "scopes": "资源维度",
+    "scope": {
+      "views": "数据视图",
+      "datacharts": "图表",
+      "dashboards": "仪表板"
+    },
+    "chartFieldIdCoverage": "Chart fieldId 覆盖率",
+    "resolvedChartFieldIdCoverage": "已解析 Chart fieldId 覆盖率",
+    "issues": "问题明细",
+    "filter": {
+      "all": "全部",
+      "search": "搜索资源、问题编码或说明"
+    },
+    "issue": {
+      "severity": "级别",
+      "resource": "资源类型",
+      "name": "资源名称",
+      "code": "问题编码",
+      "message": "说明"
+    },
+    "noIssues": "没有匹配的问题",
+    "loadError": "Readiness 扫描失败，请稍后重试",
+    "empty": "暂无 Readiness 数据",
+    "strict": {
+      "mode": "当前模式",
+      "enable": "启用 STRICT",
+      "disable": "回退 COMPAT",
+      "confirmTitle": "确认启用 STRICT？",
+      "confirmContent": "启用后将禁止 legacy runtime fallback。"
+    }
   },
   "confirmInvite": {
     "join": "成功加入组织",

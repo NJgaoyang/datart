@@ -65,9 +65,7 @@ export const initTitleTpl = (fontColor?: string) => {
       {
         label: 'title.font',
         key: 'font',
-        value: fontColor
-          ? { ...FONT_DEFAULT, color: fontColor }
-          : FONT_DEFAULT,
+        value: fontColor ? { ...FONT_DEFAULT, color: fontColor } : FONT_DEFAULT,
         comType: 'font',
       },
     ],
@@ -328,25 +326,25 @@ export const initPaddingTpl = () => {
       {
         label: 'padding.top',
         key: 'top',
-        value: 16,
+        value: 0,
         comType: 'inputNumber',
       },
       {
         label: 'padding.bottom',
         key: 'bottom',
-        value: 16,
+        value: 0,
         comType: 'inputNumber',
       },
       {
         label: 'padding.left',
         key: 'left',
-        value: 16,
+        value: 0,
         comType: 'inputNumber',
       },
       {
         label: 'padding.right',
         key: 'right',
-        value: 16,
+        value: 0,
         comType: 'inputNumber',
       },
     ],
@@ -446,10 +444,10 @@ export const initBorderTpl = () => {
         label: 'border.border',
         key: 'border',
         value: {
-          color: '#f0f0f0',
-          width: 1,
+          color: 'transparent',
+          width: 0,
           style: 'solid',
-          radius: 8,
+          radius: 0,
         },
         comType: 'widgetBorder',
       },
@@ -462,8 +460,9 @@ export const initBorderTpl = () => {
 export const initAutoWidgetRect = (): RectConfig => ({
   x: 0,
   y: 0,
-  width: LAYOUT_COLS_MAP.lg / 2, // NOTE: auto board use grid system, the total is 12, default is half panel, means 6
-  height: LAYOUT_COLS_MAP.lg / 2,
+  width: LAYOUT_COLS_MAP.lg / 2,
+  // Keep Datart's original 6-row default at the current 8px row precision.
+  height: 24,
 });
 export const initFreeWidgetRect = (): RectConfig => ({
   x: Math.ceil(Math.random() * 200),
@@ -496,6 +495,7 @@ export const widgetTpl = (): Widget => {
       rect: initFreeWidgetRect(),
       pRect: initAutoWidgetRect(),
       mRect: undefined,
+      mVisible: true,
       customConfig: {
         props: [],
       },

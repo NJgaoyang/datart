@@ -19,6 +19,7 @@
 import { TreeDataNode } from 'antd';
 import { UserSettingTypes } from '../constants';
 import { PermissionLevels } from '../pages/PermissionPage/constants';
+import { MigrationMode } from 'app/types/View';
 export interface MainState {
   userSettings: undefined | UserSetting[];
   organizations: Organization[];
@@ -57,6 +58,7 @@ export interface Organization {
   name: string;
   description: string;
   avatar: string;
+  migrationMode?: MigrationMode;
 }
 
 export interface UserSetting {

@@ -22,7 +22,7 @@ await esbuild.build({
   globalName: 'getQueryData',
   target: 'es2018',
   platform: 'browser',
-  outfile: path.resolve(__dirname, 'public/task/index.js'),
+  outfile: path.resolve(__dirname, 'public/task/parser.js'),
   define: { 'process.env.PUBLIC_URL': '""' },
   // task.ts 为 export default；iife 会把命名空间 { default: fn } 赋给全局名，
   // 此处解包默认导出，使全局 getQueryData 直接为可调用函数。
@@ -30,4 +30,4 @@ await esbuild.build({
   tsconfig: path.resolve(__dirname, 'tsconfig.json'),
   logLevel: 'warning',
 });
-console.log('task bundle 构建完成 -> public/task/index.js');
+console.log('task bundle 构建完成 -> public/task/parser.js');

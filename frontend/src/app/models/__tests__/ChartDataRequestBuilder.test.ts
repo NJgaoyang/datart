@@ -22,13 +22,781 @@ import {
   ChartDataViewFieldCategory,
   DataViewFieldType,
   FilterConditionType,
+  RUNTIME_DATE_LEVEL_KEY,
+  SortActionType,
 } from 'app/constants';
 import { getChartDrillOption } from 'app/utils/internalChartHelper';
-import { FilterSqlOperator, RECOMMEND_TIME } from 'globalConstants';
+import {
+  DATE_LEVEL_DELIMITER,
+  FilterSqlOperator,
+  RECOMMEND_TIME,
+} from 'globalConstants';
 import dayjs from 'dayjs';
 import { ChartDataRequestBuilder } from '../ChartDataRequestBuilder';
 
 describe('ChartDataRequestBuild Test', () => {
+  const strictComputedField = {
+    colName: '直营总订单数',
+    type: DataViewFieldType.NUMERIC,
+    category: ChartDataViewFieldCategory.ComputedField,
+    aggregate: AggregateFieldActionType.Sum,
+    alias: { name: '直营总订单数' },
+  };
+
+  const strictComputedConfig = (row = strictComputedField) => [
+    {
+      type: ChartDataSectionType.Aggregate,
+      key: 'aggregate',
+      rows: [row],
+    },
+  ] as any;
+
+  const strictComputedView = (computedFields = [
+    {
+      name: '直营总订单数',
+      category: ChartDataViewFieldCategory.ComputedField,
+      expression: '[channel_orders]+[direct_orders]+[douyin_orders]',
+    },
+  ]) => ({
+    id: 'view-id',
+    migrationMode: 'STRICT',
+    meta: [],
+    computedFields,
+  }) as any;
+
+  const strictAggregateComputedField = {
+    uid: '814636d5-c02e-4f36-8a75-37f80d214a1d',
+    colName: '汇总离线率',
+    type: DataViewFieldType.NUMERIC,
+    category: ChartDataViewFieldCategory.AggregateComputedField,
+    displayName: '汇总离线率',
+    children: [],
+  };
+
+  const strictAggregateComputedConfig = (
+    row = strictAggregateComputedField,
+  ) => [
+    {
+      type: ChartDataSectionType.Aggregate,
+      key: 'metrics',
+      rows: [row],
+    },
+  ] as any;
+
+  const strictAggregateComputedView = (computedFields = [
+    {
+      name: '汇总离线率',
+      category: ChartDataViewFieldCategory.AggregateComputedField,
+      expression: 'sum(pbi_offline_zero_turnover_box_cnt)/sum([box_total_cnt])',
+      type: DataViewFieldType.NUMERIC,
+    },
+  ]) => ({
+    id: 'c55bd701acf142f19f4022fcfa02893a',
+    migrationMode: 'STRICT',
+    meta: [],
+    computedFields,
+  }) as any;
+
+  test('keeps technical query aliases and emits business output projections', () => {
+    const dataView = {
+      id: 'view-id',
+      migrationMode: 'STRICT',
+      meta: [
+        {
+          name: 'city',
+          originName: 'city',
+          fieldId: 'field-city',
+          path: ['DATART_VTABLE', 'city'],
+          displayName: '城市',
+          type: DataViewFieldType.STRING,
+        },
+        {
+          name: 'user_count',
+          originName: 'user_count',
+          fieldId: 'field-count',
+          path: ['DATART_VTABLE', 'user_count'],
+          displayName: '用户数',
+          type: DataViewFieldType.NUMERIC,
+        },
+      ],
+      computedFields: [],
+    } as any;
+    const request = new ChartDataRequestBuilder(dataView, [
+      {
+        type: ChartDataSectionType.Group,
+        key: 'group',
+        rows: [
+          {
+            fieldId: 'field-city',
+            colName: 'city',
+            displayName: '城市',
+            type: DataViewFieldType.STRING,
+            category: ChartDataViewFieldCategory.Field as any,
+          },
+        ],
+      },
+      {
+        type: ChartDataSectionType.Aggregate,
+        key: 'aggregate',
+        rows: [
+          {
+            fieldId: 'field-count',
+            colName: 'user_count',
+            displayName: '用户数',
+            aggregate: AggregateFieldActionType.Sum,
+            type: DataViewFieldType.NUMERIC,
+            category: ChartDataViewFieldCategory.Field as any,
+          },
+        ],
+      },
+    ] as any).build();
+
+    expect(request.groups).toEqual([
+      { alias: 'city', column: ['DATART_VTABLE', 'city'] },
+    ]);
+    expect(request.aggregators).toEqual([
+      {
+        alias: 'SUM(user_count)',
+        column: ['DATART_VTABLE', 'user_count'],
+        sqlOperator: AggregateFieldActionType.Sum,
+      },
+    ]);
+    expect(request.outputProjections).toEqual([
+      {
+        fieldId: 'field-city',
+        technicalAlias: 'city',
+        displayAlias: '城市',
+        ordinal: 0,
+      },
+      {
+        fieldId: 'field-count',
+        technicalAlias: 'SUM(user_count)',
+        displayAlias: '用户数',
+        ordinal: 1,
+      },
+    ]);
+  });
+
+  test('keeps legacy no-fieldId requests in COMPAT mode', () => {
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'view-id',
+        migrationMode: 'COMPAT',
+        meta: [{ name: 'city', path: ['city'], type: DataViewFieldType.STRING }],
+        computedFields: [],
+      } as any,
+      [
+        {
+          type: ChartDataSectionType.Group,
+          key: 'group',
+          rows: [
+            {
+              colName: 'city',
+              type: DataViewFieldType.STRING,
+              category: ChartDataViewFieldCategory.Field as any,
+            },
+          ],
+        },
+      ] as any,
+    ).build();
+
+    expect(request.outputProjections?.[0].fieldId).toBeUndefined();
+  });
+
+  test('rejects no-fieldId chart requests in STRICT mode', () => {
+    expect(() =>
+      new ChartDataRequestBuilder(
+        {
+          id: 'view-id',
+          migrationMode: 'STRICT',
+          meta: [{ name: 'city', path: ['city'], type: DataViewFieldType.STRING }],
+          computedFields: [],
+        } as any,
+        [
+          {
+            type: ChartDataSectionType.Group,
+            key: 'group',
+            rows: [
+              {
+                colName: 'city',
+                type: DataViewFieldType.STRING,
+                category: ChartDataViewFieldCategory.Field as any,
+              },
+            ],
+          },
+        ] as any,
+      ).build(),
+    ).toThrow('STRICT_FIELD_ID_REQUIRED');
+  });
+
+  test('allows a valid STRICT computed field without fieldId', () => {
+    const request = new ChartDataRequestBuilder(
+      strictComputedView(),
+      strictComputedConfig(),
+    ).build();
+
+    expect(request.aggregators).toEqual([
+      {
+        alias: 'SUM(直营总订单数)',
+        column: ['直营总订单数'],
+        sqlOperator: AggregateFieldActionType.Sum,
+      },
+    ]);
+    expect(request.functionColumns).toEqual([
+      {
+        alias: '直营总订单数',
+        snippet: '[channel_orders]+[direct_orders]+[douyin_orders]',
+      },
+    ]);
+    expect(request.outputProjections).toEqual([
+      {
+        fieldId: undefined,
+        technicalAlias: 'SUM(直营总订单数)',
+        displayAlias: '直营总订单数',
+        ordinal: 0,
+      },
+    ]);
+  });
+
+  test('allows a valid STRICT aggregate computed field without fieldId', () => {
+    const request = new ChartDataRequestBuilder(
+      strictAggregateComputedView(),
+      strictAggregateComputedConfig(),
+      [],
+      {},
+      false,
+      true,
+    ).build();
+
+    expect(request.functionColumns).toEqual([
+      {
+        alias: '汇总离线率',
+        snippet: 'sum(pbi_offline_zero_turnover_box_cnt)/sum([box_total_cnt])',
+      },
+    ]);
+    expect(request.aggregators).toEqual([
+      {
+        alias: '汇总离线率',
+        column: ['汇总离线率'],
+        sqlOperator: undefined,
+      },
+    ]);
+    expect(request.columns).toEqual([]);
+    expect(request.outputProjections).toEqual([
+      {
+        fieldId: undefined,
+        technicalAlias: '汇总离线率',
+        displayAlias: '汇总离线率',
+        ordinal: 0,
+      },
+    ]);
+  });
+
+  test.each([
+    ['missing definition', []],
+    ['blank expression', [{
+      name: '汇总离线率',
+      category: ChartDataViewFieldCategory.AggregateComputedField,
+      expression: '  ',
+    }]],
+    ['duplicate definition', [
+      {
+        name: '汇总离线率',
+        category: ChartDataViewFieldCategory.AggregateComputedField,
+        expression: '[a]',
+      },
+      {
+        name: '汇总离线率',
+        category: ChartDataViewFieldCategory.AggregateComputedField,
+        expression: '[b]',
+      },
+    ]],
+    ['candidate aggregate with computed definition', [{
+      name: '汇总离线率',
+      category: ChartDataViewFieldCategory.ComputedField,
+      expression: '[a]',
+    }]],
+  ])('rejects STRICT aggregate computed field with %s', (_, definitions) => {
+    expect(() =>
+      new ChartDataRequestBuilder(
+        strictAggregateComputedView(definitions as any),
+        strictAggregateComputedConfig(),
+        [],
+        {},
+        false,
+        true,
+      ).build(),
+    ).toThrow('STRICT_FIELD_ID_REQUIRED');
+  });
+
+  test('rejects a computed candidate with an aggregate definition', () => {
+    const computedCandidate = {
+      ...strictComputedField,
+      colName: '直营总订单数',
+    };
+    expect(() =>
+      new ChartDataRequestBuilder(
+        strictComputedView([
+          {
+            name: '直营总订单数',
+            category: ChartDataViewFieldCategory.AggregateComputedField,
+            expression: '[a]',
+          },
+        ]),
+        strictComputedConfig(computedCandidate),
+      ).build(),
+    ).toThrow('STRICT_FIELD_ID_REQUIRED');
+  });
+
+  test.each([
+    ['missing definition', []],
+    ['blank expression', [{ name: '直营总订单数', expression: '  ' }]],
+    [
+      'ambiguous definition',
+      [
+        { name: '直营总订单数', expression: '[a]' },
+        { name: '直营总订单数', expression: '[b]' },
+      ],
+    ],
+    [
+      'wrong definition category',
+      [
+        {
+          name: '直营总订单数',
+          category: ChartDataViewFieldCategory.AggregateComputedField,
+          expression: '[a]',
+        },
+      ],
+    ],
+  ])('rejects STRICT computed field with %s', (_, definitions) => {
+    expect(() =>
+      new ChartDataRequestBuilder(
+        strictComputedView(definitions as any),
+        strictComputedConfig(),
+      ).build(),
+    ).toThrow('STRICT_FIELD_ID_REQUIRED');
+  });
+
+  test('requires fieldId for STRICT date level computed fields', () => {
+    const dateLevelRow = {
+      colName: 'created_date@date_level_delimiter@AGG_DATE_DAY',
+      fieldId: 'date-level-field',
+      type: DataViewFieldType.DATE,
+      category: ChartDataViewFieldCategory.DateLevelComputedField,
+    };
+    expect(
+      new ChartDataRequestBuilder(
+        strictComputedView([]),
+        [
+          {
+            type: ChartDataSectionType.Group,
+            key: 'group',
+            rows: [dateLevelRow],
+          },
+        ] as any,
+      ).build().outputProjections,
+    ).toEqual([
+      {
+        fieldId: 'date-level-field',
+        technicalAlias: dateLevelRow.colName,
+        displayAlias: dateLevelRow.colName,
+        ordinal: 0,
+      },
+    ]);
+
+    expect(() =>
+      new ChartDataRequestBuilder(
+        strictComputedView([]),
+        [
+          {
+            type: ChartDataSectionType.Group,
+            key: 'group',
+            rows: [{ ...dateLevelRow, fieldId: undefined }],
+          },
+        ] as any,
+      ).build(),
+    ).toThrow('STRICT_FIELD_ID_REQUIRED');
+  });
+
+  test('keeps invalid fieldId for backend STRICT validation', () => {
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'view-id',
+        migrationMode: 'STRICT',
+        meta: [{ name: 'city', path: ['city'], type: DataViewFieldType.STRING }],
+        computedFields: [],
+      } as any,
+      [
+        {
+          type: ChartDataSectionType.Group,
+          key: 'group',
+          rows: [
+            {
+              fieldId: 'stale-field',
+              colName: 'city',
+              type: DataViewFieldType.STRING,
+              category: ChartDataViewFieldCategory.Field as any,
+            },
+          ],
+        },
+      ] as any,
+    ).build();
+
+    expect(request.outputProjections?.[0].fieldId).toBe('stale-field');
+  });
+
+  test('should use runtime date level for a drillable group order', () => {
+    const dayFieldName = `dt${DATE_LEVEL_DELIMITER}AGG_DATE_DAY`;
+    const weekFieldName = `dt${DATE_LEVEL_DELIMITER}AGG_DATE_WEEK`;
+    const dataView = {
+      id: 'view-id',
+      meta: [
+        {
+          name: 'dt',
+          path: ['DATART_VTABLE', 'dt'],
+          type: DataViewFieldType.DATE,
+        },
+      ],
+      computedFields: [],
+    } as any;
+    const dayField = {
+      uid: 'date-group',
+      colName: dayFieldName,
+      type: DataViewFieldType.DATE,
+      category: ChartDataViewFieldCategory.DateLevelComputedField,
+      sort: { type: SortActionType.ASC },
+      [RUNTIME_DATE_LEVEL_KEY]: {
+        uid: 'date-group',
+        colName: weekFieldName,
+        type: DataViewFieldType.DATE,
+        category: ChartDataViewFieldCategory.DateLevelComputedField,
+        expression: 'AGG_DATE_WEEK(`DATART_VTABLE`.`dt`)',
+        sort: { type: SortActionType.ASC },
+      },
+    };
+    const chartDataConfigs = [
+      {
+        type: ChartDataSectionType.Group,
+        key: 'group',
+        drillable: true,
+        rows: [dayField],
+      },
+    ] as any;
+
+    const request = new ChartDataRequestBuilder(
+      dataView,
+      chartDataConfigs,
+    ).build();
+
+    expect(request.groups).toEqual([
+      { alias: weekFieldName, column: [weekFieldName] },
+    ]);
+    expect(request.orders).toEqual([
+      {
+        column: [weekFieldName],
+        operator: SortActionType.ASC,
+        aggOperator: undefined,
+      },
+    ]);
+  });
+
+  test('should include date level function column referenced only by runtime filter', () => {
+    const dayFieldName = `dt${DATE_LEVEL_DELIMITER}AGG_DATE_DAY`;
+
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'view-id',
+        meta: [
+          {
+            name: 'dt',
+            path: ['DATART_VTABLE', 'dt'],
+            type: DataViewFieldType.DATE,
+          },
+        ],
+        computedFields: [],
+      } as any,
+      [],
+    )
+      .addRuntimeFilters([
+        {
+          column: dayFieldName,
+          sqlOperator: FilterSqlOperator.In,
+          values: [
+            {
+              value: '2026-08-25',
+              valueType: DataViewFieldType.DATE,
+            },
+          ],
+        },
+      ] as any)
+      .build();
+
+    expect(request.filters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          column: [dayFieldName],
+        }),
+      ]),
+    );
+
+    expect(request.functionColumns).toEqual(
+      expect.arrayContaining([
+        {
+          alias: dayFieldName,
+          snippet: expect.stringContaining('AGG_DATE_DAY'),
+        },
+      ]),
+    );
+  });
+
+  test('should not create function column for physical runtime filter path', () => {
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'view-id',
+        meta: [
+          {
+            name: 'snapshot_dt',
+            path: ['DATART_VTABLE', 'snapshot_dt'],
+            type: DataViewFieldType.DATE,
+          },
+        ],
+        computedFields: [],
+      } as any,
+      [],
+    )
+      .addRuntimeFilters([
+        {
+          column: ['DATART_VTABLE', 'snapshot_dt'],
+          sqlOperator: FilterSqlOperator.In,
+          values: [
+            {
+              value: '2026-08-25',
+              valueType: DataViewFieldType.DATE,
+            },
+          ],
+        },
+      ] as any)
+      .build();
+
+    expect(request.functionColumns).toEqual([]);
+  });
+
+  test('should not create function column for unknown runtime alias', () => {
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'view-id',
+        meta: [
+          {
+            name: 'dt',
+            path: ['DATART_VTABLE', 'dt'],
+            type: DataViewFieldType.DATE,
+          },
+        ],
+        computedFields: [],
+      } as any,
+      [],
+    )
+      .addRuntimeFilters([
+        {
+          column: 'not_a_real_computed_field',
+          sqlOperator: FilterSqlOperator.In,
+          values: [{ value: 'x', valueType: DataViewFieldType.STRING }],
+        },
+      ] as any)
+      .build();
+
+    expect(request.functionColumns).toEqual([]);
+  });
+
+  test('should keep physical runtime filter after resolving field name to path', () => {
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'view-id',
+        meta: [
+          {
+            name: 'snapshot_dt',
+            path: ['DATART_VTABLE', 'snapshot_dt'],
+            type: DataViewFieldType.DATE,
+          },
+        ],
+        computedFields: [],
+      } as any,
+      [],
+    )
+      .addRuntimeFilters([
+        {
+          column: 'snapshot_dt',
+          sqlOperator: FilterSqlOperator.In,
+          values: [
+            {
+              value: '2026-08-25',
+              valueType: DataViewFieldType.DATE,
+            },
+          ],
+        },
+      ])
+      .build();
+
+    expect(request.filters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          column: ['DATART_VTABLE', 'snapshot_dt'],
+        }),
+      ]),
+    );
+
+    expect(request.functionColumns).toEqual([]);
+  });
+
+  test('should remove unknown physical runtime filter', () => {
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'view-id',
+        meta: [
+          {
+            name: 'snapshot_dt',
+            path: ['DATART_VTABLE', 'snapshot_dt'],
+            type: DataViewFieldType.DATE,
+          },
+        ],
+        computedFields: [],
+      } as any,
+      [],
+    )
+      .addRuntimeFilters([
+        {
+          column: 'missing_field',
+          sqlOperator: FilterSqlOperator.In,
+          values: [{ value: 'x', valueType: DataViewFieldType.STRING }],
+        },
+      ])
+      .build();
+
+    expect(request.filters).toEqual([]);
+  });
+
+  test('should validate physical path without relying on dot-joined names', () => {
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'view-id',
+        meta: [
+          {
+            name: 'biz.amount',
+            path: ['DATART_VTABLE', 'biz.amount'],
+            type: DataViewFieldType.NUMERIC,
+          },
+        ],
+        computedFields: [],
+      } as any,
+      [],
+    )
+      .addRuntimeFilters([
+        {
+          column: 'biz.amount',
+          sqlOperator: FilterSqlOperator.In,
+          values: [{ value: '1', valueType: DataViewFieldType.NUMERIC }],
+        },
+      ])
+      .build();
+
+    expect(request.filters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          column: ['DATART_VTABLE', 'biz.amount'],
+        }),
+      ]),
+    );
+  });
+
+  test('keeps date level query identity ahead of source fieldId', () => {
+    const monthFieldName = `dt${DATE_LEVEL_DELIMITER}AGG_DATE_MONTH`;
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'view-id',
+        meta: [
+          {
+            name: 'dt',
+            fieldId: 'field-dt',
+            path: ['DATART_VTABLE', 'dt'],
+            type: DataViewFieldType.DATETIME,
+          },
+        ],
+        computedFields: [],
+      } as any,
+      [
+        {
+          type: ChartDataSectionType.Group,
+          key: 'group',
+          rows: [
+            {
+              fieldId: 'field-dt',
+              colName: monthFieldName,
+              category: ChartDataViewFieldCategory.DateLevelComputedField,
+              type: DataViewFieldType.DATE,
+            },
+          ],
+        },
+      ] as any,
+    ).build();
+
+    expect(request.groups).toEqual([
+      { alias: monthFieldName, column: [monthFieldName] },
+    ]);
+  });
+
+  test('should include native date levels in the function columns used by drill filters', () => {
+    const yearFieldName = `dt${DATE_LEVEL_DELIMITER}AGG_DATE_YEAR_NATIVE`;
+    const dayFieldName = `dt${DATE_LEVEL_DELIMITER}AGG_DATE_DAY_NATIVE`;
+    const chartDataConfigs = [
+      {
+        type: ChartDataSectionType.Group,
+        key: 'group',
+        drillable: true,
+        rows: [
+          { uid: 'year', colName: yearFieldName, type: DataViewFieldType.DATE },
+          { uid: 'day', colName: dayFieldName, type: DataViewFieldType.DATE },
+        ],
+      },
+    ] as any;
+    const drillOption = getChartDrillOption(chartDataConfigs)!;
+    drillOption.drillDown({ [yearFieldName]: '2026-01-01 00:00:00' });
+
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'view-id',
+        meta: [
+          {
+            name: 'dt',
+            path: ['DATART_VTABLE', 'dt'],
+            type: DataViewFieldType.DATE,
+          },
+        ],
+        computedFields: [],
+      } as any,
+      chartDataConfigs,
+    )
+      .addDrillOption(drillOption)
+      .build();
+
+    expect(request.functionColumns).toEqual(
+      expect.arrayContaining([
+        {
+          alias: yearFieldName,
+          snippet: expect.stringContaining('AGG_DATE_YEAR_NATIVE'),
+        },
+        {
+          alias: dayFieldName,
+          snippet: expect.stringContaining('AGG_DATE_DAY_NATIVE'),
+        },
+      ]),
+    );
+    expect(request.filters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ column: [yearFieldName] }),
+      ]),
+    );
+  });
+
   test('should get builder with default values', () => {
     const dataView = { id: 'view-id' } as any;
     const enableScript = false;

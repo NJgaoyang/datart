@@ -358,6 +358,7 @@ const filterActions = [
   editBoardStackActions.tabsWidgetAddTab,
   editBoardStackActions.tabsWidgetRemoveTab,
   editBoardStackActions.updateWidgetConfig,
+  editBoardStackActions.updateWidgetConfigByKey,
   editBoardStackActions.updateWidgetsConfig,
   editBoardStackActions.changeWidgetsIndex,
 

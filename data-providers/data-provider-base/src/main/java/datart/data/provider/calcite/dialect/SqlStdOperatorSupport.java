@@ -18,11 +18,9 @@
 package datart.data.provider.calcite.dialect;
 
 import com.google.common.collect.ImmutableSet;
-import datart.core.base.exception.Exceptions;
 import datart.core.data.provider.StdSqlOperator;
 import org.apache.calcite.sql.*;
 
-import java.lang.reflect.Field;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -57,23 +55,14 @@ public interface SqlStdOperatorSupport {
 
     boolean unparseStdSqlOperator(SqlWriter writer, SqlCall call, int leftPrec, int rightPrec);
 
-    default void renameCallOperator(String newName, SqlCall call) {
-        try {
-            SqlOperator operator = call.getOperator();
-            Field nameField = SqlOperator.class.getDeclaredField("name");
-            nameField.setAccessible(true);
-            nameField.set(operator, newName);
-            if (operator instanceof SqlFunction) {
-                Field sqlIdentifierField = SqlFunction.class.getDeclaredField("sqlIdentifier");
-                sqlIdentifierField.setAccessible(true);
-                SqlIdentifier sqlIdentifier = (SqlIdentifier)sqlIdentifierField.get(call.getOperator());
-                if (sqlIdentifier != null && !sqlIdentifier.names.isEmpty()) {
-                    sqlIdentifierField.set(operator,sqlIdentifier.setName(0, newName));
-                }
-            }
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            Exceptions.e(e);
+    default boolean unparseFunctionCall(SqlWriter writer, String name, SqlCall call) {
+        SqlWriter.Frame frame = writer.startFunCall(name);
+        for (SqlNode operand : call.getOperandList()) {
+            writer.sep(",");
+            operand.unparse(writer, 0, 0);
         }
+        writer.endFunCall(frame);
+        return true;
     }
 
 }

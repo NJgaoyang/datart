@@ -22,6 +22,7 @@ import {
   ChartDataSectionType,
   ChartDataViewFieldCategory,
   DataViewFieldType,
+  isDateFieldType,
   RUNTIME_DATE_LEVEL_KEY,
 } from 'app/constants';
 import ChartDrillContext from 'app/contexts/ChartDrillContext';
@@ -81,7 +82,7 @@ const ChartDrillContextMenu: FC<{
     } else {
       rows = groupSection?.rows?.filter(v => v.uid === allFields[0].uid);
     }
-    rows = rows?.filter(row => row.type === DataViewFieldType.DATE);
+      rows = rows?.filter(row => isDateFieldType(row.type));
     return getRuntimeDateLevelFields(rows);
   }, [drillOption, chartConfig?.datas, currentFields]);
 
@@ -210,7 +211,7 @@ const ChartDrillContextMenu: FC<{
         {runtimeDateLevelFields
           ?.filter(
             f =>
-              f.type === DataViewFieldType.DATE &&
+              isDateFieldType(f.type) &&
               [
                 ChartDataViewFieldCategory.Field,
                 ChartDataViewFieldCategory.DateLevelComputedField,

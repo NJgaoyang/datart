@@ -91,6 +91,7 @@ public class SqlScriptRender extends ScriptRender {
                     .withAddDefaultNamePrefix(result.isWithDefaultPrefix())
                     .withDefaultNamePrefix(result.getTablePrefix())
                     .withPage(withPage)
+                    .withOutputTechnicalAliases(!onlySelectStatement)
                     .withQuoteIdentifiers(quoteIdentifiers)
                     .build();
         } else {
@@ -99,6 +100,7 @@ public class SqlScriptRender extends ScriptRender {
                     .withQueryScriptProcessResult(result)
                     .withAddDefaultNamePrefix(result.isWithDefaultPrefix())
                     .withDefaultNamePrefix(result.getTablePrefix())
+                    .withOutputTechnicalAliases(!onlySelectStatement)
                     .withQuoteIdentifiers(quoteIdentifiers)
                     .build();
         }

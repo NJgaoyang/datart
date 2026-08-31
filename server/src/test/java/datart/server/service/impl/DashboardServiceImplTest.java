@@ -32,7 +32,7 @@ class DashboardServiceImplTest {
 
     private final DashboardServiceImpl dashboardService = new DashboardServiceImpl(
             dashboardMapper, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null);
+            null, null, null, null, null, null, null, null, null);
 
     @Test
     void shouldAllowDeleteWhenNoActiveStoryboardReferencesDashboard() {

@@ -21,6 +21,7 @@ package datart.core.data.provider.sql;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 public abstract class ColumnOperator implements Operator {
 
@@ -35,9 +36,10 @@ public abstract class ColumnOperator implements Operator {
 
 
     public String[] getColumnNames(boolean withDefaultColumnPrefix, String defaultColumnPrefix) {
-        if (withDefaultColumnPrefix) {
-            String[] names = new String[column.length + 1];
-            names[0] = defaultColumnPrefix;
+        if (withDefaultColumnPrefix
+                && column != null
+                && column.length > 0
+                && !Objects.equals(defaultColumnPrefix, column[0])) {
             return (String[]) ArrayUtils.add(column, 0, defaultColumnPrefix);
         } else {
             return column;

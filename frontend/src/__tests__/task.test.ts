@@ -103,6 +103,19 @@ describe('Test getQueryData', () => {
         pageInfo: { countTotal: false, pageSize: 100 },
         functionColumns: [{ alias: 'chartAge', snippet: '[age]' }],
         columns: [],
+        outputProjections: [
+          { displayAlias: 'age', ordinal: 0, technicalAlias: 'age' },
+          {
+            displayAlias: 'COUNT(education)',
+            ordinal: 1,
+            technicalAlias: 'COUNT(education)',
+          },
+          {
+            displayAlias: 'SUM(chartAge)',
+            ordinal: 2,
+            technicalAlias: 'SUM(chartAge)',
+          },
+        ],
         script: false,
       },
     ]);
@@ -191,6 +204,24 @@ describe('Test getQueryData', () => {
           { alias: 'viewComputerField_age', snippet: '[root].[age]' },
         ],
         columns: [],
+        outputProjections: [
+          {
+            displayAlias: 'root.birthday@date_level_delimiter@AGG_DATE_YEAR',
+            ordinal: 0,
+            technicalAlias: 'root.birthday@date_level_delimiter@AGG_DATE_YEAR',
+          },
+          { displayAlias: 'root.age', ordinal: 1, technicalAlias: 'root.age' },
+          {
+            displayAlias: 'SUM(viewComputerField_age)',
+            ordinal: 2,
+            technicalAlias: 'SUM(viewComputerField_age)',
+          },
+          {
+            displayAlias: 'SUM(root.salary)',
+            ordinal: 3,
+            technicalAlias: 'SUM(root.salary)',
+          },
+        ],
         script: false,
       },
     ]);

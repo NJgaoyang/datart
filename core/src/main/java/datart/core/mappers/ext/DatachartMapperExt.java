@@ -14,6 +14,11 @@ import java.util.Set;
 public interface DatachartMapperExt extends DatachartMapper {
 
     @Select({
+            "SELECT * FROM `datachart` WHERE `org_id`=#{orgId} AND `status`!=0 ORDER BY create_time ASC"
+    })
+    List<Datachart> listByOrgId(String orgId);
+
+    @Select({
             "SELECT * FROM datachart WHERE org_id=#{orgId} AND `status`=0"
     })
     List<Datachart> listArchived(String orgId);

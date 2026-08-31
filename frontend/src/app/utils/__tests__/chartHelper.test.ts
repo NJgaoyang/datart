@@ -31,9 +31,11 @@ import {
   FormatFieldAction,
 } from 'app/types/ChartConfig';
 import { IChartDataSet } from 'app/types/ChartDataSet';
+import { DATE_LEVEL_DELIMITER } from 'globalConstants';
 import {
   clearRuntimeDateLevelFieldsInChartConfig,
   compareSelectedItems,
+  createDateLevelComputedFieldForConfigComputedFields,
   getColorizeGroupSeriesColumns,
   getColumnRenderName,
   getDataColumnMaxAndMin2,
@@ -2556,6 +2558,106 @@ describe('Chart Helper ', () => {
         ),
       ).toEqual([]);
     });
+
+    test('upserts runtime date level when legacy computed field is missing', () => {
+      const dateLevelComputedFields = [
+        {
+          category: ChartDataViewFieldCategory.DateLevelComputedField,
+          colName: 'dt__AGG_DATE_MONTH',
+          expression: 'AGG_DATE_MONTH(dt)',
+          field: 'dt',
+          type: DataViewFieldType.DATE,
+        },
+      ];
+      const replacedConfig = {
+        category: ChartDataViewFieldCategory.DateLevelComputedField,
+        colName: 'dt__AGG_DATE_DAY',
+        expression: 'AGG_DATE_DAY(dt)',
+        field: 'dt',
+        type: DataViewFieldType.DATE,
+      };
+
+      const result = getRuntimeComputedFields(
+        dateLevelComputedFields,
+        replacedConfig,
+        [],
+        true,
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        category: ChartDataViewFieldCategory.DateLevelComputedField,
+        name: 'dt__AGG_DATE_MONTH',
+        type: DataViewFieldType.DATE,
+        expression: 'AGG_DATE_MONTH(dt)',
+      });
+    });
+  });
+
+  test('uses logical date level type instead of source datetime type', () => {
+    const fields = createDateLevelComputedFieldForConfigComputedFields(
+      [
+        {
+          name: 'dt',
+          path: ['dt'],
+          type: DataViewFieldType.DATETIME,
+        },
+      ] as any,
+      [],
+    );
+
+    expect(
+      [
+        'AGG_DATE_YEAR',
+        'AGG_DATE_QUARTER',
+        'AGG_DATE_MONTH',
+        'AGG_DATE_WEEK',
+        'AGG_DATE_DAY',
+      ].map(
+        level =>
+          fields.find(
+            v => v.name === `dt${DATE_LEVEL_DELIMITER}${level}`,
+          )?.type,
+      ),
+    ).toEqual([
+      DataViewFieldType.DATE,
+      DataViewFieldType.DATE,
+      DataViewFieldType.DATE,
+      DataViewFieldType.DATE,
+      DataViewFieldType.DATE,
+    ]);
+    expect(
+      ['AGG_DATE_HOUR', 'AGG_DATE_MINUTE', 'AGG_DATE_SECOND'].map(
+        level =>
+          fields.find(
+            v => v.name === `dt${DATE_LEVEL_DELIMITER}${level}`,
+          )?.type,
+      ),
+    ).toEqual([
+      DataViewFieldType.DATETIME,
+      DataViewFieldType.DATETIME,
+      DataViewFieldType.DATETIME,
+    ]);
+  });
+
+  test('normalizes legacy runtime date level types', () => {
+    const rows = getRuntimeDateLevelFields([
+      {
+        category: ChartDataViewFieldCategory.DateLevelComputedField,
+        colName: `dt${DATE_LEVEL_DELIMITER}AGG_DATE_MONTH_NATIVE`,
+        type: DataViewFieldType.DATETIME,
+      },
+      {
+        category: ChartDataViewFieldCategory.DateLevelComputedField,
+        colName: `dt${DATE_LEVEL_DELIMITER}AGG_DATE_SECOND_NATIVE`,
+        type: DataViewFieldType.DATE,
+      },
+    ]);
+
+    expect(rows.map(row => row.type)).toEqual([
+      DataViewFieldType.DATE,
+      DataViewFieldType.DATETIME,
+    ]);
   });
 
   describe('clearRuntimeDateLevelFieldsInChartConfig Test', () => {

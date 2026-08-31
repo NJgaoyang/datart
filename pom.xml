@@ -15,12 +15,13 @@
         <java.version>17</java.version>
         <spring.cloud.version>2023.0.4</spring.cloud.version>
         <lombok.version>1.18.30</lombok.version>
+        <calcite.version>1.42.0</calcite.version>
     </properties>
 
     <groupId>datart</groupId>
     <artifactId>datart-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.0-rc.3</version>
+  <version>1.0.0-rc.11</version>
 
     <dependencies>
         <dependency>

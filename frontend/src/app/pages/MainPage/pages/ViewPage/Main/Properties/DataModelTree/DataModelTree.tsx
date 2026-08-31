@@ -32,8 +32,9 @@ import styled from 'styled-components';
 import { SPACE_LG } from 'styles/StyleConstants';
 import { Nullable } from 'types';
 import { CloneValueDeep, isEmpty, isEmptyArray } from 'utils/object';
+import { request2 } from 'utils/request';
 import {
-  deduplicateDisplayNames,
+  getFieldCustomDisplayName,
   getFieldDisplayName,
   modelListFormsTreeByTableName,
 } from 'utils/utils';
@@ -51,7 +52,11 @@ import {
   StructViewQueryProps,
   ViewType,
 } from '../../../slice/types';
-import { dataModelColumnSorter } from '../../../utils';
+import {
+  dataModelColumnSorter,
+  getHierarchyColumnByField,
+  resolveSchemaColumnComment,
+} from '../../../utils';
 import Container from '../Container';
 import {
   ALLOW_COMBINE_COLUMN_TYPES,
@@ -108,26 +113,21 @@ const DataModelTree: FC = memo(() => {
       const tableName = script.table;
       const getColumnLabel = (colName: string, ancestors: string[]): string => {
         const schemas = allDatabaseSchemas[sourceId];
-        if (!schemas || !ancestors || !Array.isArray(ancestors)) return colName;
-        let tbl;
-        if (ancestors.length === 1) {
-          tbl = schemas[0]?.tables?.find(t => t.tableName === ancestors[0]);
-        } else {
-          const dbName = ancestors[0];
-          const tblName = ancestors[1];
-          const schema = schemas.find(s => s.dbName === dbName);
-          tbl = schema?.tables?.find(t => t.tableName === tblName);
-        }
-        if (tbl) {
-          const col = tbl.columns?.find(
-            c =>
-              c.name[0] === colName ||
-              c.name[0]?.toUpperCase() === colName?.toUpperCase(),
-          );
-          if (col?.displayName) return col.displayName;
-          if (col?.comment) return col.comment;
-        }
-        return colName;
+        const path = [...(ancestors || []), colName];
+        const hierarchyColumn = getHierarchyColumnByField(
+          currentEditingView?.model?.hierarchy,
+          { name: colName, path },
+        );
+        const comment =
+          hierarchyColumn?.comment ||
+          resolveSchemaColumnComment(schemas, { name: colName, path });
+        return getFieldDisplayName({
+          name: colName,
+          path,
+          displayName: hierarchyColumn?.displayName,
+          comment,
+          isDisplayNameCustom: hierarchyColumn?.isDisplayNameCustom,
+        });
       };
       const childrenData = script['columns']?.map((v, i) => {
         return { title: getColumnLabel(v, tableName), key: [...tableName, v] };
@@ -172,11 +172,9 @@ const DataModelTree: FC = memo(() => {
             return {
               id: v.name,
               name: stringName,
-              displayName: getFieldDisplayName({
-                name: stringName,
-                displayName: v.displayName,
-                comment: v.comment,
-              }),
+              displayName: v.displayName,
+              comment: v.comment,
+              isDisplayNameCustom: v.isDisplayNameCustom,
             };
           }),
         );
@@ -186,51 +184,29 @@ const DataModelTree: FC = memo(() => {
     script,
     viewType,
     currentEditingView?.model?.columns,
+    currentEditingView?.model?.hierarchy,
     allDatabaseSchemas,
     sourceId,
   ]);
 
   const tableColumns = useMemo<Column[]>(() => {
     const schemas = allDatabaseSchemas[sourceId];
-    const findColumnComment = (colName: string): string | undefined => {
-      if (!schemas) return undefined;
-      const colNameLastSegment = colName?.split('.').pop();
-      for (const schema of schemas) {
-        for (const tbl of schema.tables || []) {
-          const col = tbl.columns?.find(c => {
-            const schemaColName = c.name?.[0];
-            if (!schemaColName) return false;
-            return (
-              schemaColName === colName ||
-              schemaColName === colNameLastSegment ||
-              schemaColName.toUpperCase() === colName?.toUpperCase() ||
-              schemaColName.toUpperCase() === colNameLastSegment?.toUpperCase()
-            );
-          });
-          if (col?.comment) return col.comment;
-        }
-      }
-      return undefined;
-    };
-
     const columns = Object.entries(hierarchy || {})
       .map(([name, column], index) => {
         const colName = column.name || name;
         const comment =
-          !column.displayName && !column.comment
-            ? findColumnComment(colName)
-            : undefined;
+          column.comment ||
+          resolveSchemaColumnComment(schemas, {
+            name: colName,
+            path: column.path,
+          });
         return Object.assign({ index }, column, {
           name: colName,
-          displayName: getFieldDisplayName({
-            name: colName,
-            displayName: column.displayName,
-            comment: column.comment || comment,
-          }),
+          comment,
         });
       })
       .sort(dataModelColumnSorter);
-    return deduplicateDisplayNames(columns) as Column[];
+    return columns as Column[];
   }, [hierarchy, allDatabaseSchemas, sourceId]);
 
   const handleDeleteBranch = (node: Column) => {
@@ -516,15 +492,73 @@ const DataModelTree: FC = memo(() => {
   };
 
   const openEditDisplayNameModal = (node: Column) => {
-    const currentDisplayName = node.displayName || node.name || '';
+    const currentDisplayName = getFieldCustomDisplayName(node) || '';
     const columnName = node.name || '';
 
     return (openStateModal as Function)({
       title: t('model.setDisplayName'),
       modalSize: StateModalSize.XSMALL,
-      onOk: displayName => {
-        const newDisplayName =
-          displayName && displayName.trim() ? displayName.trim() : columnName;
+      onOk: async displayName => {
+        const trimmedDisplayName = displayName?.trim();
+        if (currentEditingView?.id && node?.fieldId) {
+          const { data } = await request2<any>({
+            url: `/views/${currentEditingView.id}/fields/${node.fieldId}`,
+            method: 'PATCH',
+            data: { customName: trimmedDisplayName || null },
+          });
+          const serverDisplayNamePatch = {
+            displayName: data?.displayName,
+            comment: data?.sourceComment,
+            isDisplayNameCustom: Boolean(data?.customName),
+          };
+          const update = (item: Column) => ({ ...item, ...serverDisplayNamePatch });
+          let newHierarchy: Model;
+          if (
+            node.role === ColumnRole.Hierarchy ||
+            node.role === ColumnRole.Table
+          ) {
+            newHierarchy = updateNode(
+              tableColumns,
+              update(node),
+              tableColumns.findIndex(n => n.name === node.name),
+            );
+          } else {
+            const parentBranch = tableColumns?.find(b =>
+              b?.children?.find(bn => bn.name === node.name),
+            );
+            if (parentBranch) {
+              const clonedBranch = CloneValueDeep(parentBranch);
+              const childIdx = clonedBranch.children?.findIndex(
+                c => c.name === node.name,
+              );
+              if (childIdx !== undefined && childIdx > -1 && clonedBranch.children) {
+                clonedBranch.children[childIdx] = update(clonedBranch.children[childIdx]);
+              }
+              newHierarchy = updateNode(
+                tableColumns,
+                clonedBranch,
+                tableColumns.findIndex(n => n.name === clonedBranch.name),
+              );
+            } else {
+              newHierarchy = updateNode(
+                tableColumns,
+                update(node),
+                tableColumns.findIndex(n => n.name === node.name),
+              );
+            }
+          }
+          handleDataModelHierarchyChange(newHierarchy);
+          return;
+        }
+        const displayNamePatch = trimmedDisplayName
+          ? {
+              displayName: trimmedDisplayName,
+              isDisplayNameCustom: true,
+            }
+          : {
+              displayName: undefined,
+              isDisplayNameCustom: false,
+            };
         let newHierarchy: Model;
         if (
           node.role === ColumnRole.Hierarchy ||
@@ -532,7 +566,7 @@ const DataModelTree: FC = memo(() => {
         ) {
           newHierarchy = updateNode(
             tableColumns,
-            { ...node, displayName: newDisplayName },
+            { ...node, ...displayNamePatch },
             tableColumns.findIndex(n => n.name === node.name),
           );
         } else {
@@ -551,7 +585,7 @@ const DataModelTree: FC = memo(() => {
             ) {
               clonedBranch.children[childIdx] = {
                 ...clonedBranch.children[childIdx],
-                displayName: newDisplayName,
+                ...displayNamePatch,
               };
             }
             newHierarchy = updateNode(
@@ -562,7 +596,7 @@ const DataModelTree: FC = memo(() => {
           } else {
             newHierarchy = updateNode(
               tableColumns,
-              { ...node, displayName: newDisplayName },
+              { ...node, ...displayNamePatch },
               tableColumns.findIndex(n => n.name === node.name),
             );
           }
@@ -756,11 +790,13 @@ const DataModelTree: FC = memo(() => {
 
   const addCallback = useCallback(
     (field?: ChartDataViewMeta) => {
+      const modalContentKey = `${field?.name || 'new'}-${Date.now()}`;
       (showModal as Function)({
         title: t('model.createComputedFields'),
         modalSize: StateModalSize.MIDDLE,
         content: onChange => (
           <ChartComputedFieldSettingPanel
+            key={modalContentKey}
             viewType={viewType}
             computedField={field}
             sourceId={sourceId}

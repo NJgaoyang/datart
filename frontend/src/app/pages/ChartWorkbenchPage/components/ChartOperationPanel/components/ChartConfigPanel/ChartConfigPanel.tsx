@@ -38,7 +38,8 @@ import {
   ChartStyleConfig,
 } from 'app/types/ChartConfig';
 import ChartDataView from 'app/types/ChartDataView';
-import { FC, memo } from 'react';
+import { reconcileChartConfigFieldMeta } from 'app/utils/internalChartHelper';
+import { FC, memo, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import styled from 'styled-components';
 import {
@@ -71,6 +72,16 @@ const ChartConfigPanel: FC<{
     const t = useI18NPrefix(`viz.palette`);
     const vizs = useSelector(selectVizs);
     const dataview = useSelector(currentDataViewSelector);
+    const editorChartConfig = useMemo(() => {
+      const fields = [
+        ...(dataview?.meta || []),
+        ...(dataview?.computedFields || []),
+      ];
+      return chartConfig && fields.length
+        ? reconcileChartConfigFieldMeta(chartConfig, fields)
+        : chartConfig;
+    }, [chartConfig, dataview?.computedFields, dataview?.meta]);
+    const editorDataConfigs = editorChartConfig?.datas;
     const [tabActiveKey, setTabActiveKey] = useComputedState(
       () => {
         return cond(
@@ -118,7 +129,7 @@ const ChartConfigPanel: FC<{
 
     return (
       <ChartI18NContext.Provider value={{ i18NConfigs: chartConfig?.i18ns }}>
-        <ChartPaletteContext.Provider value={{ datas: chartConfig?.datas }}>
+        <ChartPaletteContext.Provider value={{ datas: editorDataConfigs }}>
           <StyledChartDataViewPanel>
             <ChartToolbar />
             <ConfigBlock>
@@ -127,7 +138,7 @@ const ChartConfigPanel: FC<{
                 className="tabs"
                 onChange={setTabActiveKey}
               >
-                {!isEmptyArray(chartConfig?.datas) && (
+                {!isEmptyArray(editorDataConfigs) && (
                   <TabPane
                     tab={
                       <span>
@@ -174,7 +185,7 @@ const ChartConfigPanel: FC<{
               </Tabs>
               <Pane selected={tabActiveKey === CONFIG_PANEL_TABS.DATA}>
                 <ChartDataConfigPanel
-                  dataConfigs={chartConfig?.datas}
+                  dataConfigs={editorDataConfigs}
                   expensiveQuery={expensiveQuery}
                   onChange={onDataConfigChanged}
                 />
@@ -183,7 +194,7 @@ const ChartConfigPanel: FC<{
                 <ChartStyleConfigPanel
                   i18nPrefix="viz.palette.style"
                   configs={chartConfig?.styles}
-                  dataConfigs={chartConfig?.datas}
+                  dataConfigs={editorDataConfigs}
                   onChange={handleConfigChangeByAction(
                     ChartConfigReducerActionType.STYLE,
                   )}
@@ -193,7 +204,7 @@ const ChartConfigPanel: FC<{
                 <ChartStyleConfigPanel
                   i18nPrefix="viz.palette.setting"
                   configs={chartConfig?.settings}
-                  dataConfigs={chartConfig?.datas}
+                  dataConfigs={editorDataConfigs}
                   onChange={handleConfigChangeByAction(
                     ChartConfigReducerActionType.SETTING,
                   )}
@@ -203,7 +214,7 @@ const ChartConfigPanel: FC<{
                 <ChartStyleConfigPanel
                   i18nPrefix="viz.palette.interaction"
                   configs={chartConfig?.interactions}
-                  dataConfigs={chartConfig?.datas}
+                  dataConfigs={editorDataConfigs}
                   context={{ vizs, dataview }}
                   onChange={handleConfigChangeByAction(
                     ChartConfigReducerActionType.INTERACTION,

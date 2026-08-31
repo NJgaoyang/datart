@@ -61,7 +61,7 @@ export const BoardConfigProvider: FC<{
   );
   const [mPaddingTB, mPaddingLR, mMarginTB, mMarginLR] = getJsonConfigs(
     props,
-    ['space'],
+    ['mSpace'],
     ['paddingTB', 'paddingLR', 'marginTB', 'marginLR'],
   );
   const configVal: BoardConfigValue = {

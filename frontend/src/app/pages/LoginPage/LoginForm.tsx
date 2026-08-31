@@ -187,42 +187,42 @@ const LoggedInPanel = styled.div`
 `;
 
 const LoggedInTitle = styled.h3`
+  margin-bottom: clamp(12px, 1.5vh, 20px);
   font-size: clamp(14px, 1.1vw, 18px);
   font-weight: 600;
   color: #fff;
   text-align: center;
-  margin-bottom: clamp(12px, 1.5vh, 20px);
 `;
 
 const UserPanel = styled.div`
   display: flex;
-  align-items: center;
   gap: clamp(10px, 0.8vw, 16px);
+  align-items: center;
   padding: clamp(14px, 1.2vw, 20px);
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: clamp(10px, 0.8vw, 16px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  cursor: pointer;
-  transition: all 0.3s ease;
   margin-bottom: clamp(10px, 1.2vh, 16px);
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: clamp(10px, 0.8vw, 16px);
+  transition: all 0.3s ease;
 
   &:hover {
     background: rgba(255, 255, 255, 0.22);
-    transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
   }
 `;
 
 const UserAvatar = styled.div`
-  width: clamp(36px, 2.8vw, 48px);
-  height: clamp(36px, 2.8vw, 48px);
-  background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
-  border-radius: clamp(10px, 0.8vw, 14px);
   display: flex;
   align-items: center;
   justify-content: center;
+  width: clamp(36px, 2.8vw, 48px);
+  height: clamp(36px, 2.8vw, 48px);
   font-size: clamp(14px, 1.2vw, 20px);
   color: white;
+  background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+  border-radius: clamp(10px, 0.8vw, 14px);
 `;
 
 const UserInfo = styled.div`
@@ -231,21 +231,21 @@ const UserInfo = styled.div`
 `;
 
 const UserName = styled.p`
+  margin: 0 0 2px;
   font-size: clamp(13px, 0.9vw, 16px);
   font-weight: 600;
   color: #fff;
-  margin: 0 0 2px;
 `;
 
 const EnterHint = styled.p`
+  margin: 0;
   font-size: clamp(11px, 0.75vw, 13px);
   color: rgba(255, 255, 255, 0.6);
-  margin: 0;
 `;
 
 const SwitchButton = styled(Button)`
-  color: rgba(255, 255, 255, 0.7) !important;
   font-size: clamp(12px, 0.8vw, 14px);
+  color: rgba(255, 255, 255, 0.7) !important;
 
   &:hover {
     color: #fff !important;
@@ -268,9 +268,9 @@ const StyledInput = styled(Input)`
   }
 
   .ant-input {
-    background: transparent !important;
-    color: #fff !important;
     font-size: clamp(13px, 0.85vw, 15px);
+    color: #fff !important;
+    background: transparent !important;
 
     &::placeholder {
       color: rgba(255, 255, 255, 0.6) !important;
@@ -278,42 +278,42 @@ const StyledInput = styled(Input)`
   }
 
   .ant-input-prefix {
-    color: rgba(255, 255, 255, 0.7) !important;
     margin-right: clamp(8px, 0.6vw, 12px);
     font-size: clamp(14px, 1vw, 18px);
+    color: rgba(255, 255, 255, 0.7) !important;
   }
 `;
 
 const LoginButton = styled(Button)`
   height: clamp(40px, 3.5vw, 52px) !important;
+  font-size: clamp(14px, 0.9vw, 16px) !important;
+  font-weight: 600 !important;
   background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%) !important;
   border: none !important;
   border-radius: clamp(10px, 0.8vw, 14px) !important;
-  font-size: clamp(14px, 0.9vw, 16px) !important;
-  font-weight: 600 !important;
   box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4) !important;
   transition: all 0.3s ease !important;
 
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
   &:hover:not(:disabled) {
-    transform: translateY(-2px) !important;
     box-shadow: 0 15px 40px rgba(99, 102, 241, 0.5) !important;
+    transform: translateY(-2px) !important;
   }
 
   &:active:not(:disabled) {
     transform: translateY(0) !important;
   }
-
-  &:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
 `;
 
 const AdminTip = styled.p`
-  text-align: center;
+  margin: clamp(10px, 1.2vh, 16px) 0 0;
   font-size: clamp(11px, 0.75vw, 13px);
   color: rgba(255, 255, 255, 0.6);
-  margin: clamp(10px, 1.2vh, 16px) 0 0;
+  text-align: center;
 `;
 
 const OAuthSection = styled.div`
@@ -327,9 +327,9 @@ const DividerLine = styled.div`
 
   &::before,
   &::after {
-    content: '';
     flex: 1;
     height: 1px;
+    content: '';
     background: rgba(255, 255, 255, 0.15);
   }
 `;
@@ -342,12 +342,12 @@ const DividerText = styled.span`
 
 const OAuthButton = styled(Button)`
   height: clamp(36px, 2.8vw, 48px) !important;
+  margin-bottom: clamp(6px, 0.6vh, 10px) !important;
+  font-size: clamp(12px, 0.8vw, 14px) !important;
+  color: #fff !important;
   background: rgba(255, 255, 255, 0.15) !important;
   border: 1px solid rgba(255, 255, 255, 0.25) !important;
   border-radius: clamp(8px, 0.7vw, 12px) !important;
-  color: #fff !important;
-  font-size: clamp(12px, 0.8vw, 14px) !important;
-  margin-bottom: clamp(6px, 0.6vh, 10px) !important;
   transition: all 0.3s ease !important;
 
   &:hover {

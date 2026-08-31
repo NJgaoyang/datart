@@ -42,10 +42,15 @@ import { BoardConfigValue } from '../components/BoardProvider/BoardConfigProvide
 import {
   AutoBoardBackgroundDefault,
   AutoBoardWidgetBackgroundDefault,
+  AUTO_LAYOUT_VERSION,
   BackgroundDefault,
   LAYOUT_COLS_MAP,
   MIN_MARGIN,
   MIN_PADDING,
+  MOBILE_LAYOUT_VERSION,
+  MOBILE_MIN_MARGIN,
+  MOBILE_MIN_PADDING,
+  PC_ROW_LAYOUT_VERSION,
 } from '../constants';
 import { BoardConfig } from '../types/boardTypes';
 import { Widget } from '../types/widgetTypes';
@@ -149,9 +154,12 @@ export const getInitBoardConfigBeta3 = (boardType?: BoardType) => {
     allowOverlap: false,
     margin: [16, 16], //0-100
     containerPadding: [16, 16], //0-100
-    cols: LAYOUT_COLS_MAP, //2-48    step 2
-    mobileMargin: [MIN_MARGIN, MIN_MARGIN],
-    mobileContainerPadding: [MIN_PADDING, MIN_PADDING],
+    layoutVersion: AUTO_LAYOUT_VERSION,
+    mobileLayoutVersion: MOBILE_LAYOUT_VERSION,
+    pcRowLayoutVersion: PC_ROW_LAYOUT_VERSION,
+    cols: LAYOUT_COLS_MAP,
+    mobileMargin: [MOBILE_MIN_MARGIN, MOBILE_MIN_MARGIN],
+    mobileContainerPadding: [MOBILE_MIN_PADDING, MOBILE_MIN_PADDING],
     // free
     width: 1920,
     height: 1080,
@@ -205,7 +213,7 @@ export const getChartDataView = (views: View[], dataCharts: DataChart[]) => {
     if (view?.model) {
       view.model = beginViewModelMigration(view.model, view.type);
     }
-    const meta = transformMeta(view.model);
+    const meta = transformMeta(view.model, view.fields, view.type);
     const viewComputedFields =
       JSON.parse(view.model || '{}').computedFields || [];
     const computedFields = createDateLevelComputedFieldForConfigComputedFields(
@@ -234,8 +242,8 @@ export const getBoardMarginPadding = (
   const isMobile = colsKey === 'sm';
   return isMobile
     ? {
-        curMargin: mMargin || [MIN_MARGIN, MIN_MARGIN],
-        curPadding: mPadding || [MIN_PADDING, MIN_PADDING],
+        curMargin: mMargin || [MOBILE_MIN_MARGIN, MOBILE_MIN_MARGIN],
+        curPadding: mPadding || [MOBILE_MIN_PADDING, MOBILE_MIN_PADDING],
       }
     : {
         curMargin: margin,

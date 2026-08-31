@@ -36,10 +36,10 @@
         <appender-ref ref="root" />
     </root>
 
-    <logger name="datart.data.provider.jdbc.adapters" level="${SQL_LEVEL}" addtivity="false">
+    <logger name="datart.data.provider.jdbc.adapters" level="${SQL_LEVEL}" additivity="false">
         <appender-ref ref="sql"/>
     </logger>
-    <logger name="datart.data.provider.local.LocalDB" level="${SQL_LEVEL}" addtivity="false">
+    <logger name="datart.data.provider.local.LocalDB" level="${SQL_LEVEL}" additivity="false">
         <appender-ref ref="sql"/>
     </logger>
 

@@ -23,6 +23,7 @@ import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.sql.Types;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 public class DataTypeUtils {
@@ -62,10 +63,11 @@ public class DataTypeUtils {
             case NUMERIC:
                 return ValueType.NUMERIC;
             case DATE:
+                return ValueType.DATE;
             case TIME:
             case TIMESTAMP:
             case DATETIME:
-                return ValueType.DATE;
+                return ValueType.DATETIME;
             default:
                 return ValueType.STRING;
         }
@@ -93,6 +95,8 @@ public class DataTypeUtils {
     public static ValueType javaType2DataType(Object obj) {
         if (obj instanceof Number) {
             return ValueType.NUMERIC;
+        } else if (obj instanceof java.sql.Timestamp || obj instanceof LocalDateTime) {
+            return ValueType.DATETIME;
         } else if (obj instanceof Date) {
             return ValueType.DATE;
         } else if (obj instanceof Boolean) {
@@ -108,6 +112,8 @@ public class DataTypeUtils {
                 return SqlTypeName.DOUBLE;
             case DATE:
                 return SqlTypeName.DATE;
+            case DATETIME:
+                return SqlTypeName.TIMESTAMP;
             case BOOLEAN:
                 return SqlTypeName.BOOLEAN;
             default:
@@ -120,6 +126,8 @@ public class DataTypeUtils {
             case NUMERIC:
                 return Types.DOUBLE;
             case DATE:
+                return Types.DATE;
+            case DATETIME:
                 return Types.TIMESTAMP;
             case BOOLEAN:
                 return Types.BOOLEAN;

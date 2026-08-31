@@ -425,43 +425,61 @@ export function newIssueUrl({ type, ...options }) {
   return url.toString();
 }
 
-/**
- * 对同名字段的 displayName 添加序号后缀 (2)、(3)……用于区分多表关联时的重名字段。
- * 第一个出现的 displayName 保持原名不变。
- */
-export function deduplicateDisplayNames<
-  T extends { name?: string; displayName?: string },
->(items: T[]): T[] {
-  const countMap: Record<string, number> = {};
-  return items.map(item => {
-    const raw = item.displayName || item.name || '';
-    const count = countMap[raw] || 0;
-    countMap[raw] = count + 1;
-    if (count === 0) {
-      return item;
-    }
-    return { ...item, displayName: `${raw} (${count + 1})` };
-  });
-}
-
-export function getFieldDisplayName(field: {
+export type FieldDisplayMeta = {
+  fieldId?: string;
+  originName?: string;
   name?: string;
   path?: string[];
   displayName?: string;
+  customName?: string;
+  sourceComment?: string;
   comment?: string;
-}): string {
+  isDisplayNameCustom?: boolean;
+};
+
+/** Dataset/ViewField is authoritative once it is available. */
+export function getDatasetFieldDisplayName(field?: FieldDisplayMeta): string {
+  return (
+    field?.customName?.trim() ||
+    field?.sourceComment?.trim() ||
+    field?.displayName?.trim() ||
+    field?.originName?.trim() ||
+    field?.name?.trim() ||
+    field?.path?.[field.path.length - 1] ||
+    ''
+  );
+}
+
+export function getFieldCustomDisplayName(
+  field: FieldDisplayMeta,
+): string | undefined {
   const fieldName = field.path?.[field.path.length - 1] || field.name || '';
   const displayName = field.displayName?.trim();
   const comment = field.comment?.trim();
+
+  if (!displayName) {
+    return undefined;
+  }
+  if (field.isDisplayNameCustom === true) {
+    return displayName;
+  }
+  if (field.isDisplayNameCustom === false) {
+    return undefined;
+  }
+
   const defaultNames = [fieldName, field.name, field.path?.join('.')].filter(
     Boolean,
   );
-
-  if (comment && (!displayName || defaultNames.includes(displayName))) {
-    return comment;
+  if (defaultNames.includes(displayName) || displayName === comment) {
+    return undefined;
   }
 
-  return displayName || comment || fieldName;
+  return displayName;
+}
+
+export function getFieldDisplayName(field: FieldDisplayMeta): string {
+  const fieldName = field.path?.[field.path.length - 1] || field.name || '';
+  return getFieldCustomDisplayName(field) || field.comment?.trim() || fieldName;
 }
 
 export function modelListFormsTreeByTableName(model, type) {
@@ -485,9 +503,7 @@ export function modelListFormsTreeByTableName(model, type) {
     const fieldName = path[path.length - 1];
     if (tableNameList.includes(tableName)) {
       const columnNameArr = columnNameObj[tableName] || [];
-      columnNameObj[tableName] = columnNameArr.concat([
-        { ...v, displayName: getFieldDisplayName({ ...v, name: fieldName }) },
-      ]);
+      columnNameObj[tableName] = columnNameArr.concat([{ ...v }]);
     }
   });
 

@@ -23,6 +23,7 @@ import datart.core.base.consts.TenantManagementMode;
 import datart.core.base.exception.Exceptions;
 import datart.core.common.Application;
 import datart.core.entity.Organization;
+import datart.core.entity.Download;
 import datart.core.entity.ext.RoleBaseInfo;
 import datart.core.entity.ext.UserBaseInfo;
 import datart.security.exception.PermissionDeniedException;
@@ -33,6 +34,11 @@ import datart.server.base.params.OrgCreateParam;
 import datart.server.base.params.OrgUpdateParam;
 import datart.server.base.dto.ResponseData;
 import datart.server.service.OrgService;
+import datart.server.service.OrganizationTransferService;
+import datart.server.service.MetadataUpgradePreflightService;
+import datart.server.service.MetadataUpgradeService;
+import datart.server.base.dto.MetadataUpgradePreflightReport;
+import datart.server.base.dto.MetadataUpgradeApplyReport;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;
@@ -48,8 +54,20 @@ public class OrgController extends BaseController {
 
     private final OrgService orgService;
 
-    public OrgController(OrgService orgService) {
+    private final OrganizationTransferService organizationTransferService;
+
+    private final MetadataUpgradePreflightService metadataUpgradePreflightService;
+
+    private final MetadataUpgradeService metadataUpgradeService;
+
+    public OrgController(OrgService orgService,
+                         OrganizationTransferService organizationTransferService,
+                         MetadataUpgradePreflightService metadataUpgradePreflightService,
+                         MetadataUpgradeService metadataUpgradeService) {
         this.orgService = orgService;
+        this.organizationTransferService = organizationTransferService;
+        this.metadataUpgradePreflightService = metadataUpgradePreflightService;
+        this.metadataUpgradeService = metadataUpgradeService;
     }
 
 
@@ -148,6 +166,27 @@ public class OrgController extends BaseController {
         Organization organization = new Organization();
         organization.setName(param.getName());
         return ResponseData.success(orgService.checkUnique(organization));
+    }
+
+    @Operation(summary = "export organization package")
+    @PostMapping("/{orgId}/export")
+    public ResponseData<Download> exportOrganization(@PathVariable String orgId) {
+        checkBlank(orgId, "orgId");
+        return ResponseData.success(organizationTransferService.exportPackage(orgId));
+    }
+
+    @Operation(summary = "preflight metadata in-place upgrade without modifying data")
+    @GetMapping("/{orgId}/metadata-upgrade/preflight")
+    public ResponseData<MetadataUpgradePreflightReport> metadataUpgradePreflight(@PathVariable String orgId) {
+        checkBlank(orgId, "orgId");
+        return ResponseData.success(metadataUpgradePreflightService.preflight(orgId));
+    }
+
+    @Operation(summary = "apply in-place metadata upgrade")
+    @PostMapping("/{orgId}/metadata-upgrade/apply")
+    public ResponseData<MetadataUpgradeApplyReport> applyMetadataUpgrade(@PathVariable String orgId) {
+        checkBlank(orgId, "orgId");
+        return ResponseData.success(metadataUpgradeService.apply(orgId));
     }
 
 

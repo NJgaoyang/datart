@@ -64,6 +64,12 @@ export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
   const model = useSelector(state =>
     selectCurrentEditingViewAttr(state, { name: 'model' }),
   ) as HierarchyModel;
+  const viewFields = useSelector(state =>
+    selectCurrentEditingViewAttr(state, { name: 'fields' }),
+  ) as ViewViewModel['fields'];
+  const previewFields = useSelector(state =>
+    selectCurrentEditingViewAttr(state, { name: 'previewFields' }),
+  ) as ViewViewModel['previewFields'];
   const columnPermissions = useSelector(state =>
     selectCurrentEditingViewAttr(state, { name: 'columnPermissions' }),
   ) as ColumnPermission[];
@@ -271,6 +277,8 @@ export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
           pagination={pagination}
           sourceId={sourceId}
           databaseSchemas={allDatabaseSchemas[sourceId]}
+          viewFields={viewFields}
+          previewFields={previewFields}
           getExtraHeaderActions={getExtraHeaderActions}
           onSchemaTypeChange={modelChange}
           hasCategory

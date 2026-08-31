@@ -1,12 +1,7 @@
 /**
  * MobileBoard - 移动端仪表板视图（小程序风格）
  *
- * 设计参考微信小程序数据报表：
- * - 卡片式布局，图表独立白色卡片
- * - 筛选器置顶，交互自然
- * - 自适应所有手机屏幕（320px ~ 428px+）
- * - 支持安全区域（刘海屏、底部指示条）
- * - 流畅的原生级滚动体验
+ * 移动端使用独立 6 列画布，按照组件 mRect 渲染。
  */
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { BoardLoading } from 'app/pages/DashBoardPage/components/BoardLoading';
@@ -14,7 +9,7 @@ import { BoardInitProvider } from 'app/pages/DashBoardPage/components/BoardProvi
 import { FullScreenPanel } from 'app/pages/DashBoardPage/components/FullScreenPanel/FullScreenPanel';
 import { WidgetMapper } from 'app/pages/DashBoardPage/components/WidgetMapper/WidgetMapper';
 import { WidgetWrapProvider } from 'app/pages/DashBoardPage/components/WidgetProvider/WidgetWrapProvider';
-import { ORIGINAL_TYPE_MAP } from 'app/pages/DashBoardPage/constants';
+import { MOBILE_GRID_COLS } from 'app/pages/DashBoardPage/constants';
 import useLayoutMap from 'app/pages/DashBoardPage/hooks/useLayoutMap';
 import { boardActions } from 'app/pages/DashBoardPage/pages/Board/slice';
 import {
@@ -25,17 +20,38 @@ import {
   fetchBoardDetail,
   renderedWidgetAsync,
 } from 'app/pages/DashBoardPage/pages/Board/slice/thunk';
-import { BoardState } from 'app/pages/DashBoardPage/pages/Board/slice/types';
+import {
+  BoardState,
+  RectConfig,
+} from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { cancelPendingWidgetFetches } from 'app/pages/DashBoardPage/pages/Board/slice/widgetDataBatcher';
 import { Widget } from 'app/pages/DashBoardPage/types/widgetTypes';
+import {
+  isMobileWidgetVisible,
+  normalizeAutoRectForCols,
+} from 'app/pages/DashBoardPage/utils/autoLayout';
+import {
+  compactMobileLayout,
+  getMobileGridSpan,
+} from 'app/pages/DashBoardPage/utils/mobileLayout';
 import { boardDrillManager } from 'app/pages/DashBoardPage/components/BoardDrillManager/BoardDrillManager';
+import { dispatchResize } from 'app/utils/dispatchResize';
 import { urlSearchTransfer } from 'utils/urlSearchTransfer';
 import {
   MobileControlContext,
   MobileControlContextValue,
 } from './MobileControlContext';
 import { Button } from 'antd';
-import React, { FC, memo, useEffect, useMemo, useRef } from 'react';
+import React, {
+  FC,
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useDispatch, useSelector } from 'react-redux';
@@ -52,38 +68,67 @@ const WIDGET_INNER_STYLE: React.CSSProperties = {
   height: '100%',
 };
 
-const CONTROLLER_ORIGINAL_TYPES: Set<string> = new Set([
-  ORIGINAL_TYPE_MAP.dropdownList,
-  ORIGINAL_TYPE_MAP.multiDropdownList,
-  ORIGINAL_TYPE_MAP.checkboxGroup,
-  ORIGINAL_TYPE_MAP.radioGroup,
-  ORIGINAL_TYPE_MAP.text,
-  ORIGINAL_TYPE_MAP.time,
-  ORIGINAL_TYPE_MAP.rangeTime,
-  ORIGINAL_TYPE_MAP.rangeValue,
-  ORIGINAL_TYPE_MAP.value,
-  ORIGINAL_TYPE_MAP.slider,
-  ORIGINAL_TYPE_MAP.dropDownTree,
-]);
+const MOBILE_ROW_HEIGHT = 24;
+const MOBILE_GAP = 2;
+const MOBILE_PADDING = 4;
+const MOBILE_TABLE_MIN_HEIGHT = 6;
+const MOBILE_TABLE_MAX_VISIBLE_ROWS = 5;
+const MOBILE_TABLE_INITIAL_HEIGHT = 16;
+const MOBILE_TABLE_SCROLLBAR_HEIGHT = 8;
+const MOBILE_TABLE_BOTTOM_GUARD = 2;
+const MOBILE_DEFERRED_WIDGET_LOAD_MS = 300;
+const TABLE_CHART_IDS = new Set(['react-table', 'fenzu-table', 'mingxi-table']);
 
-const BUTTON_ORIGINAL_TYPES: Set<string> = new Set([
-  ORIGINAL_TYPE_MAP.queryBtn,
-  ORIGINAL_TYPE_MAP.resetBtn,
-]);
+const getNestedWidgetIds = (
+  widget: Widget,
+  widgetMap: Record<string, Widget>,
+  visited = new Set<string>(),
+): string[] => {
+  if (!widget || visited.has(widget.id)) return [];
+  visited.add(widget.id);
 
-/** 排序：控制器 → 按钮 → 图表/媒体 → 容器 */
-function sortWidgetsForMobile(widgets: Widget[]): Widget[] {
-  return [...widgets].sort((a, b) => {
-    const typeA = a.config.originalType;
-    const typeB = b.config.originalType;
-    const rankA = CONTROLLER_ORIGINAL_TYPES.has(typeA) ? 0
-      : BUTTON_ORIGINAL_TYPES.has(typeA) ? 1 : 2;
-    const rankB = CONTROLLER_ORIGINAL_TYPES.has(typeB) ? 0
-      : BUTTON_ORIGINAL_TYPES.has(typeB) ? 1 : 2;
-    if (rankA !== rankB) return rankA - rankB;
-    return a.config.index - b.config.index;
+  const childIds = new Set<string>(widget.config.children || []);
+  const tabItems = widget.config.content?.itemMap;
+  if (tabItems) {
+    Object.values(tabItems).forEach((item: any) => {
+      if (item?.childWidgetId) childIds.add(item.childWidgetId);
+    });
+  }
+  Object.values(widgetMap).forEach(child => {
+    if (child.parentId === widget.id) childIds.add(child.id);
   });
-}
+
+  return [
+    widget.id,
+    ...[...childIds].flatMap(id =>
+      getNestedWidgetIds(widgetMap[id], widgetMap, visited),
+    ),
+  ];
+};
+
+const getMobileRect = (widget: Widget): RectConfig => {
+  const rect =
+    widget.config.mRect ||
+    (widget.config.pRect
+      ? normalizeAutoRectForCols(widget.config.pRect, MOBILE_GRID_COLS)
+      : { x: 0, y: 0, width: 1, height: 1 });
+  const width = Math.max(
+    1,
+    Math.min(MOBILE_GRID_COLS, Math.round(Number(rect.width) || 1)),
+  );
+  const x = Math.max(
+    0,
+    Math.min(MOBILE_GRID_COLS - width, Math.round(Number(rect.x) || 0)),
+  );
+
+  return {
+    ...rect,
+    x,
+    y: Math.max(0, Math.round(Number(rect.y) || 0)),
+    width,
+    height: Math.max(1, Math.round(Number(rect.height) || 1)),
+  };
+};
 
 export interface MobileBoardProps {
   id: string;
@@ -95,7 +140,14 @@ export interface MobileBoardProps {
 }
 
 export const MobileBoard: FC<MobileBoardProps> = memo(
-  ({ id, hideTitle, filterSearchUrl, allowDownload, allowShare, allowManage }) => {
+  ({
+    id,
+    hideTitle,
+    filterSearchUrl,
+    allowDownload,
+    allowShare,
+    allowManage,
+  }) => {
     const boardId = id;
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -107,6 +159,9 @@ export const MobileBoard: FC<MobileBoardProps> = memo(
 
     const boardWidgetMap = useSelector((state: { board: BoardState }) =>
       selectBoardWidgetMap(state),
+    );
+    const boardDataChartMap = useSelector(
+      (state: { board: BoardState }) => state.board.dataChartMap,
     );
 
     const searchParams = useMemo(() => {
@@ -132,12 +187,7 @@ export const MobileBoard: FC<MobileBoardProps> = memo(
       };
     }, [boardId, dispatch, searchParams]);
 
-    // 获取排序后的 widgets
-    const sortedLayoutWidgets = useLayoutMap(boardId);
-    const mobileSortedWidgets = useMemo(
-      () => sortWidgetsForMobile(sortedLayoutWidgets),
-      [sortedLayoutWidgets],
-    );
+    const widgets = useLayoutMap(boardId);
 
     // 判断widgetRecord是否已加载完毕（有widget表示fetchBoardDetail已完成）
     const widgetRecordLoaded = useMemo(() => {
@@ -163,7 +213,9 @@ export const MobileBoard: FC<MobileBoardProps> = memo(
           allowManage={allowManage}
         >
           <MobileBoardContent
-            widgets={mobileSortedWidgets}
+            widgets={widgets}
+            widgetMap={boardWidgetMap[boardId] || {}}
+            dataChartMap={boardDataChartMap[boardId] || {}}
             boardId={boardId}
             boardName={dashboard.name}
             onBack={handleBack}
@@ -171,10 +223,20 @@ export const MobileBoard: FC<MobileBoardProps> = memo(
           />
         </BoardInitProvider>
       );
-    }, [dashboard, widgetRecordLoaded, mobileSortedWidgets, boardId, allowDownload, allowShare, allowManage]);
+    }, [
+      dashboard,
+      widgetRecordLoaded,
+      widgets,
+      boardWidgetMap,
+      boardDataChartMap,
+      boardId,
+      allowDownload,
+      allowShare,
+      allowManage,
+    ]);
 
     return (
-      <MobileWrapper ref={wrapperRef}>
+      <MobileWrapper ref={wrapperRef} className="datart-mobile-board">
         <DndProvider backend={HTML5Backend}>{viewBoard}</DndProvider>
       </MobileWrapper>
     );
@@ -183,6 +245,8 @@ export const MobileBoard: FC<MobileBoardProps> = memo(
 
 interface MobileBoardContentProps {
   widgets: Widget[];
+  widgetMap: Record<string, Widget>;
+  dataChartMap: BoardState['dataChartMap'][string];
   boardId: string;
   boardName: string;
   onBack: () => void;
@@ -190,46 +254,206 @@ interface MobileBoardContentProps {
 }
 
 const MobileBoardContent: FC<MobileBoardContentProps> = memo(
-  ({ widgets, boardId, boardName, onBack, wrapperRef }) => {
+  ({
+    widgets,
+    widgetMap,
+    dataChartMap,
+    boardId,
+    boardName,
+    onBack,
+    wrapperRef,
+  }) => {
     const dispatch = useDispatch();
-
-    const filterWidgets = useMemo(
+    const widgetDataMap = useSelector(
+      (state: { board: BoardState }) => state.board.widgetDataMap,
+    );
+    const widgetRefs = useRef(new Map<string, HTMLDivElement>());
+    const canvasRef = useRef<HTMLDivElement>(null);
+    const mobileWidgets = useMemo(
       () =>
-        widgets.filter(w =>
-          CONTROLLER_ORIGINAL_TYPES.has(w.config.originalType),
-        ),
+        widgets
+          .filter(isMobileWidgetVisible)
+          .map(widget => ({ widget, rect: getMobileRect(widget) }))
+          .sort((a, b) => {
+            if (a.rect.y !== b.rect.y) return a.rect.y - b.rect.y;
+            if (a.rect.x !== b.rect.x) return a.rect.x - b.rect.x;
+            return a.widget.config.index - b.widget.config.index;
+          }),
       [widgets],
     );
-    const buttonWidgets = useMemo(
-      () =>
-        widgets.filter(w =>
-          BUTTON_ORIGINAL_TYPES.has(w.config.originalType),
+    const hasTableDescendant = (widget: Widget) =>
+      getNestedWidgetIds(widget, widgetMap).some(id =>
+        TABLE_CHART_IDS.has(
+          dataChartMap[widgetMap[id]?.datachartId]?.config?.chartGraphId,
         ),
-      [widgets],
-    );
-    const chartWidgets = useMemo(
+      );
+    const initialCompactHeights = useMemo(
       () =>
-        widgets.filter(
-          w =>
-            !CONTROLLER_ORIGINAL_TYPES.has(w.config.originalType) &&
-            !BUTTON_ORIGINAL_TYPES.has(w.config.originalType),
+        Object.fromEntries(
+          mobileWidgets
+            .filter(({ widget }) => hasTableDescendant(widget))
+            .map(({ widget }) => [widget.id, MOBILE_TABLE_INITIAL_HEIGHT]),
         ),
-      [widgets],
+      [mobileWidgets, widgetMap, dataChartMap],
     );
-
-    const hasFilters = filterWidgets.length > 0;
-    const hasButtons = buttonWidgets.length > 0;
-    const hasQueryBtn = buttonWidgets.some(
-      w => w.config.originalType === ORIGINAL_TYPE_MAP.queryBtn,
-    );
-
-    // 移动端直接触发所有 widget 的数据加载
-    // PC 端靠 boardScroll + isElView 懒加载，移动端不走这套机制
-    // 用 setTimeout 确保 fetchBoardDetail 的同步 action 已全部写入 Redux store
+    const [compactHeights, setCompactHeights] = useState<
+      Record<string, number>
+    >(initialCompactHeights);
     useEffect(() => {
-      if (!widgets.length) return;
-      const timer = setTimeout(() => {
-        widgets.forEach(w => {
+      setCompactHeights(previous => {
+        const next = { ...previous };
+        Object.entries(initialCompactHeights).forEach(([id, height]) => {
+          if (next[id] === undefined) next[id] = height;
+        });
+        return JSON.stringify(previous) === JSON.stringify(next)
+          ? previous
+          : next;
+      });
+    }, [initialCompactHeights]);
+    const compactedMobileWidgets = useMemo(() => {
+      const compactedRects = new Map(
+        compactMobileLayout(
+          mobileWidgets.map(({ widget, rect }) => ({ id: widget.id, rect })),
+          compactHeights,
+        ).map(item => [item.id, item.rect]),
+      );
+      return mobileWidgets.map(item => ({
+        ...item,
+        rect: compactedRects.get(item.widget.id) || item.rect,
+      }));
+    }, [compactHeights, mobileWidgets]);
+    const mobileWidgetIds = useMemo(
+      () => mobileWidgets.map(({ widget }) => widget.id).join(','),
+      [mobileWidgets],
+    );
+
+    const measureTableHeights = useCallback(() => {
+      setCompactHeights(previous => {
+        // 未挂载完成的表格必须保留预留高度，不能用空结果覆盖。
+        const next: Record<string, number> = {
+          ...previous,
+          ...initialCompactHeights,
+        };
+        mobileWidgets.forEach(({ widget }) => {
+          const root = widgetRefs.current.get(widget.id);
+          const table = [
+            ...(root?.querySelectorAll<HTMLElement>('.ant-table-wrapper') ||
+              []),
+          ].find(candidate => {
+            const header =
+              candidate.querySelector<HTMLElement>('.ant-table-thead');
+            return (header?.getBoundingClientRect().height || 0) > 0;
+          });
+          if (!root || !table) return;
+
+          const tableTop =
+            table.getBoundingClientRect().top -
+            root.getBoundingClientRect().top;
+          const sectionHeight = (selector: string) =>
+            table.querySelector<HTMLElement>(selector)?.getBoundingClientRect()
+              .height || 0;
+          const headerHeight = sectionHeight('.ant-table-thead');
+          // 非激活标签页的表格高度为 0，不能参与卡片收高计算。
+          if (!headerHeight) return;
+          const activeWidgetId = table.closest<HTMLElement>(
+            '[data-datart-widget-id]',
+          )?.dataset.datartWidgetId;
+          const activeDataset = activeWidgetId
+            ? widgetDataMap[activeWidgetId]
+            : undefined;
+          // 数据未加载完成时保留五行预留高度，禁止根据临时 DOM 行数收高。
+          if (!activeDataset) return;
+          const dataRows = activeDataset.rows?.length || 0;
+          const visibleRowCount = Math.min(
+            MOBILE_TABLE_MAX_VISIBLE_ROWS,
+            Math.max(0, dataRows),
+          );
+          const firstDataRow = table.querySelector<HTMLElement>(
+            '.ant-table-tbody > tr.ant-table-row',
+          );
+          // 有数据但数据行尚未完成挂载时不能收高，等待下一次 DOM 变更。
+          if (dataRows > 0 && !firstDataRow) return;
+          const rowHeight =
+            firstDataRow?.getBoundingClientRect().height || headerHeight;
+          const contentHeight =
+            headerHeight +
+            rowHeight * visibleRowCount +
+            MOBILE_TABLE_SCROLLBAR_HEIGHT +
+            sectionHeight('.ant-table-summary') +
+            sectionHeight('.ant-table-footer') +
+            sectionHeight('.ant-pagination');
+          // 只能按目标可视行数计算。读取当前表格底部会把尚未受约束的
+          // 全部数据行反向写回卡片高度，形成越测越高的循环。
+          const requiredHeight = tableTop + contentHeight;
+          const rows = getMobileGridSpan(
+            requiredHeight,
+            MOBILE_ROW_HEIGHT,
+            MOBILE_GAP,
+            MOBILE_TABLE_MIN_HEIGHT,
+            MOBILE_TABLE_BOTTOM_GUARD,
+          );
+          next[widget.id] = rows;
+        });
+        return JSON.stringify(previous) === JSON.stringify(next)
+          ? previous
+          : next;
+      });
+    }, [initialCompactHeights, mobileWidgets, widgetDataMap]);
+
+    // 标签卡子组件是异步挂载的，监听真实 DOM 出现和数据行变化后再测量。
+    useLayoutEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      let frame = requestAnimationFrame(measureTableHeights);
+      const scheduleMeasure = () => {
+        cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(measureTableHeights);
+      };
+      const mutationObserver = new MutationObserver(scheduleMeasure);
+      mutationObserver.observe(canvas, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class'],
+      });
+      const resizeObserver = new ResizeObserver(scheduleMeasure);
+      widgetRefs.current.forEach(element => resizeObserver.observe(element));
+      return () => {
+        cancelAnimationFrame(frame);
+        mutationObserver.disconnect();
+        resizeObserver.disconnect();
+      };
+    }, [measureTableHeights, mobileWidgetIds]);
+
+    // 卡片高度提交后统一同步一次图表尺寸。表格自身不再参与高度计算。
+    useLayoutEffect(() => {
+      const frame = requestAnimationFrame(dispatchResize);
+      return () => cancelAnimationFrame(frame);
+    }, [compactHeights]);
+
+    // 优先加载首屏组件，避免屏幕外图表与首屏表格争抢同一个批量查询。
+    // 其余组件紧接着加载，滚动到下方时不会出现空白。
+    useEffect(() => {
+      if (!mobileWidgets.length) return;
+      const viewportHeight =
+        wrapperRef.current?.clientHeight || window.innerHeight;
+      const viewportRows = Math.ceil(
+        viewportHeight / (MOBILE_ROW_HEIGHT + MOBILE_GAP),
+      );
+      const initialWidgets = mobileWidgets.filter(
+        ({ rect }) => rect.y < viewportRows,
+      );
+      const firstScreenWidgets = initialWidgets.length
+        ? initialWidgets
+        : mobileWidgets.slice(0, 1);
+      const initialWidgetIds = new Set(
+        firstScreenWidgets.map(({ widget }) => widget.id),
+      );
+      const remainingWidgets = mobileWidgets.filter(
+        ({ widget }) => !initialWidgetIds.has(widget.id),
+      );
+      const renderWidgets = (items: typeof mobileWidgets) => {
+        items.forEach(({ widget: w }) => {
           dispatch(
             renderedWidgetAsync({
               boardId,
@@ -238,10 +462,16 @@ const MobileBoardContent: FC<MobileBoardContentProps> = memo(
             }),
           );
         });
-      }, 50);
-      return () => clearTimeout(timer);
+      };
+
+      renderWidgets(firstScreenWidgets);
+      const timer = window.setTimeout(
+        () => renderWidgets(remainingWidgets),
+        MOBILE_DEFERRED_WIDGET_LOAD_MS,
+      );
+      return () => window.clearTimeout(timer);
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [boardId, widgets.length]);
+    }, [boardId, mobileWidgetIds]);
 
     // 移动端：将筛选器弹窗挂载到 MobileWrapper，避免被窄容器裁剪
     const mobileControlValue: MobileControlContextValue = useMemo(
@@ -255,76 +485,37 @@ const MobileBoardContent: FC<MobileBoardContentProps> = memo(
       <PageWrapper>
         {/* 顶部导航栏 */}
         <NavBar>
-          <BackBtn
-            type="text"
-            icon={<ArrowLeftOutlined />}
-            onClick={onBack}
-          />
+          <BackBtn type="text" icon={<ArrowLeftOutlined />} onClick={onBack} />
           <NavTitle>{boardName}</NavTitle>
           <NavSpacer />
         </NavBar>
 
         <ScrollBody>
-          {/* 筛选器卡片 */}
-          {hasFilters && (
-            <MobileControlContext.Provider value={mobileControlValue}>
-              <FilterCard>
-                <FilterGrid>
-                  {filterWidgets.map(widget => (
-                    <FilterCell key={widget.id}>
-                      <WidgetWrapProvider
-                        id={widget.id}
-                        boardEditing={false}
-                        boardId={boardId}
-                      >
-                        <WidgetMapper boardEditing={false} hideTitle={false} />
-                      </WidgetWrapProvider>
-                    </FilterCell>
-                  ))}
-                </FilterGrid>
-
-                {/* 按钮行 */}
-                {hasButtons && (
-                  <ButtonRow>
-                    {buttonWidgets.map(widget => (
-                      <WidgetWrapProvider
-                        key={widget.id}
-                        id={widget.id}
-                        boardEditing={false}
-                        boardId={boardId}
-                      >
-                        <WidgetMapper boardEditing={false} hideTitle={false} />
-                      </WidgetWrapProvider>
-                    ))}
-                  </ButtonRow>
-                )}
-
-                {/* 查询提示 */}
-                {hasQueryBtn && hasFilters && (
-                  <FilterHint>
-                    调整筛选后，请点击「查询」加载数据
-                  </FilterHint>
-                )}
-              </FilterCard>
-            </MobileControlContext.Provider>
-          )}
-
-          {/* 图表卡片列表 */}
-          {chartWidgets.map(widget => (
-            <ChartCard key={widget.id}>
-              <WidgetWrapProvider
-                id={widget.id}
-                boardEditing={false}
-                boardId={boardId}
-              >
-                <div className="widget" style={WIDGET_INNER_STYLE}>
-                  <WidgetMapper boardEditing={false} hideTitle={false} />
-                </div>
-              </WidgetWrapProvider>
-            </ChartCard>
-          ))}
-
-          {/* 底部安全区占位 */}
+          <MobileControlContext.Provider value={mobileControlValue}>
+            <MobileCanvas ref={canvasRef}>
+              {compactedMobileWidgets.map(({ widget, rect }) => (
+                <MobileWidget
+                  key={widget.id}
+                  className="mobile-widget"
+                  rect={rect}
+                  ref={element => {
+                    if (element) widgetRefs.current.set(widget.id, element);
+                    else widgetRefs.current.delete(widget.id);
+                  }}
+                >
+                  <WidgetWrapProvider
+                    id={widget.id}
+                    boardEditing={false}
+                    boardId={boardId}
+                  >
+                    <div className="widget" style={WIDGET_INNER_STYLE}>
+                      <WidgetMapper boardEditing={false} hideTitle={false} />
+                    </div>
+                  </WidgetWrapProvider>
+                </MobileWidget>
+              ))}
+            </MobileCanvas>
+          </MobileControlContext.Provider>
           <BottomSafe />
         </ScrollBody>
 
@@ -359,23 +550,23 @@ const PageWrapper = styled.div`
 /* ========== 顶部导航栏：类似小程序 navigationBar ========== */
 const NavBar = styled.div`
   position: relative;
+  box-sizing: content-box;
   display: flex;
-  align-items: center;
   flex-shrink: 0;
+  align-items: center;
   min-height: 40px;
   padding: 0 ${SPACE}px;
   padding-top: calc(env(safe-area-inset-top, 0px) + 0px);
   background-color: #fff;
-  box-sizing: content-box;
 
   /* 细分割线 */
   &::after {
-    content: '';
     position: absolute;
-    left: 0;
     right: 0;
     bottom: 0;
+    left: 0;
     height: 0.5px;
+    content: '';
     background-color: rgba(0, 0, 0, 0.08);
   }
 `;
@@ -383,19 +574,19 @@ const NavBar = styled.div`
 const NavTitle = styled.h1`
   flex: 1;
   margin: 0;
+  overflow: hidden;
   font-size: 15px;
   font-weight: 600;
+  line-height: 40px;
   color: #1a1a1a;
   text-align: center;
-  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 40px;
 `;
 
 const NavSpacer = styled.div`
-  width: 28px;
   flex-shrink: 0;
+  width: 28px;
 `;
 
 const BackBtn = styled(Button)`
@@ -410,153 +601,72 @@ const BackBtn = styled(Button)`
 /* ========== 可滚动主体 ========== */
 const ScrollBody = styled.div`
   flex: 1;
-  overflow-y: auto;
+  padding: 0;
   overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  padding: 10px 10px 0;
+  overflow-y: auto;
   font-size: 13px;
+  -webkit-overflow-scrolling: touch;
 `;
 
-/* ========== 筛选器卡片 ========== */
-const FilterCard = styled.div`
+/* ========== DataEase 风格移动端画布 ========== */
+const MobileCanvas = styled.div`
   position: relative;
-  z-index: 10;
-  margin-bottom: 10px;
-  padding: 10px 12px 8px;
-  background-color: #fff;
-  border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-
-  /* 筛选器表单标签字号 */
-  .ant-form-item-label > label {
-    font-size: 12px;
-    height: 22px;
-  }
-
-  .ant-form-item {
-    margin-bottom: 4px;
-  }
-
-  /* 限制多选标签区域高度，防止选项过多撑开卡片 */
-  .ant-select-multiple .ant-select-selection-item {
-    height: 22px !important;
-    line-height: 20px !important;
-    font-size: 12px !important;
-    margin-top: 2px !important;
-  }
-`;
-
-const FilterGrid = styled.div`
+  box-sizing: border-box;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 12px;
+  grid-template-columns: repeat(${MOBILE_GRID_COLS}, minmax(0, 1fr));
+  grid-auto-rows: ${MOBILE_ROW_HEIGHT}px;
+  gap: ${MOBILE_GAP}px;
+  align-content: start;
+  min-height: 100%;
+  padding: ${MOBILE_PADDING}px;
+  background: #edf4ff;
 
-  @media (max-width: 360px) {
-    grid-template-columns: 1fr;
+  .mobile-widget {
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgb(31 35 41 / 12%);
   }
-`;
 
-const FilterCell = styled.div`
-  min-width: 0;
-  overflow: hidden;
-
-  /* 固定筛选器单元格高度，多选/日期等控件不会撑开 */
-  max-height: 72px;
-  display: flex;
-  align-items: flex-start;
-
-  /* 去除 WidgetWrapper 卡片外观 */
-  > div {
-    background: none !important;
-    border: none !important;
+  .mobile-widget > .widget,
+  .mobile-widget .widget > div {
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    min-height: 0;
+    padding: 0 !important;
+    border: 0 !important;
     border-radius: 0 !important;
     box-shadow: none !important;
-    padding: 0 !important;
-    min-height: unset !important;
-    width: 100%;
   }
 
-  .widget {
-    height: auto;
-    min-height: unset;
-    overflow: hidden;
-  }
-
-  /* 筛选控件撑满 */
   .ant-select,
   .ant-picker {
     width: 100%;
   }
 
-  /* 控件字体：iOS Safari 要求 >=16px 才不自动缩放 */
   .ant-select-selector,
   .ant-picker-input > input {
     font-size: 16px;
   }
 
-  /* 多选标签区域：单行显示，超出隐藏 */
   .ant-select-multiple .ant-select-selection-overflow {
+    flex-wrap: nowrap !important;
     max-height: 36px;
     overflow: hidden;
-    flex-wrap: nowrap !important;
+  }
+
+  .ant-table-wrapper {
+    max-width: 100%;
+    overflow: hidden;
   }
 `;
 
-const ButtonRow = styled.div`
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid #f0f0f0;
-
-  .widget {
-    height: auto;
-    min-height: unset;
-  }
-
-  /* 按钮移动端缩小 */
-  .ant-btn {
-    font-size: 13px;
-    height: 32px;
-    padding: 4px 12px;
-    border-radius: 6px;
-  }
-`;
-
-const FilterHint = styled.div`
-  margin-top: 6px;
-  font-size: 11px;
-  color: #bbb;
-  text-align: center;
-`;
-
-/* ========== 图表卡片 ========== */
-const ChartCard = styled.div`
-  position: relative;
-  margin-bottom: 10px;
-  border-radius: 10px;
-  background-color: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  overflow: hidden;
-
-  /* 强制设置高度，确保 useCacheWidthHeight 能测量到有效尺寸 */
-  /* DataChartWidgetCore 在 cacheW<=1 || cacheH<=1 时返回 null 不渲染图表 */
-  .widget {
-    height: 280px !important;
-    min-height: 280px !important;
-    max-height: 280px !important;
-    padding: 4px 0;
-  }
-
-  /* 覆盖 WidgetWrapper 默认的 min-height: 0 */
-  .widget > div {
-    min-height: unset !important;
-    height: 100% !important;
-  }
-
-  &:active {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
+const MobileWidget = styled.div<{ rect: RectConfig }>`
+  grid-row: ${p => `${p.rect.y + 1} / span ${p.rect.height}`};
+  grid-column: ${p => `${p.rect.x + 1} / span ${p.rect.width}`};
 `;
 
 /* ========== 底部安全区占位 ========== */

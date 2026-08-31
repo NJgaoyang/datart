@@ -19,6 +19,7 @@
 package datart.data.provider.jdbc.adapters;
 
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.druid.pool.DruidDataSource;
 import datart.core.base.PageInfo;
 import datart.core.base.consts.ValueType;
 import datart.core.base.exception.Exceptions;
@@ -52,6 +53,7 @@ import java.lang.reflect.Constructor;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -71,6 +73,8 @@ public class JdbcDataProviderAdapter implements Closeable {
 
     protected static final String FKCOLUMN_NAME = "FKCOLUMN_NAME";
 
+    protected static final int DEFAULT_QUERY_TIMEOUT_SECONDS = 60;
+
     protected DataSource dataSource;
 
     protected JdbcProperties jdbcProperties;
@@ -80,6 +84,8 @@ public class JdbcDataProviderAdapter implements Closeable {
     protected boolean init;
 
     protected SqlDialect sqlDialect;
+
+    private final ThreadLocal<QueryContext> queryContext = new ThreadLocal<>();
 
     public final void init(JdbcProperties jdbcProperties, JdbcDriverInfo driverInfo) {
         try {
@@ -102,8 +108,9 @@ public class JdbcDataProviderAdapter implements Closeable {
             log.error(errMsg, e);
             Exceptions.e(e);
         }
-        try {
-            DriverManager.getConnection(properties.getUrl(), properties.getUser(), properties.getPassword());
+        try (Connection ignored = DriverManager.getConnection(
+                properties.getUrl(), properties.getUser(), properties.getPassword())) {
+            // Opening a connection is sufficient for validation; it must be closed immediately.
         } catch (SQLException sqlException) {
             Exceptions.e(sqlException);
         }
@@ -227,18 +234,32 @@ public class JdbcDataProviderAdapter implements Closeable {
      * @throws SQLException SQL执行异常
      */
     protected Dataframe execute(String sql) throws SQLException {
+        long startedAt = System.nanoTime();
+        QueryContext context = queryContext.get();
+        String traceId = QueryExecutionTraceRegistry.start(jdbcProperties.getSourceId(),
+                context == null ? null : context.queryId,
+                jdbcProperties.getDbType(), context == null ? null : context.reportName, sql);
         try (Connection conn = getConn()) {
             try (Statement statement = conn.createStatement()) {
+                configureStatement(statement);
+                registerStatement(statement);
                 // Use a moderate fetchSize to enable streaming, preventing OOM
                 // on large result sets. MySQL/StarRocks drivers stream row-by-row
                 // with fetchSize>0; other drivers typically batch this many rows
                 statement.setFetchSize(2000);
-                try (ResultSet rs = statement.executeQuery(sql)) {
-                    return parseResultSet(rs);
+                try {
+                    try (ResultSet rs = statement.executeQuery(sql)) {
+                        Dataframe dataframe = parseResultSet(rs);
+                        QueryExecutionTraceRegistry.finish(traceId, "SUCCESS", null);
+                        return dataframe;
+                    }
+                } finally {
+                    unregisterStatement(statement);
                 }
             }
         } catch (SQLException e) {
-            log.error("SQL execution failed: {}", sql);
+            QueryExecutionTraceRegistry.finish(traceId, "ERROR", e.getMessage());
+            logSqlFailure(sql, startedAt, e);
             throw e;
         }
     }
@@ -253,26 +274,51 @@ public class JdbcDataProviderAdapter implements Closeable {
      */
     protected Dataframe execute(String selectSql, PageInfo pageInfo) throws SQLException {
         Dataframe dataframe;
+        long startedAt = System.nanoTime();
+        QueryContext context = queryContext.get();
+        String traceId = QueryExecutionTraceRegistry.start(jdbcProperties.getSourceId(),
+                context == null ? null : context.queryId,
+                jdbcProperties.getDbType(), context == null ? null : context.reportName, selectSql);
         try (Connection conn = getConn()) {
             try (Statement statement = conn.createStatement()) {
+                configureStatement(statement);
+                registerStatement(statement);
                 statement.setFetchSize((int) Math.min(pageInfo.getPageSize(), 10_000));
-                try (ResultSet resultSet = statement.executeQuery(selectSql)) {
-                    try {
-                        resultSet.absolute((int) Math.min(pageInfo.getTotal(), (pageInfo.getPageNo() - 1) * pageInfo.getPageSize()));
-                    } catch (Exception e) {
-                        int count = 0;
-                        while (count < (pageInfo.getPageNo() - 1) * pageInfo.getPageSize() && resultSet.next()) {
-                            count++;
+                try {
+                    try (ResultSet resultSet = statement.executeQuery(selectSql)) {
+                        try {
+                            resultSet.absolute((int) Math.min(pageInfo.getTotal(), (pageInfo.getPageNo() - 1) * pageInfo.getPageSize()));
+                        } catch (Exception e) {
+                            int count = 0;
+                            while (count < (pageInfo.getPageNo() - 1) * pageInfo.getPageSize() && resultSet.next()) {
+                                count++;
+                            }
                         }
+                        dataframe = parseResultSet(resultSet, pageInfo.getPageSize());
+                        QueryExecutionTraceRegistry.finish(traceId, "SUCCESS", null);
+                        return dataframe;
                     }
-                    dataframe = parseResultSet(resultSet, pageInfo.getPageSize());
-                    return dataframe;
+                } finally {
+                    unregisterStatement(statement);
                 }
             }
         } catch (SQLException e) {
-            log.error("SQL execution failed: {}", selectSql);
+            QueryExecutionTraceRegistry.finish(traceId, "ERROR", e.getMessage());
+            logSqlFailure(selectSql, startedAt, e);
             throw e;
         }
+    }
+
+    private void logSqlFailure(String sql, long startedAt, SQLException exception) {
+        String digest = DigestUtils.sha256Hex(sql);
+        long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt);
+        String dbType = jdbcProperties == null ? "unknown" : jdbcProperties.getDbType();
+        String sourceId = jdbcProperties == null ? "unknown" : jdbcProperties.getSourceId();
+        QueryContext context = queryContext.get();
+        String queryId = context == null ? null : context.queryId;
+        log.error("SQL execution failed: queryId={}, sourceId={}, dbType={}, elapsedMs={}, sqlDigest={}, error={}",
+                queryId, sourceId, dbType, elapsedMs, digest, exception.getMessage());
+        log.debug("Failed SQL detail: sqlDigest={}, sql={}", digest, sql);
     }
 
     /**
@@ -282,18 +328,105 @@ public class JdbcDataProviderAdapter implements Closeable {
      * @return 总记录数
      */
     public int executeCountSql(String sql) throws SQLException {
-        try (Connection connection = getConn()) {
-            PreparedStatement preparedStatement = connection.prepareStatement(String.format(COUNT_SQL, sql));
-            // COUNT only returns one row — use minimal fetch size
-            preparedStatement.setFetchSize(1);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            resultSet.next();
-            return resultSet.getInt(1);
+        String countSql = String.format(COUNT_SQL, sql);
+        long startedAt = System.nanoTime();
+        QueryContext context = queryContext.get();
+        String traceId = QueryExecutionTraceRegistry.start(jdbcProperties.getSourceId(),
+                context == null ? null : context.queryId,
+                jdbcProperties.getDbType(), context == null ? null : context.reportName, countSql);
+        try {
+            try (Connection connection = getConn()) {
+                try (PreparedStatement preparedStatement = connection.prepareStatement(countSql)) {
+                    configureStatement(preparedStatement);
+                    registerStatement(preparedStatement);
+                    // COUNT only returns one row — use minimal fetch size
+                    preparedStatement.setFetchSize(1);
+                    try {
+                        try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                            resultSet.next();
+                            int count = resultSet.getInt(1);
+                            QueryExecutionTraceRegistry.finish(traceId, "SUCCESS", null);
+                            return count;
+                        }
+                    } finally {
+                        unregisterStatement(preparedStatement);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            QueryExecutionTraceRegistry.finish(traceId, "ERROR", e.getMessage());
+            logSqlFailure(countSql, startedAt, e);
+            throw e;
+        }
+    }
+
+    protected void configureStatement(Statement statement) throws SQLException {
+        statement.setQueryTimeout(getQueryTimeoutSeconds());
+    }
+
+    int getQueryTimeoutSeconds() {
+        if (jdbcProperties == null || jdbcProperties.getProperties() == null) {
+            return DEFAULT_QUERY_TIMEOUT_SECONDS;
+        }
+        String value = jdbcProperties.getProperties().getProperty("queryTimeout");
+        if (StringUtils.isBlank(value)) {
+            return DEFAULT_QUERY_TIMEOUT_SECONDS;
+        }
+        try {
+            return Math.max(0, Integer.parseInt(value));
+        } catch (NumberFormatException e) {
+            log.warn("Invalid JDBC queryTimeout '{}', using {} seconds", value, DEFAULT_QUERY_TIMEOUT_SECONDS);
+            return DEFAULT_QUERY_TIMEOUT_SECONDS;
         }
     }
 
     protected Connection getConn() throws SQLException {
         return dataSource.getConnection();
+    }
+
+    protected void startQuery(ExecuteParam executeParam) {
+        if (executeParam != null && StringUtils.isNotBlank(executeParam.getQueryId())) {
+            queryContext.set(new QueryContext(executeParam.getQueryId(), executeParam.getQueryOwner(),
+                    executeParam.getReportName()));
+        }
+    }
+
+    protected void endQuery() {
+        queryContext.remove();
+    }
+
+    protected void registerStatement(Statement statement) {
+        QueryContext context = queryContext.get();
+        if (context != null) {
+            QueryCancellationRegistry.register(context.queryId, context.ownerId, statement);
+        }
+    }
+
+    protected void unregisterStatement(Statement statement) {
+        QueryContext context = queryContext.get();
+        if (context != null) {
+            QueryCancellationRegistry.unregister(context.queryId, statement);
+        }
+    }
+
+    public Map<String, Object> getRuntimeStats() {
+        if (!(dataSource instanceof DruidDataSource)) {
+            return Collections.emptyMap();
+        }
+        DruidDataSource druid = (DruidDataSource) dataSource;
+        Map<String, Object> stats = new LinkedHashMap<>();
+        stats.put("activeCount", druid.getActiveCount());
+        stats.put("poolingCount", druid.getPoolingCount());
+        stats.put("maxActive", druid.getMaxActive());
+        stats.put("connectCount", druid.getConnectCount());
+        stats.put("closeCount", druid.getCloseCount());
+        stats.put("waitThreadCount", druid.getWaitThreadCount());
+        stats.put("queryTimeout", getQueryTimeoutSeconds());
+        return stats;
+    }
+
+    public List<Map<String, Object>> getQueryTraces() {
+        return QueryExecutionTraceRegistry.recent(jdbcProperties == null ? null : jdbcProperties.getSourceId());
     }
 
     @Override
@@ -428,6 +561,8 @@ public class JdbcDataProviderAdapter implements Closeable {
      * 本地执行，从数据源拉取全量数据，在本地执行聚合操作
      */
     public Dataframe executeInLocal(QueryScript script, ExecuteParam executeParam) throws Exception {
+        startQuery(executeParam);
+        try {
 
         List<SelectColumn> selectColumns = null;
         // 构建执行参数，查询源表全量数据
@@ -462,12 +597,17 @@ public class JdbcDataProviderAdapter implements Closeable {
         }
         data.setName(script.toQueryKey());
         return LocalDB.executeLocalQuery(script, executeParam, data.splitByTable(script.getSchema()));
+        } finally {
+            endQuery();
+        }
     }
 
     /**
      * 在数据源执行，组装完整SQL，提交至数据源执行
      */
     public Dataframe executeOnSource(QueryScript script, ExecuteParam executeParam) throws Exception {
+        startQuery(executeParam);
+        try {
 
         Dataframe dataframe;
         String sql;
@@ -495,6 +635,9 @@ public class JdbcDataProviderAdapter implements Closeable {
         }
         dataframe.setScript(sql);
         return dataframe;
+        } finally {
+            endQuery();
+        }
     }
 
     public String renderSql(QueryScript script, ExecuteParam executeParam) throws Exception {
@@ -507,10 +650,17 @@ public class JdbcDataProviderAdapter implements Closeable {
     }
 
     protected Object getObjFromResultSet(ResultSet rs, int columnIndex) throws SQLException {
-        if (isYearType(rs.getMetaData().getColumnTypeName(columnIndex))) {
+        ResultSetMetaData metadata = rs.getMetaData();
+        if (isYearType(metadata.getColumnTypeName(columnIndex))) {
             int year = rs.getInt(columnIndex);
             return rs.wasNull() ? null : year;
         }
+
+        if (metadata.getColumnType(columnIndex) == Types.DATE) {
+            java.sql.Date date = rs.getDate(columnIndex);
+            return rs.wasNull() ? null : date;
+        }
+
         Object obj = rs.getObject(columnIndex);
         if (obj instanceof Boolean) {
             obj = rs.getObject(columnIndex).toString();
@@ -522,5 +672,17 @@ public class JdbcDataProviderAdapter implements Closeable {
 
     private boolean isYearType(String columnTypeName) {
         return "YEAR".equalsIgnoreCase(columnTypeName);
+    }
+
+    private static class QueryContext {
+        private final String queryId;
+        private final String ownerId;
+        private final String reportName;
+
+        private QueryContext(String queryId, String ownerId, String reportName) {
+            this.queryId = queryId;
+            this.ownerId = ownerId;
+            this.reportName = reportName;
+        }
     }
 }

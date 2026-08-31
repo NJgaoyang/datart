@@ -65,7 +65,13 @@ export const handleServerBoardAction =
       datacharts,
       serverViews,
     );
-    let migratedWidgets = migrateWidgets(serverWidgets, dashboard.config.type);
+    let migratedWidgets = migrateWidgets(
+      serverWidgets,
+      dashboard.config.type,
+      dashboard.config.layoutVersion,
+      dashboard.config.mobileLayoutVersion,
+      dashboard.config.pcRowLayoutVersion,
+    );
     migratedWidgets = migrateWidgetChartConfig(migratedWidgets);
 
     const { widgetMap, wrappedDataCharts, controllerWidgets } = getWidgetMap(

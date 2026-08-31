@@ -75,6 +75,13 @@ public interface RelVariableSubjectMapperExt extends RelVariableSubjectMapper {
     })
     List<RelVariableSubject> selectByView(String viewId);
 
+    @Select({
+            "SELECT rvs.* FROM rel_variable_subject rvs " +
+                    "JOIN variable v ON v.id = rvs.variable_id " +
+                    "WHERE v.org_id = #{orgId} ORDER BY rvs.create_time ASC"
+    })
+    List<RelVariableSubject> listByOrgId(@Param("orgId") String orgId);
+
     @Update({
             "<script>",
             "<foreach collection='elements' item='record' index='index' separator=';'>",

@@ -23,6 +23,10 @@ public class OrganizationSqlProvider {
         if (record.getDescription() != null) {
             sql.VALUES("description", "#{description,jdbcType=VARCHAR}");
         }
+
+        if (record.getMigrationMode() != null) {
+            sql.VALUES("migration_mode", "#{migrationMode,jdbcType=VARCHAR}");
+        }
         
         if (record.getCreateTime() != null) {
             sql.VALUES("create_time", "#{createTime,jdbcType=TIMESTAMP}");
@@ -57,6 +61,10 @@ public class OrganizationSqlProvider {
         
         if (record.getDescription() != null) {
             sql.SET("description = #{description,jdbcType=VARCHAR}");
+        }
+
+        if (record.getMigrationMode() != null) {
+            sql.SET("migration_mode = #{migrationMode,jdbcType=VARCHAR}");
         }
         
         if (record.getCreateTime() != null) {

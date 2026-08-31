@@ -50,7 +50,10 @@ import {
   getRuntimeDateLevelFields,
   transformToDataSet,
 } from 'app/utils/chartHelper';
-import { getChartDrillOption } from 'app/utils/internalChartHelper';
+import {
+  getChartDrillOption,
+  reconcileChartConfigFieldMeta,
+} from 'app/utils/internalChartHelper';
 import { produce } from 'immer';
 import React, {
   memo,
@@ -230,10 +233,11 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
     }
 
     return {
+      widgetId: wid,
       linkFields,
       jumpField,
     };
-  }, [widget]);
+  }, [wid, widget]);
 
   const buildDrillThroughEventParams = useCallback(
     (clickEventParams, targetEvent: InteractionMouseEvent, ruleId?: string) => {
@@ -535,8 +539,11 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
         }) as ChartDetailConfigDTO,
       );
     });
-    return chartConfig as ChartConfig;
-  }, [chart?.config, dataChart?.config]);
+    return reconcileChartConfigFieldMeta(
+      chartConfig as ChartConfig,
+      chartDataView?.meta || [],
+    );
+  }, [chart?.config, chartDataView?.meta, dataChart?.config]);
 
   useEffect(() => {
     let drillOption = getChartDrillOption(

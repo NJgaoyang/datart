@@ -222,6 +222,7 @@ class BasicTableChart extends ReactChart {
       context,
     );
     return {
+      widgetId: widgetSpecialConfig?.widgetId,
       rowKey: 'id',
       pagination: tablePagination,
       dataSource: chartDataSet,

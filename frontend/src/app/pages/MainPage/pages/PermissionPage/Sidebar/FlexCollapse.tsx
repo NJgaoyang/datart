@@ -112,8 +112,8 @@ const Container = styled.div`
   flex-direction: column;
   min-height: 0;
   margin-top: ${SPACE};
-  border-top: 1px solid ${p => p.theme.borderColorSplit};
   overflow-y: auto;
+  border-top: 1px solid ${p => p.theme.borderColorSplit};
 `;
 
 const Block = styled.div`
@@ -144,8 +144,8 @@ const Block = styled.div`
   .content {
     display: none;
     flex: none;
-    height: auto;
     min-width: 0;
+    height: auto;
   }
 
   &.active {

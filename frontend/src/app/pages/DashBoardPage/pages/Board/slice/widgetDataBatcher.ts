@@ -9,6 +9,7 @@ import { request2 } from 'utils/request';
 interface BatchEntry {
   boardId: string;
   widgetId: string;
+  queryId: string;
   requestParams: any;
   resolve: (value: any) => void;
   reject: (reason?: any) => void;
@@ -16,9 +17,13 @@ interface BatchEntry {
 
 let pendingQueue: BatchEntry[] = [];
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
+const inFlight = new Map<string, BatchEntry>();
 
 /** 防抖延迟(ms): 在此窗口内到达的请求会合并为一个批次 */
 const BATCH_DEBOUNCE_MS = 150;
+
+const createQueryId = () =>
+  globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
 
 /**
  * 将单个 Widget 的数据请求加入批量队列
@@ -30,7 +35,14 @@ export function enqueueWidgetFetch(
   requestParams: any,
 ): Promise<any> {
   return new Promise((resolve, reject) => {
-    pendingQueue.push({ boardId, widgetId, requestParams, resolve, reject });
+    pendingQueue.push({
+      boardId,
+      widgetId,
+      queryId: createQueryId(),
+      requestParams,
+      resolve,
+      reject,
+    });
     scheduleFlush();
   });
 }
@@ -49,29 +61,27 @@ async function flushBatch(): Promise<void> {
 
   if (batch.length === 0) return;
 
-  // 如果队列只有 1 个请求，退化到单请求模式（避免不必要的批量包装开销）
-  if (batch.length === 1) {
-    const entry = batch[0];
-    try {
+  batch.forEach(entry => inFlight.set(entry.queryId, entry));
+  try {
+    // 如果队列只有 1 个请求，退化到单请求模式（避免不必要的批量包装开销）
+    if (batch.length === 1) {
+      const entry = batch[0];
       const { data } = await request2<any>({
         method: 'POST',
         url: 'data-provider/execute',
-        data: entry.requestParams,
+        data: { ...entry.requestParams, queryId: entry.queryId },
       });
       entry.resolve(data);
-    } catch (error) {
-      entry.reject(error);
+      return;
     }
-    return;
-  }
 
-  // 批量请求模式
-  try {
+    // 批量请求模式
     const response = await request2<Record<string, any>>({
       method: 'POST',
       url: 'data-provider/execute/batch',
       data: batch.map(entry => ({
         requestId: entry.widgetId,
+        queryId: entry.queryId,
         ...entry.requestParams,
       })),
     });
@@ -111,7 +121,7 @@ async function flushBatch(): Promise<void> {
           const { data } = await request2<any>({
             method: 'POST',
             url: 'data-provider/execute',
-            data: entry.requestParams,
+            data: { ...entry.requestParams, queryId: entry.queryId },
           });
           entry.resolve(data);
         } catch (singleError) {
@@ -119,6 +129,8 @@ async function flushBatch(): Promise<void> {
         }
       }),
     );
+  } finally {
+    batch.forEach(entry => inFlight.delete(entry.queryId));
   }
 }
 
@@ -130,6 +142,16 @@ export function cancelPendingWidgetFetches(boardId: string): void {
   cancelled.forEach(entry => {
     entry.reject(new Error('Widget fetch cancelled'));
   });
+
+  Array.from(inFlight.values())
+    .filter(entry => entry.boardId === boardId)
+    .forEach(entry => {
+      entry.reject(new Error('Widget fetch cancelled'));
+      void request2({
+        method: 'POST',
+        url: `data-provider/execute/cancel/${entry.queryId}`,
+      }).catch(() => undefined);
+    });
 
   if (pendingQueue.length === 0 && flushTimer !== null) {
     clearTimeout(flushTimer);

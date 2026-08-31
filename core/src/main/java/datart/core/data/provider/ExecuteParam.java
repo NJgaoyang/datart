@@ -51,6 +51,8 @@ public class ExecuteParam implements Serializable {
 
     private List<FunctionColumn> functionColumns;
 
+    private List<QueryOutputProjection> outputProjections;
+
     private Set<SelectColumn> includeColumns;
 
     private PageInfo pageInfo;
@@ -62,6 +64,14 @@ public class ExecuteParam implements Serializable {
     private boolean cacheEnable;
 
     private int cacheExpires;
+
+    private String queryId;
+
+    private String queryOwner;
+
+    private String reportId;
+
+    private String reportName;
 
     @Override
     public String toString() {

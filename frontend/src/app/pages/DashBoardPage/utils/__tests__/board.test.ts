@@ -17,7 +17,7 @@
  */
 
 import { BoardConfigValue } from '../../components/BoardProvider/BoardConfigProvider';
-import { MIN_MARGIN, MIN_PADDING } from '../../constants';
+import { MOBILE_MIN_MARGIN, MOBILE_MIN_PADDING } from '../../constants';
 import { getBoardMarginPadding } from '../board';
 
 describe('test getBoardMarginPadding', () => {
@@ -50,8 +50,8 @@ describe('test getBoardMarginPadding', () => {
       mPadding: undefined,
     };
     expect(getBoardMarginPadding(config as any, 'sm')).toEqual({
-      curMargin: [MIN_MARGIN, MIN_MARGIN],
-      curPadding: [MIN_PADDING, MIN_PADDING],
+      curMargin: [MOBILE_MIN_MARGIN, MOBILE_MIN_MARGIN],
+      curPadding: [MOBILE_MIN_PADDING, MOBILE_MIN_PADDING],
     });
   });
 });

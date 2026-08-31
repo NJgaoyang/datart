@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
+import { LeftOutlined } from '@ant-design/icons';
 import { Empty } from 'antd';
 import { useGridWidgetHeight } from 'app/hooks/useGridWidgetHeight';
 import { BoardConfigValContext } from 'app/pages/DashBoardPage/components/BoardProvider/BoardConfigProvider';
-import { BoardInfoContext } from 'app/pages/DashBoardPage/components/BoardProvider/BoardInfoProvider';
 import { BoardContext } from 'app/pages/DashBoardPage/components/BoardProvider/BoardProvider';
 import StyledBackground from 'app/pages/DashBoardPage/components/WidgetComponents/StyledBackground';
 import { WidgetWrapProvider } from 'app/pages/DashBoardPage/components/WidgetProvider/WidgetWrapProvider';
@@ -32,64 +32,58 @@ import useEditAutoLayoutMap from 'app/pages/DashBoardPage/hooks/useEditAutoLayou
 import useGridLayoutMap from 'app/pages/DashBoardPage/hooks/useGridLayoutMap';
 import { DeviceType } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { getBoardMarginPadding } from 'app/pages/DashBoardPage/utils/board';
-import { dispatchResize } from 'app/utils/dispatchResize';
+import { isMobileWidgetVisible } from 'app/pages/DashBoardPage/utils/autoLayout';
 import debounce from 'lodash/debounce';
-import {
-  memo,
-  useCallback,
-  useContext,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { memo, useCallback, useContext, useMemo, useRef } from 'react';
 import RGL, { Layout, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import { useDispatch, useSelector } from 'react-redux';
 import 'react-resizable/css/styles.css';
 import styled from 'styled-components';
-import {
-  BORDER_RADIUS,
-  LEVEL_100,
-  LEVEL_DASHBOARD_EDIT_OVERLAY,
-  SPACE_MD,
-  SPACE_XS,
-} from 'styles/StyleConstants';
+import { LEVEL_100, LEVEL_DASHBOARD_EDIT_OVERLAY } from 'styles/StyleConstants';
 import BoardOverlay from '../components/BoardOverlay';
-import DeviceList from '../components/DeviceList';
 import { editBoardStackActions, editDashBoardInfoActions } from '../slice';
-import { selectEditingWidgetIds } from '../slice/selectors';
+import { selectDeviceType, selectEditingWidgetIds } from '../slice/selectors';
 import { WidgetOfAutoEditor } from './WidgetOfAutoEditor';
 
 const ReactGridLayout = WidthProvider(RGL);
 
 export const AutoBoardEditor: React.FC<{}> = memo(() => {
   const dispatch = useDispatch();
-  const { boardId } = useContext(BoardContext);
+  const { boardId, name } = useContext(BoardContext);
   const boardConfig = useContext(BoardConfigValContext);
   const { background, allowOverlap } = boardConfig;
-  const { deviceType } = useContext(BoardInfoContext);
+  const deviceType = useSelector(selectDeviceType);
   const editingWidgetIds = useSelector(selectEditingWidgetIds);
   const { ref, widgetRowHeight, colsKey } = useGridWidgetHeight();
+  // 编辑器本身通常仍然占用桌面宽度，不能用容器宽度判断移动端列数。
+  const activeColsKey = deviceType === DeviceType.Mobile ? 'sm' : colsKey;
 
   const { curMargin, curPadding } = useMemo(() => {
-    return getBoardMarginPadding(boardConfig, colsKey);
-  }, [boardConfig, colsKey]);
+    return getBoardMarginPadding(boardConfig, activeColsKey);
+  }, [activeColsKey, boardConfig]);
 
   const currentLayout = useRef<Layout[]>([]);
+  const pixelDragRef = useRef<{
+    element: HTMLElement;
+    startX: number;
+    startY: number;
+    left: number;
+    top: number;
+  } | null>(null);
+  const pixelDragFrameRef = useRef<number | null>(null);
 
   const { gridWrapRef, thEmitScroll } = useBoardScroll(boardId);
 
-  const [curWH, setCurWH] = useState<number[]>([]);
-
-  const updateCurWH = useCallback((values: number[]) => {
-    setCurWH(values);
-    setImmediate(() => {
-      dispatchResize();
-    });
-  }, []);
-
   const sortedLayoutWidgets = useEditAutoLayoutMap(boardId);
-  const layoutMap = useGridLayoutMap(sortedLayoutWidgets);
+  const visibleLayoutWidgets = useMemo(
+    () =>
+      deviceType === DeviceType.Mobile
+        ? sortedLayoutWidgets.filter(isMobileWidgetVisible)
+        : sortedLayoutWidgets,
+    [deviceType, sortedLayoutWidgets],
+  );
+  const layoutMap = useGridLayoutMap(visibleLayoutWidgets);
 
   const changeWidgetLayouts = debounce((layouts: Layout[]) => {
     dispatch(
@@ -99,6 +93,58 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
       }),
     );
   }, 300);
+
+  const clearPixelDrag = useCallback(() => {
+    if (pixelDragFrameRef.current !== null) {
+      cancelAnimationFrame(pixelDragFrameRef.current);
+      pixelDragFrameRef.current = null;
+    }
+    if (pixelDragRef.current) {
+      pixelDragRef.current.element.style.removeProperty('will-change');
+      pixelDragRef.current.element.style.removeProperty('transform');
+    }
+    pixelDragRef.current = null;
+  }, []);
+
+  const onPixelDragStart = useCallback(
+    (...args: any[]) => {
+      const [, oldItem, , , event, element] = args;
+      const grid = element?.closest('.react-grid-layout') as HTMLElement | null;
+      if (!grid || !element || !event) return;
+
+      const cols = LAYOUT_COLS_MAP[activeColsKey];
+      const columnWidth =
+        (grid.clientWidth - curMargin[0] * (cols - 1) - curPadding[0] * 2) /
+        cols;
+      pixelDragRef.current = {
+        element,
+        startX: event.clientX,
+        startY: event.clientY,
+        left: curPadding[0] + oldItem.x * (columnWidth + curMargin[0]),
+        top: curPadding[1] + oldItem.y * (widgetRowHeight + curMargin[1]),
+      };
+      element.style.willChange = 'transform';
+    },
+    [activeColsKey, curMargin, curPadding, widgetRowHeight],
+  );
+
+  const onPixelDrag = useCallback((...args: any[]) => {
+    const [, , , , event] = args;
+    const drag = pixelDragRef.current;
+    if (!drag || !event) return;
+
+    const left = drag.left + event.clientX - drag.startX;
+    const top = drag.top + event.clientY - drag.startY;
+    if (pixelDragFrameRef.current !== null) {
+      cancelAnimationFrame(pixelDragFrameRef.current);
+    }
+    pixelDragFrameRef.current = requestAnimationFrame(() => {
+      if (pixelDragRef.current === drag) {
+        drag.element.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+      }
+      pixelDragFrameRef.current = null;
+    });
+  }, []);
 
   const onLayoutChange = (layouts: Layout[]) => {
     currentLayout.current = layouts;
@@ -121,7 +167,7 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
   }, [deviceType]);
 
   const boardChildren = useMemo(() => {
-    return sortedLayoutWidgets.map(item => {
+    return visibleLayoutWidgets.map(item => {
       // TODO(Stephen): 将外层div与内层WidgetWrapProvider合并，同时修改FreeBoardEditor
       return (
         <div
@@ -142,35 +188,45 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
         </div>
       );
     });
-  }, [boardId, editingWidgetIds, sortedLayoutWidgets]);
+  }, [boardId, editingWidgetIds, visibleLayoutWidgets]);
 
   /**
    * https://www.npmjs.com/package/react-grid-layout
    */
   return (
     <Wrapper className={deviceClassName}>
-      {deviceType === DeviceType.Mobile && (
-        <DeviceList updateCurWH={updateCurWH} />
-      )}
       <StyledContainer
         bg={background}
-        curWH={curWH}
-        className={deviceClassName}
+        className={`${deviceClassName}${
+          deviceType === DeviceType.Mobile ? ' datart-mobile-board' : ''
+        }`}
         ref={ref}
       >
-        {sortedLayoutWidgets.length ? (
+        {deviceType === DeviceType.Mobile && (
+          <MobilePreviewHeader>
+            <LeftOutlined />
+            <span>{name}</span>
+          </MobilePreviewHeader>
+        )}
+        {visibleLayoutWidgets.length ? (
           <>
             <div className="grid-wrap" ref={gridWrapRef}>
               <ReactGridLayout
-                layout={layoutMap[colsKey]}
-                cols={LAYOUT_COLS_MAP[colsKey]}
+                layout={layoutMap[activeColsKey]}
+                cols={LAYOUT_COLS_MAP[activeColsKey]}
                 margin={curMargin}
                 containerPadding={curPadding}
                 rowHeight={widgetRowHeight}
                 useCSSTransforms={true}
                 measureBeforeMount={false}
-                onDragStop={changeWidgetLayouts}
                 onResizeStop={changeWidgetLayouts}
+                resizeHandles={['n', 'e', 's', 'w', 'ne', 'nw', 'se', 'sw']}
+                onDragStart={onPixelDragStart}
+                onDrag={onPixelDrag}
+                onDragStop={(...args: any[]) => {
+                  clearPixelDrag();
+                  changeWidgetLayouts(args[0]);
+                }}
                 isBounded={false}
                 onLayoutChange={onLayoutChange}
                 isDraggable={true}
@@ -205,12 +261,25 @@ const Wrapper = styled.div<{}>`
     z-index: ${LEVEL_100};
   }
 
+  /* DataEase 风格：保留右下角调整大小的命中区域，不显示三角形图标。 */
+  .react-grid-item > .react-resizable-handle {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    background: transparent !important;
+    background-image: none !important;
+  }
+
+  .react-grid-item > .react-resizable-handle::after {
+    display: none;
+  }
+
   &.desktop {
     min-width: 769px;
   }
 `;
 
-const StyledContainer = styled(StyledBackground)<{ curWH: number[] }>`
+const StyledContainer = styled(StyledBackground)`
   position: relative;
   display: flex;
   flex-direction: column;
@@ -222,19 +291,35 @@ const StyledContainer = styled(StyledBackground)<{ curWH: number[] }>`
     width: 100%;
   }
 
-  &.mobile {
-    width: ${p => `${p.curWH[0]}px`};
-    height: ${p => `${p.curWH[1]}px`};
-    margin-top: ${SPACE_MD};
-    border: ${SPACE_XS} solid ${p => p.theme.borderColorEmphasis};
-    border-radius: ${BORDER_RADIUS};
-    box-shadow: ${p => p.theme.shadowBlock};
-  }
-
   .grid-wrap {
     flex: 1;
     overflow-y: auto;
     -ms-overflow-style: none;
+  }
+
+  &.mobile {
+    flex: 0 0 auto;
+    width: min(340px, calc(100% - 32px));
+    height: calc(100% - 24px);
+    min-height: 560px;
+    padding: 0;
+    margin: 12px auto;
+    overflow: hidden;
+    background: #edf4ff !important;
+    border: 8px solid #1f2329;
+    border-radius: 38px;
+    box-shadow: 0 8px 28px rgb(31 35 41 / 22%);
+
+    .grid-wrap {
+      flex: 0 0 auto;
+      height: calc(100% - 44px);
+      overflow-y: auto;
+      background: #edf4ff;
+    }
+
+    .react-grid-layout {
+      min-height: 100%;
+    }
   }
 
   .grid-wrap::-webkit-scrollbar {
@@ -246,5 +331,30 @@ const StyledContainer = styled(StyledBackground)<{ curWH: number[] }>`
     flex: 1;
     align-items: center;
     justify-content: center;
+  }
+`;
+
+const MobilePreviewHeader = styled.div`
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex: 0 0 44px;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #1f2329;
+  background: #fff;
+
+  .anticon {
+    position: absolute;
+    left: 16px;
+    font-size: 18px;
+  }
+
+  span {
+    max-width: calc(100% - 72px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 `;

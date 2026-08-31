@@ -255,25 +255,25 @@ export function LoginPageLight() {
 const PageContainer = styled.div`
   position: fixed;
   top: 0;
-  left: 0;
   right: 0;
   bottom: 0;
-  overflow: hidden;
+  left: 0;
   display: flex;
-  background: #f8fafc;
+  overflow: hidden;
   font-family: 'DM Sans', -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
     Arial, 'Noto Sans', sans-serif;
+  background: #f8fafc;
 `;
 
 /* 左侧品牌区 */
 const BrandSection = styled.div`
-  flex: 1;
+  position: relative;
   display: flex;
+  flex: 1;
   align-items: center;
   justify-content: center;
-  position: relative;
-  overflow: hidden;
   min-width: 0;
+  overflow: hidden;
 
   @media (max-width: 1024px) {
     display: none;
@@ -301,21 +301,21 @@ const PulseCircle1 = styled.div`
   width: 16rem;
   height: 16rem;
   background: #bfdbfe;
-  border-radius: 50%;
   filter: blur(80px);
+  border-radius: 50%;
   opacity: 0.2;
   animation: ${pulseSlow} 4s ease-in-out infinite;
 `;
 
 const PulseCircle2 = styled.div`
   position: absolute;
-  bottom: 5rem;
   right: 5rem;
+  bottom: 5rem;
   width: 12rem;
   height: 12rem;
   background: #93c5fd;
-  border-radius: 50%;
   filter: blur(80px);
+  border-radius: 50%;
   opacity: 0.15;
   animation: ${pulseSlow} 4s ease-in-out infinite 2s;
 `;
@@ -331,23 +331,23 @@ const BrandIcon = styled.div`
   width: clamp(48px, 5vw, 80px);
   height: clamp(48px, 5vw, 80px);
   margin-bottom: clamp(12px, 2vh, 28px);
-  animation: ${float} 6s ease-in-out infinite;
   color: #2563eb;
+  animation: ${float} 6s ease-in-out infinite;
 `;
 
 const BrandTitle = styled.h1`
+  margin: 0 0 clamp(8px, 1.2vh, 20px);
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: clamp(24px, 2.8vw, 48px);
   font-weight: 700;
-  margin: 0 0 clamp(8px, 1.2vh, 20px);
-  color: #1e293b;
   line-height: 1.2;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #1e293b;
 `;
 
 const BrandSubtitle = styled.p`
+  margin: 0;
   font-size: clamp(12px, 1vw, 18px);
   color: #64748b;
-  margin: 0;
   letter-spacing: 2px;
 `;
 
@@ -359,17 +359,17 @@ const ChartsGrid = styled.div`
 `;
 
 const ChartCard = styled.div`
-  background: #ffffff;
-  border-radius: clamp(10px, 1vw, 16px);
-  border: 1px solid #e2e8f0;
   padding: clamp(10px, 1vw, 18px);
-  transition: all 0.3s ease;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: clamp(10px, 1vw, 16px);
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
 
   &:hover {
+    border-color: #bfdbfe;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
       0 2px 4px -2px rgba(0, 0, 0, 0.1);
-    border-color: #bfdbfe;
   }
 `;
 
@@ -382,23 +382,23 @@ const ChartHeader = styled.div`
 
 const ChartTitle = styled.span`
   font-size: clamp(11px, 0.8vw, 14px);
-  color: #64748b;
   font-weight: 500;
+  color: #64748b;
 `;
 
 const ChartBadge = styled.span`
+  padding: clamp(2px, 0.2vw, 4px) clamp(6px, 0.5vw, 10px);
   font-size: clamp(10px, 0.7vw, 12px);
+  font-weight: 600;
   color: #16a34a;
   background: #f0fdf4;
-  padding: clamp(2px, 0.2vw, 4px) clamp(6px, 0.5vw, 10px);
   border-radius: 4px;
-  font-weight: 600;
 `;
 
 const BarChart = styled.div`
   display: flex;
-  align-items: flex-end;
   gap: clamp(4px, 0.4vw, 8px);
+  align-items: flex-end;
   height: clamp(40px, 6vh, 80px);
 `;
 
@@ -427,44 +427,44 @@ const StatsRow = styled.div`
 `;
 
 const StatItem = styled.div`
-  background: #ffffff;
-  border-radius: clamp(8px, 0.8vw, 14px);
-  border: 1px solid #e2e8f0;
   padding: clamp(10px, 0.8vw, 16px);
-  transition: all 0.3s ease;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: clamp(8px, 0.8vw, 14px);
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
 
   &:hover {
     border-color: #bfdbfe;
-    transform: translateY(-2px);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
       0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
   }
 `;
 
 const StatNumber = styled.div`
+  margin-bottom: 2px;
   font-size: clamp(16px, 1.4vw, 24px);
   font-weight: 700;
   color: #1e293b;
-  margin-bottom: 2px;
 `;
 
 const StatLabel = styled.div`
+  margin-bottom: clamp(6px, 0.8vh, 10px);
   font-size: clamp(10px, 0.7vw, 12px);
   color: #64748b;
-  margin-bottom: clamp(6px, 0.8vh, 10px);
 `;
 
 const StatBar = styled.div`
   height: 3px;
+  overflow: hidden;
   background: #e2e8f0;
   border-radius: 2px;
-  overflow: hidden;
 `;
 
 const StatBarFill = styled.div<{ width: number }>`
-  height: 100%;
   width: ${p => p.width}%;
+  height: 100%;
   background: linear-gradient(90deg, #3b82f6, #2563eb);
   border-radius: 2px;
   animation: ${fadeInUp} 1s ease-out 0.5s both;
@@ -478,30 +478,30 @@ const FeatureList = styled.div`
 
 const FeatureItem = styled.div`
   display: flex;
-  align-items: center;
   gap: clamp(8px, 0.6vw, 12px);
+  align-items: center;
   font-size: clamp(12px, 0.9vw, 16px);
   color: #64748b;
 `;
 
 const FeatureDot = styled.div`
+  flex-shrink: 0;
   width: 6px;
   height: 6px;
   background: #3b82f6;
   border-radius: 50%;
   box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
-  flex-shrink: 0;
 `;
 
 /* 右侧登录区 */
 const LoginSection = styled.div`
-  flex: 1;
   display: flex;
+  flex: 1;
   align-items: center;
   justify-content: center;
-  animation: ${fadeInUp} 0.8s ease-out;
   min-width: 0;
   padding: clamp(20px, 3vh, 48px) clamp(24px, 4vw, 72px);
+  animation: ${fadeInUp} 0.8s ease-out;
 
   @media (max-width: 1024px) {
     flex: 1;
@@ -511,10 +511,10 @@ const LoginSection = styled.div`
 const LoginCard = styled.div`
   width: 100%;
   max-width: clamp(400px, 30vw, 560px);
-  background: #ffffff;
-  border-radius: clamp(20px, 1.8vw, 32px);
-  border: 1px solid #e2e8f0;
   padding: clamp(32px, 4vh, 60px) clamp(32px, 2.8vw, 56px);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: clamp(20px, 1.8vw, 32px);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   transition: all 0.3s ease;
 
@@ -524,8 +524,8 @@ const LoginCard = styled.div`
 `;
 
 const CardHeader = styled.div`
-  text-align: center;
   margin-bottom: clamp(24px, 3.5vh, 44px);
+  text-align: center;
 `;
 
 const LogoWrapper = styled.div`
@@ -534,9 +534,9 @@ const LogoWrapper = styled.div`
   justify-content: center;
   width: clamp(80px, 6vw, 120px);
   height: clamp(80px, 6vw, 120px);
+  margin-bottom: clamp(12px, 1.8vh, 24px);
   background: transparent;
   border-radius: clamp(16px, 1.5vw, 24px);
-  margin-bottom: clamp(12px, 1.8vh, 24px);
 `;
 
 const LogoImg = styled.img`
@@ -546,11 +546,11 @@ const LogoImg = styled.img`
 `;
 
 const SystemName = styled.h2`
+  margin: 0 0 clamp(4px, 0.6vh, 8px);
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: clamp(24px, 1.8vw, 34px);
   font-weight: 700;
   color: #1e293b;
-  margin: 0 0 clamp(4px, 0.6vh, 8px);
-  font-family: 'Plus Jakarta Sans', sans-serif;
 `;
 
 const CardFooter = styled.div`
@@ -559,7 +559,7 @@ const CardFooter = styled.div`
 `;
 
 const FooterText = styled.p`
+  margin: 0;
   font-size: clamp(11px, 0.75vw, 13px);
   color: #94a3b8;
-  margin: 0;
 `;

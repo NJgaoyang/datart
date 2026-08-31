@@ -73,7 +73,11 @@ export enum DataViewFieldType {
   STRING = 'STRING',
   NUMERIC = 'NUMERIC',
   DATE = 'DATE',
+  DATETIME = 'DATETIME',
 }
+
+export const isDateFieldType = (type?: DataViewFieldType | string) =>
+  type === DataViewFieldType.DATE || type === DataViewFieldType.DATETIME;
 
 export enum ChartDataViewSubType {
   UnCategorized = 'UNCATEGORIZED',
@@ -115,6 +119,8 @@ export enum AggregateFieldActionType {
   Avg = 'AVG',
   Count = 'COUNT',
   Count_Distinct = 'COUNT_DISTINCT',
+  Stddev = 'STDDEV',
+  Variance = 'VARIANCE',
   Max = 'MAX',
   Min = 'MIN',
 }
@@ -182,6 +188,8 @@ export const AggregateFieldSubAggregateType = {
     AggregateFieldActionType.Avg,
     AggregateFieldActionType.Count,
     AggregateFieldActionType.Count_Distinct,
+    AggregateFieldActionType.Stddev,
+    AggregateFieldActionType.Variance,
     AggregateFieldActionType.Max,
     AggregateFieldActionType.Min,
   ],

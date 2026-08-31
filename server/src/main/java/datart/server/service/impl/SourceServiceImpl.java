@@ -257,13 +257,15 @@ public class SourceServiceImpl extends BaseService implements SourceService {
             mainModel.getSource().setId(newId);
         }
         Map<String, String> parentIdMapping = new HashMap<>();
-        for (Source parent : model.getParents()) {
-            String newId = UUIDGenerator.generate();
-            parentIdMapping.put(parent.getId(), newId);
-            parent.setId(newId);
-        }
-        for (Source parent : model.getParents()) {
-            parent.setParentId(parentIdMapping.get(parent.getParentId()));
+        if (!CollectionUtils.isEmpty(model.getParents())) {
+            for (Source parent : model.getParents()) {
+                String newId = UUIDGenerator.generate();
+                parentIdMapping.put(parent.getId(), newId);
+                parent.setId(newId);
+            }
+            for (Source parent : model.getParents()) {
+                parent.setParentId(parentIdMapping.get(parent.getParentId()));
+            }
         }
     }
 
@@ -333,7 +335,7 @@ public class SourceServiceImpl extends BaseService implements SourceService {
             getDataProviderService().updateSource(source);
             updateJdbcSourceSyncJob(source);
         }
-        return false;
+        return success;
     }
 
     @Override
@@ -437,6 +439,9 @@ public class SourceServiceImpl extends BaseService implements SourceService {
 
     @Override
     public void deleteReference(Source source) {
+        if (!Boolean.TRUE.equals(source.getIsFolder())) {
+            getDataProviderService().updateSource(source);
+        }
         deleteJdbcSourceSyncJob(source);
         sourceSchemasMapper.deleteBySource(source.getId());
     }

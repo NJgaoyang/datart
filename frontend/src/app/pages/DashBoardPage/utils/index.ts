@@ -35,7 +35,11 @@ import {
 } from 'app/types/ChartDataRequest';
 import ChartDataView from 'app/types/ChartDataView';
 import { convertToChartConfigDTO } from 'app/utils/ChartDtoHelper';
-import { findPathByNameInMeta, getStyles } from 'app/utils/chartHelper';
+import {
+  findPathByNameInMeta,
+  getAllColumnInMeta,
+  getStyles,
+} from 'app/utils/chartHelper';
 import { getTime, splitRangerDateFilters } from 'app/utils/time';
 import {
   DATE_FORMATTER,
@@ -45,7 +49,7 @@ import {
 } from 'globalConstants';
 import startsWith from 'lodash/startsWith';
 import dayjs from 'dayjs';
-import { CloneValueDeep } from 'utils/object';
+import { CloneValueDeep, isEqualObject } from 'utils/object';
 import { boardDrillManager } from '../components/BoardDrillManager/BoardDrillManager';
 import { BOARD_FILE_IMG_PREFIX } from '../constants';
 import {
@@ -143,6 +147,69 @@ export const getDataChartRequestParams = (obj: {
     .addRuntimeFilters(tempFilters || [])
     .build();
   return requestParams;
+};
+
+const getLegacyBoardLinkRuntimeFilters = ({
+  boardLinkFilters,
+  widgetMap,
+  view,
+  widgetId,
+}: {
+  boardLinkFilters?: BoardLinkFilter[];
+  widgetMap: Record<string, Widget>;
+  view: ChartDataView;
+  widgetId: string;
+}): PendingChartDataRequestFilter[] => {
+  return (boardLinkFilters || [])
+    .filter(link => link.linkerWidgetId === widgetId)
+    .map(link => {
+      const triggerWidget = widgetMap[link.triggerWidgetId];
+      if (!triggerWidget) {
+        return undefined;
+      }
+
+      const linkColumn = getLinkedColumn(link.linkerWidgetId, triggerWidget);
+      if (!linkColumn) {
+        return undefined;
+      }
+
+      let parsedColumn: unknown;
+      try {
+        parsedColumn = JSON.parse(linkColumn);
+      } catch {
+        return undefined;
+      }
+
+      if (
+        !Array.isArray(parsedColumn) ||
+        parsedColumn.length === 0 ||
+        !parsedColumn.every(
+          column => typeof column === 'string' && column.length > 0,
+        )
+      ) {
+        return undefined;
+      }
+
+      const column =
+        parsedColumn.length === 1
+          ? parsedColumn[0]
+          : getAllColumnInMeta(view?.meta).find(field =>
+              isEqualObject(field.path, parsedColumn),
+            )?.name;
+      if (!column) {
+        return undefined;
+      }
+
+      return {
+        column,
+        sqlOperator: FilterSqlOperator.In,
+        values: [{
+          value: link.triggerValue,
+          valueType: DataViewFieldType.STRING,
+        }],
+      };
+    })
+    .filter(Boolean) as PendingChartDataRequestFilter[];
 };
 
 export const getChartGroupColumns = (datas: ChartDataConfig[] | undefined) => {
@@ -437,47 +504,32 @@ export const getChartWidgetRequestParams = (obj: {
 
   const chartDataView = viewMap[dataChart?.viewId];
 
+  const legacyRuntimeFilters = getLegacyBoardLinkRuntimeFilters({
+    boardLinkFilters,
+    widgetMap,
+    view: chartDataView,
+    widgetId: curWidget.id,
+  });
+  const {
+    filterParams: controllerRuntimeFilters,
+    variableParams,
+  } = getTheWidgetFiltersAndParams<PendingChartDataRequestFilter>({
+    chartWidget: curWidget,
+    widgetMap,
+    params: undefined,
+  });
+
   let requestParams = getDataChartRequestParams({
     dataChart,
     view: chartDataView,
     option: option,
     drillOption,
-    tempFilters: widgetInfo?.linkInfo?.tempFilters,
+    tempFilters: [
+      ...(widgetInfo?.linkInfo?.tempFilters || []),
+      ...legacyRuntimeFilters,
+      ...controllerRuntimeFilters,
+    ],
   });
-  const { filterParams, variableParams } =
-    getTheWidgetFiltersAndParams<ChartDataRequestFilter>({
-      chartWidget: curWidget,
-      widgetMap,
-      params: requestParams.params,
-      view: chartDataView,
-    });
-
-  // 全局过滤 filter
-  // TODO
-  requestParams.filters = requestParams.filters.concat(filterParams);
-
-  // 联动 过滤
-  if (boardLinkFilters) {
-    const linkFilters: ChartDataRequestFilter[] = [];
-    const links = boardLinkFilters.filter(
-      link => link.linkerWidgetId === curWidget.id,
-    );
-
-    links.forEach(link => {
-      const { triggerValue, triggerWidgetId } = link;
-      const triggerWidget = widgetMap[triggerWidgetId];
-      const linkColumn = getLinkedColumn(link.linkerWidgetId, triggerWidget);
-
-      const filter: ChartDataRequestFilter = {
-        aggOperator: null,
-        column: JSON.parse(linkColumn),
-        sqlOperator: FilterSqlOperator.In,
-        values: [{ value: triggerValue, valueType: DataViewFieldType.STRING }],
-      };
-      linkFilters.push(filter);
-    });
-    requestParams.filters = requestParams.filters.concat(linkFilters);
-  }
 
   // splitRangerDateFilters
   requestParams.filters = splitRangerDateFilters(requestParams.filters);

@@ -91,7 +91,7 @@ const FilterControlPanel: FC<
         return config.aggregate;
       } else if (
         config.type === DataViewFieldType.STRING ||
-        config.type === DataViewFieldType.DATE
+        [DataViewFieldType.DATE, DataViewFieldType.DATETIME].includes(config.type)
       ) {
         return AggregateFieldActionType.None;
       } else if (config.type === DataViewFieldType.NUMERIC) {
@@ -220,7 +220,9 @@ const FilterControlPanel: FC<
             i18nPrefix={customizeI18NPrefix + '.value'}
           />
         );
-      } else if (config.type === DataViewFieldType.DATE) {
+      } else if (
+        [DataViewFieldType.DATE, DataViewFieldType.DATETIME].includes(config.type)
+      ) {
         return (
           <DateConditionConfiguration
             {...filterProps}

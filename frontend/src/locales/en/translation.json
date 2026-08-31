@@ -62,7 +62,7 @@
         "edit": "Edit "
       }
     },
-    "columnType": {
+  "columnType": {
       "string": "String",
       "numeric": "Number",
       "date": "Date"
@@ -147,6 +147,7 @@
       "schedules": "Schedules",
       "members": "Members",
       "permissions": "Permissions",
+      "monitor": "Monitor",
       "settings": "Settings",
       "download": {
         "title": "Download List",
@@ -202,6 +203,9 @@
       },
       "resourceMigration": {
         "title": "Resource Migration"
+      },
+      "readiness": {
+        "title": "Migration Readiness"
       },
       "auditLog": {
         "title": "Audit Log"
@@ -262,6 +266,8 @@
           "AVG": "Avg",
           "COUNT": "Count",
           "COUNT_DISTINCT": "Distinct Count",
+          "STDDEV": "Standard Deviation",
+          "VARIANCE": "Variance",
           "MAX": "Max",
           "MIN": "Min"
         },
@@ -447,6 +453,9 @@
         "AGG_DATE_MONTH": "Month",
         "AGG_DATE_WEEK": "Week",
         "AGG_DATE_DAY": "Day",
+        "AGG_DATE_HOUR": "Hour",
+        "AGG_DATE_MINUTE": "Minute",
+        "AGG_DATE_SECOND": "Second",
         "default": "Default",
         "cannotDeleteComputerField": "Calculated fields created in views cannot be deleted",
         "byDataBaseGroup": "Group by database name",
@@ -633,6 +642,9 @@
         "AGG_DATE_MONTH": "Month",
         "AGG_DATE_WEEK": "Week",
         "AGG_DATE_DAY": "Day",
+        "AGG_DATE_HOUR": "Hour",
+        "AGG_DATE_MINUTE": "Minute",
+        "AGG_DATE_SECOND": "Second",
         "drillable": "Drillable",
         "actions": {
           "sort": {
@@ -977,7 +989,8 @@
       },
       "controlTypes": {
         "common": "Common",
-        "date": "Date",
+    "date": "Date",
+    "datetime": "Date time",
         "numeric": "Numeric",
         "button": "Button"
       },
@@ -1430,6 +1443,27 @@
       "USER": "User"
     }
   },
+  "monitor": {
+    "title": "Monitor",
+    "refresh": "Refresh",
+    "poolTitle": "Connection Pool Runtime Status",
+    "queryTitle": "Query Execution Records",
+    "reportName": "Report Name",
+    "status": "Status",
+    "duration": "Duration",
+    "sql": "Executed SQL",
+    "detail": "Details",
+    "startedAt": "Start Time",
+    "endedAt": "End Time",
+    "active": "Active",
+    "idle": "Idle",
+    "maxActive": "Max Active",
+    "waiting": "Waiting Threads",
+    "notInitialized": "The data source has not been connected",
+    "emptyPool": "No manageable data sources",
+    "emptyQuery": "No query records",
+    "sqlDetail": "Full SQL"
+  },
   "source": {
     "source": "Source",
     "testSuccess": "Test connection succeeded",
@@ -1774,7 +1808,59 @@
     "deleteOrgDesc": "When deleting an organization, all resources, members, roles, and other configurations belonging to the organization will be permanently deleted. Please operate with caution.",
     "cancel": "Cancel",
     "delete": "Delete",
-    "enterOrgName": "Enter organization name to delete"
+    "enterOrgName": "Enter organization name to delete",
+    "historyMigration": "Historical Report and SQL Migration",
+    "historyMigrationDesc": "Read-only inspection of historical reports, views, and raw SQL. Nothing is changed or deleted automatically.",
+    "historyMigrationPreview": "View migration preview",
+    "historyMigrationTotal": "Total resources",
+    "historyMigrationReview": "Need manual review",
+    "historyMigrationReadonly": "This action only creates a preview. Migration still requires manual confirmation.",
+    "historyMigrationType": "Resource type",
+    "historyMigrationName": "Resource name",
+    "historyMigrationStatus": "Status",
+    "historyMigrationReason": "Review reason",
+    "historyMigrationError": "Failed to load migration preview"
+  },
+  "readiness": {
+    "title": "Migration Readiness",
+    "refresh": "Refresh scan",
+    "readiness": "Readiness",
+    "strictEligible": "STRICT eligible",
+    "yes": "Eligible",
+    "no": "Not eligible",
+    "blockers": "Blockers",
+    "warnings": "Warnings",
+    "ready": "Ready",
+    "scopes": "Resource scopes",
+    "scope": {
+      "views": "Views",
+      "datacharts": "Datacharts",
+      "dashboards": "Dashboards"
+    },
+    "chartFieldIdCoverage": "Chart fieldId coverage",
+    "resolvedChartFieldIdCoverage": "Resolved Chart fieldId coverage",
+    "issues": "Issues",
+    "filter": {
+      "all": "All",
+      "search": "Search resource, issue code, or message"
+    },
+    "issue": {
+      "severity": "Severity",
+      "resource": "Resource",
+      "name": "Resource name",
+      "code": "Issue code",
+      "message": "Message"
+    },
+    "noIssues": "No matching issues",
+    "loadError": "Readiness scan failed. Please try again.",
+    "empty": "No Readiness data",
+    "strict": {
+      "mode": "Current mode",
+      "enable": "Enable STRICT",
+      "disable": "Back to COMPAT",
+      "confirmTitle": "Enable STRICT?",
+      "confirmContent": "Legacy runtime fallback will be disabled."
+    }
   },
   "confirmInvite": {
     "join": "Join successful",

@@ -75,6 +75,7 @@ public class DownloadServiceImpl extends BaseService implements DownloadService 
         if (downloadParams == null || downloadParams.getDownloadParams() == null) {
             return null;
         }
+        clearInteractiveQueryIds(downloadParams);
         final Download download = new Download();
         BeanUtils.copyProperties(downloadParams, download);
         download.setCreateTime(new Date());
@@ -140,6 +141,7 @@ public class DownloadServiceImpl extends BaseService implements DownloadService 
         if (downloadCreateParam == null || downloadCreateParam.getDownloadParams() == null) {
             throw new IllegalArgumentException("Invalid download params.");
         }
+        clearInteractiveQueryIds(downloadCreateParam);
 
         String fileName = downloadCreateParam.getFileName();
         fileName = StringUtils.isEmpty(fileName) ? "download" : fileName;
@@ -171,6 +173,11 @@ public class DownloadServiceImpl extends BaseService implements DownloadService 
                 log.warn("Failed to delete temp download file: {}", file.getAbsolutePath(), e);
             }
         }
+    }
+
+    /** Downloads run as jobs and must not be cancellable through the interactive query endpoint. */
+    private void clearInteractiveQueryIds(DownloadCreateParam downloadParams) {
+        downloadParams.getDownloadParams().forEach(param -> param.setQueryId(null));
     }
 
 }

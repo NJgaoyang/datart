@@ -140,8 +140,8 @@ const MobileContainer = styled.div`
   left: 0;
   display: flex;
   flex-direction: column;
-  background-color: #f5f5f5;
   overflow: hidden;
+  background-color: #f5f5f5;
 `;
 
 const ListWrapper = styled.div`
@@ -157,8 +157,8 @@ const ListHeader = styled.div`
   align-items: center;
   justify-content: center;
   padding: ${SPACE_LG} ${SPACE_MD} ${SPACE_MD};
-  background: linear-gradient(135deg, ${p => p.theme.primary} 0%, ${p => p.theme.primary}88 100%);
   color: #fff;
+  background: linear-gradient(135deg, ${p => p.theme.primary} 0%, ${p => p.theme.primary}88 100%);
 `;
 
 const LogoTitle = styled.h1`
@@ -176,18 +176,18 @@ const SubTitle = styled.p`
 const ListContainer = styled.div`
   flex: 1;
   width: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
   padding: 2vw 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 `;
 
 const CardGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 2vw;
-  padding: 0 3vw;
   min-width: 0;
+  padding: 0 3vw;
 `;
 
 const DashboardCard = styled.div`
@@ -196,32 +196,32 @@ const DashboardCard = styled.div`
   align-items: center;
   justify-content: center;
   min-width: 0;
-  padding: ${SPACE_SM} 4px;
-  border-radius: 8px;
-  background-color: ${p => p.theme.componentBackground};
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  cursor: pointer;
-  transition: box-shadow 0.2s;
   aspect-ratio: 1;
+  padding: ${SPACE_SM} 4px;
+  cursor: pointer;
+  background-color: ${p => p.theme.componentBackground};
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s;
 
   &:active {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
     background-color: ${p => p.theme.emphasisBackground};
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   }
 `;
 
 const CardIcon = styled.div`
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   width: 36px;
   height: 36px;
   margin-bottom: ${SPACE_XS};
-  border-radius: 8px;
-  background-color: ${p => p.theme.primary}18;
-  color: ${p => p.theme.primary};
   font-size: 16px;
-  flex-shrink: 0;
+  color: ${p => p.theme.primary};
+  background-color: ${p => p.theme.primary}18;
+  border-radius: 8px;
 `;
 
 const CardContent = styled.div`
@@ -230,12 +230,12 @@ const CardContent = styled.div`
 `;
 
 const CardName = styled.div`
+  overflow: hidden;
   font-size: 12px;
   font-weight: 500;
-  overflow: hidden;
+  line-height: 1.3;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.3;
 `;
 
 const SpinWrap = styled.div`
@@ -246,10 +246,10 @@ const SpinWrap = styled.div`
 `;
 
 const EmptyHint = styled.div`
-  text-align: center;
   padding: 60px 0;
-  color: ${p => p.theme.textColorDisabled};
   font-size: 14px;
+  color: ${p => p.theme.textColorDisabled};
+  text-align: center;
 `;
 
 

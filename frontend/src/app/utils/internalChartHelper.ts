@@ -32,6 +32,7 @@ import {
   ChartDataSectionType,
   ChartDataViewFieldCategory,
   DataViewFieldType,
+  isDateFieldType,
 } from 'app/constants';
 import { ChartDrillOption } from 'app/models/ChartDrillOption';
 import { handleDateLevelsName } from 'app/pages/ChartWorkbenchPage/components/ChartOperationPanel/utils';
@@ -50,6 +51,7 @@ import {
 } from 'app/types/ChartConfigDTO';
 import { PendingChartDataRequestFilter } from 'app/types/ChartDataRequest';
 import { ChartDataViewMeta } from 'app/types/ChartDataViewMeta';
+import { ViewFieldMeta } from 'app/types/View';
 import { IChartDrillOption } from 'app/types/ChartDrillOption';
 import { FilterSqlOperator } from 'globalConstants';
 import {
@@ -65,8 +67,13 @@ import {
   isUndefined,
   pipe,
 } from 'utils/object';
-import { deduplicateDisplayNames, getFieldDisplayName } from 'utils/utils';
+import {
+  getDatasetFieldDisplayName,
+  getFieldCustomDisplayName,
+  getFieldDisplayName,
+} from 'utils/utils';
 import { getDrillableRows, round } from './chartHelper';
+import { getDateLevelFieldType } from './dateLevel';
 
 export const transferChartConfigs = (
   targetConfig?: ChartConfig,
@@ -241,9 +248,7 @@ const transferMixedToNonMixed = (
     isEmptyArray(targetSectionConfigs)
   ) {
     const dimensions = sourceSectionConfigRows?.filter(
-      r =>
-        r.type === DataViewFieldType.DATE ||
-        r.type === DataViewFieldType.STRING,
+      r => isDateFieldType(r.type) || r.type === DataViewFieldType.STRING,
     );
     const metrics = sourceSectionConfigRows?.filter(
       r => r.type === DataViewFieldType.NUMERIC,
@@ -338,11 +343,24 @@ export function getColumnRenderOriginName(c?: ChartDataSectionField) {
   if (!c) {
     return '[unknown]';
   }
-  const displayName = getFieldDisplayName({
-    name: c.colName,
-    displayName: c.displayName,
-    comment: c.comment,
-  });
+  const displayName =
+    c.fieldId || c.originName
+      ? getDatasetFieldDisplayName({
+          fieldId: c.fieldId,
+          originName: c.originName,
+          name: c.colName,
+          path: c.path,
+          displayName: c.displayName,
+          customName: c.customName,
+          sourceComment: c.sourceComment,
+        })
+      : getFieldDisplayName({
+          name: c.colName,
+          path: c.path,
+          displayName: c.displayName,
+          comment: c.comment,
+          isDisplayNameCustom: c.isDisplayNameCustom,
+        });
   if (c.aggregate === AggregateFieldActionType.None) {
     return displayName;
   }
@@ -386,7 +404,11 @@ export function flattenHeaderRowsWithoutGroupRow<
   return [groupedHeaderRow].concat(childRows);
 }
 
-export function transformMeta(model?: string) {
+export function transformMeta(
+  model?: string,
+  viewFields?: ViewFieldMeta[],
+  viewType?: string,
+) {
   if (!model) {
     return undefined;
   }
@@ -396,26 +418,30 @@ export function transformMeta(model?: string) {
       ? jsonObj.hierarchy
       : jsonObj.columns || jsonObj,
   );
-  const flatMeta: any[] = (transformHierarchyMeta(model) as any[]).flatMap(
-    (column, index) => {
-      if (!isEmptyArray(column?.children)) {
-        return (column.children || []).map(c => ({
-          ...c,
-          path: c.path,
-          category: ChartDataViewFieldCategory.Field,
-        }));
-      }
-      return {
-        ...column,
-        path: column.path || hierarchyKeys[index],
+  const flatMeta: any[] = (
+    transformHierarchyMeta(model, viewFields, viewType) as any[]
+  ).flatMap((column, index) => {
+    if (!isEmptyArray(column?.children)) {
+      return (column.children || []).map(c => ({
+        ...c,
+        path: c.path,
         category: ChartDataViewFieldCategory.Field,
-      };
-    },
-  );
-  return deduplicateDisplayNames(flatMeta);
+      }));
+    }
+    return {
+      ...column,
+      path: column.path || hierarchyKeys[index],
+      category: ChartDataViewFieldCategory.Field,
+    };
+  });
+  return flatMeta;
 }
 
-export function transformHierarchyMeta(model?: string): ChartDataViewMeta[] {
+export function transformHierarchyMeta(
+  model?: string,
+  viewFields?: ViewFieldMeta[],
+  viewType?: string,
+): ChartDataViewMeta[] {
   if (!model) {
     return [];
   }
@@ -444,12 +470,47 @@ export function transformHierarchyMeta(model?: string): ChartDataViewMeta[] {
     ? modelObj.columns || modelObj
     : modelObj.hierarchy;
 
+  const normalizedViewFields = (
+    Array.isArray(viewFields) ? viewFields : []
+  ).filter(field => field.active !== false);
+  const fieldsById = new Map(
+    normalizedViewFields.map(field => [field.fieldId, field]),
+  );
+  const fieldsByPath = new Map(
+    normalizedViewFields
+      .filter(field => field.sourcePath?.length)
+      .map(field => [field.sourcePath!.join('.'), field]),
+  );
+  const fieldsByName = new Map<string, ViewFieldMeta | undefined>();
+  normalizedViewFields.forEach(field => {
+    if (!fieldsByName.has(field.originName)) {
+      fieldsByName.set(field.originName, field);
+    } else {
+      fieldsByName.set(field.originName, undefined);
+    }
+  });
   return Object.keys(hierarchyMeta || {}).map(key => {
-    return getMeta(key, hierarchyMeta?.[key], columnMetadata);
+    return getMeta(
+      key,
+      hierarchyMeta?.[key],
+      columnMetadata,
+      { fieldsById, fieldsByPath, fieldsByName },
+      viewType,
+    );
   });
 }
 
-function getMeta(key, column, columnMetadata = new Map<string, any>()) {
+function getMeta(
+  key,
+  column,
+  columnMetadata = new Map<string, any>(),
+  fieldMaps?: {
+    fieldsById: Map<string, ViewFieldMeta>;
+    fieldsByPath: Map<string, ViewFieldMeta>;
+    fieldsByName: Map<string, ViewFieldMeta | undefined>;
+  },
+  viewType?: string,
+) {
   let children;
   let isHierarchy = false;
   const metadataKeys = [
@@ -466,36 +527,58 @@ function getMeta(key, column, columnMetadata = new Map<string, any>()) {
   if (!isEmptyArray(column?.children)) {
     isHierarchy = true;
     children = column?.children.map(child =>
-      getMeta(child?.name, child, columnMetadata),
+      getMeta(child?.name, child, columnMetadata, fieldMaps, viewType),
     );
   }
   const fieldName = Array.isArray(column?.name)
     ? column.name[column.name.length - 1]
     : column?.name || key;
-  const fieldNames = [
-    fieldName,
-    ...(Array.isArray(column?.path) ? [column.path.join('.')] : []),
-  ];
+  const sourcePath = column?.path || column?.name;
+  const serverField =
+    (column?.fieldId && fieldMaps?.fieldsById.get(column.fieldId)) ||
+    (Array.isArray(sourcePath) &&
+      fieldMaps?.fieldsByPath.get(sourcePath.join('.'))) ||
+    fieldMaps?.fieldsByName.get(fieldName);
+  const rawDisplayName =
+    serverField?.displayName ?? column?.displayName ?? metadata?.displayName;
+  const comment = column?.comment ?? metadata?.comment;
+  const isDisplayNameCustom =
+    column?.isDisplayNameCustom ?? metadata?.isDisplayNameCustom;
+  const legacyDisplayName = getFieldCustomDisplayName({
+    name: fieldName,
+    path: column?.path,
+    displayName: rawDisplayName,
+    comment,
+    isDisplayNameCustom,
+  });
   const displayName =
-    [column?.displayName, metadata?.displayName].find(
-      name => name && !fieldNames.includes(name),
-    ) ||
-    column?.displayName ||
-    metadata?.displayName;
-  const comment = column?.comment || metadata?.comment;
+    serverField?.displayName ??
+    legacyDisplayName ??
+    (rawDisplayName &&
+    Array.isArray(column?.path) &&
+    rawDisplayName === column.path.join('.')
+      ? rawDisplayName
+      : undefined);
+  const columnMeta = { ...(column || {}) };
+  delete columnMeta.isDisplayNameCustom;
   return {
-    ...column,
-    ...(displayName || comment
+    ...columnMeta,
+    ...(viewType === 'SQL' ? { path: [fieldName] } : {}),
+    ...(serverField
       ? {
-          displayName: getFieldDisplayName({
-            name: fieldName,
-            path: column?.path,
-            displayName,
-            comment,
-          }),
+          fieldId: serverField.fieldId,
+          originName: serverField.originName,
+          sourceComment: serverField.sourceComment,
+          customName: serverField.customName,
+          displayName: serverField.displayName,
         }
       : {}),
-    ...(comment ? { comment } : {}),
+    ...(rawDisplayName !== undefined ? { displayName } : {}),
+    ...(comment !== undefined ? { comment } : {}),
+    ...(!serverField &&
+    (isDisplayNameCustom !== undefined || legacyDisplayName)
+      ? { isDisplayNameCustom: Boolean(displayName) }
+      : {}),
     subType: column?.category,
     category: isHierarchy
       ? ChartDataViewFieldCategory.Hierarchy
@@ -775,16 +858,110 @@ export const transformToViewConfig = (
 
 export const buildDragItem = (item, children: any[] = []) => {
   return {
+    fieldId: item?.fieldId,
+    originName: item?.originName ?? item?.name,
     colName: item?.name,
     type: item?.type,
     subType: item?.subType,
     category: item?.category,
     dateFormat: item?.dateFormat,
+    path: item?.path,
     displayName: item?.displayName,
     comment: item?.comment,
+    ...(item?.fieldId
+      ? {}
+      : { isDisplayNameCustom: item?.isDisplayNameCustom }),
     children: children.map(c => buildDragItem(c)),
   };
 };
+
+function findLatestFieldMeta(
+  row: ChartDataSectionField,
+  fields: ChartDataViewMeta[],
+): ChartDataViewMeta | undefined {
+  const activeFields = fields.filter(
+    field => field.active !== false && field.isActive !== false,
+  );
+  if (row.fieldId) {
+    const fieldById = activeFields.find(field => field.fieldId === row.fieldId);
+    if (fieldById) {
+      return fieldById;
+    }
+
+    // A stale canonical id must not be rebound to a different field by a
+    // legacy path/name match. COMPAT execution can still use the original
+    // row, while STRICT execution must preserve the stale id so the backend
+    // can reject it explicitly.
+    return undefined;
+  }
+  if (row.path?.length) {
+    const pathMatches = activeFields.filter(
+      field => field.path?.join('\0') === row.path?.join('\0'),
+    );
+    if (pathMatches.length === 1) {
+      return pathMatches[0];
+    }
+  }
+
+  const nameMatches = activeFields.filter(
+    field => (field.originName || field.name) === row.colName,
+  );
+  return nameMatches.length === 1 ? nameMatches[0] : undefined;
+}
+
+export function reconcileChartConfigFieldMeta(
+  chartConfig: ChartConfig,
+  fields: ChartDataViewMeta[],
+): ChartConfig {
+  return {
+    ...chartConfig,
+    datas: chartConfig.datas?.map(section => ({
+      ...section,
+      rows: section.rows?.map(row => {
+        const latestMeta = findLatestFieldMeta(row, fields);
+        if (!latestMeta) {
+          return row.category ===
+            ChartDataViewFieldCategory.DateLevelComputedField
+            ? { ...row, type: getDateLevelFieldType(row) || row.type }
+            : row;
+        }
+        return {
+          ...row,
+          fieldId: latestMeta.fieldId ?? row.fieldId,
+          originName: latestMeta.originName ?? row.originName ?? row.colName,
+          path: latestMeta.path ?? row.path,
+          sourceComment: latestMeta.sourceComment ?? row.sourceComment,
+          customName: latestMeta.customName ?? row.customName,
+          type:
+            row.category === ChartDataViewFieldCategory.DateLevelComputedField
+              ? getDateLevelFieldType(row, latestMeta.type) || row.type
+              : row.type,
+          displayName:
+            latestMeta.displayName ??
+            row.displayName ??
+            latestMeta.originName ??
+            row.colName,
+          isDisplayNameCustom: undefined,
+        };
+      }),
+    })),
+  };
+}
+
+export function getChartFieldDisplayName(
+  field?: ChartDataSectionField | ChartDataViewMeta,
+): string {
+  const value = field as any;
+  return (
+    value?.alias?.name?.trim() ||
+    (value?.fieldId || value?.originName
+      ? getDatasetFieldDisplayName(value)
+      : getFieldDisplayName(value)) ||
+    value?.colName ||
+    value?.name ||
+    ''
+  );
+}
 
 /**
  * Get all Drill Paths

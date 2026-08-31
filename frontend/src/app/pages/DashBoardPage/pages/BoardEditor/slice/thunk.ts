@@ -1,4 +1,9 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
+import {
+  AUTO_LAYOUT_VERSION,
+  MOBILE_LAYOUT_VERSION,
+  PC_ROW_LAYOUT_VERSION,
+} from 'app/pages/DashBoardPage/constants';
 import migrateWidgetChartConfig from 'app/migration/BoardConfig/migrateWidgetChartConfig';
 import migrateWidgetConfig from 'app/migration/BoardConfig/migrateWidgetConfig';
 import { migrateWidgets } from 'app/migration/BoardConfig/migrateWidgets';
@@ -118,7 +123,13 @@ export const fetchEditBoardDetail = createAsyncThunk<
       serverDataCharts,
       serverViews,
     );
-    let migratedWidgets = migrateWidgets(serverWidgets, boardType);
+    let migratedWidgets = migrateWidgets(
+      serverWidgets,
+      boardType,
+      dashboard.config.layoutVersion,
+      dashboard.config.mobileLayoutVersion,
+      dashboard.config.pcRowLayoutVersion,
+    );
     migratedWidgets = migrateWidgetConfig(migratedWidgets);
     migratedWidgets = migrateWidgetChartConfig(migratedWidgets);
     const { widgetMap, wrappedDataCharts } = getWidgetMap(
@@ -193,7 +204,16 @@ export const toUpdateDashboard = createAsyncThunk<
     const updateData: SaveDashboard = {
       ...dashBoard,
       subType: dashBoard?.config?.type,
-      config: JSON.stringify(dashBoard.config),
+      config: JSON.stringify({
+        ...dashBoard.config,
+        ...(dashBoard.config.type === 'auto'
+          ? {
+              layoutVersion: AUTO_LAYOUT_VERSION,
+              mobileLayoutVersion: MOBILE_LAYOUT_VERSION,
+              pcRowLayoutVersion: PC_ROW_LAYOUT_VERSION,
+            }
+          : {}),
+      }),
       widgetToCreate: group.widgetToCreate,
       widgetToUpdate: group.widgetToUpdate,
       widgetToDelete: group.widgetToDelete,

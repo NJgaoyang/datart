@@ -32,7 +32,7 @@ import {
 } from 'app/pages/DashBoardPage/pages/BoardEditor/components/ControllerWidgetPanel/types';
 import { ChartDataConfig } from 'app/types/ChartConfig';
 import ChartDataView from 'app/types/ChartDataView';
-import { FilterSqlOperator } from 'globalConstants';
+import { DATE_LEVEL_DELIMITER, FilterSqlOperator } from 'globalConstants';
 import dayjs from 'dayjs';
 import {
   adaptBoardImageUrl,
@@ -45,10 +45,12 @@ import {
   getChartGroupColumns,
   getControllerDateValues,
   getDataChartRequestParams,
+  getChartWidgetRequestParams,
   getRGBAColor,
   getTheWidgetFiltersAndParams,
   getWidgetControlValues,
 } from '..';
+import { getControlOptionQueryParams } from 'app/pages/DashBoardPage/components/Widgets/ControllerWidget/config';
 import { BOARD_FILE_IMG_PREFIX } from '../../constants';
 
 const oldBoardId = 'xxxBoardIdXxx555';
@@ -440,6 +442,138 @@ describe('should getDataChartRequestParams', () => {
     expect(res.filters).toEqual(targetFilter);
   });
 });
+
+describe('getChartWidgetRequestParams legacy board links', () => {
+  const targetWidgetId = 'target-widget';
+  const triggerWidgetId = 'trigger-widget';
+  const targetDataChartId = 'target-datachart';
+  const viewId = 'view-id';
+  const dayFieldName = `snapshot_dt${DATE_LEVEL_DELIMITER}AGG_DATE_DAY`;
+
+  const buildRequest = (linkerColumn?: string) => {
+    const targetWidget = {
+      id: targetWidgetId,
+      datachartId: targetDataChartId,
+      config: { type: 'chart' },
+      relations: [],
+      viewIds: [viewId],
+    };
+    const triggerWidget = {
+      id: triggerWidgetId,
+      datachartId: 'trigger-datachart',
+      config: { type: 'chart' },
+      relations: [
+        {
+          targetId: targetWidgetId,
+          config: {
+            widgetToWidget:
+              linkerColumn === undefined ? {} : { linkerColumn },
+          },
+        },
+      ],
+      viewIds: [viewId],
+    };
+    const dataChart = {
+      id: targetDataChartId,
+      viewId,
+      config: {
+        chartConfig: {
+          datas: [],
+          styles: [],
+          settings: [],
+          i18ns: [],
+        },
+        computedFields: [],
+        aggregation: true,
+      },
+    };
+
+    return getChartWidgetRequestParams({
+      widgetId: targetWidgetId,
+      widgetMap: {
+        [targetWidgetId]: targetWidget,
+        [triggerWidgetId]: triggerWidget,
+      } as any,
+      widgetInfo: undefined,
+      option: undefined,
+      viewMap: {
+        [viewId]: {
+          id: viewId,
+          meta: [
+            {
+              name: 'snapshot_dt',
+              path: ['DATART_VTABLE', 'snapshot_dt'],
+              type: DataViewFieldType.DATE,
+            },
+          ],
+          computedFields: [],
+        },
+      } as any,
+      dashboardDataChartMap: {
+        [targetDataChartId]: dataChart,
+      } as any,
+      boardLinkFilters: [
+        {
+          triggerWidgetId,
+          triggerValue: '2026-08-25',
+          triggerDataChartId: 'trigger-datachart',
+          linkerWidgetId: targetWidgetId,
+        },
+      ],
+      drillOption: undefined,
+    });
+  };
+
+  test('should include function column for date-level legacy board link filter', () => {
+    const request = buildRequest(JSON.stringify([dayFieldName]));
+
+    expect(request?.filters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          column: [dayFieldName],
+        }),
+      ]),
+    );
+    expect(request?.functionColumns).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          alias: dayFieldName,
+          snippet: expect.stringContaining('AGG_DATE_DAY'),
+        }),
+      ]),
+    );
+  });
+
+  test('should preserve physical legacy board link filter without function column', () => {
+    const request = buildRequest(
+      JSON.stringify(['DATART_VTABLE', 'snapshot_dt']),
+    );
+
+    expect(request?.filters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          column: ['DATART_VTABLE', 'snapshot_dt'],
+        }),
+      ]),
+    );
+    expect(request?.functionColumns).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          alias: dayFieldName,
+        }),
+      ]),
+    );
+  });
+
+  test('should ignore legacy board link when linked column is empty', () => {
+    expect(() => buildRequest()).not.toThrow();
+  });
+
+  test('should ignore legacy board link when linked column JSON is invalid', () => {
+    expect(() => buildRequest('[invalid-json')).not.toThrow();
+  });
+});
+
 describe('getChartGroupColumns', () => {
   it('should datas is undefined', () => {
     const datas = undefined;
@@ -572,6 +706,186 @@ describe('getChartGroupColumns', () => {
   });
 });
 describe('getTheWidgetFiltersAndParams', () => {
+  const computedFieldName = 'computed_region';
+
+  const buildComputedControllerCase = (
+    fieldValue = computedFieldName,
+  ) => {
+    const chartWidget = {
+      id: 'computed-chart-widget',
+      datachartId: 'computed-datachart',
+      config: { type: 'chart' },
+      relations: [],
+      viewIds: ['computed-view'],
+    };
+    const controllerWidget = {
+      id: 'computed-controller-widget',
+      config: {
+        type: 'controller',
+        content: {
+          type: ControllerFacadeTypes.DropdownList,
+          relatedViews: [
+            {
+              viewId: 'computed-view',
+              relatedCategory: ChartDataViewFieldCategory.Field,
+              fieldValue,
+              fieldValueType: DataViewFieldType.STRING,
+            },
+          ],
+          config: {
+            controllerValues: ['华东'],
+            sqlOperator: FilterSqlOperator.In,
+          },
+        },
+      },
+      relations: [{ targetId: 'computed-chart-widget' }],
+      viewIds: ['computed-view'],
+    };
+    const view = {
+      id: 'computed-view',
+      meta: [
+        {
+          name: 'region_code',
+          path: ['DATART_VTABLE', 'region_code'],
+          type: DataViewFieldType.STRING,
+        },
+      ],
+      computedFields: [
+        {
+          name: computedFieldName,
+          category: ChartDataViewFieldCategory.ComputedField,
+          expression: '[region_code]',
+          type: DataViewFieldType.STRING,
+          isViewComputedFields: true,
+        },
+      ],
+    };
+
+    const dataChart = {
+      id: 'computed-datachart',
+      viewId: view.id,
+      config: {
+        chartConfig: {
+          datas: [],
+          styles: [],
+          settings: [],
+          i18ns: [],
+        },
+        computedFields: view.computedFields,
+        aggregation: true,
+      },
+    };
+
+    return { chartWidget, controllerWidget, view, dataChart };
+  };
+
+  const buildRequest = (fieldValue = computedFieldName) => {
+    const { chartWidget, controllerWidget, view, dataChart } =
+      buildComputedControllerCase(fieldValue);
+
+    return getChartWidgetRequestParams({
+      widgetId: chartWidget.id,
+      widgetMap: {
+        [chartWidget.id]: chartWidget,
+        [controllerWidget.id]: controllerWidget,
+      } as any,
+      widgetInfo: undefined,
+      option: undefined,
+      viewMap: { [view.id]: view } as any,
+      dashboardDataChartMap: { [dataChart.id]: dataChart } as any,
+      drillOption: undefined,
+    });
+  };
+
+  test('should keep computed controller filter in Pending form before Builder', () => {
+    const { chartWidget, controllerWidget } =
+      buildComputedControllerCase();
+
+    const result = getTheWidgetFiltersAndParams({
+      chartWidget,
+      widgetMap: {
+        [chartWidget.id]: chartWidget,
+        [controllerWidget.id]: controllerWidget,
+      },
+      params: undefined,
+    } as any);
+
+    expect(result.filterParams[0]?.column).toBe(computedFieldName);
+  });
+
+  test('should not append an empty column for a computed controller filter', () => {
+    const request = buildRequest();
+
+    expect(request?.filters.every(filter => filter.column.length > 0)).toBe(
+      true,
+    );
+  });
+
+  test('should resolve a physical controller filter without a function column', () => {
+    const request = buildRequest('region_code');
+
+    expect(request?.filters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          column: ['DATART_VTABLE', 'region_code'],
+        }),
+      ]),
+    );
+    expect(request?.functionColumns).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ alias: 'region_code' }),
+      ]),
+    );
+  });
+
+  test('should ignore an unknown controller field without an empty column', () => {
+    const request = buildRequest('missing_controller_field');
+
+    expect(request?.filters.every(filter => filter.column.length > 0)).toBe(
+      true,
+    );
+    expect(request?.filters).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          column: ['missing_controller_field'],
+        }),
+      ]),
+    );
+  });
+
+  test('should resolve the same computed field through the Builder runtime path', () => {
+    const { view, dataChart } = buildComputedControllerCase();
+
+    const request = getDataChartRequestParams({
+      dataChart: dataChart as any,
+      view: view as any,
+      option: undefined,
+      tempFilters: [
+        {
+          column: computedFieldName,
+          sqlOperator: FilterSqlOperator.In,
+          values: [{ value: '华东', valueType: DataViewFieldType.STRING }],
+        },
+      ],
+    });
+
+    expect(request.filters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          column: [computedFieldName],
+        }),
+      ]),
+    );
+    expect(request.functionColumns).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          alias: computedFieldName,
+          snippet: '[region_code]',
+        }),
+      ]),
+    );
+  });
+
   it.skip('should has Params', () => {
     const obj = {
       chartWidget: {
@@ -936,6 +1250,100 @@ describe('getTheWidgetFiltersAndParams', () => {
     expect(getTheWidgetFiltersAndParams(obj as any)).toEqual(res);
   });
 });
+
+describe('getControlOptionQueryParams computed distinct fields', () => {
+  const computedFieldName = '类型';
+  const computedExpression = "if([invite_cnt]>50,'优秀','一般')";
+
+  const buildView = () => ({
+    id: 'computed-view',
+    meta: [
+      {
+        name: 'invite_cnt',
+        path: ['ads_invite_sales_di', 'invite_cnt'],
+        type: DataViewFieldType.STRING,
+      },
+    ],
+    computedFields: [
+      {
+        name: computedFieldName,
+        category: ChartDataViewFieldCategory.ComputedField,
+        expression: computedExpression,
+        type: DataViewFieldType.STRING,
+      },
+    ],
+  });
+
+  const buildRequest = (columns: string[]) => {
+    const chartWidget = {
+      id: 'controller-widget',
+      config: { type: 'controller' },
+      relations: [],
+      viewIds: ['computed-view'],
+    };
+    const view = buildView();
+
+    return getControlOptionQueryParams({
+      view: view as any,
+      columns,
+      curWidget: chartWidget as any,
+      widgetMap: { [chartWidget.id]: chartWidget } as any,
+    });
+  };
+
+  test('should resolve a non-aggregate computed field in a DISTINCT request', () => {
+    const request = buildRequest([computedFieldName]);
+
+    expect(request.columns).toEqual([
+      {
+        alias: computedFieldName,
+        column: [computedFieldName],
+      },
+    ]);
+  });
+
+  test('should include the computed expression in a DISTINCT request', () => {
+    const request = buildRequest([computedFieldName]);
+
+    expect(request.functionColumns).toEqual([
+      {
+        alias: computedFieldName,
+        snippet: computedExpression,
+      },
+    ]);
+  });
+
+  test('should keep a physical field path in a DISTINCT request', () => {
+    const request = buildRequest(['invite_cnt']);
+
+    expect(request.columns).toEqual([
+      {
+        alias: 'invite_cnt',
+        column: ['ads_invite_sales_di', 'invite_cnt'],
+      },
+    ]);
+    expect(request.functionColumns || []).toEqual([]);
+  });
+
+  test('should reject an unknown field instead of sending an empty column', () => {
+    const request = buildRequest(['missing_field']);
+
+    expect(request.columns).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ column: [] }),
+      ]),
+    );
+    expect(request.columns).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          alias: 'missing_field',
+          column: ['missing_field'],
+        }),
+      ]),
+    );
+  });
+});
+
 describe('getWidgetControlValues', () => {
   test('control DropdownList value', () => {
     const type = ControllerFacadeTypes.DropdownList;

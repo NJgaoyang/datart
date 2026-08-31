@@ -35,11 +35,25 @@ public interface DataProviderService {
 
     Dataframe execute(ViewExecuteParam viewExecuteParam, boolean checkViewPermission) throws Exception;
 
+    Dataframe execute(ViewExecuteParam viewExecuteParam, boolean checkViewPermission, String queryOwner) throws Exception;
+
     Map<String, Dataframe> executeBatch(List<ViewExecuteParam> params) throws Exception;
 
     Set<StdSqlOperator> supportedStdFunctions(String sourceId);
 
+    List<FunctionDefinition> functionDefinitions(String sourceId);
+
     boolean validateFunction(String sourceId, String snippet);
+
+    boolean cancelQuery(String queryId);
+
+    boolean cancelQuery(String queryId, String queryOwner);
+
+    Map<String, Object> getRuntimeStats(String sourceId);
+
+    List<Map<String, Object>> getQueryTraces(String sourceId);
+
+    Map<String, Object> getQueryMonitor(String orgId);
 
     String decryptValue(String value);
 

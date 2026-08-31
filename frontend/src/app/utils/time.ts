@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { DataViewFieldType } from 'app/constants';
+import { isDateFieldType } from 'app/constants';
 import { ChartDataRequestFilter } from 'app/types/ChartDataRequest';
 import {
   FilterSqlOperator,
@@ -93,7 +93,7 @@ export const splitRangerDateFilters = (filters: ChartDataRequestFilter[]) => {
     let isTargetFilter = false;
     if (
       filter.sqlOperator === FilterSqlOperator.Between &&
-      filter.values?.[0].valueType === DataViewFieldType.DATE
+      isDateFieldType(filter.values?.[0].valueType)
     ) {
       isTargetFilter = true;
     }

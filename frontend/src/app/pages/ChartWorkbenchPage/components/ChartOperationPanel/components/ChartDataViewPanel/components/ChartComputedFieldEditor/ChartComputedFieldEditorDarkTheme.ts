@@ -20,6 +20,7 @@
 const ChartComputedFieldEditorDarkTheme = {
   base: 'vs-dark',
   inherit: true,
+  colors: {},
   rules: [
     { token: 'dql-field', foreground: '007bff', fontStyle: 'bold' },
     { token: 'dql-variable', foreground: '28a745', fontStyle: 'bold' },

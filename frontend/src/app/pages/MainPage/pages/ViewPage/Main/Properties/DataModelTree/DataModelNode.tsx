@@ -86,6 +86,7 @@ const DataModelNode: FC<{
           );
           break;
         case DataViewFieldType.DATE:
+        case DataViewFieldType.DATETIME:
           icon = (
             <CalendarOutlined style={{ alignSelf: 'center', color: INFO }} />
           );

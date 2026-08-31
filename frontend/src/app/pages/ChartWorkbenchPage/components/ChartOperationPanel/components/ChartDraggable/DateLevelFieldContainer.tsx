@@ -24,19 +24,23 @@ function DateLevelFieldContainer({
       canDrag: true,
       item: {
         field: item.field,
+        fieldId: item?.fieldId,
+        originName: item?.originName,
         colName: item?.name,
         type: item?.type,
         category: item?.category,
         expression: item?.expression,
-        displayName,
+        path: item?.path,
+        displayName: item?.displayName,
         comment: item?.comment,
+        isDisplayNameCustom: item?.isDisplayNameCustom,
       },
       collect: monitor => ({
         isDragging: monitor.isDragging(),
       }),
       end: onClearCheckedList,
     }),
-    [],
+    [item, onClearCheckedList],
   );
 
   return (
@@ -53,8 +57,8 @@ function DateLevelFieldContainer({
 export default DateLevelFieldContainer;
 
 const ItemWrapper = styled.div`
-  color: ${p => p.theme.textColorSnd};
   width: max-content;
   min-width: 100%;
+  color: ${p => p.theme.textColorSnd};
   white-space: nowrap;
 `;

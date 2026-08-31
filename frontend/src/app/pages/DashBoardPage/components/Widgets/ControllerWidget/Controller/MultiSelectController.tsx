@@ -95,16 +95,16 @@ const StyledSelect = styled(Select)`
 
   /* 多选标签不换行，溢出折叠而非撑宽容器 */
   &.ant-select-multiple .ant-select-selection-overflow {
-    flex-wrap: nowrap !important;
-    overflow: hidden;
-    max-height: 32px;
-    min-width: 0;
     flex: 1;
+    flex-wrap: nowrap !important;
+    min-width: 0;
+    max-height: 32px;
+    overflow: hidden;
   }
 
   &.ant-select-multiple .ant-select-selection-overflow-item {
-    min-width: 0;
     flex-shrink: 1;
+    min-width: 0;
   }
 
   /* 搜索输入框允许收缩，避免撑宽容器 */

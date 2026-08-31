@@ -62,6 +62,13 @@ public interface RelRoleUserMapperExt extends RelRoleUserMapper {
     })
     RelRoleUser selectByUserAndRole(String userId, String roleId);
 
+    @Select({
+            "SELECT rru.* FROM rel_role_user rru " +
+                    "JOIN role r ON r.id = rru.role_id " +
+                    "WHERE r.org_id = #{orgId} ORDER BY rru.create_time ASC"
+    })
+    List<RelRoleUser> listByOrgId(@Param("orgId") String orgId);
+
     @Delete({
             "DELETE FROM rel_role_user WHERE role_id= #{roleId} AND user_id=#{userId}"
     })

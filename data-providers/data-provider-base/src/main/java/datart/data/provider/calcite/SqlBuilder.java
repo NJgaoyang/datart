@@ -22,6 +22,8 @@ import datart.core.base.consts.ValueType;
 import datart.core.base.exception.Exceptions;
 import datart.data.provider.base.DataProviderException;
 import datart.core.data.provider.ExecuteParam;
+import datart.core.data.provider.QueryOutputAlias;
+import datart.core.data.provider.QueryOutputProjection;
 import datart.core.data.provider.SelectColumn;
 import datart.core.data.provider.SingleTypedValue;
 import datart.core.data.provider.sql.*;
@@ -56,6 +58,10 @@ public class SqlBuilder {
     private boolean withPage;
 
     private boolean quoteIdentifiers;
+
+    private boolean outputTechnicalAliases;
+
+    private int outputOrdinal;
 
     private boolean withNamePrefix;
 
@@ -110,6 +116,11 @@ public class SqlBuilder {
         return this;
     }
 
+    public SqlBuilder withOutputTechnicalAliases(boolean enabled) {
+        this.outputTechnicalAliases = enabled;
+        return this;
+    }
+
 
     /**
      * 根据页面操作生成的Aggregator,Filter,Group By, Order By等操作符，重新构建SQL。
@@ -153,9 +164,12 @@ public class SqlBuilder {
         if (executeParam != null && !CollectionUtils.isEmpty(executeParam.getColumns())) {
             for (SelectColumn column : executeParam.getColumns()) {
                 if (functionColumnMap.containsKey(column.getColumnKey())) {
-                    selectList.add(SqlNodeUtils.createAliasNode(functionColumnMap.get(column.getColumnKey()), column.getAlias()));
+                    selectList.add(SqlNodeUtils.createAliasNode(functionColumnMap.get(column.getColumnKey()),
+                            outputTechnicalAlias(column.getAlias())));
                 } else {
-                    selectList.add(SqlNodeUtils.createAliasNode(createColumnIdentifier(column.getColumnNames(withNamePrefix, namePrefix)), column.getAlias()));
+                    selectList.add(SqlNodeUtils.createAliasNode(
+                            createColumnIdentifier(column.getColumnNames(withNamePrefix, namePrefix)),
+                            outputTechnicalAlias(column.getAlias())));
                 }
             }
         }
@@ -186,10 +200,10 @@ public class SqlBuilder {
                 SqlNode sqlNode = null;
                 if (functionColumnMap.containsKey(group.getColumnKey())) {
                     sqlNode = functionColumnMap.get(group.getColumnKey());
-                    selectList.add(SqlNodeUtils.createAliasNode(sqlNode, group.getAlias()));
+                    selectList.add(SqlNodeUtils.createAliasNode(sqlNode, outputTechnicalAlias(group.getAlias())));
                 } else {
                     sqlNode = createColumnIdentifier(group.getColumnNames(withNamePrefix, namePrefix));
-                    selectList.add(SqlNodeUtils.createAliasNode(sqlNode, group.getAlias()));
+                    selectList.add(SqlNodeUtils.createAliasNode(sqlNode, outputTechnicalAlias(group.getAlias())));
                 }
                 groupBy.add(sqlNode);
             }
@@ -296,10 +310,27 @@ public class SqlBuilder {
         }
 
         if (StringUtils.isNotBlank(operator.getAlias())) {
-            return SqlNodeUtils.createAliasNode(aggCall, operator.getAlias());
+            return SqlNodeUtils.createAliasNode(aggCall, outputTechnicalAlias(operator.getAlias()));
         } else {
             return aggCall;
         }
+    }
+
+    private String outputTechnicalAlias(String alias) {
+        if (!outputTechnicalAliases || executeParam == null
+                || CollectionUtils.isEmpty(executeParam.getOutputProjections())) {
+            return alias;
+        }
+        int ordinal = outputOrdinal++;
+        if (ordinal >= executeParam.getOutputProjections().size()) {
+            return alias;
+        }
+        QueryOutputProjection projection = executeParam.getOutputProjections().get(ordinal);
+        if (projection != null && Objects.equals(projection.getTechnicalAlias(), alias)
+                && Objects.equals(projection.getOrdinal(), ordinal)) {
+            return QueryOutputAlias.of(ordinal);
+        }
+        return alias;
     }
 
     private SqlNode createOrderNode(OrderOperator operator) {
@@ -574,6 +605,12 @@ public class SqlBuilder {
             case COUNT:
             case COUNT_DISTINCT:
                 return SqlStdOperatorTable.COUNT;
+            case STDDEV:
+                return SqlStdOperatorTable.STDDEV;
+            case VARIANCE:
+                return SqlStdOperatorTable.VARIANCE;
+            case APPROX_COUNT_DISTINCT:
+                return SqlStdOperatorTable.APPROX_COUNT_DISTINCT;
             default:
                 Exceptions.msg("message.provider.sql.type.unsupported", sqlOperator.name());
         }

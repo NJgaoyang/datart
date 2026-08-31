@@ -39,6 +39,13 @@ export type PendingChartDataRequestFilter = {
   }>;
 };
 
+export type QueryOutputProjection = {
+  fieldId?: string;
+  technicalAlias: string;
+  displayAlias: string;
+  ordinal: number;
+};
+
 export type ChartDataRequest = {
   viewId: string;
   aggregators: Array<{ column: string[]; sqlOperator: string }>;
@@ -67,4 +74,5 @@ export type ChartDataRequest = {
   vizName?: string;
   vizType?: string;
   analytics?: Boolean;
+  outputProjections?: QueryOutputProjection[];
 };

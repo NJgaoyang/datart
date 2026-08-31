@@ -50,7 +50,11 @@ import {
   WARNING,
 } from 'styles/StyleConstants';
 import { isEmpty } from 'utils/object';
-import { getFieldDisplayName, stopPPG } from 'utils/utils';
+import {
+  getDatasetFieldDisplayName,
+  getFieldDisplayName,
+  stopPPG,
+} from 'utils/utils';
 import { renderMataProps } from '../../../../slice/types';
 import DateLevelFieldContainer from './DateLevelFieldContainer';
 
@@ -82,8 +86,12 @@ export const ChartDraggableSourceContainer: FC<
   children,
   isViewComputedFields,
   viewType,
+  path,
+  fieldId,
+  originName,
   displayName,
   comment,
+  isDisplayNameCustom,
   folderRole,
   dateFormat,
   onDeleteComputedField,
@@ -92,11 +100,24 @@ export const ChartDraggableSourceContainer: FC<
   onClearCheckedList,
 }) {
   const t = useI18NPrefix(`viz.workbench.dataview`);
-  const fieldDisplayName = getFieldDisplayName({
-    name: colName,
-    displayName,
-    comment,
-  });
+  const fieldDisplayName = [
+    ChartDataViewFieldCategory.Field,
+    ChartDataViewFieldCategory.Hierarchy,
+  ].includes(category as ChartDataViewFieldCategory)
+    ? getDatasetFieldDisplayName({
+        fieldId,
+        originName,
+        name: colName,
+        path,
+        displayName,
+      })
+    : getFieldDisplayName({
+        name: colName,
+        path,
+        displayName,
+        comment,
+        isDisplayNameCustom,
+      });
   const [showChild, setShowChild] = useToggle(false);
   const isHierarchyFieldOrTable =
     role === ColumnRole.Hierarchy || role === ColumnRole.Table;
@@ -111,13 +132,17 @@ export const ChartDraggableSourceContainer: FC<
         ? selectedItems.map(item => buildDragItem(item))
         : buildDragItem(
             {
+              fieldId,
+              originName,
               type,
               subType,
               category,
               name: colName,
+              path,
               dateFormat,
-              displayName: fieldDisplayName,
+              displayName,
               comment,
+              isDisplayNameCustom,
             },
             children,
           ),
@@ -126,7 +151,21 @@ export const ChartDraggableSourceContainer: FC<
       }),
       end: onClearCheckedList,
     }),
-    [selectedItems],
+    [
+      category,
+      children,
+      colName,
+      comment,
+      dateFormat,
+      displayName,
+      fieldId,
+      isDisplayNameCustom,
+      originName,
+      path,
+      selectedItems,
+      subType,
+      type,
+    ],
   );
 
   const styleClasses: Array<string> = useMemo(() => {
@@ -228,6 +267,7 @@ export const ChartDraggableSourceContainer: FC<
           icon = <NumberOutlined {...props} />;
           break;
         case DataViewFieldType.DATE:
+        case DataViewFieldType.DATETIME:
           icon = <CalendarOutlined {...props} />;
           break;
         default:
@@ -235,7 +275,7 @@ export const ChartDraggableSourceContainer: FC<
       }
     }
 
-    if (type === 'DATE' && category === 'field') {
+    if ((type === 'DATE' || type === 'DATETIME') && category === 'field') {
       return (
         <Row align="middle" style={{ width: '100%' }}>
           <CollapseWrapper
@@ -308,6 +348,8 @@ export const ChartDraggableSourceContainer: FC<
     category,
     colName,
     comment,
+    isDisplayNameCustom,
+    path,
     fieldDisplayName,
     children,
     isViewComputedFields,
@@ -333,9 +375,13 @@ export const ChartDraggableSourceContainer: FC<
       .map(item => (
         <ChartDraggableSourceContainer
           key={item.name}
+          fieldId={item.fieldId}
+          originName={item.originName}
           name={item.name}
+          path={item.path}
           displayName={item.displayName}
           comment={item.comment}
+          isDisplayNameCustom={item.isDisplayNameCustom}
           category={item.category}
           expression={item.expression}
           type={item.type}
@@ -394,8 +440,8 @@ export default ChartDraggableSourceContainer;
 const Container = styled.div<{ flexDirection?: string }>`
   display: flex;
   flex: 1;
-  min-width: max-content;
   flex-direction: ${p => p.flexDirection || 'row'};
+  min-width: max-content;
   padding: ${SPACE_TIMES(0.5)} ${SPACE} ${SPACE_TIMES(0.5)} ${SPACE_TIMES(2)};
   font-size: ${FONT_SIZE_BODY};
   font-weight: ${FONT_WEIGHT_MEDIUM};
@@ -431,8 +477,8 @@ const Container = styled.div<{ flexDirection?: string }>`
 
 const CollapseWrapper = styled(Collapse)`
   .ant-collapse-header {
-    padding: 0 !important;
     min-width: 0;
+    padding: 0 !important;
 
     .ant-collapse-header-text {
       flex: 1;
@@ -461,10 +507,10 @@ const CollapseWrapper = styled(Collapse)`
 `;
 const DateFieldHeader = styled.div`
   display: flex;
+  gap: ${SPACE};
   align-items: center;
   width: max-content;
   min-width: 100%;
-  gap: ${SPACE};
   white-space: nowrap;
 `;
 const StyledDateFieldContent = styled.p`

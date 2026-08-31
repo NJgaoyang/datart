@@ -27,6 +27,25 @@ import {
   ViewType,
 } from '../pages/MainPage/pages/ViewPage/slice/types';
 
+export type MigrationMode = 'COMPAT' | 'STRICT';
+
+export type ViewFieldMeta = {
+  fieldId: string;
+  originName: string;
+  sourceComment?: string;
+  customName?: string;
+  displayName: string;
+  sourcePath?: string[];
+  type?: string;
+  category?: string;
+  expression?: string;
+  active?: boolean;
+};
+
+export type PreviewFieldMeta = Omit<ViewFieldMeta, 'fieldId'> & {
+  fieldId?: string;
+};
+
 export interface View extends ViewSimple {
   config: string;
   model: string;
@@ -34,5 +53,7 @@ export interface View extends ViewSimple {
   variables: Variable[];
   relVariableSubjects: RowPermissionRaw[];
   relSubjectColumns: ColumnPermissionRaw[];
+  fields?: ViewFieldMeta[];
   type?: ViewType;
+  migrationMode?: MigrationMode;
 }

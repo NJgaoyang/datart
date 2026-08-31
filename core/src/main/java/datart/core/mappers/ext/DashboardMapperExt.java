@@ -11,18 +11,7 @@ import java.util.List;
 public interface DashboardMapperExt extends DashboardMapper {
 
     @Select({
-            "SELECT " +
-                    "	d.id, " +
-                    "	d.`index`, " +
-                    "	d.is_folder, " +
-                    "	d.`name`, " +
-                    "	d.parent_id, " +
-                    "	d.portal_id " +
-                    "FROM " +
-                    "	dashboard d " +
-                    "WHERE " +
-                    "	d.`status` != 0 " +
-                    "AND d.org_id = #{orgId}"
+            "SELECT * FROM dashboard WHERE `status` != 0 AND org_id = #{orgId}"
     })
     List<Dashboard> listByOrgId(@Param("orgId") String portalId);
 

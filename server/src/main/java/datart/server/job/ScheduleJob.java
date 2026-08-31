@@ -134,6 +134,8 @@ public abstract class ScheduleJob implements Job, Closeable {
                 DashboardDetail dashboard = vizService.getDashboard(folder.getRelId());
                 downloadCreateParam = JsParserUtils.parseExecuteParam("board", OBJECT_MAPPER.writeValueAsString(dashboard));
             }
+            // Scheduled exports are background work, not interactive requests.
+            downloadCreateParam.getDownloadParams().forEach(param -> param.setQueryId(null));
 
             if (config.getImageWidth() != null) {
                 downloadCreateParam.setImageWidth(config.getImageWidth());

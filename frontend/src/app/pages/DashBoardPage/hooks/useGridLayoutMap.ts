@@ -17,6 +17,9 @@
  */
 import { useMemo } from 'react';
 import { Layouts } from 'react-grid-layout';
+import { LAYOUT_COLS_MAP } from '../constants';
+import { normalizeAutoRectForCols } from '../utils/autoLayout';
+import { RectConfig } from '../pages/Board/slice/types';
 import { Widget } from '../types/widgetTypes';
 
 /** 按钮类型 widget（查询/重置）—— 可自由调整大小 */
@@ -46,15 +49,21 @@ interface WidgetLayoutConstraints {
 
 const getWidgetConstraints = (
   originalType: string,
+  mobile = false,
 ): WidgetLayoutConstraints => {
   if (BUTTON_TYPES.has(originalType)) {
-    return { minW: 2, maxW: 12, minH: 1, maxH: 40 };
+    return { maxW: mobile ? 24 : 72, maxH: mobile ? 40 : 160 };
   }
   if (CONTROLLER_TYPES.has(originalType)) {
-    return { minW: 3, maxW: 8, minH: 1, maxH: 3 };
+    return {
+      minW: mobile ? 1 : 18,
+      maxW: mobile ? 24 : 48,
+      minH: 1,
+      maxH: mobile ? 3 : 12,
+    };
   }
   // 图表 / 媒体 / 容器等 —— 宽松约束
-  return { minW: 1, maxW: 12, minH: 1, maxH: 40 };
+  return { minW: 1, maxW: mobile ? 24 : 72, minH: 1, maxH: mobile ? 40 : 160 };
 };
 
 export default function useGridLayoutMap(layoutWidgets: Widget[]) {
@@ -65,9 +74,17 @@ export default function useGridLayoutMap(layoutWidgets: Widget[]) {
     };
     layoutWidgets.forEach(widget => {
       const lg = widget.config.pRect || widget.config.mRect || {};
-      const sm = widget.config.mRect || widget.config.pRect || {};
+      const sm: RectConfig =
+        widget.config.mRect ||
+        (widget.config.pRect
+          ? normalizeAutoRectForCols(widget.config.pRect, LAYOUT_COLS_MAP.sm)
+          : { x: 0, y: 0, width: 1, height: 1 });
       const lock = widget.config.lock;
       const constraints = getWidgetConstraints(widget.config.originalType);
+      const mobileConstraints = getWidgetConstraints(
+        widget.config.originalType,
+        true,
+      );
 
       layoutMap.lg.push({
         i: widget.id,
@@ -88,10 +105,10 @@ export default function useGridLayoutMap(layoutWidgets: Widget[]) {
         w: sm.width,
         h: sm.height,
         static: lock,
-        minW: constraints.minW,
-        maxW: constraints.maxW,
-        minH: constraints.minH,
-        maxH: constraints.maxH,
+        minW: mobileConstraints.minW,
+        maxW: mobileConstraints.maxW,
+        minH: mobileConstraints.minH,
+        maxH: mobileConstraints.maxH,
       });
     });
     return layoutMap;

@@ -24,6 +24,7 @@ export const ROOT_CONTAINER_ID = `${DATARTSEPERATOR}data-model-root-id`;
 export const ALLOW_COMBINE_COLUMN_TYPES = [
   DataViewFieldType.STRING,
   DataViewFieldType.DATE,
+  DataViewFieldType.DATETIME,
 ];
 
 export enum TreeNodeHierarchy {

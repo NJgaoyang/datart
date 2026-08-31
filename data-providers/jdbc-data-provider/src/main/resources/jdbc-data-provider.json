@@ -57,6 +57,14 @@
       "defaultValue": "60"
     },
     {
+      "name": "queryTimeout",
+      "displayName": "查询超时时间（秒）",
+      "description": "单次 SQL 最长执行时间；填 0 表示不设置 JDBC 超时。默认 60 秒。",
+      "type": "string",
+      "required": false,
+      "defaultValue": "60"
+    },
+    {
       "name": "properties",
       "type": "object",
       "required": false,

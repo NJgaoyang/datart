@@ -303,7 +303,11 @@ export const filterValueTypeByControl = (
     );
   }
   if (DateControllerTypes.includes(controlType)) {
-    return [VariableValueTypes.Date, DataViewFieldType.DATE].includes(
+    return [
+      VariableValueTypes.Date,
+      DataViewFieldType.DATE,
+      DataViewFieldType.DATETIME,
+    ].includes(
       valueType,
     );
   }

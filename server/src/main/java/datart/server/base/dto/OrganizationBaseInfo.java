@@ -19,6 +19,7 @@
 package datart.server.base.dto;
 
 import datart.core.entity.Organization;
+import datart.core.base.consts.MigrationMode;
 import lombok.Data;
 import org.springframework.beans.BeanUtils;
 
@@ -32,6 +33,8 @@ public class OrganizationBaseInfo {
     private String description;
 
     private String avatar;
+
+    private MigrationMode migrationMode;
 
     public OrganizationBaseInfo(Organization organization) {
         BeanUtils.copyProperties(organization, this);

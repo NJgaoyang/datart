@@ -16,12 +16,22 @@
  * limitations under the License.
  */
 import { APP_CURRENT_VERSION } from 'app/migration/constants';
+import {
+  AUTO_LAYOUT_VERSION,
+  MOBILE_LAYOUT_VERSION,
+  MOBILE_MIN_MARGIN,
+  MOBILE_MIN_PADDING,
+  PC_ROW_LAYOUT_VERSION,
+} from '../constants';
 import { BoardConfig } from '../types/boardTypes';
 
 export const initAutoBoardConfig = () => {
   const config: BoardConfig = {
     type: 'auto',
     version: APP_CURRENT_VERSION,
+    layoutVersion: AUTO_LAYOUT_VERSION,
+    mobileLayoutVersion: MOBILE_LAYOUT_VERSION,
+    pcRowLayoutVersion: PC_ROW_LAYOUT_VERSION,
 
     jsonConfig: {
       props: [
@@ -87,29 +97,29 @@ export const initAutoBoardConfig = () => {
             {
               label: 'mSpace.paddingTB',
               key: 'paddingTB',
-              default: 8,
-              value: 8,
+              default: MOBILE_MIN_PADDING,
+              value: MOBILE_MIN_PADDING,
               comType: 'inputNumber',
             },
             {
               label: 'mSpace.paddingLR',
               key: 'paddingLR',
-              default: 8,
-              value: 8,
+              default: MOBILE_MIN_PADDING,
+              value: MOBILE_MIN_PADDING,
               comType: 'inputNumber',
             },
             {
               label: 'mSpace.marginTB',
               key: 'marginTB',
-              default: 8,
-              value: 8,
+              default: MOBILE_MIN_MARGIN,
+              value: MOBILE_MIN_MARGIN,
               comType: 'inputNumber',
             },
             {
               label: 'mSpace.marginLR',
               key: 'marginLR',
-              default: 8,
-              value: 8,
+              default: MOBILE_MIN_MARGIN,
+              value: MOBILE_MIN_MARGIN,
               comType: 'inputNumber',
             },
           ],

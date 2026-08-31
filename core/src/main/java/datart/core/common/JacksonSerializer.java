@@ -34,4 +34,5 @@ public class JacksonSerializer {
             gen.writeString(value.toString());
         }
     }
+
 }

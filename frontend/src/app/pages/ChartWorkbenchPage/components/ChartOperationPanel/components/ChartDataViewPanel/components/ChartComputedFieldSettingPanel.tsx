@@ -24,11 +24,17 @@ import { ViewType } from 'app/pages/MainPage/pages/ViewPage/slice/types';
 import { ChartDataViewMeta } from 'app/types/ChartDataViewMeta';
 import { ChartComputedFieldHandle } from 'app/types/ComputedFieldEditor';
 import { hasAggregationFunction } from 'app/utils/chartHelper';
-import { FC, useCallback, useEffect, useRef, useState } from 'react';
+import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
-import { getFieldDisplayName } from 'utils/utils';
+import { getDatasetFieldDisplayName } from 'utils/utils';
+import { fetchSourceFunctionDefinitionsAsync } from 'app/utils/fetch';
 import ChartComputedFieldEditor from './ChartComputedFieldEditor/ChartComputedFieldEditor';
 import ChartSearchableList from './ChartSearchableList';
+import {
+  ComputedFieldDisplayName,
+  toDisplayExpression,
+  toQueryExpression,
+} from './computedFieldExpression';
 import ComputedFunctionDescriptions from './computed-function-description-map';
 import { FieldTemplate, FunctionTemplate, VariableTemplate } from './utils';
 
@@ -62,6 +68,85 @@ const ChartComputedFieldSettingPanel: FC<{
   const [selectedFunctionCategory, setSelectedFunctionCategory] = useState(
     defaultFunctionCategory,
   );
+  const [availableSourceFunctions, setAvailableSourceFunctions] = useState<
+    string[] | undefined
+  >();
+
+  useEffect(() => {
+    let active = true;
+    if (!sourceId) {
+      setAvailableSourceFunctions(undefined);
+      return;
+    }
+    fetchSourceFunctionDefinitionsAsync(sourceId)
+      .then(
+        definitions =>
+          active &&
+          setAvailableSourceFunctions(definitions.map(item => item.name)),
+      )
+      .catch(() => active && setAvailableSourceFunctions(undefined));
+    return () => {
+      active = false;
+    };
+  }, [sourceId]);
+
+  const supportedFunctionDescriptions = useMemo(() => {
+    if (sourceId && !availableSourceFunctions) {
+      return [];
+    }
+    if (!availableSourceFunctions) {
+      return ComputedFunctionDescriptions;
+    }
+    const supported = new Set(availableSourceFunctions);
+    return ComputedFunctionDescriptions.filter(item =>
+      supported.has(item.name),
+    );
+  }, [availableSourceFunctions, sourceId]);
+
+  const editorFieldNames = useMemo<ComputedFieldDisplayName[]>(() => {
+    const result: ComputedFieldDisplayName[] = [];
+    const collectFields = (items: any[] = []) => {
+      items.forEach(item => {
+        if (item?.children?.length) {
+          collectFields(item.children);
+          return;
+        }
+
+        const key = item?.key;
+        const name = String(
+          item?.name || (Array.isArray(key) ? key[key.length - 1] : key) || '',
+        );
+        if (!name) return;
+
+        const label = String(
+          item?.title || getDatasetFieldDisplayName(item) || name,
+        );
+        result.push({ name, label });
+      });
+    };
+    collectFields(fields as any[]);
+
+    const labelCounts = result.reduce<Record<string, number>>(
+      (counts, field) => {
+        counts[field.label] = (counts[field.label] || 0) + 1;
+        return counts;
+      },
+      {},
+    );
+    return result.map(field => ({
+      ...field,
+      label:
+        labelCounts[field.label] > 1
+          ? `${field.label}（${field.name}）`
+          : field.label,
+    }));
+  }, [fields]);
+
+  useEffect(() => {
+    if (computedField) {
+      onChange?.(computedField);
+    }
+  }, [computedField, onChange]);
 
   // --- Resizable left pane ---
   const [leftPaneWidth, setLeftPaneWidth] = useState(200);
@@ -133,13 +218,13 @@ const ChartComputedFieldSettingPanel: FC<{
 
   const handleExpressionChange = expression => {
     const newField = Object.assign({}, myComputedFieldRef.current, {
-      expression,
+      expression: toQueryExpression(expression, editorFieldNames),
     });
     handleChange(newField);
   };
 
   const getFunctionCategories = (): Array<{ label; value }> => {
-    const functionCategories = ComputedFunctionDescriptions.reduce<string[]>(
+    const functionCategories = supportedFunctionDescriptions.reduce<string[]>(
       (acc, cur) => {
         if (acc.find(x => x === cur.type)) {
           return acc;
@@ -160,15 +245,17 @@ const ChartComputedFieldSettingPanel: FC<{
   };
 
   const getFunctionList = () => {
-    return ComputedFunctionDescriptions.filter(
-      item =>
-        item.type === selectedFunctionCategory ||
-        !selectedFunctionCategory ||
-        selectedFunctionCategory === defaultFunctionCategory,
-    ).map(item => ({
-      label: item.name,
-      value: item.name,
-    }));
+    return supportedFunctionDescriptions
+      .filter(
+        item =>
+          item.type === selectedFunctionCategory ||
+          !selectedFunctionCategory ||
+          selectedFunctionCategory === defaultFunctionCategory,
+      )
+      .map(item => ({
+        label: item.name,
+        value: item.name,
+      }));
   };
 
   const getInputText = (value, type) => {
@@ -185,7 +272,7 @@ const ChartComputedFieldSettingPanel: FC<{
   };
 
   const handleFieldFunctionSelected = funName => {
-    const functionDescription = ComputedFunctionDescriptions.find(
+    const functionDescription = supportedFunctionDescriptions.find(
       f => f.name === funName,
     );
 
@@ -195,9 +282,14 @@ const ChartComputedFieldSettingPanel: FC<{
     );
   };
 
-  const handleFieldSelected = useCallback(field => {
-    editorRef.current?.insertField(getInputText(field, TextType.Field));
-  }, []);
+  const handleFieldSelected = useCallback(
+    field => {
+      const displayName =
+        editorFieldNames.find(item => item.name === field)?.label || field;
+      editorRef.current?.insertField(getInputText(displayName, TextType.Field));
+    },
+    [editorFieldNames],
+  );
 
   const handleVariableSelected = variable => {
     editorRef.current?.insertField(getInputText(variable, TextType.Variable));
@@ -273,7 +365,7 @@ const ChartComputedFieldSettingPanel: FC<{
                 <ChartSearchableList
                   source={(fields || []).map(f => ({
                     value: f.name,
-                    label: getFieldDisplayName(f),
+                    label: getDatasetFieldDisplayName(f),
                   }))}
                   onItemSelected={handleFieldSelected}
                 />
@@ -296,8 +388,11 @@ const ChartComputedFieldSettingPanel: FC<{
         <StyledMiddlePane>
           <ChartComputedFieldEditor
             ref={editorRef}
-            value={myComputedFieldRef.current?.expression}
-            functionDescriptions={ComputedFunctionDescriptions}
+            value={toDisplayExpression(
+              myComputedFieldRef.current?.expression,
+              editorFieldNames,
+            )}
+            functionDescriptions={supportedFunctionDescriptions}
             onChange={handleExpressionChange}
           />
         </StyledMiddlePane>
@@ -349,16 +444,17 @@ const StyledChartComputedFieldSettingPanel = styled(Space)`
 
 const StyledRow = styled.div`
   display: flex;
-  margin-top: 16px;
   gap: 8px;
   align-items: stretch;
+  height: 400px;
   max-height: 400px;
+  margin-top: 16px;
 `;
 
 const StyledLeftPane = styled.div`
-  flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   .ant-tabs {
     display: flex;
     flex-direction: column;
@@ -366,18 +462,18 @@ const StyledLeftPane = styled.div`
   }
   .ant-tabs-content-holder {
     flex: 1;
-    overflow: auto;
     min-height: 0;
+    overflow: auto;
   }
 `;
 
 const StyledResizer = styled.div`
-  flex-shrink: 0;
-  width: 6px;
-  cursor: col-resize;
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
+  width: 6px;
+  cursor: col-resize;
   background: transparent;
   border-radius: 3px;
   transition: background 0.15s;
@@ -396,24 +492,24 @@ const StyledResizer = styled.div`
 const StyledMiddlePane = styled.div`
   flex: 1 1 auto;
   min-width: 0;
-  overflow: auto;
+  overflow: hidden;
 `;
 
 const StyledRightPane = styled.div`
-  flex-shrink: 0;
-  width: 200px;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
+  width: 200px;
   .ant-space {
-    flex: 1;
     display: flex;
+    flex: 1;
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
   }
   .ant-space-item:last-child {
     flex: 1;
-    overflow: auto;
     min-height: 0;
+    overflow: auto;
   }
 `;

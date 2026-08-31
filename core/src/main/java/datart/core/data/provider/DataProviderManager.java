@@ -21,6 +21,7 @@ package datart.core.data.provider;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface DataProviderManager {
@@ -46,5 +47,9 @@ public interface DataProviderManager {
     boolean validateFunction(DataProviderSource source, String snippet);
 
     void updateSource(DataProviderSource source);
+
+    Map<String, Object> getRuntimeStats(DataProviderSource source);
+
+    List<Map<String, Object>> getQueryTraces(DataProviderSource source);
 
 }

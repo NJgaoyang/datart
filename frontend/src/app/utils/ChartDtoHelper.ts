@@ -47,7 +47,11 @@ export function convertToChartDto(data): ChartDTO {
   data.config = migrateChartConfig(data?.config);
 
   const config = JSON.parse(data?.config || '{}');
-  const meta = transformHierarchyMeta(data?.view?.model);
+  const meta = transformHierarchyMeta(
+    data?.view?.model,
+    data?.view?.fields,
+    data?.view?.type,
+  );
 
   config.computedFields = createDateLevelComputedFieldForConfigComputedFields(
     meta,

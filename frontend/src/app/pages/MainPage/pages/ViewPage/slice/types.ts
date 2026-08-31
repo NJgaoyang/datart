@@ -20,7 +20,7 @@ import { TreeDataNode, TreeNodeProps } from 'antd';
 import { DataViewFieldType, DateFormat } from 'app/constants';
 import { ChartDataViewMeta } from 'app/types/ChartDataViewMeta';
 import { ReactElement } from 'react';
-import { View } from '../../../../../types/View';
+import { PreviewFieldMeta, View } from '../../../../../types/View';
 import { SubjectTypes } from '../../PermissionPage/constants';
 import { RowPermissionRaw, Variable } from '../../VariablePage/slice/types';
 import {
@@ -56,7 +56,7 @@ export type DatabaseSchema = {
     columns: Array<{
       fmt: string;
       foreignKeys: Array<{ column: string; database: string; table: string }>;
-      name: string;
+      name: string[];
       type: string;
       comment?: string;
     }>;
@@ -103,6 +103,8 @@ export interface ViewViewModel<T = object>
   fragment: string;
   isSaveAs?: Boolean;
   warnings?: string[] | null;
+  fields?: View['fields'];
+  previewFields?: PreviewFieldMeta[];
 }
 
 export interface QueryResult {
@@ -112,6 +114,7 @@ export interface QueryResult {
   script?: string;
   warnings?: string[] | null;
   reqColumns?: { column: []; alias: string }[];
+  previewFields?: PreviewFieldMeta[];
 }
 export interface PageInfo {
   pageNo: number;
@@ -131,6 +134,7 @@ export enum ColumnRole {
 }
 
 export interface Column extends Schema {
+  fieldId?: string;
   category?: ColumnCategories;
   index?: number;
   dateFormat?: DateFormat;
@@ -139,9 +143,11 @@ export interface Column extends Schema {
   path?: string[];
   displayName?: string;
   comment?: string;
+  isDisplayNameCustom?: boolean;
 }
 
 export interface ColumnsProps {
+  fieldId?: string;
   category?: ColumnCategories;
   index?: number;
   name: string[];
@@ -150,6 +156,7 @@ export interface ColumnsProps {
   role?: ColumnRole;
   displayName?: string;
   comment?: string;
+  isDisplayNameCustom?: boolean;
 }
 
 export interface Model {

@@ -19,7 +19,7 @@
 import { Space } from 'antd';
 import { FC, memo } from 'react';
 import styled from 'styled-components';
-import { getFieldDisplayName } from 'utils/utils';
+import { getDatasetFieldDisplayName } from 'utils/utils';
 import ChartDraggableElementField from './ChartDraggableElementField';
 
 const ChartDraggableElementHierarchy: FC<{
@@ -61,10 +61,12 @@ const ChartDraggableElementHierarchy: FC<{
     return (
       <div key={columnConfig.uid}>
         <StyledGroupName>
-          {getFieldDisplayName({
+          {getDatasetFieldDisplayName({
+            fieldId: columnConfig.fieldId,
+            originName: columnConfig.originName,
             name: columnConfig.colName,
+            path: columnConfig.path,
             displayName: columnConfig.displayName,
-            comment: columnConfig.comment,
           })}
         </StyledGroupName>
         <Space direction="vertical" size="small">

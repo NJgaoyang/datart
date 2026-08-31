@@ -26,6 +26,7 @@ import { ToolbarButton } from 'app/components';
 import { VirtualTable } from 'app/components/VirtualTable';
 import { DataViewFieldType } from 'app/constants';
 import { TABLE_DATA_INDEX } from 'globalConstants';
+import { PreviewFieldMeta, ViewFieldMeta } from 'app/types/View';
 import { memo, ReactElement, useMemo } from 'react';
 import styled from 'styled-components';
 import {
@@ -36,7 +37,12 @@ import {
 } from 'styles/StyleConstants';
 import { getFieldDisplayName, uuidv4 } from 'utils/utils';
 import { Column, ColumnsModel, DatabaseSchema, Model } from '../slice/types';
-import { getColumnWidthMap, getHierarchyColumn } from '../utils';
+import {
+  getColumnWidthMap,
+  getHierarchyColumn,
+  resolveSchemaColumnComment,
+  findViewFieldMeta,
+} from '../utils';
 import SetFieldType from './SetFieldType';
 
 const ROW_KEY = 'DATART_ROW_KEY';
@@ -51,6 +57,8 @@ interface SchemaTableProps extends TableProps<object> {
   hasFormat?: boolean;
   sourceId?: string;
   databaseSchemas?: DatabaseSchema[];
+  viewFields?: Array<ViewFieldMeta | PreviewFieldMeta>;
+  previewFields?: PreviewFieldMeta[];
   getExtraHeaderActions?: (
     name: string,
     column: Omit<Column, 'name'>,
@@ -72,6 +80,8 @@ export const SchemaTable = memo(
     hasCategory,
     sourceId,
     databaseSchemas,
+    viewFields,
+    previewFields,
     getExtraHeaderActions,
     onSchemaTypeChange,
     ...tableProps
@@ -91,29 +101,6 @@ export const SchemaTable = memo(
     );
     const indexColumnWidth = 50;
 
-    const findColumnComment = useMemo(() => {
-      const schemas = databaseSchemas;
-      if (!schemas) return (name: string) => undefined;
-      const map = new Map<string, string>();
-      for (const schema of schemas) {
-        for (const tbl of schema.tables || []) {
-          for (const col of tbl.columns || []) {
-            if (col.comment && col.name?.[0]) {
-              const colName = col.name[0];
-              map.set(colName.toUpperCase(), col.comment);
-            }
-          }
-        }
-      }
-      return (name: string) => {
-        const lastSegment = name?.split('.').pop();
-        return (
-          map.get(name?.toUpperCase()) ||
-          map.get(lastSegment?.toUpperCase() || '')
-        );
-      };
-    }, [databaseSchemas]);
-
     const {
       columns,
       tableWidth,
@@ -124,6 +111,7 @@ export const SchemaTable = memo(
       let tableWidth = 0;
       const columns = Object.entries(model).map(([name, column]) => {
         const hierarchyColumn = getHierarchyColumn(name, hierarchy) || column;
+        const hierarchyMeta = hierarchyColumn as Column;
 
         const width = columnWidthMap[name];
         tableWidth += width;
@@ -134,6 +122,7 @@ export const SchemaTable = memo(
             icon = <NumberOutlined />;
             break;
           case DataViewFieldType.DATE:
+          case DataViewFieldType.DATETIME:
             icon = <CalendarOutlined />;
             break;
           default:
@@ -144,11 +133,29 @@ export const SchemaTable = memo(
         const extraActions =
           getExtraHeaderActions && getExtraHeaderActions(name, hierarchyColumn);
 
-        const displayText = getFieldDisplayName({
+        const fieldIdentity = {
+          fieldId: hierarchyMeta.fieldId || column.fieldId,
           name,
-          displayName: hierarchyColumn.displayName,
-          comment: column.comment || findColumnComment(name),
-        });
+          path: hierarchyMeta.path,
+        };
+        const viewField =
+          findViewFieldMeta(fieldIdentity, viewFields) ||
+          findViewFieldMeta(fieldIdentity, previewFields);
+        const displayText =
+          viewField?.displayName ||
+          getFieldDisplayName({
+            name,
+            path: hierarchyMeta.path,
+            displayName: hierarchyColumn.displayName,
+            comment:
+              column.comment ||
+              hierarchyMeta.comment ||
+              resolveSchemaColumnComment(databaseSchemas, {
+                name,
+                path: hierarchyMeta.path,
+              }),
+            isDisplayNameCustom: hierarchyMeta.isDisplayNameCustom,
+          });
 
         const title = (
           <>
@@ -199,7 +206,9 @@ export const SchemaTable = memo(
       columnWidthMap,
       hasCategory,
       hasFormat,
-      findColumnComment,
+      databaseSchemas,
+      viewFields,
+      previewFields,
       getExtraHeaderActions,
       onSchemaTypeChange,
     ]);
@@ -245,8 +254,8 @@ const TH = styled.th`
     .content {
       flex: 1;
       overflow: hidden;
-      white-space: nowrap;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .prefix {

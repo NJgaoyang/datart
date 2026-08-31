@@ -32,6 +32,7 @@ import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { ChartDataViewMeta } from 'app/types/ChartDataViewMeta';
 import { FC, memo } from 'react';
 import styled from 'styled-components';
+import { getFieldDisplayName } from 'utils/utils';
 import {
   FONT_SIZE_BASE,
   FONT_SIZE_TITLE,
@@ -64,6 +65,7 @@ const DataModelComputerFieldNode: FC<{
         );
         break;
       case DataViewFieldType.DATE:
+      case DataViewFieldType.DATETIME:
         icon = (
           <CalendarOutlined style={{ alignSelf: 'center', color: WARNING }} />
         );
@@ -83,7 +85,7 @@ const DataModelComputerFieldNode: FC<{
           <Tooltip title={t('createComputedFields')} placement="left">
             <StyledIW fontSize={FONT_SIZE_TITLE}>{icon}</StyledIW>
           </Tooltip>
-          <span>{node.name}</span>
+          <span>{getFieldDisplayName(node)}</span>
         </div>
         <div className="action">
           <Popup
@@ -132,10 +134,14 @@ const DataModelComputerFieldNode: FC<{
 export default DataModelComputerFieldNode;
 
 const StyledDataModelComputerFieldNode = styled.div`
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: ${SPACE} ${SPACE_MD};
+  width: 100%;
+  min-width: 0;
+  padding: 0 ${SPACE_MD};
+  margin: ${SPACE} 0;
   font-size: ${FONT_SIZE_BASE};
   line-height: 32px;
   user-select: 'none';
@@ -147,11 +153,20 @@ const StyledDataModelComputerFieldNode = styled.div`
   & .content {
     display: flex;
     align-items: center;
+    min-width: 0;
+
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
 
   & .action {
     display: none;
+    flex-shrink: 0;
     padding-right: ${SPACE_XS};
+    margin-left: auto;
   }
   &:hover {
     .action {

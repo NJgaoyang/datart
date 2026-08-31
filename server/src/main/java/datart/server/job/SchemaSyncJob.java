@@ -32,6 +32,7 @@ import datart.core.mappers.ext.UserMapperExt;
 import datart.security.manager.DatartSecurityManager;
 import datart.server.service.DataProviderService;
 import datart.server.service.SourceService;
+import datart.server.common.fieldmeta.SourceSchemaIndex;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -189,6 +190,7 @@ public class SchemaSyncJob implements Job, Closeable {
                 throw new IllegalStateException("Failed to save synchronized database schema");
             }
             TransactionHelper.commit(transaction);
+            Application.getBean(SourceSchemaIndex.class).invalidate(sourceId);
         } catch (Exception e) {
             TransactionHelper.rollback(transaction);
             log.error("source schema parse error ", e);

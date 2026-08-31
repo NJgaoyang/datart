@@ -25,6 +25,7 @@ import {
   GlobalOutlined,
   ProfileOutlined,
   SafetyCertificateFilled,
+  SafetyCertificateOutlined,
   SettingFilled,
   SettingOutlined,
   SkinOutlined,
@@ -80,6 +81,41 @@ import { ModifyPassword } from './ModifyPassword';
 import { OrganizationList } from './OrganizationList';
 import { Profile } from './Profile';
 import { loadTasks } from './service';
+
+function MonitorIcon() {
+  return (
+    <svg
+      className="monitor-icon"
+      viewBox="0 0 64 64"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <rect
+        x="10"
+        y="11"
+        width="44"
+        height="32"
+        rx="5"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        d="M17 35L24 28L30 33L39 22L47 29"
+        stroke="currentColor"
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M32 43V51M22 53H42"
+        stroke="currentColor"
+        strokeWidth="4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 
 export function Navbar() {
   const { actions } = useMainSlice();
@@ -143,6 +179,12 @@ export function Navbar() {
         module: ResourceTypes.Manager,
       },
       {
+        name: 'readiness',
+        title: t('subNavs.readiness.title'),
+        icon: <SafetyCertificateOutlined />,
+        module: ResourceTypes.Manager,
+      },
+      {
         name: 'auditLog',
         title: t('subNavs.auditLog.title'),
         icon: <AuditOutlined />,
@@ -192,6 +234,12 @@ export function Navbar() {
         name: 'permissions',
         title: t('nav.permissions'),
         icon: <SafetyCertificateFilled />,
+        module: ResourceTypes.Manager,
+      },
+      {
+        name: 'monitor',
+        title: t('nav.monitor'),
+        icon: <MonitorIcon />,
         module: ResourceTypes.Manager,
       },
       {
@@ -488,6 +536,12 @@ const NavItem = styled(NavLink)`
       width: 1em;
       height: 1em;
     }
+  }
+
+  .monitor-icon {
+    display: block;
+    width: ${FONT_SIZE_ICON_SM};
+    height: ${FONT_SIZE_ICON_SM};
   }
 `;
 

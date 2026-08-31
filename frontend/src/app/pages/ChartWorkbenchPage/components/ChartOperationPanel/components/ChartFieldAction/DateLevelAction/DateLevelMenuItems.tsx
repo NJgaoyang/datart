@@ -19,6 +19,7 @@ import { CheckOutlined } from '@ant-design/icons';
 import { Menu } from 'antd';
 import {
   ChartDataViewFieldCategory,
+  DataViewFieldType,
   RUNTIME_DATE_LEVEL_KEY,
 } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
@@ -62,6 +63,7 @@ const DateLevelMenuItems = memo(
                 delete draft.field;
                 draft.category = selectedConfig.category;
                 draft.colName = selectedConfig.colName;
+                draft.type = selectedConfig.type;
                 draft[RUNTIME_DATE_LEVEL_KEY] = null;
               }),
             );
@@ -71,6 +73,7 @@ const DateLevelMenuItems = memo(
             ...config,
             colName: selectedConfig.colName,
             expression: selectedConfig.expression,
+            type: selectedConfig.type,
             [RUNTIME_DATE_LEVEL_KEY]: null,
           });
         } else {
@@ -88,6 +91,7 @@ const DateLevelMenuItems = memo(
                 draft.category =
                   ChartDataViewFieldCategory.DateLevelComputedField;
                 draft.colName = selectedConfig.colName;
+                draft.type = selectedConfig.type;
                 draft[RUNTIME_DATE_LEVEL_KEY] = null;
               }),
             );
@@ -108,13 +112,20 @@ const DateLevelMenuItems = memo(
               handleChangeFn({
                 category: ChartDataViewFieldCategory.Field,
                 colName: config.field,
+                type: getAllColumnInMeta(metas)?.find(
+                  v => v.name === config.field,
+                )?.type,
               });
           }}
         >
           {t('default')}
         </Menu.Item>
         {DATE_LEVELS.map(item => {
-          if (availableSourceFunctions?.includes(item.expression)) {
+          const nativeExpression = `${item.expression}_NATIVE`;
+          const expressionName = availableSourceFunctions?.includes(nativeExpression)
+            ? nativeExpression
+            : item.expression;
+          if (availableSourceFunctions?.includes(expressionName)) {
             const configColName =
               config.category === ChartDataViewFieldCategory.Field
                 ? config.colName
@@ -122,7 +133,10 @@ const DateLevelMenuItems = memo(
             const row = getAllColumnInMeta(metas)?.find(
               v => v.name === configColName,
             );
-            const expression = `${item.expression}(${FieldTemplate(
+            if (item.datetimeOnly && row?.type !== DataViewFieldType.DATETIME) {
+              return null;
+            }
+            const expression = `${expressionName}(${FieldTemplate(
               row?.path,
             )})`;
             return (
@@ -134,8 +148,9 @@ const DateLevelMenuItems = memo(
                   handleChangeFn({
                     category: ChartDataViewFieldCategory.DateLevelComputedField,
                     colName:
-                      configColName + DATE_LEVEL_DELIMITER + item.expression,
+                      configColName + DATE_LEVEL_DELIMITER + expressionName,
                     expression,
+                    type: item.type,
                   })
                 }
               >

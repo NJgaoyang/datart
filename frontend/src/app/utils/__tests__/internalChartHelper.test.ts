@@ -20,6 +20,7 @@ import { ChartDataSectionType, DataViewFieldType } from 'app/constants';
 import { ChartDataSectionField, ChartStyleConfig } from 'app/types/ChartConfig';
 import { ChartStyleConfigDTO } from 'app/types/ChartConfigDTO';
 import {
+  buildDragItem,
   diffHeaderRows,
   flattenHeaderRowsWithoutGroupRow,
   getColumnRenderOriginName,
@@ -29,10 +30,12 @@ import {
   mergeChartDataConfigs,
   mergeChartStyleConfigs,
   reachLowerBoundCount,
+  reconcileChartConfigFieldMeta,
   transferChartConfigs,
   transformHierarchyMeta,
   transformMeta,
 } from '../internalChartHelper';
+import { getColumnRenderName } from '../chartHelper';
 
 describe('Internal Chart Helper ', () => {
   describe.each([
@@ -1533,9 +1536,10 @@ describe('Internal Chart Helper ', () => {
         },
       });
 
-      expect(transformMeta(model)?.[0].displayName).toBe(
-        '非储能用户可用电池比例',
-      );
+      expect(transformMeta(model)?.[0]).toMatchObject({
+        comment: '非储能用户可用电池比例',
+      });
+      expect(transformMeta(model)?.[0].displayName).toBeUndefined();
     });
   });
 
@@ -1554,6 +1558,95 @@ describe('Internal Chart Helper ', () => {
       expect(result).toEqual('a');
     });
 
+    test('uses ViewField displayName when a canonical fieldId is available', () => {
+      const result = getColumnRenderName({
+        colName: 'city',
+        fieldId: 'field-city',
+        originName: 'city',
+        displayName: '城市',
+      } as ChartDataSectionField);
+
+      expect(result).toEqual('城市');
+    });
+
+    test('keeps an explicit chart alias ahead of ViewField displayName', () => {
+      const result = getColumnRenderName({
+        colName: 'city',
+        fieldId: 'field-city',
+        originName: 'city',
+        displayName: '城市',
+        alias: { name: '报表城市' },
+      } as ChartDataSectionField);
+
+      expect(result).toEqual('报表城市');
+    });
+
+    test('uses customName and sourceComment before originName', () => {
+      expect(
+        getColumnRenderName({
+          colName: 'city',
+          fieldId: 'field-city',
+          originName: 'city',
+          displayName: 'city',
+          customName: '用户自定义城市',
+        } as ChartDataSectionField),
+      ).toEqual('用户自定义城市');
+
+      expect(
+        getColumnRenderName({
+          colName: 'city',
+          fieldId: 'field-city',
+          originName: 'city',
+          displayName: 'city',
+          sourceComment: '城市',
+        } as ChartDataSectionField),
+      ).toEqual('城市');
+    });
+
+    test.each(['COMPAT', 'STRICT'])(
+      'uses the same canonical display name in %s mode',
+      mode => {
+        const result = getColumnRenderName({
+          colName: 'city',
+          fieldId: 'field-city',
+          originName: 'city',
+          displayName: '城市',
+        } as ChartDataSectionField);
+
+        expect({ mode, result }).toEqual({ mode, result: '城市' });
+      },
+    );
+
+    test('falls back to colName when ViewField cannot be resolved', () => {
+      const result = getColumnRenderName({
+        colName: 'unresolved_city',
+        fieldId: 'missing-field',
+      } as ChartDataSectionField);
+
+      expect(result).toEqual('unresolved_city');
+    });
+
+    test('should fall back to the legacy comment when displayName is the origin name', () => {
+      const result = getColumnRenderOriginName({
+        colName: 'created_date',
+        displayName: 'created_date',
+        comment: '创建时间',
+        isDisplayNameCustom: false,
+      } as ChartDataSectionField);
+
+      expect(result).toEqual('创建时间');
+    });
+
+    test('should keep the origin name when no trusted display metadata exists', () => {
+      const result = getColumnRenderOriginName({
+        colName: 'cabinet_efficiency',
+        displayName: 'cabinet_efficiency',
+        isDisplayNameCustom: false,
+      } as ChartDataSectionField);
+
+      expect(result).toEqual('cabinet_efficiency');
+    });
+
     test('should get name with aggregate', () => {
       const config = {
         colName: 'a',
@@ -1562,12 +1655,164 @@ describe('Internal Chart Helper ', () => {
       const result = getColumnRenderOriginName(config as ChartDataSectionField);
       expect(result).toEqual('AVG(a)');
     });
+
+    test('should keep the original aggregate function with dataset display name', () => {
+      const result = getColumnRenderOriginName({
+        colName: 'order_cnt',
+        fieldId: 'field-1',
+        originName: 'order_cnt',
+        displayName: '订单数',
+        aggregate: 'SUM',
+      } as ChartDataSectionField);
+
+      expect(result).toEqual('SUM(订单数)');
+      expect(result).not.toContain('order_cnt订单数');
+    });
+
+    test('renders the legacy 用户日报数据 widget with ViewField names', () => {
+      const config = {
+        datas: [
+          {
+            rows: [
+              'city',
+              'renting_users',
+              'new_users',
+              'storage_users',
+              'churned_users',
+              'overdue_users',
+              'net_increase_users',
+            ].map(colName => ({
+              category: 'field',
+              colName,
+              fieldId: `field-${colName}`,
+            })),
+          },
+        ],
+      } as any;
+      const fields = [
+        ['city', '城市'],
+        ['renting_users', '在租用户数'],
+        ['new_users', '新增用户数'],
+        ['storage_users', '寄存用户数'],
+        ['churned_users', '退租用户数'],
+        ['overdue_users', '逾期用户数'],
+        ['net_increase_users', '净增用户数'],
+      ].map(([originName, displayName]) => ({
+        fieldId: `field-${originName}`,
+        name: originName,
+        originName,
+        displayName,
+      }));
+
+      const reconciled = reconcileChartConfigFieldMeta(config, fields);
+      const rows = reconciled.datas?.[0].rows || [];
+
+      expect(rows.map(row => getColumnRenderName(row))).toEqual([
+        '城市',
+        '在租用户数',
+        '新增用户数',
+        '寄存用户数',
+        '退租用户数',
+        '逾期用户数',
+        '净增用户数',
+      ]);
+    });
+  });
+
+  describe('buildDragItem Test', () => {
+    test('preserves dataset identity metadata while dragging', () => {
+      expect(
+        buildDragItem({
+          fieldId: 'field-1',
+          originName: 'city',
+          name: 'city',
+          displayName: '城市',
+        }),
+      ).toMatchObject({
+        fieldId: 'field-1',
+        originName: 'city',
+        colName: 'city',
+        displayName: '城市',
+      });
+    });
   });
 
   describe('transformHierarchyMeta Test', () => {
     test('should get empty array when metas is null', () => {
       const metas = transformHierarchyMeta(undefined);
       expect(metas).toEqual([]);
+    });
+
+    test('uses SQL output names as query paths even when model has physical paths', () => {
+      const model = {
+        columns: {
+          recommender_city_name_std: {
+            name: 'recommender_city_name_std',
+            path: ['ads', 'daily', 'recommender_city_name_std'],
+            fieldId: 'field-1',
+          },
+        },
+      };
+      const metas = transformHierarchyMeta(
+        JSON.stringify(model),
+        [
+          {
+            fieldId: 'field-1',
+            originName: 'recommender_city_name_std',
+            displayName: '推荐官城市',
+            sourcePath: ['ads', 'daily', 'recommender_city_name_std'],
+          },
+        ],
+        'SQL',
+      );
+
+      expect(metas[0].path).toEqual(['recommender_city_name_std']);
+      expect(metas[0].displayName).toBe('推荐官城市');
+    });
+
+    test('does not copy legacy display-name flags from canonical ViewField metadata', () => {
+      const metas = transformHierarchyMeta(
+        JSON.stringify({
+          columns: {
+            city: {
+              name: ['city'],
+              displayName: 'city',
+              isDisplayNameCustom: false,
+            },
+          },
+        }),
+        [
+          {
+            fieldId: 'field-city',
+            originName: 'city',
+            displayName: '城市',
+            customName: '城市',
+          },
+        ],
+      );
+
+      expect(metas[0]).toMatchObject({
+        fieldId: 'field-city',
+        displayName: '城市',
+      });
+      expect(metas[0].isDisplayNameCustom).toBeUndefined();
+    });
+
+    test('keeps physical paths for STRUCT views', () => {
+      const metas = transformHierarchyMeta(
+        JSON.stringify({
+          columns: {
+            city: {
+              name: ['ads', 'daily', 'city'],
+              path: ['ads', 'daily', 'city'],
+            },
+          },
+        }),
+        undefined,
+        'STRUCT',
+      );
+
+      expect(metas[0].path).toEqual(['ads', 'daily', 'city']);
     });
 
     test('should get columns when hierarchy is null or empty', () => {
@@ -1641,6 +1886,11 @@ describe('Internal Chart Helper ', () => {
 
       expect(metas.map(meta => meta.displayName)).toEqual([
         '自定义名称',
+        undefined,
+        undefined,
+      ]);
+      expect(metas.map(meta => meta.comment)).toEqual([
+        '字段注释',
         '字段注释',
         '字段注释',
       ]);
@@ -1672,7 +1922,7 @@ describe('Internal Chart Helper ', () => {
 
       const metas = transformHierarchyMeta(JSON.stringify(model));
 
-      expect(metas[0].children?.[0].displayName).toBe('非储能用户可用电池比例');
+      expect(metas[0].children?.[0].comment).toBe('非储能用户可用电池比例');
     });
 
     test('should not reuse ambiguous same-name column metadata', () => {
@@ -1699,7 +1949,7 @@ describe('Internal Chart Helper ', () => {
 
       const children = transformHierarchyMeta(JSON.stringify(model))[0]
         .children;
-      expect(children?.map(child => child.displayName)).toEqual([
+      expect(children?.map(child => child.comment)).toEqual([
         '表A比例',
         '表B比例',
       ]);
@@ -1825,6 +2075,129 @@ describe('Internal Chart Helper ', () => {
         },
       ]);
     });
+  });
+
+  test('does not rebind a stale chart fieldId through legacy metadata', () => {
+    const config = {
+      datas: [
+        {
+          rows: [{ category: 'field', colName: 'id', fieldId: 'stale' }],
+        },
+      ],
+    } as any;
+    const fields = [
+      {
+        name: 'id',
+        fieldId: 'current',
+        path: ['users', 'id'],
+        displayName: '用户编号',
+      },
+    ] as any;
+
+    const result = reconcileChartConfigFieldMeta(config as any, fields);
+
+    expect(result.datas?.[0].rows?.[0]).toEqual(config.datas[0].rows[0]);
+  });
+
+  test('synchronizes cached chart displayName from the latest ViewField metadata', () => {
+    const config = {
+      datas: [
+        {
+          rows: [
+            {
+              category: 'field',
+              colName: 'net_increase_users',
+              displayName: '在租用户较昨日净增人数',
+              isDisplayNameCustom: true,
+            },
+          ],
+        },
+      ],
+    } as any;
+    const fields = [
+      {
+        name: 'net_increase_users',
+        fieldId: 'current',
+        displayName: 'net_increase_users',
+        isDisplayNameCustom: false,
+      },
+    ] as any;
+
+    const result = reconcileChartConfigFieldMeta(config, fields);
+
+    expect(result.datas?.[0].rows?.[0]).toMatchObject({
+      fieldId: 'current',
+      displayName: 'net_increase_users',
+    });
+  });
+
+  test('keeps chart alias while synchronizing field identity', () => {
+    const config = {
+      datas: [
+        {
+          rows: [
+            {
+              category: 'field',
+              colName: 'net_increase_users',
+              alias: { name: '净增' },
+              displayName: '历史字段名',
+              isDisplayNameCustom: true,
+            },
+          ],
+        },
+      ],
+    } as any;
+    const fields = [
+      {
+        name: 'net_increase_users',
+        fieldId: 'current',
+        displayName: '在租用户较昨日净增人数',
+        isDisplayNameCustom: false,
+      },
+    ] as any;
+
+    const result = reconcileChartConfigFieldMeta(config, fields);
+
+    expect(result.datas?.[0].rows?.[0]).toMatchObject({
+      fieldId: 'current',
+      alias: { name: '净增' },
+      displayName: '在租用户较昨日净增人数',
+    });
+  });
+
+  test('normalizes legacy date level types from their logical level', () => {
+    const config = {
+      datas: [
+        {
+          rows: [
+            {
+              category: 'dateLevelComputedField',
+              colName: 'created_at@date_level_delimiter@AGG_DATE_MONTH_NATIVE',
+              type: DataViewFieldType.DATETIME,
+            },
+            {
+              category: 'dateLevelComputedField',
+              colName: 'created_at@date_level_delimiter@AGG_DATE_HOUR_NATIVE',
+              type: DataViewFieldType.DATE,
+            },
+          ],
+        },
+      ],
+    } as any;
+
+    const result = reconcileChartConfigFieldMeta(config, []);
+
+    expect(result.datas?.[0].rows?.[0].type).toBe(DataViewFieldType.DATE);
+    expect(result.datas?.[0].rows?.[1].type).toBe(DataViewFieldType.DATETIME);
+  });
+
+  test('ignores non-array view field metadata', () => {
+    const metas = transformHierarchyMeta(
+      JSON.stringify({ columns: { id: { name: 'id' } } }),
+      { $ref: '$.data.views[0].fields' } as any,
+    );
+
+    expect(metas[0].name).toBe('id');
   });
 
   describe.each([

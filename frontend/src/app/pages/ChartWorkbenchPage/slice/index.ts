@@ -28,7 +28,10 @@ import {
   createDateLevelComputedFieldForConfigComputedFields,
   mergeChartAndViewComputedField,
 } from 'app/utils/chartHelper';
-import { transformHierarchyMeta } from 'app/utils/internalChartHelper';
+import {
+  reconcileChartConfigFieldMeta,
+  transformHierarchyMeta,
+} from 'app/utils/internalChartHelper';
 import { updateCollectionByAction } from 'app/utils/mutation';
 import { useInjectReducer } from 'utils/@reduxjs/injectReducer';
 import { ChartConfigReducerActionType } from './constant';
@@ -173,7 +176,11 @@ const workbenchSlice = createSlice({
         const index = state.dataviews?.findIndex(
           view => view.id === payload.id,
         );
-        const meta = transformHierarchyMeta(payload.model);
+        const meta = transformHierarchyMeta(
+          payload.model,
+          payload.fields,
+          payload.type,
+        );
         let computedFields: ChartDataViewMeta[] = [];
         if (payload.id === state?.backendChart?.view?.id) {
           computedFields = state?.backendChart?.config?.computedFields || [];
@@ -188,6 +195,19 @@ const workbenchSlice = createSlice({
           computedFields = mergeChartAndViewComputedField(
             computedFields,
             viewComputerFields,
+          );
+        }
+        const latestFields = [...meta, ...computedFields];
+        if (state.chartConfig) {
+          state.chartConfig = reconcileChartConfigFieldMeta(
+            state.chartConfig,
+            latestFields,
+          );
+        }
+        if (state.shadowChartConfig) {
+          state.shadowChartConfig = reconcileChartConfigFieldMeta(
+            state.shadowChartConfig,
+            latestFields,
           );
         }
 

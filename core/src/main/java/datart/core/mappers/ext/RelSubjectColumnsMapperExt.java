@@ -20,6 +20,13 @@ public interface RelSubjectColumnsMapperExt extends RelSubjectColumnsMapper {
     List<RelSubjectColumns> listByView(String viewId);
 
     @Select({
+            "SELECT rsc.* FROM rel_subject_columns rsc " +
+                    "JOIN `view` v ON v.id = rsc.view_id " +
+                    "WHERE v.org_id = #{orgId} ORDER BY rsc.create_time ASC"
+    })
+    List<RelSubjectColumns> listByOrgId(@Param("orgId") String orgId);
+
+    @Select({
             "SELECT " +
                     "	*  " +
                     "FROM " +

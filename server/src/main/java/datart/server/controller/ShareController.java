@@ -106,6 +106,15 @@ public class ShareController extends BaseController {
         return ResponseData.success(shareService.execute(ShareToken.create(executeToken), executeParam));
     }
 
+    @Operation(summary = "cancel a shared view query")
+    @PostMapping("/execute/cancel/{queryId}")
+    @SkipLogin
+    public ResponseData<Boolean> cancelQuery(@RequestParam String executeToken, @PathVariable String queryId) {
+        checkBlank(executeToken, "executeToken");
+        checkBlank(queryId, "queryId");
+        return ResponseData.success(shareService.cancelQuery(ShareToken.create(executeToken), queryId));
+    }
+
     @Operation(summary = "create a download task")
     @PostMapping("/download")
     @SkipLogin

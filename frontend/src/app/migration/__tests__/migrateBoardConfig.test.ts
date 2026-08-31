@@ -16,7 +16,10 @@
  * limitations under the License.
  */
 
-import { MIN_MARGIN, MIN_PADDING } from 'app/pages/DashBoardPage/constants';
+import {
+  MOBILE_MIN_MARGIN,
+  MOBILE_MIN_PADDING,
+} from 'app/pages/DashBoardPage/constants';
 import { DashboardConfigBeta3 } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import {
   beta0,
@@ -53,7 +56,7 @@ describe('test migrateBoard ', () => {
   test('handle config.mobileMargin', () => {
     const config = {} as DashboardConfigBeta3;
     expect(beta0(config)).toMatchObject({
-      mobileMargin: [MIN_MARGIN, MIN_MARGIN],
+      mobileMargin: [MOBILE_MIN_MARGIN, MOBILE_MIN_MARGIN],
     });
     const config1 = { mobileMargin: [22, 22] } as DashboardConfigBeta3;
     expect(beta0(config1)).toMatchObject(config1);
@@ -62,7 +65,7 @@ describe('test migrateBoard ', () => {
   test('handle config.mobileContainerPadding', () => {
     const config = {} as DashboardConfigBeta3;
     expect(beta0(config)).toMatchObject({
-      mobileContainerPadding: [MIN_PADDING, MIN_PADDING],
+      mobileContainerPadding: [MOBILE_MIN_PADDING, MOBILE_MIN_PADDING],
     });
     const config1 = {
       mobileContainerPadding: [22, 22],
@@ -97,5 +100,24 @@ describe('test migrateBoard ', () => {
       type: 'auto',
       version: APP_CURRENT_VERSION,
     } as DashboardConfigBeta3);
+  });
+
+  test('preserve legacy auto layout marker after config replacement', () => {
+    const config = JSON.stringify({
+      type: 'auto',
+      version: '',
+      background: '#fff',
+      initialQuery: true,
+      allowOverlap: false,
+      margin: [16, 16],
+      containerPadding: [16, 16],
+      mobileMargin: [8, 8],
+      mobileContainerPadding: [8, 8],
+    });
+    expect(migrateBoardConfig(config)).toMatchObject({
+      type: 'auto',
+      layoutVersion: 1,
+      pcRowLayoutVersion: 1,
+    });
   });
 });

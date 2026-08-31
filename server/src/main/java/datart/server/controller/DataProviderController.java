@@ -108,10 +108,23 @@ public class DataProviderController extends BaseController {
         return ResponseData.success(dataProviderService.executeBatch(params));
     }
 
+    @Operation(summary = "cancel the current user's running query")
+    @PostMapping(value = "/execute/cancel/{queryId}")
+    public ResponseData<Boolean> cancelQuery(@PathVariable String queryId) {
+        checkBlank(queryId, "queryId");
+        return ResponseData.success(dataProviderService.cancelQuery(queryId));
+    }
+
     @Operation(summary = "get all supported functions for this data source type")
     @PostMapping(value = "/function/support/{sourceId}")
     public ResponseData<Set<StdSqlOperator>> supportedStdFunctions(@PathVariable String sourceId) {
         return ResponseData.success(dataProviderService.supportedStdFunctions(sourceId));
+    }
+
+    @Operation(summary = "get function definitions for this data source")
+    @PostMapping(value = "/function/definitions/{sourceId}")
+    public ResponseData<List<FunctionDefinition>> functionDefinitions(@PathVariable String sourceId) {
+        return ResponseData.success(dataProviderService.functionDefinitions(sourceId));
     }
 
     @Operation(summary = "validate sql function")
@@ -119,6 +132,27 @@ public class DataProviderController extends BaseController {
     public ResponseData<Boolean> validateFunction(@RequestParam String sourceId,
                                                   @RequestParam String snippet) {
         return ResponseData.success(dataProviderService.validateFunction(sourceId, snippet));
+    }
+
+    @Operation(summary = "get initialized JDBC connection pool stats")
+    @GetMapping(value = "/{sourceId}/pool-stats")
+    public ResponseData<Map<String, Object>> getRuntimeStats(@PathVariable String sourceId) {
+        checkBlank(sourceId, "sourceId");
+        return ResponseData.success(dataProviderService.getRuntimeStats(sourceId));
+    }
+
+    @Operation(summary = "get recent query summaries for administrators")
+    @GetMapping(value = "/{sourceId}/query-traces")
+    public ResponseData<List<Map<String, Object>>> getQueryTraces(@PathVariable String sourceId) {
+        checkBlank(sourceId, "sourceId");
+        return ResponseData.success(dataProviderService.getQueryTraces(sourceId));
+    }
+
+    @Operation(summary = "get organization query monitor data for administrators")
+    @GetMapping(value = "/monitor")
+    public ResponseData<Map<String, Object>> getQueryMonitor(@RequestParam String orgId) {
+        checkBlank(orgId, "orgId");
+        return ResponseData.success(dataProviderService.getQueryMonitor(orgId));
     }
 
 }

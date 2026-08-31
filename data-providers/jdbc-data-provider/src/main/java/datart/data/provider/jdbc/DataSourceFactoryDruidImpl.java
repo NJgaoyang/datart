@@ -73,15 +73,16 @@ public class DataSourceFactoryDruidImpl implements DataSourceFactory<DruidDataSo
         // Disable MySQL COM_PING in favor of validationQuery for consistency across all database types
         pro.setProperty("druid.mysql.usePingMethod", "false");
 
-        // Connection pool sizing — Druid defaults (maxActive=8) are too small for
-        // dashboard scenarios where multiple charts issue queries concurrently.
-        // These defaults can be overridden per data source via jdbcProperties.
-        pro.setProperty(DruidDataSourceFactory.PROP_INITIALSIZE, "2");
-        pro.setProperty(DruidDataSourceFactory.PROP_MINIDLE, "2");
-        pro.setProperty(DruidDataSourceFactory.PROP_MAXACTIVE, "32");
+        // Conservative defaults prevent every source from pre-allocating a large
+        // pool. Individual high-concurrency sources can override these properties.
+        pro.setProperty(DruidDataSourceFactory.PROP_INITIALSIZE, "1");
+        pro.setProperty(DruidDataSourceFactory.PROP_MINIDLE, "1");
+        pro.setProperty(DruidDataSourceFactory.PROP_MAXACTIVE, "16");
 
         //opt config (user properties can override the above defaults)
-        pro.putAll(properties.getProperties());
+        if (properties.getProperties() != null) {
+            pro.putAll(properties.getProperties());
+        }
         return pro;
     }
 }

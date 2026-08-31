@@ -34,7 +34,7 @@ import {
   getAllColumnInMeta,
   setRuntimeDateLevelFieldsInChartConfig,
 } from 'app/utils/chartHelper';
-import { getFieldDisplayName } from 'utils/utils';
+import { getDatasetFieldDisplayName } from 'utils/utils';
 import { FC, memo, useContext, useState } from 'react';
 import { useSelector } from 'react-redux';
 import styled from 'styled-components';
@@ -153,7 +153,7 @@ const ChartPresentPanel: FC<{
                   );
                   return {
                     key: col.name,
-                    title: field ? getFieldDisplayName(field) : col.name,
+                    title: field ? getDatasetFieldDisplayName(field) : col.name,
                     dataIndex: index,
                   };
                 })}

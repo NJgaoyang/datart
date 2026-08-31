@@ -18,7 +18,8 @@
 
 import { Form, Radio, Select, Space } from 'antd';
 import { ChartStyleConfig } from 'app/types/ChartConfig';
-import { getFieldDisplayName } from 'utils/utils';
+import { getAllColumnInMeta } from 'app/utils/chartHelper';
+import { getDatasetFieldDisplayName } from 'utils/utils';
 import { FC, memo, useState } from 'react';
 import styled from 'styled-components';
 import { isEmptyArray } from 'utils/object';
@@ -108,25 +109,18 @@ const ViewDetailPanel: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
             <Form.Item label=" " colon={false} name="custom">
               <Select
                 mode="multiple"
-                optionFilterProp="children"
+                optionFilterProp="label"
+                optionLabelProp="label"
+                optionRender={option => <span>{option.label}</span>}
                 allowClear
                 onChange={handleViewDetailCustomFieldsChange}
-              >
-                {context?.dataview?.meta
-                  ?.flatMap(f => {
-                    if (f.role === 'hierachy') {
-                      return f.children || [];
-                    }
-                    return f;
-                  })
-                  ?.map(f => {
-                    return (
-                      <Select.Option value={f.name}>
-                        {getFieldDisplayName(f)}
-                      </Select.Option>
-                    );
-                  })}
-              </Select>
+                options={getAllColumnInMeta(context?.dataview?.meta || []).map(
+                  f => ({
+                    value: f.name,
+                    label: getDatasetFieldDisplayName(f),
+                  }),
+                )}
+              />
             </Form.Item>
           )}
         </Form>

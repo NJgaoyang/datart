@@ -106,7 +106,9 @@ export type AggregateLimit = Pick<typeof AggregateFieldActionType, 'Count'>;
 
 export type ChartDataSectionField = {
   uid?: string;
+  fieldId?: string;
   colName: string;
+  originName?: string;
   desc?: string;
   type: DataViewFieldType;
   category: Uncapitalize<keyof typeof ChartDataViewFieldCategory>;
@@ -116,6 +118,10 @@ export type ChartDataSectionField = {
   alias?: AliasFieldAction;
   comment?: string;
   displayName?: string;
+  customName?: string;
+  sourceComment?: string;
+  /** Legacy chart configuration only; canonical requests use fieldId/displayName. */
+  isDisplayNameCustom?: boolean;
   format?: FormatFieldAction;
   aggregate?: AggregateFieldActionType;
   filter?: FilterFieldAction;

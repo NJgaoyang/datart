@@ -18,6 +18,7 @@
 
 package datart.server.service;
 
+import datart.core.base.consts.MigrationMode;
 import datart.core.entity.Folder;
 import datart.core.entity.View;
 import datart.core.mappers.ext.ViewMapperExt;
@@ -35,6 +36,10 @@ import java.util.List;
 public interface ViewService extends VizCRUDService<View, ViewMapperExt>, ResourceTransferService<View, ViewResourceModel, TransferModel, Folder> {
 
     ViewDetailDTO getViewDetail(String viewId);
+
+    ViewDetailDTO buildViewDetail(View view);
+
+    ViewDetailDTO buildViewDetail(View view, MigrationMode migrationMode);
 
     List<View> getViews(String orgId);
 

@@ -56,10 +56,10 @@ const gradientMove = keyframes`
 `;
 
 const dataFlow = keyframes`
-  0% { transform: translateX(-100%); opacity: 0; }
+  0% { opacity: 0; transform: translateX(-100%); }
   20% { opacity: 1; }
   80% { opacity: 1; }
-  100% { transform: translateX(100%); opacity: 0; }
+  100% { opacity: 0; transform: translateX(100%); }
 `;
 
 const barGrow = keyframes`
@@ -238,9 +238,9 @@ export function LoginPage() {
 const PageContainer = styled.div`
   position: fixed;
   top: 0;
-  left: 0;
   right: 0;
   bottom: 0;
+  left: 0;
   overflow: hidden;
 `;
 
@@ -266,12 +266,12 @@ const ParticleField = styled.div`
 
 const Particle = styled.div<{ index: number }>`
   position: absolute;
+  top: ${p => (p.index * 5) % 100}%;
+  left: ${p => (p.index * 4) % 100}%;
   width: ${p => 4 + (p.index % 6) * 2}px;
   height: ${p => 4 + (p.index % 6) * 2}px;
   background: rgba(129, 140, 248, ${p => 0.25 + (p.index % 5) * 0.1});
   border-radius: 50%;
-  left: ${p => (p.index * 4) % 100}%;
-  top: ${p => (p.index * 5) % 100}%;
   animation: ${float} ${p => 8 + (p.index % 8) * 2}s ease-in-out infinite;
   animation-delay: ${p => (p.index % 6) * -1.5}s;
 `;
@@ -285,10 +285,10 @@ const DataLines = styled.div`
 
 const DataLine = styled.div<{ index: number }>`
   position: absolute;
-  height: 2px;
-  width: ${p => 180 + p.index * 40}px;
-  background: linear-gradient(90deg, transparent, #818cf8, transparent);
   top: ${p => 15 + p.index * 14}%;
+  width: ${p => 180 + p.index * 40}px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #818cf8, transparent);
   animation: ${dataFlow} ${p => 5 + p.index * 1.5}s linear infinite;
   animation-delay: ${p => p.index * -1.8}s;
 `;
@@ -297,24 +297,24 @@ const DataLine = styled.div<{ index: number }>`
 const ContentLayer = styled.div`
   position: relative;
   z-index: 1;
+  box-sizing: border-box;
   display: flex;
-  width: 100vw;
-  height: 100vh;
+  gap: clamp(20px, 3vw, 50px);
   align-items: center;
   justify-content: center;
+  width: 100vw;
+  height: 100vh;
   padding: clamp(16px, 2.5vh, 40px) clamp(20px, 3.5vw, 60px);
-  gap: clamp(20px, 3vw, 50px);
-  box-sizing: border-box;
 `;
 
 /* 左侧品牌区：flex 1.2 占比 */
 const BrandSection = styled.div`
-  flex: 1.2;
   display: flex;
+  flex: 1.2;
   align-items: center;
   justify-content: center;
-  animation: ${fadeIn} 1s ease-out;
   min-width: 0;
+  animation: ${fadeIn} 1s ease-out;
 `;
 
 const BrandContent = styled.div`
@@ -335,19 +335,19 @@ const BrandIcon = styled.div`
 `;
 
 const BrandTitle = styled.h1`
+  margin: 0 0 clamp(8px, 1.2vh, 20px);
   font-size: clamp(24px, 2.8vw, 48px);
   font-weight: 700;
-  margin: 0 0 clamp(8px, 1.2vh, 20px);
-  background: linear-gradient(135deg, #fff 0%, #c7d2fe 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   line-height: 1.2;
+  background: linear-gradient(135deg, #fff 0%, #c7d2fe 100%);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 `;
 
 const BrandSubtitle = styled.p`
+  margin: 0;
   font-size: clamp(12px, 1vw, 18px);
   color: rgba(255, 255, 255, 0.8);
-  margin: 0;
   letter-spacing: 2px;
 `;
 
@@ -359,12 +359,12 @@ const ChartsGrid = styled.div`
 `;
 
 const ChartCard = styled.div`
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(12px);
-  border-radius: clamp(10px, 1vw, 16px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
   padding: clamp(10px, 1vw, 18px);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: clamp(10px, 1vw, 16px);
   transition: all 0.3s ease;
+  backdrop-filter: blur(12px);
 
   &:hover {
     background: rgba(255, 255, 255, 0.18);
@@ -381,23 +381,23 @@ const ChartHeader = styled.div`
 
 const ChartTitle = styled.span`
   font-size: clamp(11px, 0.8vw, 14px);
-  color: rgba(255, 255, 255, 0.85);
   font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
 `;
 
 const ChartBadge = styled.span`
+  padding: clamp(2px, 0.2vw, 4px) clamp(6px, 0.5vw, 10px);
   font-size: clamp(10px, 0.7vw, 12px);
+  font-weight: 600;
   color: #4ade80;
   background: rgba(52, 211, 153, 0.25);
-  padding: clamp(2px, 0.2vw, 4px) clamp(6px, 0.5vw, 10px);
   border-radius: 4px;
-  font-weight: 600;
 `;
 
 const BarChart = styled.div`
   display: flex;
-  align-items: flex-end;
   gap: clamp(4px, 0.4vw, 8px);
+  align-items: flex-end;
   height: clamp(40px, 6vh, 80px);
 `;
 
@@ -426,10 +426,10 @@ const StatsRow = styled.div`
 `;
 
 const StatItem = styled.div`
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: clamp(8px, 0.8vw, 14px);
-  border: 1px solid rgba(255, 255, 255, 0.16);
   padding: clamp(10px, 0.8vw, 16px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: clamp(8px, 0.8vw, 14px);
   transition: all 0.3s ease;
 
   &:hover {
@@ -439,28 +439,28 @@ const StatItem = styled.div`
 `;
 
 const StatNumber = styled.div`
+  margin-bottom: 2px;
   font-size: clamp(16px, 1.4vw, 24px);
   font-weight: 700;
   color: #fff;
-  margin-bottom: 2px;
 `;
 
 const StatLabel = styled.div`
+  margin-bottom: clamp(6px, 0.8vh, 10px);
   font-size: clamp(10px, 0.7vw, 12px);
   color: rgba(255, 255, 255, 0.65);
-  margin-bottom: clamp(6px, 0.8vh, 10px);
 `;
 
 const StatBar = styled.div`
   height: 3px;
+  overflow: hidden;
   background: rgba(255, 255, 255, 0.18);
   border-radius: 2px;
-  overflow: hidden;
 `;
 
 const StatBarFill = styled.div<{ width: number }>`
-  height: 100%;
   width: ${p => p.width}%;
+  height: 100%;
   background: linear-gradient(90deg, #818cf8, #a5b4fc);
   border-radius: 2px;
   animation: ${slideUp} 1s ease-out 0.5s both;
@@ -474,42 +474,41 @@ const FeatureList = styled.div`
 
 const FeatureItem = styled.div`
   display: flex;
-  align-items: center;
   gap: clamp(8px, 0.6vw, 12px);
+  align-items: center;
   font-size: clamp(12px, 0.9vw, 16px);
   color: rgba(255, 255, 255, 0.9);
 `;
 
 const FeatureDot = styled.div`
+  flex-shrink: 0;
   width: 6px;
   height: 6px;
   background: #818cf8;
   border-radius: 50%;
   box-shadow: 0 0 12px rgba(129, 140, 248, 0.8);
-  flex-shrink: 0;
 `;
 
 /* 右侧登录区：flex 0.8 占比 */
 const LoginSection = styled.div`
-  flex: 0.8;
   display: flex;
+  flex: 0.8;
   align-items: center;
   justify-content: center;
-  animation: ${slideUp} 0.8s ease-out;
   min-width: 0;
+  animation: ${slideUp} 0.8s ease-out;
 `;
 
 const LoginCard = styled.div`
   width: 100%;
   max-width: clamp(320px, 25vw, 460px);
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  border-radius: clamp(16px, 1.5vw, 28px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
   padding: clamp(24px, 3vh, 48px) clamp(24px, 2vw, 44px);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: clamp(16px, 1.5vw, 28px);
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
   transition: all 0.3s ease;
+  backdrop-filter: blur(28px);
 
   &:hover {
     box-shadow: 0 30px 70px rgba(0, 0, 0, 0.4);
@@ -517,8 +516,8 @@ const LoginCard = styled.div`
 `;
 
 const CardHeader = styled.div`
-  text-align: center;
   margin-bottom: clamp(20px, 3vh, 36px);
+  text-align: center;
 `;
 
 const LogoWrapper = styled.div`
@@ -527,9 +526,9 @@ const LogoWrapper = styled.div`
   justify-content: center;
   width: clamp(64px, 5vw, 96px);
   height: clamp(64px, 5vw, 96px);
+  margin-bottom: clamp(10px, 1.5vh, 20px);
   background: transparent;
   border-radius: clamp(12px, 1.2vw, 20px);
-  margin-bottom: clamp(10px, 1.5vh, 20px);
 `;
 
 const LogoImg = styled.img`
@@ -539,10 +538,10 @@ const LogoImg = styled.img`
 `;
 
 const SystemName = styled.h2`
+  margin: 0 0 clamp(4px, 0.6vh, 8px);
   font-size: clamp(20px, 1.5vw, 28px);
   font-weight: 700;
   color: #fff;
-  margin: 0 0 clamp(4px, 0.6vh, 8px);
 `;
 
 const CardFooter = styled.div`
@@ -551,7 +550,7 @@ const CardFooter = styled.div`
 `;
 
 const FooterText = styled.p`
+  margin: 0;
   font-size: clamp(10px, 0.7vw, 12px);
   color: rgba(255, 255, 255, 0.4);
-  margin: 0;
 `;

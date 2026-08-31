@@ -38,9 +38,12 @@ const ChartSearchableList: FC<{
   const handleSearch = debounce((value: string) => {
     if (!value || !value.trim()) {
       setListItems(source);
+      return;
     }
     const newListItems = source?.filter(item =>
-      item?.label.toUpperCase().includes(value.toUpperCase()),
+      String(item?.label || '')
+        .toUpperCase()
+        .includes(value.toUpperCase()),
     );
     setListItems(newListItems);
   }, 100);

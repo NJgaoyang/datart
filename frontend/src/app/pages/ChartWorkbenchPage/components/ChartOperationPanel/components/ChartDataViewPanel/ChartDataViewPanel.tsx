@@ -70,7 +70,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { getFieldDisplayName } from 'utils/utils';
+import { getDatasetFieldDisplayName } from 'utils/utils';
 import {
   ORANGE,
   SPACE,
@@ -134,7 +134,15 @@ const ChartDataViewPanel: FC<{
 
   const { filteredData: filteredTreeData, debouncedSearch: treeSearch } =
     useDebouncedSearch(allMetaFields, (keywords, d) => {
-      return d?.name.toLowerCase().includes(keywords.toLowerCase());
+      const lowerKeyword = keywords.toLowerCase();
+      return [
+        getDatasetFieldDisplayName(d),
+        d?.name,
+        d?.comment,
+        d?.path?.join('.'),
+      ]
+        .filter(Boolean)
+        .some(value => String(value).toLowerCase().includes(lowerKeyword));
     });
 
   const handleDataViewChange = useCallback(
@@ -287,11 +295,12 @@ const ChartDataViewPanel: FC<{
           const tableName = path?.slice(0, path?.length - 1).join('.') || '';
           if (tableNameList.includes(tableName)) {
             const fieldName = path?.[path.length - 1];
-            const displayLabel = getFieldDisplayName({
+            const displayLabel = getDatasetFieldDisplayName({
               name: fieldName,
               path: v.path,
               displayName: v.displayName,
               comment: v.comment,
+              isDisplayNameCustom: v.isDisplayNameCustom,
             });
             const columnNameArr = columnNameObj[tableName];
             columnNameObj[tableName] = columnNameArr
@@ -317,11 +326,13 @@ const ChartDataViewPanel: FC<{
 
   const handleAddOrEditComputedField = useCallback(
     (field?: ChartDataViewMeta) => {
+      const modalContentKey = `${field?.name || 'new'}-${Date.now()}`;
       (showModal as Function)({
         title: t('createComputedFields'),
         modalSize: StateModalSize.MIDDLE,
         content: onChange => (
           <ChartComputedFieldSettingPanel
+            key={modalContentKey}
             computedField={field}
             sourceId={dataView?.sourceId}
             fields={buildFieldsForComputedFieldSettingPanel(dataView?.meta)}

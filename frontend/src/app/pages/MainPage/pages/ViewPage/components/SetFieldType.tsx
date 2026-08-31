@@ -55,7 +55,10 @@ const SetFieldType = memo(
             onClick={({ keyPath }) => onChange(keyPath, field?.name)}
           >
             {Object.values(DataViewFieldType).map(t => {
-              if (t === DataViewFieldType.DATE && hasFormat) {
+              if (
+                [DataViewFieldType.DATE, DataViewFieldType.DATETIME].includes(t) &&
+                hasFormat
+              ) {
                 return (
                   <Menu.SubMenu
                     key={t}
