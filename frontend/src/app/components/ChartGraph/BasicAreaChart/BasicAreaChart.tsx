@@ -18,6 +18,7 @@
 
 import { BrokerContext, BrokerOption } from 'app/types/ChartLifecycleBroker';
 import { init } from 'echarts';
+import { applyMobileChartOption } from 'app/utils/mobileChartOption';
 import Chart from '../../../models/Chart';
 import Config from './config';
 
@@ -58,7 +59,13 @@ class BasicAreaChart extends Chart {
   }
 
   onUpdated(options: BrokerOption, context: BrokerContext) {
-    this.chart?.setOption(Object.assign({}, options?.config), true);
+    this.chart?.setOption(
+      applyMobileChartOption(Object.assign({}, options?.config), {
+        isMobile: Boolean(options.widgetSpecialConfig?.isMobile),
+        isEmbedded: Boolean(options.widgetSpecialConfig?.isEmbedded),
+      }),
+      true,
+    );
   }
 
   onUnMount(options: BrokerOption, context: BrokerContext) {

@@ -46,6 +46,7 @@ import {
 import { precisionCalculation } from 'app/utils/number';
 import currency from 'currency.js';
 import { init } from 'echarts';
+import { applyMobileChartOption } from 'app/utils/mobileChartOption';
 import { CalculationType } from 'globalConstants';
 import { UniqArray } from 'utils/object';
 import Config from './config';
@@ -118,7 +119,13 @@ class WaterfallChart extends Chart {
       context,
       options.selectedItems,
     );
-    this.chart?.setOption(Object.assign({}, newOptions), true);
+    this.chart?.setOption(
+      applyMobileChartOption(Object.assign({}, newOptions), {
+        isMobile: Boolean(options.widgetSpecialConfig?.isMobile),
+        isEmbedded: Boolean(options.widgetSpecialConfig?.isEmbedded),
+      }),
+      true,
+    );
   }
 
   onUnMount(options: BrokerOption, context: BrokerContext): void {

@@ -19,6 +19,7 @@
 import ChartEditor, { ChartEditorBaseProps } from 'app/components/ChartEditor';
 import useMount from 'app/hooks/useMount';
 import { useIsMobile } from 'app/hooks/useIsMobile';
+import { useIsWeappEmbed } from 'app/hooks/useEmbedMode';
 import ChartManager from 'app/models/ChartManager';
 import { useAppSlice } from 'app/slice';
 import React, { useCallback, useEffect } from 'react';
@@ -102,6 +103,8 @@ export function MainPage() {
   const { actions: viewActions } = useViewSlice();
   const dispatch = useDispatch();
   const isMobile = useIsMobile();
+  const isWeappEmbed = useIsWeappEmbed();
+  const shouldUseMobileViz = isMobile || isWeappEmbed;
   const organizationMatch = useMatch('/organizations/:orgId/*');
   const orgId = useSelector(selectOrgId);
   const navigate = useNavigate();
@@ -146,7 +149,7 @@ export function MainPage() {
   return (
     <AppContainer>
       <Background />
-      {!isMobile && <Navbar />}
+      {!shouldUseMobileViz && <Navbar />}
       {orgId && (
         <Routes>
           <Route
@@ -184,7 +187,7 @@ export function MainPage() {
           <Route
             path="/organizations/:orgId/vizs/*"
             element={
-              isMobile ? (
+              shouldUseMobileViz ? (
                 <MobileVizPage />
               ) : (
                 <AccessRoute module={ResourceTypes.Viz}>

@@ -52,6 +52,7 @@ import {
 } from 'app/utils/chartHelper';
 import { toPrecision } from 'app/utils/number';
 import { init } from 'echarts';
+import { applyMobileChartOption } from 'app/utils/mobileChartOption';
 import { transparentize } from 'polished';
 import { UniqArray } from 'utils/object';
 import Chart from '../../../models/Chart';
@@ -139,7 +140,13 @@ class BasicBarChart extends Chart implements IChartLifecycle {
       options.drillOption,
       options.selectedItems,
     );
-    this.chart?.setOption(Object.assign({}, newOptions), true);
+    this.chart?.setOption(
+      applyMobileChartOption(Object.assign({}, newOptions), {
+        isMobile: Boolean(options.widgetSpecialConfig?.isMobile),
+        isEmbedded: Boolean(options.widgetSpecialConfig?.isEmbedded),
+      }),
+      true,
+    );
   }
 
   onUnMount(options: BrokerOption, context: BrokerContext) {

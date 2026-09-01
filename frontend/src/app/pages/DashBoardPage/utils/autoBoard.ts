@@ -24,6 +24,7 @@ import {
   PC_ROW_LAYOUT_VERSION,
 } from '../constants';
 import { BoardConfig } from '../types/boardTypes';
+import { ensureMobileBoardSettings } from './mobileBoardSettings';
 
 export const initAutoBoardConfig = () => {
   const config: BoardConfig = {
@@ -207,5 +208,5 @@ export const initAutoBoardConfig = () => {
       ],
     },
   };
-  return config;
+  return ensureMobileBoardSettings(config);
 };

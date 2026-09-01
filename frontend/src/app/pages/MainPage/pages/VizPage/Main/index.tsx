@@ -4,14 +4,9 @@ import { EmptyFiller, TabPane, Tabs } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import BoardEditor from 'app/pages/DashBoardPage/pages/BoardEditor';
 import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
-import { dispatchResize } from 'app/utils/dispatchResize';
 import { useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  useLocation,
-  useMatch,
-  useNavigate,
-} from 'react-router-dom';
+import { useLocation, useMatch, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { LEVEL_1 } from 'styles/StyleConstants';
 import { useVizSlice } from '../slice';
@@ -36,8 +31,9 @@ export function Main({ sliderVisible }: { sliderVisible: boolean }) {
   const boardEditorMatch = useMatch(
     '/organizations/:orgId/vizs/:vizId/boardEditor',
   );
-  const vizId = (boardEditorMatch?.params.vizId ||
-    vizMatch?.params.vizId) as string | undefined;
+  const vizId = (boardEditorMatch?.params.vizId || vizMatch?.params.vizId) as
+    | string
+    | undefined;
   const location = useLocation();
   const vizs = useSelector(selectVizs);
   const storyboards = useSelector(selectStoryboards);
@@ -123,9 +119,6 @@ export function Main({ sliderVisible }: { sliderVisible: boolean }) {
           `/organizations/${orgId}/vizs/${activeKey}${activeTab.search || ''}`,
         );
       }
-      setTimeout(() => {
-        dispatchResize();
-      }, 500);
     },
     [navigate, orgId, tabs],
   );
@@ -233,15 +226,15 @@ export function Main({ sliderVisible }: { sliderVisible: boolean }) {
           ))}
         </Tabs>
       </TabsWrapper>
-      {tabs.map(tab => (
+      {selectedTab && (
         <VizContainer
-          key={tab.id}
-          tab={tab}
+          key={selectedTab.id}
+          tab={selectedTab}
           orgId={orgId}
           vizs={vizs}
-          selectedId={selectedTab?.id}
+          selectedId={selectedTab.id}
         />
-      ))}
+      )}
       {!tabs.length && <EmptyFiller title={t('empty')} />}
 
       {boardEditorMatch && vizId && <BoardEditor boardId={vizId} />}

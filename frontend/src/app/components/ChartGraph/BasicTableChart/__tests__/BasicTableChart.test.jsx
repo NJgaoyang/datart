@@ -16,7 +16,9 @@
  * limitations under the License.
  */
 
-import BasicTableChart from '../BasicTableChart';
+import BasicTableChart, {
+  clampMobileTableColumnWidth,
+} from '../BasicTableChart';
 
 describe('<BasicTableChart />', () => {
   let component;
@@ -25,5 +27,11 @@ describe('<BasicTableChart />', () => {
   });
   test('It should mount', () => {
     expect(component).toBeDatartChartModel();
+  });
+
+  test('It should keep mobile columns compact without collapsing content', () => {
+    expect(clampMobileTableColumnWidth(40)).toBe(72);
+    expect(clampMobileTableColumnWidth(100)).toBe(100);
+    expect(clampMobileTableColumnWidth(300)).toBe(144);
   });
 });

@@ -47,6 +47,7 @@ import {
   transformToDataSet,
 } from 'app/utils/chartHelper';
 import { init } from 'echarts';
+import { applyMobileChartOption } from 'app/utils/mobileChartOption';
 import isEmpty from 'lodash/isEmpty';
 import Config from './config';
 import { Series, SeriesData } from './types';
@@ -105,7 +106,13 @@ class BasicFunnelChart extends Chart {
       options.drillOption,
       options.selectedItems,
     );
-    this.chart?.setOption(Object.assign({}, newOptions), true);
+    this.chart?.setOption(
+      applyMobileChartOption(Object.assign({}, newOptions), {
+        isMobile: Boolean(options.widgetSpecialConfig?.isMobile),
+        isEmbedded: Boolean(options.widgetSpecialConfig?.isEmbedded),
+      }),
+      true,
+    );
   }
 
   onUnMount(options: BrokerOption, context: BrokerContext) {

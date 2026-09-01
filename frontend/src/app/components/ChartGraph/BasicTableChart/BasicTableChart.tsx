@@ -64,6 +64,9 @@ import {
   TableStyleOptions,
 } from './types';
 
+export const clampMobileTableColumnWidth = (width: number): number =>
+  Math.min(144, Math.max(72, width));
+
 class BasicTableChart extends ReactChart {
   useIFrame = false;
   isISOContainer = 'react-table';
@@ -204,6 +207,7 @@ class BasicTableChart extends ReactChart {
       styleConfigs,
       context,
       settingConfigs,
+      Boolean(widgetSpecialConfig?.isMobile),
     );
     this.totalWidth = Object.values<any>(this.dataColumnWidths).reduce(
       (a, b) => a + (b.columnWidthValue || 0),
@@ -289,6 +293,7 @@ class BasicTableChart extends ReactChart {
       styleConfigs,
       context,
       settingConfigs,
+      Boolean(widgetSpecialConfig?.isMobile),
     );
     this.totalWidth = Object.values<any>(this.dataColumnWidths).reduce(
       (a, b) => a + (b.columnWidthValue || 0),
@@ -414,6 +419,7 @@ class BasicTableChart extends ReactChart {
     styleConfigs: ChartStyleConfig[],
     context: BrokerContext,
     settingConfigs: ChartStyleConfig[],
+    isMobile = false,
   ): {
     [x: string]: {
       columnWidthValue?: number | undefined;
@@ -538,13 +544,16 @@ class BasicTableChart extends ReactChart {
         );
       });
 
+      const columnWidthValue = getUseColumnWidth
+        ? columnWidth || 100
+        : (datas.length ? Math.max(...datas) : 0) +
+          this.tablePadding * 2 +
+          this.tableCellBorder * 2;
       return {
         [rowUniqKey]: {
-          columnWidthValue: getUseColumnWidth
-            ? columnWidth || 100
-            : (datas.length ? Math.max(...datas) : 0) +
-              this.tablePadding * 2 +
-              this.tableCellBorder * 2,
+          columnWidthValue: isMobile
+            ? clampMobileTableColumnWidth(columnWidthValue)
+            : columnWidthValue,
           getUseColumnWidth,
         },
       };

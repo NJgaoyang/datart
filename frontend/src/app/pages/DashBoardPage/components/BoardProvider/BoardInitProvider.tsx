@@ -32,6 +32,8 @@ export interface BoardInitContextProps {
   allowDownload?: boolean;
   allowShare?: boolean;
   allowManage?: boolean;
+  isMobile?: boolean;
+  isEmbedded?: boolean;
   children?: ReactNode;
 }
 
@@ -48,6 +50,8 @@ export const BoardInitProvider: FC<BoardInitContextProps> = memo(
     allowDownload,
     allowShare,
     allowManage,
+    isMobile,
+    isEmbedded,
   }) => {
     const boardContextProps: BoardContextProps = useMemo(() => {
       const boardContextProps: BoardContextProps = {
@@ -63,6 +67,8 @@ export const BoardInitProvider: FC<BoardInitContextProps> = memo(
         allowDownload,
         allowShare,
         allowManage,
+        isMobile,
+        isEmbedded,
       };
       return boardContextProps;
     }, [
@@ -77,6 +83,8 @@ export const BoardInitProvider: FC<BoardInitContextProps> = memo(
       board.queryVariables,
       board.status,
       editing,
+      isMobile,
+      isEmbedded,
       renderMode,
     ]);
     return (

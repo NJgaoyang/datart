@@ -86,7 +86,7 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
   const dispatch = useDispatch();
   const scale = useContext(BoardScaleContext);
   const { data: dataset } = useContext(WidgetDataContext);
-  const { boardId, renderMode, orgId, queryVariables } =
+  const { boardId, renderMode, orgId, queryVariables, isMobile, isEmbedded } =
     useContext(BoardContext);
   const selectedItems = useContext(WidgetSelectionContext);
   const executeTokenMap = useSelector(selectShareExecuteTokenMap);
@@ -236,8 +236,10 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
       widgetId: wid,
       linkFields,
       jumpField,
+      isMobile,
+      isEmbedded,
     };
-  }, [wid, widget]);
+  }, [isEmbedded, isMobile, wid, widget]);
 
   const buildDrillThroughEventParams = useCallback(
     (clickEventParams, targetEvent: InteractionMouseEvent, ruleId?: string) => {

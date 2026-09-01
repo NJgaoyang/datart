@@ -1,7 +1,7 @@
 /**
  * MobileBoard - 移动端仪表板视图（小程序风格）
  *
- * 移动端使用独立 6 列画布，按照组件 mRect 渲染。
+ * 移动端使用独立 24 列画布，按照组件 mRect 渲染。
  */
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { BoardLoading } from 'app/pages/DashBoardPage/components/BoardLoading';
@@ -32,11 +32,18 @@ import {
 } from 'app/pages/DashBoardPage/utils/autoLayout';
 import {
   compactMobileLayout,
+  findVisibleMobilePresentation,
+  getInitiallyVisibleWidgetIds,
   getMobileGridSpan,
+  getNestedWidgetIds,
+  markMobileTableLayoutReady,
+  prepareMobileTableLayout,
 } from 'app/pages/DashBoardPage/utils/mobileLayout';
+import { getMobileBoardSettings } from 'app/pages/DashBoardPage/utils/mobileBoardSettings';
 import { boardDrillManager } from 'app/pages/DashBoardPage/components/BoardDrillManager/BoardDrillManager';
 import { dispatchResize } from 'app/utils/dispatchResize';
 import { urlSearchTransfer } from 'utils/urlSearchTransfer';
+import { MOBILE_BOARD_THEME } from './mobileTheme';
 import {
   MobileControlContext,
   MobileControlContextValue,
@@ -69,42 +76,16 @@ const WIDGET_INNER_STYLE: React.CSSProperties = {
 };
 
 const MOBILE_ROW_HEIGHT = 24;
-const MOBILE_GAP = 2;
-const MOBILE_PADDING = 4;
+const MOBILE_GAP = MOBILE_BOARD_THEME.gridGap;
+const MOBILE_PADDING = MOBILE_BOARD_THEME.pagePadding;
 const MOBILE_TABLE_MIN_HEIGHT = 6;
+const MOBILE_PRESENTATION_MIN_HEIGHT = 1;
 const MOBILE_TABLE_MAX_VISIBLE_ROWS = 5;
 const MOBILE_TABLE_INITIAL_HEIGHT = 16;
 const MOBILE_TABLE_SCROLLBAR_HEIGHT = 8;
 const MOBILE_TABLE_BOTTOM_GUARD = 2;
 const MOBILE_DEFERRED_WIDGET_LOAD_MS = 300;
 const TABLE_CHART_IDS = new Set(['react-table', 'fenzu-table', 'mingxi-table']);
-
-const getNestedWidgetIds = (
-  widget: Widget,
-  widgetMap: Record<string, Widget>,
-  visited = new Set<string>(),
-): string[] => {
-  if (!widget || visited.has(widget.id)) return [];
-  visited.add(widget.id);
-
-  const childIds = new Set<string>(widget.config.children || []);
-  const tabItems = widget.config.content?.itemMap;
-  if (tabItems) {
-    Object.values(tabItems).forEach((item: any) => {
-      if (item?.childWidgetId) childIds.add(item.childWidgetId);
-    });
-  }
-  Object.values(widgetMap).forEach(child => {
-    if (child.parentId === widget.id) childIds.add(child.id);
-  });
-
-  return [
-    widget.id,
-    ...[...childIds].flatMap(id =>
-      getNestedWidgetIds(widgetMap[id], widgetMap, visited),
-    ),
-  ];
-};
 
 const getMobileRect = (widget: Widget): RectConfig => {
   const rect =
@@ -137,6 +118,8 @@ export interface MobileBoardProps {
   allowDownload?: boolean;
   allowShare?: boolean;
   allowManage?: boolean;
+  /** 是否被外部 App / 微信小程序 WebView 嵌入。 */
+  embedded?: boolean;
 }
 
 export const MobileBoard: FC<MobileBoardProps> = memo(
@@ -147,6 +130,7 @@ export const MobileBoard: FC<MobileBoardProps> = memo(
     allowDownload,
     allowShare,
     allowManage,
+    embedded = false,
   }) => {
     const boardId = id;
     const dispatch = useDispatch();
@@ -200,7 +184,11 @@ export const MobileBoard: FC<MobileBoardProps> = memo(
     };
 
     const viewBoard = useMemo(() => {
-      if (!dashboard || !widgetRecordLoaded) return <BoardLoading />;
+      if (!dashboard) return <BoardLoading />;
+      if (!getMobileBoardSettings(dashboard.config).mobileVisible) {
+        return <MobileUnavailable>该仪表板未开启移动端展示</MobileUnavailable>;
+      }
+      if (!widgetRecordLoaded) return <BoardLoading />;
 
       return (
         <BoardInitProvider
@@ -211,6 +199,8 @@ export const MobileBoard: FC<MobileBoardProps> = memo(
           allowDownload={allowDownload}
           allowShare={allowShare}
           allowManage={allowManage}
+          isMobile
+          isEmbedded={embedded}
         >
           <MobileBoardContent
             widgets={widgets}
@@ -220,6 +210,7 @@ export const MobileBoard: FC<MobileBoardProps> = memo(
             boardName={dashboard.name}
             onBack={handleBack}
             wrapperRef={wrapperRef}
+            embedded={embedded}
           />
         </BoardInitProvider>
       );
@@ -233,10 +224,16 @@ export const MobileBoard: FC<MobileBoardProps> = memo(
       allowDownload,
       allowShare,
       allowManage,
+      embedded,
     ]);
 
     return (
-      <MobileWrapper ref={wrapperRef} className="datart-mobile-board">
+      <MobileWrapper
+        ref={wrapperRef}
+        className={`datart-mobile-board${
+          embedded ? ' datart-weapp-embed' : ''
+        }`}
+      >
         <DndProvider backend={HTML5Backend}>{viewBoard}</DndProvider>
       </MobileWrapper>
     );
@@ -251,6 +248,7 @@ interface MobileBoardContentProps {
   boardName: string;
   onBack: () => void;
   wrapperRef: React.RefObject<HTMLDivElement>;
+  embedded: boolean;
 }
 
 const MobileBoardContent: FC<MobileBoardContentProps> = memo(
@@ -262,6 +260,7 @@ const MobileBoardContent: FC<MobileBoardContentProps> = memo(
     boardName,
     onBack,
     wrapperRef,
+    embedded,
   }) => {
     const dispatch = useDispatch();
     const widgetDataMap = useSelector(
@@ -344,20 +343,52 @@ const MobileBoardContent: FC<MobileBoardContentProps> = memo(
               candidate.querySelector<HTMLElement>('.ant-table-thead');
             return (header?.getBoundingClientRect().height || 0) > 0;
           });
-          if (!root || !table) return;
+          // 容器里会同时保留多个 Tab 的 DOM。只能测量当前可见 Tab，
+          // 否则隐藏内容的 0 高度会把整个容器误收成一行。
+          const presentation = root
+            ? findVisibleMobilePresentation(root)
+            : undefined;
+          if (!root || (!table && !presentation)) return;
+
+          const content = table || presentation;
+          if (!content) return;
 
           const tableTop =
-            table.getBoundingClientRect().top -
+            content.getBoundingClientRect().top -
             root.getBoundingClientRect().top;
+          if (presentation && !table) {
+            // 外层容器收缩后，getBoundingClientRect 可能只返回被裁剪的高度；
+            // scrollHeight 才是当前 Tab 的真实内容高度，避免点击 Tab 后塌缩成一行。
+            const presentationHeight = Math.max(
+              presentation.getBoundingClientRect().height,
+              presentation.scrollHeight,
+            );
+            const requiredHeight = tableTop + presentationHeight;
+            const rows = getMobileGridSpan(
+              requiredHeight,
+              MOBILE_ROW_HEIGHT,
+              MOBILE_GAP,
+              MOBILE_PRESENTATION_MIN_HEIGHT,
+              MOBILE_TABLE_BOTTOM_GUARD,
+            );
+            // 指标卡按当前 Tab 的实际内容高度伸缩。
+            next[widget.id] = rows;
+            return;
+          }
+          if (!table) return;
+
           const sectionHeight = (selector: string) =>
-            table.querySelector<HTMLElement>(selector)?.getBoundingClientRect()
-              .height || 0;
+            content
+              .querySelector<HTMLElement>(selector)
+              ?.getBoundingClientRect().height || 0;
           const headerHeight = sectionHeight('.ant-table-thead');
           // 非激活标签页的表格高度为 0，不能参与卡片收高计算。
           if (!headerHeight) return;
           const activeWidgetId = table.closest<HTMLElement>(
             '[data-datart-widget-id]',
           )?.dataset.datartWidgetId;
+          const tableKey = activeWidgetId || widget.id;
+          const tableLayoutReady = prepareMobileTableLayout(root, tableKey);
           const activeDataset = activeWidgetId
             ? widgetDataMap[activeWidgetId]
             : undefined;
@@ -392,7 +423,22 @@ const MobileBoardContent: FC<MobileBoardContentProps> = memo(
             MOBILE_TABLE_MIN_HEIGHT,
             MOBILE_TABLE_BOTTOM_GUARD,
           );
+          // 普通表格按当前 Tab 的可视行数伸缩，超过可视行时由表格内部滚动。
           next[widget.id] = rows;
+          if (
+            !tableLayoutReady &&
+            root.dataset.mobileTablePendingKey !== tableKey
+          ) {
+            root.dataset.mobileTablePendingKey = tableKey;
+            requestAnimationFrame(() => {
+              dispatchResize();
+              requestAnimationFrame(() => {
+                if (root.dataset.mobileTablePendingKey !== tableKey) return;
+                delete root.dataset.mobileTablePendingKey;
+                markMobileTableLayoutReady(root, tableKey);
+              });
+            });
+          }
         });
         return JSON.stringify(previous) === JSON.stringify(next)
           ? previous
@@ -453,11 +499,16 @@ const MobileBoardContent: FC<MobileBoardContentProps> = memo(
         ({ widget }) => !initialWidgetIds.has(widget.id),
       );
       const renderWidgets = (items: typeof mobileWidgets) => {
-        items.forEach(({ widget: w }) => {
+        const widgetIds = new Set(
+          items.flatMap(({ widget }) =>
+            getInitiallyVisibleWidgetIds(widget, widgetMap),
+          ),
+        );
+        widgetIds.forEach(widgetId => {
           dispatch(
             renderedWidgetAsync({
               boardId,
-              widgetId: w.id,
+              widgetId,
               renderMode: 'read',
             }),
           );
@@ -484,11 +535,17 @@ const MobileBoardContent: FC<MobileBoardContentProps> = memo(
     return (
       <PageWrapper>
         {/* 顶部导航栏 */}
-        <NavBar>
-          <BackBtn type="text" icon={<ArrowLeftOutlined />} onClick={onBack} />
-          <NavTitle>{boardName}</NavTitle>
-          <NavSpacer />
-        </NavBar>
+        {!embedded && (
+          <NavBar>
+            <BackBtn
+              type="text"
+              icon={<ArrowLeftOutlined />}
+              onClick={onBack}
+            />
+            <NavTitle>{boardName}</NavTitle>
+            <NavSpacer />
+          </NavBar>
+        )}
 
         <ScrollBody>
           <MobileControlContext.Provider value={mobileControlValue}>
@@ -536,7 +593,29 @@ const MobileWrapper = styled.div`
   left: 0;
   display: flex;
   flex-direction: column;
-  background-color: #f5f5f5;
+  min-width: 0;
+  min-height: 0;
+  background-color: ${MOBILE_BOARD_THEME.pageBackground};
+
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  .ant-select-dropdown,
+  .ant-picker-dropdown {
+    max-width: calc(100vw - 16px);
+  }
+
+  .ant-select-item,
+  .ant-picker-cell {
+    min-height: 32px;
+  }
 `;
 
 /* ========== 页面布局：导航栏 + 可滚动主体 ========== */
@@ -601,9 +680,12 @@ const BackBtn = styled(Button)`
 /* ========== 可滚动主体 ========== */
 const ScrollBody = styled.div`
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   padding: 0;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   font-size: 13px;
   -webkit-overflow-scrolling: touch;
 `;
@@ -619,15 +701,18 @@ const MobileCanvas = styled.div`
   align-content: start;
   min-height: 100%;
   padding: ${MOBILE_PADDING}px;
-  background: #edf4ff;
+  background: ${MOBILE_BOARD_THEME.pageBackground};
 
   .mobile-widget {
     min-width: 0;
     min-height: 0;
     overflow: hidden;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgb(31 35 41 / 12%);
+    background: ${MOBILE_BOARD_THEME.cardBackground};
+    border: 1px solid ${MOBILE_BOARD_THEME.cardBorder};
+    border-radius: ${MOBILE_BOARD_THEME.cardRadius}px;
+    box-shadow: ${MOBILE_BOARD_THEME.cardShadow};
+
+    -webkit-tap-highlight-color: transparent;
   }
 
   .mobile-widget > .widget,
@@ -642,14 +727,33 @@ const MobileCanvas = styled.div`
     box-shadow: none !important;
   }
 
+  .mobile-widget .widget-name {
+    display: inline-block;
+    padding: 8px 12px 4px;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    line-height: 22px;
+    color: ${MOBILE_BOARD_THEME.titleColor} !important;
+  }
+
   .ant-select,
   .ant-picker {
     width: 100%;
+    height: 40px;
   }
 
   .ant-select-selector,
+  .ant-input,
+  .ant-input-number,
   .ant-picker-input > input {
+    min-height: 40px;
     font-size: 16px;
+  }
+
+  .ant-select-selector {
+    display: flex;
+    align-items: center;
+    min-height: 40px !important;
   }
 
   .ant-select-multiple .ant-select-selection-overflow {
@@ -661,6 +765,11 @@ const MobileCanvas = styled.div`
   .ant-table-wrapper {
     max-width: 100%;
     overflow: hidden;
+    visibility: hidden;
+  }
+
+  .mobile-widget.mobile-table-layout-ready .ant-table-wrapper {
+    visibility: visible;
   }
 `;
 
@@ -673,4 +782,14 @@ const MobileWidget = styled.div<{ rect: RectConfig }>`
 const BottomSafe = styled.div`
   height: env(safe-area-inset-bottom, 16px);
   min-height: 16px;
+`;
+
+const MobileUnavailable = styled.div`
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: #8f959e;
+  text-align: center;
 `;

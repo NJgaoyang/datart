@@ -142,12 +142,7 @@ export const TabWidgetCore: React.FC<{}> = memo(() => {
         destroyInactiveTabPane
       >
         {tabsCons.map(tab => (
-          <TabPane
-            tab={tab.name || 'tab'}
-            key={tab.index}
-            className="TabPane"
-            forceRender
-          >
+          <TabPane tab={tab.name || 'tab'} key={tab.index} className="TabPane">
             {tab.childWidgetId ? (
               <WidgetWrapProvider
                 id={tab.childWidgetId}
