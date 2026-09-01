@@ -5,16 +5,18 @@
 import { BarChartOutlined } from '@ant-design/icons';
 import { Spin } from 'antd';
 import { MobileBoard } from 'app/pages/DashBoardPage/pages/Board/MobileBoard';
+import { getHiddenMobileDashboardIds } from 'app/pages/DashBoardPage/utils/mobileBoardSettings';
 import { useBoardSlice } from 'app/pages/DashBoardPage/pages/Board/slice';
 import { useEditBoardSlice } from 'app/pages/DashBoardPage/pages/BoardEditor/slice';
 import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
 import { useStoryBoardSlice } from 'app/pages/StoryBoardPage/slice';
 import { useIsWeappEmbed } from 'app/hooks/useEmbedMode';
-import { FC, useCallback, useEffect, useMemo } from 'react';
+import { FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { SPACE_MD, SPACE_SM, SPACE_XS, SPACE_LG } from 'styles/StyleConstants';
+import { request2 } from 'utils/request';
 import { useVizSlice } from './pages/VizPage/slice';
 import {
   selectVizs,
@@ -47,6 +49,9 @@ const MobileDashboardList: FC = () => {
   const vizs = useSelector(selectVizs);
   const loading = useSelector(selectVizListLoading);
   const isWeappEmbed = useIsWeappEmbed();
+  const [hiddenMobileDashboardIds, setHiddenMobileDashboardIds] = useState(
+    () => new Set<string>(),
+  );
 
   useEffect(() => {
     if (orgId) {
@@ -54,10 +59,35 @@ const MobileDashboardList: FC = () => {
     }
   }, [dispatch, orgId]);
 
+  useEffect(() => {
+    if (!orgId) return;
+    let active = true;
+    setHiddenMobileDashboardIds(new Set());
+    request2<{ id: string; mobileVisible: boolean }[]>(
+      `/viz/dashboards?orgId=${orgId}`,
+    )
+      .then(({ data }) => {
+        if (active) {
+          setHiddenMobileDashboardIds(getHiddenMobileDashboardIds(data));
+        }
+      })
+      .catch(() => {
+        if (active) setHiddenMobileDashboardIds(new Set());
+      });
+    return () => {
+      active = false;
+    };
+  }, [orgId]);
+
   // 只展示 DASHBOARD 类型
   const dashboards = useMemo(
-    () => vizs.filter(v => v.relType === 'DASHBOARD'),
-    [vizs],
+    () =>
+      vizs.filter(
+        v =>
+          v.relType === 'DASHBOARD' &&
+          !hiddenMobileDashboardIds.has(v.relId),
+      ),
+    [hiddenMobileDashboardIds, vizs],
   );
 
   const navigateToDashboard = useCallback(

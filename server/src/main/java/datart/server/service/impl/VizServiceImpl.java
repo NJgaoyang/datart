@@ -114,6 +114,11 @@ public class VizServiceImpl extends BaseService implements VizService {
     }
 
     @Override
+    public List<DashboardBaseInfo> listDashboards(String orgId) {
+        return dashboardService.listDashboard(orgId);
+    }
+
+    @Override
     @Transactional
     public Folder createFolder(FolderCreateParam createParam) {
         return folderService.create(createParam);

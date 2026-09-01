@@ -32,8 +32,12 @@ import {
 } from 'app/pages/DashBoardPage/utils/autoLayout';
 import {
   compactMobileLayout,
+  findVisibleMobilePresentation,
   getMobileGridSpan,
+  markMobileTableLayoutReady,
+  prepareMobileTableLayout,
 } from 'app/pages/DashBoardPage/utils/mobileLayout';
+import { getMobileBoardSettings } from 'app/pages/DashBoardPage/utils/mobileBoardSettings';
 import { boardDrillManager } from 'app/pages/DashBoardPage/components/BoardDrillManager/BoardDrillManager';
 import { dispatchResize } from 'app/utils/dispatchResize';
 import { urlSearchTransfer } from 'utils/urlSearchTransfer';
@@ -73,6 +77,7 @@ const MOBILE_ROW_HEIGHT = 24;
 const MOBILE_GAP = MOBILE_BOARD_THEME.gridGap;
 const MOBILE_PADDING = MOBILE_BOARD_THEME.pagePadding;
 const MOBILE_TABLE_MIN_HEIGHT = 6;
+const MOBILE_PRESENTATION_MIN_HEIGHT = 1;
 const MOBILE_TABLE_MAX_VISIBLE_ROWS = 5;
 const MOBILE_TABLE_INITIAL_HEIGHT = 16;
 const MOBILE_TABLE_SCROLLBAR_HEIGHT = 8;
@@ -204,7 +209,11 @@ export const MobileBoard: FC<MobileBoardProps> = memo(
     };
 
     const viewBoard = useMemo(() => {
-      if (!dashboard || !widgetRecordLoaded) return <BoardLoading />;
+      if (!dashboard) return <BoardLoading />;
+      if (!getMobileBoardSettings(dashboard.config).mobileVisible) {
+        return <MobileUnavailable>该仪表板未开启移动端展示</MobileUnavailable>;
+      }
+      if (!widgetRecordLoaded) return <BoardLoading />;
 
       return (
         <BoardInitProvider
@@ -359,20 +368,52 @@ const MobileBoardContent: FC<MobileBoardContentProps> = memo(
               candidate.querySelector<HTMLElement>('.ant-table-thead');
             return (header?.getBoundingClientRect().height || 0) > 0;
           });
-          if (!root || !table) return;
+          // 容器里会同时保留多个 Tab 的 DOM。只能测量当前可见 Tab，
+          // 否则隐藏内容的 0 高度会把整个容器误收成一行。
+          const presentation = root
+            ? findVisibleMobilePresentation(root)
+            : undefined;
+          if (!root || (!table && !presentation)) return;
+
+          const content = table || presentation;
+          if (!content) return;
 
           const tableTop =
-            table.getBoundingClientRect().top -
+            content.getBoundingClientRect().top -
             root.getBoundingClientRect().top;
+          if (presentation && !table) {
+            // 外层容器收缩后，getBoundingClientRect 可能只返回被裁剪的高度；
+            // scrollHeight 才是当前 Tab 的真实内容高度，避免点击 Tab 后塌缩成一行。
+            const presentationHeight = Math.max(
+              presentation.getBoundingClientRect().height,
+              presentation.scrollHeight,
+            );
+            const requiredHeight = tableTop + presentationHeight;
+            const rows = getMobileGridSpan(
+              requiredHeight,
+              MOBILE_ROW_HEIGHT,
+              MOBILE_GAP,
+              MOBILE_PRESENTATION_MIN_HEIGHT,
+              MOBILE_TABLE_BOTTOM_GUARD,
+            );
+            // 指标卡按当前 Tab 的实际内容高度伸缩。
+            next[widget.id] = rows;
+            return;
+          }
+          if (!table) return;
+
           const sectionHeight = (selector: string) =>
-            table.querySelector<HTMLElement>(selector)?.getBoundingClientRect()
-              .height || 0;
+            content
+              .querySelector<HTMLElement>(selector)
+              ?.getBoundingClientRect().height || 0;
           const headerHeight = sectionHeight('.ant-table-thead');
           // 非激活标签页的表格高度为 0，不能参与卡片收高计算。
           if (!headerHeight) return;
           const activeWidgetId = table.closest<HTMLElement>(
             '[data-datart-widget-id]',
           )?.dataset.datartWidgetId;
+          const tableKey = activeWidgetId || widget.id;
+          const tableLayoutReady = prepareMobileTableLayout(root, tableKey);
           const activeDataset = activeWidgetId
             ? widgetDataMap[activeWidgetId]
             : undefined;
@@ -407,7 +448,22 @@ const MobileBoardContent: FC<MobileBoardContentProps> = memo(
             MOBILE_TABLE_MIN_HEIGHT,
             MOBILE_TABLE_BOTTOM_GUARD,
           );
+          // 普通表格按当前 Tab 的可视行数伸缩，超过可视行时由表格内部滚动。
           next[widget.id] = rows;
+          if (
+            !tableLayoutReady &&
+            root.dataset.mobileTablePendingKey !== tableKey
+          ) {
+            root.dataset.mobileTablePendingKey = tableKey;
+            requestAnimationFrame(() => {
+              dispatchResize();
+              requestAnimationFrame(() => {
+                if (root.dataset.mobileTablePendingKey !== tableKey) return;
+                delete root.dataset.mobileTablePendingKey;
+                markMobileTableLayoutReady(root, tableKey);
+              });
+            });
+          }
         });
         return JSON.stringify(previous) === JSON.stringify(next)
           ? previous
@@ -468,11 +524,16 @@ const MobileBoardContent: FC<MobileBoardContentProps> = memo(
         ({ widget }) => !initialWidgetIds.has(widget.id),
       );
       const renderWidgets = (items: typeof mobileWidgets) => {
-        items.forEach(({ widget: w }) => {
+        const widgetIds = new Set(
+          items.flatMap(({ widget }) =>
+            getNestedWidgetIds(widget, widgetMap),
+          ),
+        );
+        widgetIds.forEach(widgetId => {
           dispatch(
             renderedWidgetAsync({
               boardId,
-              widgetId: w.id,
+              widgetId,
               renderMode: 'read',
             }),
           );
@@ -729,6 +790,11 @@ const MobileCanvas = styled.div`
   .ant-table-wrapper {
     max-width: 100%;
     overflow: hidden;
+    visibility: hidden;
+  }
+
+  .mobile-widget.mobile-table-layout-ready .ant-table-wrapper {
+    visibility: visible;
   }
 `;
 
@@ -741,4 +807,14 @@ const MobileWidget = styled.div<{ rect: RectConfig }>`
 const BottomSafe = styled.div`
   height: env(safe-area-inset-bottom, 16px);
   min-height: 16px;
+`;
+
+const MobileUnavailable = styled.div`
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: #8f959e;
+  text-align: center;
 `;

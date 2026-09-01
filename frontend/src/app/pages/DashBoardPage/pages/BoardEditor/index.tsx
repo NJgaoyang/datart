@@ -33,7 +33,11 @@ import EditorHeader from '../../components/BoardHeader/EditorHeader';
 import { BoardLoading } from '../../components/BoardLoading';
 import { BoardInitProvider } from '../../components/BoardProvider/BoardInitProvider';
 import { fetchBoardDetail } from '../Board/slice/thunk';
-import { DataChart, WidgetContentChartType } from '../Board/slice/types';
+import {
+  DataChart,
+  DeviceType,
+  WidgetContentChartType,
+} from '../Board/slice/types';
 import { AutoEditor } from './AutoEditor';
 import ControllerWidgetPanel from './components/ControllerWidgetPanel';
 import { FreeEditor } from './FreeEditor';
@@ -48,6 +52,7 @@ import {
   selectControllerPanel,
   selectEditBoard,
   selectEditBoardLoading,
+  selectDeviceType,
 } from './slice/selectors';
 import { addChartWidget, fetchEditBoardDetail } from './slice/thunk';
 
@@ -59,6 +64,7 @@ export const BoardEditor: React.FC<{
   const navigate = useNavigate();
   const location = useLocation();
   const board = useSelector(selectEditBoard);
+  const deviceType = useSelector(selectDeviceType);
   const boardLoading = useSelector(selectEditBoardLoading);
   const boardChartEditorProps = useSelector(selectBoardChartEditorProps);
   const widgetControllerPanelParams = useSelector(selectControllerPanel);
@@ -91,6 +97,7 @@ export const BoardEditor: React.FC<{
         allowDownload={false}
         allowShare={false}
         allowManage={false}
+        isMobile={deviceType === DeviceType.Mobile}
         renderMode="edit"
       >
         <EditorHeader />
@@ -113,6 +120,7 @@ export const BoardEditor: React.FC<{
     boardId,
     widgetControllerPanelParams,
     boardChartEditorProps,
+    deviceType,
     onCloseChartEditor,
     onSaveToWidget,
   ]);

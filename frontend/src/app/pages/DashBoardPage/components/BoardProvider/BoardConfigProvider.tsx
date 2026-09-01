@@ -21,9 +21,12 @@ import { ScaleModeType } from '../../constants';
 import { BackgroundConfig, BoardType } from '../../pages/Board/slice/types';
 import { BoardConfig } from '../../types/boardTypes';
 import { getJsonConfigs } from '../../utils';
+import { getMobileBoardSettings } from '../../utils/mobileBoardSettings';
 export interface BoardConfigValue {
   boardType: BoardType;
   initialQuery: boolean;
+  mobileTransformEnabled: boolean;
+  mobileVisible: boolean;
   background: BackgroundConfig;
   // free
   width: number;
@@ -64,9 +67,13 @@ export const BoardConfigProvider: FC<{
     ['mSpace'],
     ['paddingTB', 'paddingLR', 'marginTB', 'marginLR'],
   );
+  const { mobileTransformEnabled, mobileVisible } =
+    getMobileBoardSettings(config);
   const configVal: BoardConfigValue = {
     boardType: config.type,
     initialQuery,
+    mobileTransformEnabled,
+    mobileVisible,
     background,
     width,
     height,

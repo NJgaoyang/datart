@@ -188,6 +188,20 @@ const StyledTable = styled(Table)<{ tableStyleConfig?: TableStyleConfigProps }>`
       white-space: nowrap;
     }
 
+    .ant-table-thead > tr > th {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      height: 40px;
+      line-height: 22px;
+      vertical-align: middle;
+    }
+
+    .ant-table-column-title {
+      overflow: visible;
+      text-overflow: clip;
+    }
+
     .ant-table-thead > tr > th:first-child,
     .ant-table-tbody > tr > td:first-child {
       position: sticky;
@@ -201,7 +215,7 @@ const StyledTable = styled(Table)<{ tableStyleConfig?: TableStyleConfigProps }>`
     }
 
     .ant-table-thead > tr > th:first-child {
-      z-index: 3;
+      z-index: 4;
     }
 
     .ant-table-tbody > tr > td:first-child {

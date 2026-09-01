@@ -17,6 +17,7 @@
  */
 import { APP_CURRENT_VERSION } from 'app/migration/constants';
 import { BoardConfig } from '../types/boardTypes';
+import { ensureMobileBoardSettings } from './mobileBoardSettings';
 
 export const initFreeBoardConfig = () => {
   const config: BoardConfig = {
@@ -186,5 +187,5 @@ export const initFreeBoardConfig = () => {
       ],
     },
   };
-  return config;
+  return ensureMobileBoardSettings(config);
 };

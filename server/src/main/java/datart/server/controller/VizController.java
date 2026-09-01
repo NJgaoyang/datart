@@ -102,6 +102,13 @@ public class VizController extends BaseController {
         return ResponseData.success(vizService.createDashboard(createParam));
     }
 
+    @Operation(summary = "list dashboards")
+    @GetMapping(value = "/dashboards")
+    public ResponseData<List<DashboardBaseInfo>> listDashboards(String orgId) {
+        checkBlank(orgId, "orgId");
+        return ResponseData.success(vizService.listDashboards(orgId));
+    }
+
     @Operation(summary = "get a dashboard detail")
     @GetMapping(value = "/dashboards/{dashboardId}")
     public ResponseData<DashboardDetail> getDashboard(@PathVariable String dashboardId) {

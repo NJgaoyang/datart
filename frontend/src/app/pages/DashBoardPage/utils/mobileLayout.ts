@@ -5,6 +5,53 @@ type MobileLayoutItem = {
   rect: RectConfig;
 };
 
+const MOBILE_TABLE_READY_CLASS = 'mobile-table-layout-ready';
+
+export const prepareMobileTableLayout = (
+  root: HTMLElement,
+  tableKey: string,
+): boolean => {
+  if (
+    root.dataset.mobileTableReadyKey === tableKey &&
+    root.classList.contains(MOBILE_TABLE_READY_CLASS)
+  ) {
+    return true;
+  }
+  delete root.dataset.mobileTableReadyKey;
+  root.classList.remove(MOBILE_TABLE_READY_CLASS);
+  return false;
+};
+
+export const markMobileTableLayoutReady = (
+  root: HTMLElement,
+  tableKey: string,
+) => {
+  root.dataset.mobileTableReadyKey = tableKey;
+  root.classList.add(MOBILE_TABLE_READY_CLASS);
+};
+
+/** Find measurable content from the currently active tab only. */
+export const findVisibleMobilePresentation = (
+  root: HTMLElement,
+): HTMLElement | undefined =>
+  [
+    ...root.querySelectorAll<HTMLElement>('.mobile-table-presentation'),
+  ].find(candidate => {
+    if (
+      candidate.closest(
+        '.ant-tabs-tabpane:not(.ant-tabs-tabpane-active)',
+      )
+    ) {
+      return false;
+    }
+    const rect = candidate.getBoundingClientRect();
+    return (
+      candidate.getClientRects().length > 0 &&
+      rect.width > 0 &&
+      (rect.height > 0 || candidate.scrollHeight > 0)
+    );
+  });
+
 /** Convert a required pixel height to a grid span without clipping its bottom. */
 export const getMobileGridSpan = (
   requiredHeight: number,

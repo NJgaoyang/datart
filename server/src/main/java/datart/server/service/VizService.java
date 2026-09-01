@@ -66,6 +66,8 @@ public interface VizService {
 
     List<Folder> listViz(String orgId);
 
+    List<DashboardBaseInfo> listDashboards(String orgId);
+
     Folder createFolder(FolderCreateParam createParam);
 
     boolean updateFolder(FolderUpdateParam updateParam);

@@ -20,6 +20,7 @@ import useRenderWidget from 'app/pages/DashBoardPage/hooks/useRenderWidget';
 import useWidgetAutoFetch from 'app/pages/DashBoardPage/hooks/useWidgetAutoFetch';
 import { memo, useContext } from 'react';
 import { BoardContext } from '../../BoardProvider/BoardProvider';
+import { WidgetChartContext } from '../../WidgetProvider/WidgetChartProvider';
 import { FlexStyle, ZIndexStyle } from '../../WidgetComponents/constants';
 import { EditMask } from '../../WidgetComponents/EditMask';
 import { WidgetTitle } from '../../WidgetComponents/WidgetTitle';
@@ -31,12 +32,22 @@ import {
 import { WidgetInfoContext } from '../../WidgetProvider/WidgetInfoProvider';
 import { ToolBar } from './components/ToolBar';
 import { DataChartWidgetCore } from './DataChartWidgetCore';
+import { MobileTablePresentation } from './MobileTablePresentation';
+import { BoardConfigValContext } from '../../BoardProvider/BoardConfigProvider';
+
+const MOBILE_TABLE_CHART_IDS = new Set([
+  'react-table',
+  'fenzu-table',
+  'mingxi-table',
+]);
 
 export const DataChartWidget: React.FC<{ hideTitle: boolean }> = memo(
   ({ hideTitle }) => {
     const widget = useContext(WidgetContext);
     const { rendered } = useContext(WidgetInfoContext);
-    const { renderMode, boardType } = useContext(BoardContext);
+    const { renderMode, boardType, isMobile } = useContext(BoardContext);
+    const { mobileTransformEnabled } = useContext(BoardConfigValContext);
+    const { dataChart } = useContext(WidgetChartContext);
     const { cacheWhRef } = useRenderWidget(
       widget,
       renderMode,
@@ -55,7 +66,15 @@ export const DataChartWidget: React.FC<{ hideTitle: boolean }> = memo(
           {!hideTitle && <WidgetTitle title={title} />}
 
           <div style={FlexStyle}>
-            <DataChartWidgetCore />
+            {isMobile &&
+            mobileTransformEnabled &&
+            MOBILE_TABLE_CHART_IDS.has(
+              dataChart?.config?.chartGraphId || '',
+            ) ? (
+              <MobileTablePresentation />
+            ) : (
+              <DataChartWidgetCore />
+            )}
           </div>
         </div>
         {renderMode === 'edit' && <EditMask />}
