@@ -146,6 +146,11 @@ const StyledTable = styled(Table)<{ tableStyleConfig?: TableStyleConfigProps }>`
       border: 0;
     }
 
+    .ant-table-header {
+      flex-shrink: 0;
+      min-height: 40px;
+    }
+
     .ant-table-body,
     .ant-table-content {
       flex: 1 1 auto;
@@ -157,16 +162,12 @@ const StyledTable = styled(Table)<{ tableStyleConfig?: TableStyleConfigProps }>`
       scrollbar-gutter: stable;
     }
 
+    .ant-table-header > table,
     .ant-table-body > table,
     .ant-table-content > table {
       width: max-content !important;
-      min-width: 0 !important;
-      table-layout: auto !important;
-    }
-
-    .ant-table-body > table > colgroup > col,
-    .ant-table-content > table > colgroup > col {
-      width: auto !important;
+      min-width: 100% !important;
+      table-layout: fixed !important;
     }
 
     .ant-table-body::-webkit-scrollbar,
@@ -182,19 +183,20 @@ const StyledTable = styled(Table)<{ tableStyleConfig?: TableStyleConfigProps }>`
 
     .ant-table-thead > tr > th,
     .ant-table-tbody > tr > td {
-      width: max-content !important;
-      min-width: 0 !important;
       padding: 8px !important;
       white-space: nowrap;
     }
 
     .ant-table-thead > tr > th {
-      position: sticky;
-      top: 0;
-      z-index: 3;
       height: 40px;
       line-height: 22px;
       vertical-align: middle;
+    }
+
+    .ant-table-content > table > .ant-table-thead > tr > th {
+      position: sticky;
+      top: 0;
+      z-index: 3;
     }
 
     .ant-table-column-title {

@@ -1,10 +1,13 @@
 import {
   compactMobileLayout,
   findVisibleMobilePresentation,
+  getInitiallyVisibleWidgetIds,
   getMobileGridSpan,
+  getNestedWidgetIds,
   markMobileTableLayoutReady,
   prepareMobileTableLayout,
 } from '../mobileLayout';
+import { Widget } from '../../types/widgetTypes';
 
 const makeMeasurable = (element: HTMLElement, height: number) => {
   Object.defineProperty(element, 'scrollHeight', {
@@ -22,8 +25,7 @@ const makeMeasurable = (element: HTMLElement, height: number) => {
       },
     } as DOMRectList;
   };
-  element.getBoundingClientRect = () =>
-    ({ width: 300, height } as DOMRect);
+  element.getBoundingClientRect = () => ({ width: 300, height } as DOMRect);
 };
 
 describe('findVisibleMobilePresentation', () => {
@@ -53,6 +55,45 @@ describe('findVisibleMobilePresentation', () => {
     root.appendChild(presentation);
 
     expect(findVisibleMobilePresentation(root)).toBe(presentation);
+  });
+});
+
+describe('getInitiallyVisibleWidgetIds', () => {
+  it('loads the first tab tree and leaves inactive tabs for first click', () => {
+    const makeWidget = (
+      id: string,
+      parentId = '',
+      content?: Record<string, unknown>,
+    ) =>
+      ({
+        id,
+        parentId,
+        config: { children: [], content },
+      } as unknown as Widget);
+    const tab = makeWidget('tab', '', {
+      itemMap: {
+        second: { index: 2, childWidgetId: 'second' },
+        first: { index: 1, childWidgetId: 'first' },
+      },
+    });
+    const widgetMap = {
+      tab,
+      first: makeWidget('first', 'tab'),
+      firstChild: makeWidget('firstChild', 'first'),
+      second: makeWidget('second', 'tab'),
+    };
+
+    expect(getInitiallyVisibleWidgetIds(tab, widgetMap)).toEqual([
+      'tab',
+      'first',
+      'firstChild',
+    ]);
+    expect(getNestedWidgetIds(tab, widgetMap)).toEqual([
+      'tab',
+      'first',
+      'firstChild',
+      'second',
+    ]);
   });
 });
 

@@ -33,7 +33,9 @@ import {
 import {
   compactMobileLayout,
   findVisibleMobilePresentation,
+  getInitiallyVisibleWidgetIds,
   getMobileGridSpan,
+  getNestedWidgetIds,
   markMobileTableLayoutReady,
   prepareMobileTableLayout,
 } from 'app/pages/DashBoardPage/utils/mobileLayout';
@@ -84,33 +86,6 @@ const MOBILE_TABLE_SCROLLBAR_HEIGHT = 8;
 const MOBILE_TABLE_BOTTOM_GUARD = 2;
 const MOBILE_DEFERRED_WIDGET_LOAD_MS = 300;
 const TABLE_CHART_IDS = new Set(['react-table', 'fenzu-table', 'mingxi-table']);
-
-const getNestedWidgetIds = (
-  widget: Widget,
-  widgetMap: Record<string, Widget>,
-  visited = new Set<string>(),
-): string[] => {
-  if (!widget || visited.has(widget.id)) return [];
-  visited.add(widget.id);
-
-  const childIds = new Set<string>(widget.config.children || []);
-  const tabItems = widget.config.content?.itemMap;
-  if (tabItems) {
-    Object.values(tabItems).forEach((item: any) => {
-      if (item?.childWidgetId) childIds.add(item.childWidgetId);
-    });
-  }
-  Object.values(widgetMap).forEach(child => {
-    if (child.parentId === widget.id) childIds.add(child.id);
-  });
-
-  return [
-    widget.id,
-    ...[...childIds].flatMap(id =>
-      getNestedWidgetIds(widgetMap[id], widgetMap, visited),
-    ),
-  ];
-};
 
 const getMobileRect = (widget: Widget): RectConfig => {
   const rect =
@@ -526,7 +501,7 @@ const MobileBoardContent: FC<MobileBoardContentProps> = memo(
       const renderWidgets = (items: typeof mobileWidgets) => {
         const widgetIds = new Set(
           items.flatMap(({ widget }) =>
-            getNestedWidgetIds(widget, widgetMap),
+            getInitiallyVisibleWidgetIds(widget, widgetMap),
           ),
         );
         widgetIds.forEach(widgetId => {
