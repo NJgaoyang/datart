@@ -40,6 +40,8 @@ interface TableStyleConfigProps {
     fontStyle?: string;
     color?: string;
   };
+  wrapText?: boolean;
+  hoverHighlight?: boolean;
 }
 
 const AntdTableWrapper: FC<{
@@ -116,6 +118,19 @@ const StyledTable = styled(Table)<{ tableStyleConfig?: TableStyleConfigProps }>`
   .ant-table-body {
     overflow: ${p =>
       p?.tableStyleConfig?.isFixedColumns ? 'auto scroll' : 'auto !important'};
+  }
+
+  .ant-table-tbody > tr:hover > td {
+    ${p =>
+      p?.tableStyleConfig?.hoverHighlight === false
+        ? 'background: inherit !important;'
+        : ''}
+  }
+
+  .ant-table-tbody > tr > td {
+    white-space: ${p => (p?.tableStyleConfig?.wrapText ? 'normal' : undefined)};
+    word-break: ${p =>
+      p?.tableStyleConfig?.wrapText ? 'break-word' : undefined};
   }
 
   .datart-mobile-board & {

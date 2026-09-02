@@ -63,6 +63,31 @@ const config: ChartConfig = {
   ],
   styles: [
     {
+      label: 'heatmap.title',
+      key: 'heatmap',
+      comType: 'group',
+      rows: [
+        {
+          label: 'heatmap.enable',
+          key: 'enable',
+          default: false,
+          comType: 'checkbox',
+        },
+        {
+          label: 'heatmap.startColor',
+          key: 'startColor',
+          default: '#eef5ff',
+          comType: 'fontColor',
+        },
+        {
+          label: 'heatmap.endColor',
+          key: 'endColor',
+          default: '#2f6fed',
+          comType: 'fontColor',
+        },
+      ],
+    },
+    {
       label: 'style.title',
       key: 'style',
       comType: 'group',
@@ -456,6 +481,12 @@ const config: ChartConfig = {
           height: '单元格高度',
           width: '单元格宽度',
         },
+        heatmap: {
+          title: '数值色阶',
+          enable: '启用色阶',
+          startColor: '起始颜色',
+          endColor: '结束颜色',
+        },
         theme: {
           title: '主题',
           themeType: '主题类型',
@@ -539,6 +570,12 @@ const config: ChartConfig = {
           rowWidth: 'Row Header Width',
           height: 'Height',
           width: 'Width',
+        },
+        heatmap: {
+          title: 'Value Heatmap',
+          enable: 'Enable heatmap',
+          startColor: 'Start color',
+          endColor: 'End color',
         },
         theme: {
           title: 'Theme',

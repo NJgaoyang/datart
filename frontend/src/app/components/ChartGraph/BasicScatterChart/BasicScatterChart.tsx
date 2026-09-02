@@ -171,6 +171,14 @@ class BasicScatterChart extends Chart {
       selectedItems,
     );
 
+    const additionalOption = this.getAdditionalOption(
+      styleConfigs,
+      chartDataSet,
+      groupConfigs,
+      aggregateConfigs,
+    );
+    const additionalSeries = additionalOption.series;
+    const { series: _, ...restAdditionalOption } = additionalOption;
     return {
       tooltip: {
         formatter: this.getTooltipFormmaterFunc(
@@ -189,8 +197,21 @@ class BasicScatterChart extends Chart {
       grid: getGridStyle(styleConfigs),
       xAxis: this.getAxis(styleConfigs, axisColumns[0], 'xAxis'),
       yAxis: this.getAxis(styleConfigs, axisColumns[1], 'yAxis'),
-      series,
+      series: series.map((item, index) => ({
+        ...item,
+        ...(index === 0 && additionalSeries ? additionalSeries : {}),
+      })),
+      ...restAdditionalOption,
     };
+  }
+
+  protected getAdditionalOption(
+    styles: ChartStyleConfig[],
+    chartDataSet: IChartDataSet<string>,
+    groupConfigs: ChartDataSectionField[],
+    aggregateConfigs: ChartDataSectionField[],
+  ): Record<string, any> {
+    return {};
   }
 
   protected getSeriesGroupByColorConfig(

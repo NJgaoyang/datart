@@ -148,6 +148,13 @@ const config: ChartConfig = {
           comType: 'checkbox',
         },
         {
+          label: 'viz.palette.style.visualMap.type',
+          key: 'type',
+          default: 'continuous',
+          comType: 'select',
+          options: { items: ['continuous', 'piecewise'] },
+        },
+        {
           label: 'viz.palette.style.visualMap.orient',
           key: 'orient',
           comType: 'select',

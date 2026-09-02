@@ -80,7 +80,7 @@ class BasicLineChart extends Chart {
     super(
       props?.id || 'line',
       props?.name || 'viz.palette.graph.names.lineChart',
-      props?.icon || 'chart-line',
+      props?.icon || 'fsux_zhexiantu',
     );
     this.meta.requirements = props?.requirements || [
       {

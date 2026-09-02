@@ -47,6 +47,7 @@ import AntdTableWrapper from './AntdTableWrapper';
 import {
   getCustomBodyCellStyle,
   getCustomBodyRowStyle,
+  getHeatmapColor,
 } from './conditionalStyle';
 import Config from './config';
 import {
@@ -247,6 +248,7 @@ class BasicTableChart extends ReactChart {
         styleConfigs,
         widgetSpecialConfig,
         mixedSectionConfigRows,
+        chartDataSet,
       ),
       ...this.getAntdTableStyleOptions(styleConfigs, settingConfigs, context),
       onChange: (pagination, filters, sorter, extra) => {
@@ -318,10 +320,15 @@ class BasicTableChart extends ReactChart {
       ['tableBodyStyle'],
       ['oddBgColor', 'oddFontColor', 'evenBgColor', 'evenFontColor'],
     );
-    const [rightFixedColumns] = getStyles(
+    const [rightFixedColumns, showHeader, wrapText, hoverHighlight] = getStyles(
       styles,
       ['style'],
-      ['rightFixedColumns'],
+      [
+        'rightFixedColumns',
+        'showTableHeader',
+        'wrapText',
+        'enableHoverHighlight',
+      ],
     );
     const [backgroundColor, summaryFont] = getStyles(
       settingConfigs,
@@ -338,6 +345,9 @@ class BasicTableChart extends ReactChart {
         color: evenFontColor,
       },
       isFixedColumns: rightFixedColumns ? true : false,
+      showHeader: showHeader !== false,
+      wrapText: Boolean(wrapText),
+      hoverHighlight: hoverHighlight !== false,
       summaryStyle: Object.assign({ backgroundColor }, summaryFont),
     };
   }
@@ -582,6 +592,7 @@ class BasicTableChart extends ReactChart {
     styleConfigs: ChartStyleConfig[],
     widgetSpecialConfig: { env: string | undefined; [x: string]: any },
     mixedSectionConfigRows: ChartDataSectionField[],
+    chartDataSet: IChartDataSet<string>,
   ): TableComponentConfig {
     const linkFields = widgetSpecialConfig?.linkFields;
     const jumpField = widgetSpecialConfig?.jumpField;
@@ -607,6 +618,22 @@ class BasicTableChart extends ReactChart {
       ['column', 'modal', 'list'],
       'rows',
     );
+    const [heatmapEnabled, heatmapStart, heatmapEnd] = getStyles(
+      styleConfigs,
+      ['heatmap'],
+      ['enable', 'startColor', 'endColor'],
+    );
+    const heatmapRanges = mixedSectionConfigRows.reduce((acc, field) => {
+      const values = chartDataSet
+        .map(row => Number(row.getCell(field)))
+        .filter(Number.isFinite);
+      if (values.length)
+        acc[field.uid!] = {
+          min: Math.min(...values),
+          max: Math.max(...values),
+        };
+      return acc;
+    }, {} as Record<string, { min: number; max: number }>);
     let allConditionalStyle: ConditionalStyleFormValues[] = [];
     getAllColumnListInfo?.forEach(info => {
       const [getConditionalStyleValue]: Array<
@@ -677,6 +704,17 @@ class BasicTableChart extends ReactChart {
             props?.cellValue,
             conditionalStyle,
           );
+          const heatmapRange = heatmapRanges[uid!];
+          const heatmapColor =
+            heatmapEnabled && heatmapRange
+              ? getHeatmapColor(
+                  props?.cellValue,
+                  heatmapRange.min,
+                  heatmapRange.max,
+                  heatmapStart,
+                  heatmapEnd,
+                )
+              : undefined;
           const useColumnWidth =
             this.dataColumnWidths?.[props.dataIndex]?.getUseColumnWidth;
           const _getBodyTextAlignStyle = alignValue => {
@@ -718,6 +756,7 @@ class BasicTableChart extends ReactChart {
               style={Object.assign(
                 style || {},
                 conditionalCellStyle,
+                heatmapColor ? { backgroundColor: heatmapColor } : {},
                 {
                   textAlign: _getBodyTextAlignStyle(align),
                 },
@@ -1095,10 +1134,10 @@ class BasicTableChart extends ReactChart {
       ['paging'],
       ['enablePaging'],
     );
-    const [showTableBorder, enableFixedHeader] = getStyles(
+    const [showTableBorder, enableFixedHeader, showTableHeader] = getStyles(
       styleConfigs || [],
       ['style'],
-      ['enableBorder', 'enableFixedHeader'],
+      ['enableBorder', 'enableFixedHeader', 'showTableHeader'],
     );
     const [tableHeaderStyles] = getStyles(
       styleConfigs || [],
@@ -1157,6 +1196,7 @@ class BasicTableChart extends ReactChart {
       }),
       bordered: !!showTableBorder,
       size: tableSize || 'default',
+      showHeader: showTableHeader !== false,
     };
   }
 

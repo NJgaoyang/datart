@@ -23,7 +23,8 @@ const config: ChartConfig = {
     {
       label: 'dimension',
       key: 'dimension',
-      required: true,
+      required: false,
+      limit: 1,
       type: 'group',
     },
     {
@@ -51,6 +52,26 @@ const config: ChartConfig = {
     },
   ],
   styles: [
+    {
+      label: 'radar.title',
+      key: 'radar',
+      comType: 'group',
+      rows: [
+        {
+          label: 'radar.shape',
+          key: 'shape',
+          default: 'polygon',
+          comType: 'select',
+          options: { items: ['polygon', 'circle'] },
+        },
+        {
+          label: 'radar.radius',
+          key: 'radius',
+          default: '65%',
+          comType: 'input',
+        },
+      ],
+    },
     {
       label: 'stack.title',
       key: 'stack',
@@ -571,6 +592,21 @@ const config: ChartConfig = {
         reference: {
           title: '参考线',
           open: '点击参考线配置',
+        },
+        radar: {
+          title: '雷达图',
+          shape: '形状',
+          radius: '半径',
+        },
+      },
+    },
+    {
+      lang: 'en-US',
+      translation: {
+        radar: {
+          title: 'Radar',
+          shape: 'Shape',
+          radius: 'Radius',
         },
       },
     },

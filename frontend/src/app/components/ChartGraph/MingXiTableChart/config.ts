@@ -172,6 +172,31 @@ const config: ChartConfig = {
       ],
     },
     {
+      label: 'heatmap.title',
+      key: 'heatmap',
+      comType: 'group',
+      rows: [
+        {
+          label: 'heatmap.enable',
+          key: 'enable',
+          default: false,
+          comType: 'checkbox',
+        },
+        {
+          label: 'heatmap.startColor',
+          key: 'startColor',
+          default: '#eef5ff',
+          comType: 'fontColor',
+        },
+        {
+          label: 'heatmap.endColor',
+          key: 'endColor',
+          default: '#2f6fed',
+          comType: 'fontColor',
+        },
+      ],
+    },
+    {
       label: 'style.title',
       key: 'style',
       comType: 'group',
@@ -185,6 +210,24 @@ const config: ChartConfig = {
         {
           label: 'style.enableBorder',
           key: 'enableBorder',
+          default: true,
+          comType: 'checkbox',
+        },
+        {
+          label: 'style.showTableHeader',
+          key: 'showTableHeader',
+          default: true,
+          comType: 'checkbox',
+        },
+        {
+          label: 'style.wrapText',
+          key: 'wrapText',
+          default: false,
+          comType: 'checkbox',
+        },
+        {
+          label: 'style.enableHoverHighlight',
+          key: 'enableHoverHighlight',
           default: true,
           comType: 'checkbox',
         },
@@ -497,6 +540,9 @@ const config: ChartConfig = {
           title: '表格样式',
           enableFixedHeader: '固定表头',
           enableBorder: '显示边框',
+          showTableHeader: '显示表头',
+          wrapText: '自动换行',
+          enableHoverHighlight: '启用悬停高亮',
           enableRowNumber: '启用行号',
           leftFixedColumns: '左侧固定列',
           rightFixedColumns: '右侧固定列',
@@ -516,6 +562,12 @@ const config: ChartConfig = {
           evenFontColor: '偶行字体色',
           fontSize: '字体大小',
           fontStyle: '字体样式',
+        },
+        heatmap: {
+          title: '数值色阶',
+          enable: '启用色阶',
+          startColor: '起始颜色',
+          endColor: '结束颜色',
         },
         tableSize: {
           default: '默认',
@@ -565,6 +617,9 @@ const config: ChartConfig = {
           title: 'Table Style',
           enableFixedHeader: 'Enable Fixed Header',
           enableBorder: 'Show Border',
+          showTableHeader: 'Show Header',
+          wrapText: 'Wrap Text',
+          enableHoverHighlight: 'Enable Hover Highlight',
           enableRowNumber: 'Enable Row Number',
           leftFixedColumns: 'Left Fixed Columns',
           rightFixedColumns: 'Right Fixed Columns',
@@ -583,6 +638,12 @@ const config: ChartConfig = {
           evenFontColor: 'Even Row Font Color',
           fontSize: 'Font Size',
           fontStyle: 'Font Style',
+        },
+        heatmap: {
+          title: 'Value Heatmap',
+          enable: 'Enable heatmap',
+          startColor: 'Start color',
+          endColor: 'End color',
         },
         tableSize: {
           default: 'Default',

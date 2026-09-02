@@ -85,7 +85,7 @@ class BasicBarChart extends Chart implements IChartLifecycle {
     super(
       props?.id || 'bar',
       props?.name || 'viz.palette.graph.names.barChart',
-      props?.icon || 'chart-bar',
+      props?.icon || 'fsux_tubiao_zhuzhuangtu',
     );
     this.meta.requirements = props?.requirements || [
       {

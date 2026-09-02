@@ -106,20 +106,22 @@ const ChartGraphIcon: FC<{
         </>
       }
     >
-      <StyledChartIconWrapper
-        fontSize={FONT_SIZE_ICON_MD}
-        size={SPACE_TIMES(9)}
-        className={classnames({
-          active: isActive,
-        })}
-        onClick={handleChartChange(chart?.meta?.id)}
-      >
-        {renderIcon({
-          iconStr: chart?.meta?.icon,
-          isMatchRequirement,
-          isActive,
-        })}
-      </StyledChartIconWrapper>
+      <StyledChartItem onClick={handleChartChange(chart?.meta?.id)}>
+        <StyledChartIconWrapper
+          fontSize={FONT_SIZE_ICON_MD}
+          size={SPACE_TIMES(9)}
+          className={classnames({
+            active: isActive,
+          })}
+        >
+          {renderIcon({
+            iconStr: chart?.meta?.icon,
+            isMatchRequirement,
+            isActive,
+          })}
+        </StyledChartIconWrapper>
+        <ChartName>{t(chart?.meta?.name!, true)}</ChartName>
+      </StyledChartItem>
     </Tooltip>
   );
 });
@@ -159,8 +161,7 @@ const Base64ImageRender = ({ iconStr, isMatchRequirement, isActive }) => {
 };
 
 const StyledChartIconWrapper = styled(IW)`
-  margin: ${SPACE_TIMES(0.5)};
-  cursor: pointer;
+  margin: 0 auto;
   border-radius: ${BORDER_RADIUS};
 
   &:hover,
@@ -168,6 +169,23 @@ const StyledChartIconWrapper = styled(IW)`
     color: ${p => p.theme.componentBackground};
     background-color: ${p => p.theme.primary};
   }
+`;
+
+const StyledChartItem = styled.div`
+  width: 76px;
+  margin: ${SPACE_TIMES(0.5)};
+  cursor: pointer;
+  text-align: center;
+`;
+
+const ChartName = styled.div`
+  overflow: hidden;
+  margin-top: 2px;
+  color: ${p => p.theme.textColorSnd};
+  font-size: 11px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 const StyledInlineSVGIcon = styled.img<{ isMatchRequirement?: boolean }>`

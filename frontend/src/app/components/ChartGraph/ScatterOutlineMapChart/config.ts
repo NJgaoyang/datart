@@ -109,6 +109,12 @@ const config: ChartConfig = {
           comType: 'checkbox',
         },
         {
+          label: 'map.animation',
+          key: 'animation',
+          default: true,
+          comType: 'checkbox',
+        },
+        {
           label: 'map.cycleRatio',
           key: 'cycleRatio',
           comType: 'slider',
@@ -157,6 +163,13 @@ const config: ChartConfig = {
           key: 'show',
           default: true,
           comType: 'checkbox',
+        },
+        {
+          label: 'viz.palette.style.visualMap.type',
+          key: 'type',
+          default: 'continuous',
+          comType: 'select',
+          options: { items: ['continuous', 'piecewise'] },
         },
         {
           label: 'viz.palette.style.visualMap.orient',

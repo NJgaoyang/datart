@@ -401,7 +401,11 @@ class BasicOutlineMapChart extends Chart {
     }
 
     const [showLabel] = getStyles(styleConfigs, ['label'], ['showLabel']);
-    const [cycleRatio] = getStyles(styleConfigs, ['map'], ['cycleRatio']);
+    const [cycleRatio, animation] = getStyles(
+      styleConfigs,
+      ['map'],
+      ['cycleRatio', 'animation'],
+    );
     const { min, max } = getDataColumnMaxAndMin2(chartDataSet, sizeConfigs[0]);
     const defaultSizeValue = (max - min) / 2;
     const defaultColorValue = 1;
@@ -431,6 +435,7 @@ class BasicOutlineMapChart extends Chart {
           })
           ?.filter(d => !!d.name && d.value !== undefined),
         symbolSize: getScatterSymbolSizeFn(3, max, min, cycleRatio),
+        animation: animation !== false,
         label: {
           formatter: '{b}',
           position: 'right',
@@ -507,12 +512,13 @@ class BasicOutlineMapChart extends Chart {
     sizeConfigs: ChartDataSectionField[],
     styleConfigs: ChartStyleConfig[],
   ): GeoVisualMapStyle[] {
-    const [show, orient, align, itemWidth, itemHeight, font, position] =
+    const [show, type, orient, align, itemWidth, itemHeight, font, position] =
       getStyles(
         styleConfigs,
         ['visualMap'],
         [
           'show',
+          'type',
           'orient',
           'align',
           'itemWidth',
@@ -539,7 +545,7 @@ class BasicOutlineMapChart extends Chart {
     const positionConfig = position?.split(',');
     return [
       {
-        type: 'continuous',
+        type: type || 'continuous',
         seriesIndex: 0,
         dimension: this.isNormalGeoMap ? undefined : 2,
         show,

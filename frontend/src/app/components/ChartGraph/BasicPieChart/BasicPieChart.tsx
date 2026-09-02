@@ -58,6 +58,7 @@ class BasicPieChart extends Chart {
 
   protected isCircle = false;
   protected isRose = false;
+  protected isDonutRose = false;
 
   constructor(props?) {
     super(
@@ -399,10 +400,12 @@ class BasicPieChart extends Chart {
   }
 
   private getSeriesStyle(styles: ChartStyleConfig[]): PieSeries {
-    const radiusValue =
-      (!this.isCircle && !this.isRose) || (!this.isCircle && this.isRose)
-        ? `70%`
-        : ['50%', '70%'];
+    const [innerRadius] = getStyles(styles, ['donut'], ['innerRadius']);
+    const radiusValue = this.isDonutRose
+      ? [`${Math.max(0, Math.min(95, Number(innerRadius ?? 35)))}%`, '70%']
+      : (!this.isCircle && !this.isRose) || (!this.isCircle && this.isRose)
+      ? `70%`
+      : ['50%', '70%'];
     return { radius: radiusValue, roseType: this.isRose };
   }
 

@@ -6,6 +6,9 @@ export interface TableStyle {
   even: { backgroundColor: string; color: string };
   isFixedColumns: boolean;
   summaryStyle: { backgroundColor: string } & FontStyle;
+  showHeader?: boolean;
+  wrapText?: boolean;
+  hoverHighlight?: boolean;
 }
 
 export interface TableColumnsList {
@@ -72,6 +75,7 @@ export interface TableStyleOptions {
   };
   bordered: boolean;
   size: string;
+  showHeader?: boolean;
 }
 
 export type TableCellEvents =

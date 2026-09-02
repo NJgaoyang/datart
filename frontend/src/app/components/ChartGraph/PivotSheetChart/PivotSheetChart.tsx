@@ -53,6 +53,7 @@ import {
 } from 'app/utils/chartHelper';
 import { isUndefined } from 'utils/object';
 import { PIVOT_THEME_LIST } from '../../FormGenerator/Customize/PivotSheetTheme/theme';
+import { getHeatmapColor } from '../BasicTableChart/conditionalStyle';
 import AntVS2Wrapper from './AntVS2Wrapper';
 import Config from './config';
 import { AndvS2Config } from './types';
@@ -211,6 +212,41 @@ class PivotSheetChart extends ReactChart {
       ['colSummary'],
       ['enableTotal', 'totalPosition', 'enableSubTotal', 'subTotalPosition'],
     );
+    const [heatmapEnabled, heatmapStart, heatmapEnd] = getStyles(
+      styleConfigs,
+      ['heatmap'],
+      ['enable', 'startColor', 'endColor'],
+    );
+    const heatmapConditions = heatmapEnabled
+      ? {
+          background: metricsSectionConfigRows.map(metric => {
+            const values = chartDataSet
+              .map(row => Number(row.getCell(metric)))
+              .filter(Number.isFinite);
+            if (!values.length) {
+              return {
+                field: chartDataSet.getFieldKey(metric),
+                mapping: () => ({}),
+              };
+            }
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            return {
+              field: chartDataSet.getFieldKey(metric),
+              mapping: value => {
+                const fill = getHeatmapColor(
+                  value,
+                  min,
+                  max,
+                  heatmapStart,
+                  heatmapEnd,
+                );
+                return fill ? { fill } : {};
+              },
+            };
+          }),
+        }
+      : undefined;
 
     if (!!enableExpandRow) {
       if (
@@ -249,6 +285,7 @@ class PivotSheetChart extends ReactChart {
             enable: true,
           },
         },
+        conditions: heatmapConditions,
         totals: {
           row: {
             showGrandTotals: Boolean(enableRowTotal),

@@ -20,6 +20,31 @@ import { ConditionalStyleFormValues } from 'app/components/FormGenerator/Customi
 import { OperatorTypes } from 'app/components/FormGenerator/Customize/ConditionalStyle/types';
 import { CSSProperties } from 'react';
 
+export const getHeatmapColor = (
+  value: unknown,
+  min: number,
+  max: number,
+  start = '#eef5ff',
+  end = '#2f6fed',
+): string | undefined => {
+  if (value === null || value === undefined || value === '') return undefined;
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue)) return undefined;
+  const ratio =
+    min === max
+      ? 0.5
+      : Math.max(0, Math.min(1, (numberValue - min) / (max - min)));
+  const parse = color => {
+    const hex = color.replace('#', '');
+    return [0, 2, 4].map(index => parseInt(hex.slice(index, index + 2), 16));
+  };
+  const [r1, g1, b1] = parse(start);
+  const [r2, g2, b2] = parse(end);
+  return `rgb(${Math.round(r1 + (r2 - r1) * ratio)}, ${Math.round(
+    g1 + (g2 - g1) * ratio,
+  )}, ${Math.round(b1 + (b2 - b1) * ratio)})`;
+};
+
 const isMatchedTheCondition = (
   value: string | number,
   operatorType: OperatorTypes,

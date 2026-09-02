@@ -113,6 +113,31 @@ const config: ChartConfig = {
       ],
     },
     {
+      label: 'heatmap.title',
+      key: 'heatmap',
+      comType: 'group',
+      rows: [
+        {
+          label: 'heatmap.enable',
+          key: 'enable',
+          default: false,
+          comType: 'checkbox',
+        },
+        {
+          label: 'heatmap.startColor',
+          key: 'startColor',
+          default: '#eef5ff',
+          comType: 'fontColor',
+        },
+        {
+          label: 'heatmap.endColor',
+          key: 'endColor',
+          default: '#2f6fed',
+          comType: 'fontColor',
+        },
+      ],
+    },
+    {
       label: 'style.title',
       key: 'style',
       comType: 'group',
@@ -126,6 +151,24 @@ const config: ChartConfig = {
         {
           label: 'style.enableBorder',
           key: 'enableBorder',
+          default: true,
+          comType: 'checkbox',
+        },
+        {
+          label: 'style.showTableHeader',
+          key: 'showTableHeader',
+          default: true,
+          comType: 'checkbox',
+        },
+        {
+          label: 'style.wrapText',
+          key: 'wrapText',
+          default: false,
+          comType: 'checkbox',
+        },
+        {
+          label: 'style.enableHoverHighlight',
+          key: 'enableHoverHighlight',
           default: true,
           comType: 'checkbox',
         },
@@ -296,8 +339,17 @@ const config: ChartConfig = {
           title: '表格样式',
           enableFixedHeader: '固定表头',
           enableBorder: '显示边框',
+          showTableHeader: '显示表头',
+          wrapText: '自动换行',
+          enableHoverHighlight: '启用悬停高亮',
           leftFixedColumns: '左侧固定列',
           rightFixedColumns: '右侧固定列',
+        },
+        heatmap: {
+          title: '数值色阶',
+          enable: '启用色阶',
+          startColor: '起始颜色',
+          endColor: '结束颜色',
         },
         data: {
           title: '表格数据控制',
@@ -344,8 +396,17 @@ const config: ChartConfig = {
           title: 'Table Style',
           enableFixedHeader: 'Enable Fixed Header',
           enableBorder: 'Show Border',
+          showTableHeader: 'Show Header',
+          wrapText: 'Wrap Text',
+          enableHoverHighlight: 'Enable Hover Highlight',
           leftFixedColumns: 'Left Fixed Columns',
           rightFixedColumns: 'Right Fixed Columns',
+        },
+        heatmap: {
+          title: 'Value Heatmap',
+          enable: 'Enable heatmap',
+          startColor: 'Start color',
+          endColor: 'End color',
         },
         tableSize: {
           default: 'Default',
