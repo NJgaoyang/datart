@@ -266,20 +266,20 @@ export const ChartDraggableTargetContainer: FC<ChartDataConfigSectionProps> =
       }
     };
 
-    const handleOnDeleteItem = config => () => {
-      if (config.uid) {
-        let newCurrentConfig = updateBy(currentConfig, draft => {
-          draft.rows = draft.rows?.filter(c => c.uid !== config.uid);
-          if (
-            config.category ===
-            ChartDataViewFieldCategory.DateLevelComputedField
-          ) {
-            draft.replacedConfig = config;
-          }
-        });
-        setCurrentConfig(newCurrentConfig);
-        onConfigChanged?.(ancestors, newCurrentConfig, true);
-      }
+    const handleOnDeleteItem = (config, index: number) => () => {
+      const newCurrentConfig = updateBy(currentConfig, draft => {
+        draft.rows = draft.rows?.filter((c, rowIndex) =>
+          config.uid ? c.uid !== config.uid : rowIndex !== index,
+        );
+        if (
+          config.category ===
+          ChartDataViewFieldCategory.DateLevelComputedField
+        ) {
+          draft.replacedConfig = config;
+        }
+      });
+      setCurrentConfig(newCurrentConfig);
+      onConfigChanged?.(ancestors, newCurrentConfig, true);
     };
 
     const renderDropItems = () => {
@@ -301,7 +301,7 @@ export const ChartDraggableTargetContainer: FC<ChartDataConfigSectionProps> =
       return currentConfig.rows?.map((columnConfig, index) => {
         return (
           <ChartDraggableElement
-            key={columnConfig.uid}
+            key={columnConfig.uid || `invalid-field-${index}`}
             index={index}
             config={columnConfig}
             content={() => {
@@ -323,7 +323,7 @@ export const ChartDraggableTargetContainer: FC<ChartDataConfigSectionProps> =
               );
             }}
             moveCard={onDraggableItemMove}
-            onDelete={handleOnDeleteItem(columnConfig)}
+            onDelete={handleOnDeleteItem(columnConfig, index)}
           ></ChartDraggableElement>
         );
       });
