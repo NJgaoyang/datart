@@ -26,6 +26,15 @@ import { ValueOf } from 'types';
 import useI18NPrefix, { I18NComponentProps } from './useI18NPrefix';
 import useStateModal, { StateModalSize } from './useStateModal';
 
+export function getFieldActionConfig(
+  config: Partial<ChartDataSectionField> | undefined,
+  originalConfig: ChartDataSectionField,
+): ChartDataSectionField {
+  return config && Object.keys(config).length
+    ? (config as ChartDataSectionField)
+    : originalConfig;
+}
+
 function useFieldActionModal({ i18nPrefix }: I18NComponentProps) {
   const t = useI18NPrefix(i18nPrefix);
   const [show, contextHolder] = useStateModal({ initState: {} });
@@ -82,8 +91,17 @@ function useFieldActionModal({ i18nPrefix }: I18NComponentProps) {
   };
 
   const handleOk =
-    (onConfigChange, columnUid: string) => (config, needRefresh) => {
-      onConfigChange(columnUid, config, needRefresh);
+    (
+      onConfigChange,
+      columnUid: string,
+      originalConfig: ChartDataSectionField,
+    ) =>
+    (config, needRefresh) => {
+      onConfigChange(
+        columnUid,
+        getFieldActionConfig(config, originalConfig),
+        needRefresh,
+      );
     };
 
   const showModal = (
@@ -117,7 +135,7 @@ function useFieldActionModal({ i18nPrefix }: I18NComponentProps) {
           aggregation,
           from,
         ),
-      onOk: handleOk(onConfigChange, columnUid),
+      onOk: handleOk(onConfigChange, columnUid, currentConfig!),
       maskClosable: true,
     });
   };
