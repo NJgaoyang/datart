@@ -768,8 +768,21 @@ class BasicTableChart extends ReactChart {
     const { columns } = this.cachedAntTableOptions;
     const nextColumns = [...columns];
     this.setColumnWidthByColumnIndex(nextColumns, index, size.width);
+    const getColumnsWidth = (columns: TableColumnsList[]): number =>
+      columns.reduce(
+        (width, column) =>
+          width +
+          (column.children?.length
+            ? getColumnsWidth(column.children)
+            : Number(column.width) || 0),
+        0,
+      );
     const tableOptions = Object.assign(this.cachedAntTableOptions, {
       columns: nextColumns,
+      scroll: {
+        ...this.cachedAntTableOptions.scroll,
+        x: getColumnsWidth(nextColumns) || '100%',
+      },
     });
     this.adapter?.updated(tableOptions, this.cacheContext);
   }
@@ -1138,11 +1151,7 @@ class BasicTableChart extends ReactChart {
     return {
       scroll: Object.assign({
         scrollToFirstRowOnChange: true,
-        x: !enableFixedHeader
-          ? '100%'
-          : this.exceedMaxContent
-          ? this.totalWidth
-          : '100%',
+        x: this.totalWidth || '100%',
         y: !enableFixedHeader
           ? '100%'
           : context?.height

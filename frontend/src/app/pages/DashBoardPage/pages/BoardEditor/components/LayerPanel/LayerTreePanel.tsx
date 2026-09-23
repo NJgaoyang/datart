@@ -43,7 +43,7 @@ export const LayerTreePanel: FC<{}> = memo(() => {
         <MobileAppearancePanel />
       ) : (
         <>
-          <ListTitle {...titleProps} />
+          <ListTitle {...titleProps} className="layer-panel-title" />
           <LayerTree />
         </>
       )}
@@ -51,9 +51,26 @@ export const LayerTreePanel: FC<{}> = memo(() => {
   );
 });
 const Panel = styled.div`
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
   background-color: ${p => p.theme.componentBackground};
-  box-shadow: ${p => p.theme.shadowSider};
+  border-right: 1px solid ${p => p.theme.borderColorSplit};
+
+  .layer-panel-title .title {
+    min-height: 48px;
+    padding: 0 16px;
+    border-bottom: 1px solid ${p => p.theme.borderColorSplit};
+  }
+
+  .ant-tree-treenode-selected .ant-tree-node-content-wrapper {
+    background: ${p => p.theme.emphasisBackground};
+    border-radius: 6px;
+  }
+
+  .ant-tree-treenode:hover .ant-tree-node-content-wrapper {
+    border-radius: 6px;
+  }
 `;
