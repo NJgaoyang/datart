@@ -113,6 +113,15 @@ const StyledTable = styled(Table)<{ tableStyleConfig?: TableStyleConfigProps }>`
   .ant-table {
     background: transparent;
   }
+
+  .ant-table-default .ant-table-thead > tr > th {
+    padding: 12px;
+  }
+
+  .ant-table-default .ant-table-tbody > tr > td {
+    padding: 10px 12px;
+  }
+
   .ant-table-body {
     overflow: ${p =>
       p?.tableStyleConfig?.isFixedColumns ? 'auto scroll' : 'auto !important'};

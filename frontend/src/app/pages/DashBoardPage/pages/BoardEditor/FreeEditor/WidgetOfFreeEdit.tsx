@@ -58,6 +58,7 @@ export const WidgetOfFreeEdit: React.FC<{}> = () => {
   const { onEditFreeWidgetRect } = useContext(WidgetActionContext);
   const editingWidgetIds = useSelector(selectEditingWidgetIds);
   const scale = useContext(BoardScaleContext);
+  const verticalScaleCorrection = scale[1] ? scale[0] / scale[1] : 1;
   const hideHandle = useMemo(() => {
     return (
       widgetEditing && widget.config.originalType === ORIGINAL_TYPE_MAP.group
@@ -124,10 +125,10 @@ export const WidgetOfFreeEdit: React.FC<{}> = () => {
       widgetMove.emit(
         !!selectedIds ? `${selectedIds},${widget.id}` : widget.id,
         deltaX,
-        deltaY,
+        deltaY * verticalScaleCorrection,
       );
     },
-    [selectedIds, widget.id],
+    [selectedIds, widget.id, verticalScaleCorrection],
   );
   const dragStop: DraggableEventHandler = (e, data) => {
     if (curXYRef.current[0] === curXY[0] && curXYRef.current[1] === curXY[1]) {
@@ -142,9 +143,13 @@ export const WidgetOfFreeEdit: React.FC<{}> = () => {
     (e: React.SyntheticEvent, data: ResizeCallbackData) => {
       e.stopPropagation();
       setCurW(c => data.size.width);
-      setCurH(c => data.size.height);
+      setCurH(
+        widget.config.rect.height +
+          (data.size.height - widget.config.rect.height) *
+            verticalScaleCorrection,
+      );
     },
-    [],
+    [verticalScaleCorrection, widget.config.rect.height],
   );
   const resizeStop = useCallback(
     (e: React.SyntheticEvent, { size }: ResizeCallbackData) => {
@@ -152,11 +157,22 @@ export const WidgetOfFreeEdit: React.FC<{}> = () => {
       const nextRect = {
         ...widget.config.rect,
         width: Number(size.width.toFixed(1)),
-        height: Number(size.height.toFixed(1)),
+        height: Number(
+          (
+            widget.config.rect.height +
+            (size.height - widget.config.rect.height) *
+              verticalScaleCorrection
+          ).toFixed(1),
+        ),
       };
       onEditFreeWidgetRect(nextRect, widget.id, false);
     },
-    [onEditFreeWidgetRect, widget.config.rect, widget.id],
+    [
+      onEditFreeWidgetRect,
+      verticalScaleCorrection,
+      widget.config.rect,
+      widget.id,
+    ],
   );
   const widgetStyle = getFreeWidgetStyle(widget);
   const style: React.CSSProperties = {
