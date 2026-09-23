@@ -25,6 +25,9 @@ export const getMobileTableFields = (
     : sections.flatMap(section => section.rows || []);
 };
 
+export const getMobileMetricColumns = (fieldCount: number) =>
+  fieldCount >= 4 ? 4 : 3;
+
 export const isMobileMeasure = (field: ChartDataSectionField) =>
   field.type === DataViewFieldType.NUMERIC || Boolean(field.aggregate);
 

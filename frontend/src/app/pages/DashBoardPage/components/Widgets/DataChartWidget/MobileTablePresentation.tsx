@@ -21,6 +21,7 @@ import { WidgetContext } from '../../WidgetProvider/WidgetProvider';
 import { WidgetInfoContext } from '../../WidgetProvider/WidgetInfoProvider';
 import { DataChartWidgetCore } from './DataChartWidgetCore';
 import {
+  getMobileMetricColumns,
   getMobileTableFields,
   isMobileDimension,
   isMobileMeasure,
@@ -188,13 +189,18 @@ export const MobileTablePresentation: React.FC = () => {
   if (mode === 'kpi-grid') {
     return (
       <>
-        <KpiGrid className="mobile-table-presentation">
+        <KpiGrid
+          $columns={getMobileMetricColumns(measures.length)}
+          className="mobile-table-presentation"
+        >
           {kpiScope && <KpiScope>{kpiScope}</KpiScope>}
           {measures.map(field => (
-            <KpiCard key={field.uid || field.colName}>
-              <KpiLabel>{fieldLabel(field)}</KpiLabel>
-              <KpiValue>{formatValue(getKpiValue(field), field)}</KpiValue>
-            </KpiCard>
+            <MetricCard key={field.uid || field.colName}>
+              <MetricValue>
+                {formatValue(getKpiValue(field), field)}
+              </MetricValue>
+              <MetricLabel>{fieldLabel(field)}</MetricLabel>
+            </MetricCard>
           ))}
         </KpiGrid>
         {viewDetailPanelContextHolder}
@@ -251,8 +257,7 @@ export const MobileTablePresentation: React.FC = () => {
       {dataSet.map((row, index) => {
         const titleField = dimensions[0];
         const subtitleField = dimensions[1];
-        const primaryField = measures[0];
-        const secondaryFields = measures.slice(1, 5);
+        const metricFields = measures;
         return (
           <EntityCard
             key={index}
@@ -266,24 +271,16 @@ export const MobileTablePresentation: React.FC = () => {
                 <EntitySubtitle>{row.getCell(subtitleField)}</EntitySubtitle>
               )}
             </EntityHeader>
-            {primaryField && (
-              <PrimaryMetric>
-                <PrimaryValue>
-                  {formatValue(row.getCell(primaryField), primaryField)}
-                </PrimaryValue>
-                <PrimaryLabel>{fieldLabel(primaryField)}</PrimaryLabel>
-              </PrimaryMetric>
-            )}
-            <SecondaryMetrics>
-              {secondaryFields.map(field => (
-                <SecondaryMetric key={field.uid || field.colName}>
-                  <SecondaryLabel>{fieldLabel(field)}</SecondaryLabel>
-                  <SecondaryValue>
+            <MetricGrid $columns={getMobileMetricColumns(metricFields.length)}>
+              {metricFields.map(field => (
+                <MetricCard key={field.uid || field.colName}>
+                  <MetricValue>
                     {formatValue(row.getCell(field), field)}
-                  </SecondaryValue>
-                </SecondaryMetric>
+                  </MetricValue>
+                  <MetricLabel>{fieldLabel(field)}</MetricLabel>
+                </MetricCard>
               ))}
-            </SecondaryMetrics>
+            </MetricGrid>
           </EntityCard>
         );
       })}
@@ -319,8 +316,8 @@ const PresentationList = styled.div`
   overflow: auto;
 `;
 
-const KpiGrid = styled(PresentationList)`
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+const KpiGrid = styled(PresentationList)<{ $columns: number }>`
+  grid-template-columns: repeat(${p => p.$columns}, minmax(0, 1fr));
   gap: 4px;
   align-content: start;
   align-items: start;
@@ -340,16 +337,25 @@ const KpiScope = styled.div`
   white-space: nowrap;
 `;
 
-const KpiCard = styled.div`
-  min-height: 58px;
-  padding: 6px;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  border-radius: 12px;
+const MetricGrid = styled.div<{ $columns: number }>`
+  display: grid;
+  grid-template-columns: repeat(${p => p.$columns}, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
 `;
 
-const KpiLabel = styled.div`
-  height: 32px;
+const MetricCard = styled.div`
+  min-width: 0;
+  min-height: 62px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #edf0f3;
+  border-radius: 10px;
+`;
+
+const MetricLabel = styled.div`
+  margin-top: 2px;
+  min-height: 32px;
   overflow: hidden;
   font-size: 11px;
   line-height: 16px;
@@ -357,8 +363,7 @@ const KpiLabel = styled.div`
   word-break: break-all;
 `;
 
-const KpiValue = styled.div`
-  margin-top: 2px;
+const MetricValue = styled.div`
   overflow: hidden;
   font-size: 18px;
   font-weight: 600;
@@ -369,16 +374,15 @@ const KpiValue = styled.div`
 `;
 
 const EntityCard = styled.div`
-  padding: 12px;
+  padding: 0 0 12px;
   cursor: pointer;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  border-radius: 12px;
+  border-bottom: 1px solid #edf0f3;
 `;
 
 const EntityHeader = styled.div`
   display: flex;
   gap: 8px;
+  margin-bottom: 8px;
   align-items: baseline;
   justify-content: space-between;
 `;
@@ -402,54 +406,11 @@ const EntitySubtitle = styled.div`
   white-space: nowrap;
 `;
 
-const PrimaryMetric = styled.div`
-  margin-top: 10px;
-`;
-
-const PrimaryValue = styled.div`
-  font-size: 22px;
-  font-weight: 600;
-  line-height: 28px;
-  color: #1f2329;
-`;
-
-const PrimaryLabel = styled.div`
-  font-size: 11px;
-  line-height: 16px;
-  color: #8f959e;
-`;
-
-const SecondaryMetrics = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 10px;
-`;
-
-const SecondaryMetric = styled.div`
-  min-width: 0;
-`;
-
-const SecondaryLabel = styled.div`
-  overflow: hidden;
-  font-size: 11px;
-  line-height: 16px;
-  color: #8f959e;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
-const SecondaryValue = styled.div`
-  overflow: hidden;
-  font-size: 14px;
-  line-height: 20px;
-  color: #1f2329;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
 const RankingCard = styled(EntityCard)`
   padding: 10px 12px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 12px;
 `;
 
 const RankingTopLine = styled.div`

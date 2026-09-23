@@ -182,8 +182,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         }
 
         // ── Downstream: views (views that reference this view via compose) ──
-        List<View> downstreamViews = viewMapper.listByOrgId(view.getOrgId()).stream()
-                .filter(candidate -> parseUpstreamViewIds(candidate.getConfig()).contains(viewId))
+        List<View> downstreamViews = activeDownstreamViews(view).stream()
                 .filter(this::canRead)
                 .collect(Collectors.toList());
         downstreamViews.forEach(item ->
@@ -312,6 +311,12 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         } catch (Exception ignored) {
             return Collections.emptyList();
         }
+    }
+
+    private List<View> activeDownstreamViews(View view) {
+        return viewMapper.listByOrgId(view.getOrgId()).stream()
+                .filter(candidate -> parseUpstreamViewIds(candidate.getConfig()).contains(view.getId()))
+                .collect(Collectors.toList());
     }
 
     private boolean canRead(BaseEntity entity) {
@@ -758,13 +763,10 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         if (viewMapper.checkReference(id) != 0) {
             return false;
         }
-        // check charts reference
-        Datachart datachart = new Datachart();
-        datachart.setViewId(id);
-        //check widget reference
-        RelWidgetElement relWidgetElement = new RelWidgetElement();
-        relWidgetElement.setRelId(id);
-        return viewMapper.checkUnique(datachart) && viewMapper.checkUnique(relWidgetElement);
+        View view = viewMapper.selectActiveByPrimaryKey(id);
+        return (view == null || activeDownstreamViews(view).isEmpty())
+                && CollectionUtils.isEmpty(datachartMapper.listByViewId(id))
+                && CollectionUtils.isEmpty(dashboardMapper.listByViewId(id));
     }
 
     private void importView(ViewResourceModel model,

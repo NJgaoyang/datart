@@ -24,6 +24,7 @@ import { Nullable } from 'types';
 import { isEmptyArray, isEqualObject } from 'utils/object';
 import {
   getDiffParams,
+  getFieldCommentDisplayName,
   getFieldCustomDisplayName,
   getFieldDisplayName,
   getTextWidth,
@@ -78,6 +79,10 @@ export function generateEditingView(
 
 export function getSchemaColumnName(name?: string | string[]): string {
   return Array.isArray(name) ? name[name.length - 1] || '' : name || '';
+}
+
+export function getPreviewFieldDisplayName(displayName?: string): string {
+  return getFieldCommentDisplayName(displayName);
 }
 
 function equalsIgnoreCase(left?: string, right?: string): boolean {

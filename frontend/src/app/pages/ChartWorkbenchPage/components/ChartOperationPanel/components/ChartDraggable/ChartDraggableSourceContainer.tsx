@@ -89,6 +89,8 @@ export const ChartDraggableSourceContainer: FC<
   path,
   fieldId,
   originName,
+  sourceComment,
+  customName,
   displayName,
   comment,
   isDisplayNameCustom,
@@ -107,9 +109,13 @@ export const ChartDraggableSourceContainer: FC<
     ? getDatasetFieldDisplayName({
         fieldId,
         originName,
+        sourceComment,
+        customName,
         name: colName,
         path,
         displayName,
+        comment,
+        isDisplayNameCustom,
       })
     : getFieldDisplayName({
         name: colName,
@@ -134,6 +140,8 @@ export const ChartDraggableSourceContainer: FC<
             {
               fieldId,
               originName,
+              sourceComment,
+              customName,
               type,
               subType,
               category,
@@ -161,6 +169,8 @@ export const ChartDraggableSourceContainer: FC<
       fieldId,
       isDisplayNameCustom,
       originName,
+      sourceComment,
+      customName,
       path,
       selectedItems,
       subType,
@@ -348,6 +358,8 @@ export const ChartDraggableSourceContainer: FC<
     category,
     colName,
     comment,
+    sourceComment,
+    customName,
     isDisplayNameCustom,
     path,
     fieldDisplayName,
@@ -377,6 +389,8 @@ export const ChartDraggableSourceContainer: FC<
           key={item.name}
           fieldId={item.fieldId}
           originName={item.originName}
+          sourceComment={item.sourceComment}
+          customName={item.customName}
           name={item.name}
           path={item.path}
           displayName={item.displayName}

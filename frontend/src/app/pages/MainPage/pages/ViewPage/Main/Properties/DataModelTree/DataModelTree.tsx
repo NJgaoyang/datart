@@ -119,9 +119,10 @@ const DataModelTree: FC = memo(() => {
           { name: colName, path },
         );
         const comment =
-          hierarchyColumn?.comment ||
-          resolveSchemaColumnComment(schemas, { name: colName, path });
+          resolveSchemaColumnComment(schemas, { name: colName, path }) ||
+          hierarchyColumn?.comment;
         return getFieldDisplayName({
+          fieldId: hierarchyColumn?.fieldId,
           name: colName,
           path,
           displayName: hierarchyColumn?.displayName,
@@ -171,6 +172,7 @@ const DataModelTree: FC = memo(() => {
               : v.name;
             return {
               id: v.name,
+              fieldId: v.fieldId,
               name: stringName,
               displayName: v.displayName,
               comment: v.comment,
@@ -195,11 +197,10 @@ const DataModelTree: FC = memo(() => {
       .map(([name, column], index) => {
         const colName = column.name || name;
         const comment =
-          column.comment ||
           resolveSchemaColumnComment(schemas, {
             name: colName,
             path: column.path,
-          });
+          }) || column.comment;
         return Object.assign({ index }, column, {
           name: colName,
           comment,
@@ -511,7 +512,10 @@ const DataModelTree: FC = memo(() => {
             comment: data?.sourceComment,
             isDisplayNameCustom: Boolean(data?.customName),
           };
-          const update = (item: Column) => ({ ...item, ...serverDisplayNamePatch });
+          const update = (item: Column) => ({
+            ...item,
+            ...serverDisplayNamePatch,
+          });
           let newHierarchy: Model;
           if (
             node.role === ColumnRole.Hierarchy ||
@@ -531,8 +535,14 @@ const DataModelTree: FC = memo(() => {
               const childIdx = clonedBranch.children?.findIndex(
                 c => c.name === node.name,
               );
-              if (childIdx !== undefined && childIdx > -1 && clonedBranch.children) {
-                clonedBranch.children[childIdx] = update(clonedBranch.children[childIdx]);
+              if (
+                childIdx !== undefined &&
+                childIdx > -1 &&
+                clonedBranch.children
+              ) {
+                clonedBranch.children[childIdx] = update(
+                  clonedBranch.children[childIdx],
+                );
               }
               newHierarchy = updateNode(
                 tableColumns,

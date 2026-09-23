@@ -125,6 +125,7 @@ export interface Schema {
   name: string;
   primaryKey?: boolean;
   type: DataViewFieldType;
+  comment?: string;
 }
 
 export enum ColumnRole {

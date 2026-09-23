@@ -29,7 +29,7 @@ import React, {
 } from 'react';
 import { VariableSizeGrid as Grid } from 'react-window';
 import styled from 'styled-components';
-import { SPACE_SM, SPACE_TIMES } from 'styles/StyleConstants';
+import { SPACE_TIMES } from 'styles/StyleConstants';
 
 interface VirtualTableProps extends TableProps<object> {
   width: number;
@@ -120,7 +120,8 @@ export const VirtualTable = memo((props: VirtualTableProps) => {
           columnCount={mergedColumns.length}
           columnWidth={index => {
             const { width } = mergedColumns[index];
-            return totalHeight > safeHeight && index === mergedColumns.length - 1
+            return totalHeight > safeHeight &&
+              index === mergedColumns.length - 1
               ? width - scrollbarSize - 16
               : width;
           }}
@@ -136,7 +137,7 @@ export const VirtualTable = memo((props: VirtualTableProps) => {
         >
           {({ rowIndex, columnIndex, style }) => {
             style = {
-              padding: `${SPACE_SM} ${SPACE_TIMES(2)}`,
+              padding: `0 ${SPACE_TIMES(2)}`,
               textAlign: mergedColumns[columnIndex].align,
               ...style,
             };
@@ -172,5 +173,13 @@ export const VirtualTable = memo((props: VirtualTableProps) => {
 });
 
 const TableCell = styled.div`
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 0 ${SPACE_TIMES(2)};
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   border-bottom: 1px solid ${p => p.theme.borderColorSplit};
 `;

@@ -116,6 +116,8 @@ export const ChartDraggableSourceGroupContainer: FC<{
               key={item.name}
               fieldId={item.fieldId}
               originName={item.originName}
+              sourceComment={item.sourceComment}
+              customName={item.customName}
               name={item.name}
               displayName={item.displayName}
               comment={item.comment}

@@ -120,6 +120,8 @@ export const buildDateLevelFields = (args: {
             name: v.name + DATE_LEVEL_DELIMITER + expression,
             fieldId: v.fieldId,
             originName: v.originName,
+            sourceComment: v.sourceComment,
+            customName: v.customName,
             field: v.name,
             type: item.type,
             category: item.category,
@@ -235,6 +237,8 @@ export const handleDateLevelsName = (
     name: string;
     field?: string;
     originName?: string;
+    sourceComment?: string;
+    customName?: string;
     path?: string[];
     category: string;
     displayName?: string;
@@ -254,6 +258,8 @@ export const handleDateLevelsName = (
         parentDisplayName ||
         getDatasetFieldDisplayName({
           originName: col.originName || col.field || colList[0],
+          sourceComment: col.sourceComment,
+          customName: col.customName,
           name: col.field || colList[0],
           path: col.path,
           displayName: sourceDisplayName,
@@ -266,6 +272,8 @@ export const handleDateLevelsName = (
       parentDisplayName ||
       getDatasetFieldDisplayName({
         originName: col.originName || col.field || colList[0],
+        sourceComment: col.sourceComment,
+        customName: col.customName,
         name: col.field || colList[0],
         path: col.path,
         displayName: col.displayName,
@@ -276,6 +284,8 @@ export const handleDateLevelsName = (
   } else {
     return getDatasetFieldDisplayName({
       originName: col.originName || col.field || col.name,
+      sourceComment: col.sourceComment,
+      customName: col.customName,
       name: col.name,
       path: col.path,
       displayName: col.displayName,
