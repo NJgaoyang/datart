@@ -296,6 +296,10 @@ const ChartDataViewPanel: FC<{
           if (tableNameList.includes(tableName)) {
             const fieldName = path?.[path.length - 1];
             const displayLabel = getDatasetFieldDisplayName({
+              fieldId: v.fieldId,
+              originName: v.originName,
+              sourceComment: v.sourceComment,
+              customName: v.customName,
               name: fieldName,
               path: v.path,
               displayName: v.displayName,

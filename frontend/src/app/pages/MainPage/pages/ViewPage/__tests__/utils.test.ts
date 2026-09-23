@@ -23,12 +23,25 @@ import {
   dataModelColumnSorter,
   diffMergeHierarchyModel,
   findViewFieldMeta,
+  getPreviewFieldDisplayName,
   normalizeModelDisplayNames,
   resolveSchemaColumnComment,
 } from '../utils';
-import { getFieldDisplayName } from 'utils/utils';
+import { getDatasetFieldDisplayName, getFieldDisplayName } from 'utils/utils';
 
 describe('field display metadata', () => {
+  test('shortens preview comments to their field label', () => {
+    expect(
+      getPreviewFieldDisplayName(
+        '分类标签：new_production=生产，purchase_order=采购',
+      ),
+    ).toBe('分类标签');
+    expect(getPreviewFieldDisplayName('月度数量，单位：件')).toBe('月度数量');
+    expect(
+      getPreviewFieldDisplayName('这是一个没有分隔符但很长的字段中文名称'),
+    ).toBe('这是一个没有分隔符但很长的字段中…');
+  });
+
   test('uses custom name, then comment, then field name', () => {
     expect(
       getFieldDisplayName({
@@ -57,6 +70,59 @@ describe('field display metadata', () => {
     ).toBe('order_id');
   });
 
+  test('uses the same canonical priority for real fields', () => {
+    expect(
+      getDatasetFieldDisplayName({
+        fieldId: 'field-1',
+        originName: 'metric_group',
+        customName: '业务分类',
+        sourceComment: '分类标签：new_production=生产',
+        displayName: 'stale value',
+      }),
+    ).toBe('业务分类');
+    expect(
+      getDatasetFieldDisplayName({
+        fieldId: 'field-1',
+        originName: 'metric_group',
+        sourceComment: '分类标签：new_production=生产',
+        displayName: 'stale value',
+      }),
+    ).toBe('分类标签');
+    expect(
+      getDatasetFieldDisplayName({
+        fieldId: 'field-1',
+        originName: 'metric_group',
+        displayName: 'metric_group',
+      }),
+    ).toBe('metric_group');
+    expect(
+      getDatasetFieldDisplayName({
+        fieldId: 'field-2',
+        originName: 'very_long_original_field_name',
+        displayName: 'very_long_original_field_name',
+      }),
+    ).toBe('very_long_original_field_name');
+    expect(
+      getDatasetFieldDisplayName({
+        fieldId: 'field-3',
+        originName: 'metric_value',
+        customName: '月度数量：业务口径',
+        sourceComment: '月度数量，单位：件',
+      }),
+    ).toBe('月度数量：业务口径');
+  });
+
+  test('does not treat an unmarked canonical display value as a custom name', () => {
+    expect(
+      getFieldDisplayName({
+        fieldId: 'field-1',
+        originName: 'metric_group',
+        displayName: 'new_production',
+        comment: '分类标签：new_production=生产',
+      }),
+    ).toBe('分类标签');
+  });
+
   test('resolves same-name join fields only with an exact path', () => {
     const schemas: any = [
       {
@@ -80,7 +146,9 @@ describe('field display metadata', () => {
       }),
     ).toBe('订单ID');
     expect(resolveSchemaColumnComment(schemas, { name: 'id' })).toBeUndefined();
-    expect(resolveSchemaColumnComment(schemas, { name: ['id'] })).toBeUndefined();
+    expect(
+      resolveSchemaColumnComment(schemas, { name: ['id'] }),
+    ).toBeUndefined();
   });
 
   test('matches ViewField by id, then path, then unique origin name', () => {
@@ -115,10 +183,13 @@ describe('field display metadata', () => {
 
   test('matches read-only preview metadata without a field id', () => {
     expect(
-      findViewFieldMeta(
-        { name: 'city' },
-        [{ originName: 'city', displayName: '城市', sourcePath: ['ads', 'users', 'city'] }],
-      )?.displayName,
+      findViewFieldMeta({ name: 'city' }, [
+        {
+          originName: 'city',
+          displayName: '城市',
+          sourcePath: ['ads', 'users', 'city'],
+        },
+      ])?.displayName,
     ).toBe('城市');
   });
 });

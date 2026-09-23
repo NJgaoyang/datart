@@ -1,5 +1,6 @@
 import { DataViewFieldType } from 'app/constants';
 import {
+  getMobileMetricColumns,
   resolveMobilePresentation,
   resolveMobileTableDisplayMode,
 } from '../MobilePresentationResolver';
@@ -8,6 +9,12 @@ const field = (type: DataViewFieldType, colName: string, aggregate?: string) =>
   ({ type, colName, category: 'field', uid: colName, aggregate } as any);
 
 describe('MobilePresentationResolver', () => {
+  it('uses four columns for four metrics and three columns otherwise', () => {
+    expect(getMobileMetricColumns(4)).toBe(4);
+    expect(getMobileMetricColumns(3)).toBe(3);
+    expect(getMobileMetricColumns(1)).toBe(3);
+  });
+
   it('uses KPI grid for one row with multiple measures', () => {
     expect(
       resolveMobileTableDisplayMode({ rows: [['1', '2']] }, [

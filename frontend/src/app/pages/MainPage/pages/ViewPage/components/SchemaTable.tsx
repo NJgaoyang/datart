@@ -35,7 +35,12 @@ import {
   SPACE_SM,
   WARNING,
 } from 'styles/StyleConstants';
-import { getFieldDisplayName, uuidv4 } from 'utils/utils';
+import {
+  getDatasetFieldDisplayName,
+  getFieldCustomDisplayName,
+  getFieldDisplayName,
+  uuidv4,
+} from 'utils/utils';
 import { Column, ColumnsModel, DatabaseSchema, Model } from '../slice/types';
 import {
   getColumnWidthMap,
@@ -138,24 +143,37 @@ export const SchemaTable = memo(
           name,
           path: hierarchyMeta.path,
         };
-        const viewField =
-          findViewFieldMeta(fieldIdentity, viewFields) ||
-          findViewFieldMeta(fieldIdentity, previewFields);
+        const viewField = findViewFieldMeta(fieldIdentity, viewFields);
+        const previewField = findViewFieldMeta(fieldIdentity, previewFields);
+        const customDisplayName = getFieldCustomDisplayName({
+          fieldId: hierarchyMeta.fieldId || column.fieldId,
+          name,
+          path: hierarchyMeta.path,
+          displayName: hierarchyColumn.displayName,
+          comment: hierarchyColumn.comment,
+          isDisplayNameCustom: hierarchyMeta.isDisplayNameCustom,
+        });
         const displayText =
-          viewField?.displayName ||
-          getFieldDisplayName({
-            name,
-            path: hierarchyMeta.path,
-            displayName: hierarchyColumn.displayName,
-            comment:
-              column.comment ||
-              hierarchyMeta.comment ||
-              resolveSchemaColumnComment(databaseSchemas, {
+          customDisplayName ||
+          viewField?.customName ||
+          (previewField
+            ? getDatasetFieldDisplayName(previewField)
+            : viewField
+            ? getDatasetFieldDisplayName(viewField)
+            : getFieldDisplayName({
+                fieldId: hierarchyMeta.fieldId || column.fieldId,
                 name,
                 path: hierarchyMeta.path,
-              }),
-            isDisplayNameCustom: hierarchyMeta.isDisplayNameCustom,
-          });
+                displayName: hierarchyColumn.displayName,
+                comment:
+                  resolveSchemaColumnComment(databaseSchemas, {
+                    name,
+                    path: hierarchyMeta.path,
+                  }) ||
+                  column.comment ||
+                  hierarchyMeta.comment,
+                isDisplayNameCustom: hierarchyMeta.isDisplayNameCustom,
+              }));
 
         const title = (
           <>

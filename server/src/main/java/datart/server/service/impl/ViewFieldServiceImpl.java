@@ -277,13 +277,7 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
         ResolvedFieldMeta resolved = legacyResolver.resolve(data.canonicalKey(), refs.resolverColumn(), refs.hierarchy(),
                 source, viewType);
         String modelComment = trimToNull(resolved.comment());
-        if ("SQL".equalsIgnoreCase(viewType)) {
-            return modelComment == null ? schemaComment : modelComment;
-        }
-        if ("STRUCT".equalsIgnoreCase(viewType)) {
-            return schemaComment == null ? modelComment : schemaComment;
-        }
-        return modelComment == null ? schemaComment : modelComment;
+        return schemaComment == null ? modelComment : schemaComment;
     }
 
     private List<String> physicalSourcePath(String viewType, FieldData data,

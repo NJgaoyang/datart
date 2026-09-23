@@ -19,6 +19,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { getDataProviderDatabases } from 'app/pages/MainPage/slice/thunks';
 import { useInjectReducer } from 'utils/@reduxjs/injectReducer';
+import { getFieldDisplayName } from 'utils/utils';
 import { ViewViewModelStages } from '../constants';
 import {
   diffMergeHierarchyModel,
@@ -180,7 +181,10 @@ const slice = createSlice({
               tableName,
               getSchemaColumnName(column.name),
             ].join(String.fromCharCode(0)),
-            title: getSchemaColumnName(column.name),
+            title: getFieldDisplayName({
+              name: getSchemaColumnName(column.name),
+              comment: column.comment,
+            }),
             value: column,
             isLeaf: true,
           }));
@@ -279,14 +283,12 @@ const slice = createSlice({
             const columns = model.columns;
             if (columns) {
               Object.values(columns).forEach((column: any) => {
-                if (!column.comment) {
-                  const comment = resolveSchemaColumnComment(schemas, {
-                    name: column.name,
-                    path: Array.isArray(column.name) ? column.name : undefined,
-                  });
-                  if (comment) {
-                    column.comment = comment;
-                  }
+                const comment = resolveSchemaColumnComment(schemas, {
+                  name: column.name,
+                  path: Array.isArray(column.name) ? column.name : undefined,
+                });
+                if (comment) {
+                  column.comment = comment;
                 }
               });
             }

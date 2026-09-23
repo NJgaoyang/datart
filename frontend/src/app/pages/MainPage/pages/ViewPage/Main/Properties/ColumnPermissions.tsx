@@ -19,6 +19,7 @@
 import { LoadingOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Col, Input, List, Row } from 'antd';
 import { ListItem, Popup, Tree } from 'app/components';
+import { ViewFieldMeta } from 'app/types/View';
 import { useDebouncedSearch } from 'app/hooks/useDebouncedSearch';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import classnames from 'classnames';
@@ -26,13 +27,18 @@ import { memo, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 import { SPACE_MD, SPACE_XS, WARNING } from 'styles/StyleConstants';
-import { uuidv4 } from 'utils/utils';
+import {
+  getDatasetFieldDisplayName,
+  getFieldDisplayName,
+  uuidv4,
+} from 'utils/utils';
 import { selectRoles } from '../../../MemberPage/slice/selectors';
 import { SubjectTypes } from '../../../PermissionPage/constants';
 import { ViewStatus, ViewViewModelStages } from '../../constants';
 import { useViewSlice } from '../../slice';
 import { selectCurrentEditingViewAttr } from '../../slice/selectors';
 import { ColumnPermission, HierarchyModel } from '../../slice/types';
+import { findViewFieldMeta } from '../../utils';
 import Container from './Container';
 
 export const ColumnPermissions = memo(() => {
@@ -50,6 +56,9 @@ export const ColumnPermissions = memo(() => {
   const model = useSelector(state =>
     selectCurrentEditingViewAttr(state, { name: 'model' }),
   ) as HierarchyModel;
+  const viewFields = useSelector(state =>
+    selectCurrentEditingViewAttr(state, { name: 'fields' }),
+  ) as ViewFieldMeta[] | undefined;
   const columnPermissions = useSelector(state =>
     selectCurrentEditingViewAttr(state, { name: 'columnPermissions' }),
   ) as ColumnPermission[];
@@ -113,12 +122,20 @@ export const ColumnPermissions = memo(() => {
 
   const columnDropdownData = useMemo(
     () =>
-      Object.keys(model?.columns || {}).map(name => ({
+      Object.entries(model?.columns || {}).map(([name, column]) => ({
         key: name,
-        title: name,
+        title: (() => {
+          const field = findViewFieldMeta(
+            { fieldId: column.fieldId, name, path: column.name },
+            viewFields,
+          );
+          return field
+            ? getDatasetFieldDisplayName(field)
+            : getFieldDisplayName({ ...column, name });
+        })(),
         value: name,
       })),
-    [model?.columns],
+    [model?.columns, viewFields],
   );
 
   const renderItem = useCallback(

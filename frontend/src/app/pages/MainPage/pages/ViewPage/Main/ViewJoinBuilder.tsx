@@ -1,23 +1,30 @@
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { Alert, Button, Form, Input, Modal, Select, Space } from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
+import { ViewFieldMeta } from 'app/types/View';
 import { CommonFormTypes } from 'globalConstants';
 import { memo, useCallback, useContext, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 import { SPACE_LG, SPACE_MD, SPACE_XS } from 'styles/StyleConstants';
 import { request2 } from 'utils/request';
-import { getInsertedNodeIndex } from 'utils/utils';
+import {
+  getDatasetFieldDisplayName,
+  getFieldDisplayName,
+  getInsertedNodeIndex,
+} from 'utils/utils';
 import { SaveFormContext } from '../SaveFormContext';
 import { viewActions } from '../slice';
 import { selectCurrentEditingViewAttr, selectViews } from '../slice/selectors';
 import { runSql, saveView } from '../slice/thunks';
+import { findViewFieldMeta } from '../utils';
 
 interface ViewDetail {
   id: string;
   name: string;
   sourceId: string;
-  model: string | { columns?: Record<string, unknown> };
+  model: string | { columns?: Record<string, any> };
+  fields?: ViewFieldMeta[];
 }
 
 interface ComposeResult {
@@ -31,7 +38,26 @@ const parseColumns = (view?: ViewDetail) => {
   try {
     const model =
       typeof view.model === 'string' ? JSON.parse(view.model) : view.model;
-    return Object.keys(model?.columns || {});
+    return Object.entries<any>(model?.columns || {}).map(
+      ([name, column]) => {
+        const field = findViewFieldMeta(
+          {
+            fieldId: column.fieldId,
+            name,
+            path:
+              column.path ||
+              (Array.isArray(column.name) ? column.name : undefined),
+          },
+          view.fields,
+        );
+        return {
+          value: name,
+          label: field
+            ? getDatasetFieldDisplayName(field)
+            : getFieldDisplayName({ ...column, name }),
+        };
+      },
+    );
   } catch {
     return [];
   }
@@ -256,7 +282,7 @@ export const ViewJoinBuilder = memo(() => {
                     label={index === 0 ? t('joinCondition') : undefined}
                     rules={[{ required: true }]}
                   >
-                    <Select options={leftColumns.map(value => ({ value }))} />
+                    <Select options={leftColumns} />
                   </Form.Item>
                   <span>=</span>
                   <Form.Item
@@ -265,7 +291,7 @@ export const ViewJoinBuilder = memo(() => {
                     label={index === 0 ? ' ' : undefined}
                     rules={[{ required: true }]}
                   >
-                    <Select options={rightColumns.map(value => ({ value }))} />
+                    <Select options={rightColumns} />
                   </Form.Item>
                   {fields.length > 1 && (
                     <Button

@@ -141,7 +141,7 @@ const ValuesOptionsSetter: FC<{
     if (data?.model) {
       data.model = beginViewModelMigration(data.model, data.type);
     }
-    let meta = transformMeta(data?.model);
+    let meta = transformMeta(data?.model, data?.fields, data?.type);
     const viewComputedField =
       JSON.parse(data.model || '{}')?.computedFields?.filter(
         field => !hasAggregationFunction(field?.expression),

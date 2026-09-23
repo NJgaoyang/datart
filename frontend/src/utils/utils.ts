@@ -437,25 +437,22 @@ export type FieldDisplayMeta = {
   isDisplayNameCustom?: boolean;
 };
 
-/** Dataset/ViewField is authoritative once it is available. */
-export function getDatasetFieldDisplayName(field?: FieldDisplayMeta): string {
-  return (
-    field?.customName?.trim() ||
-    field?.sourceComment?.trim() ||
-    field?.displayName?.trim() ||
-    field?.originName?.trim() ||
-    field?.name?.trim() ||
-    field?.path?.[field.path.length - 1] ||
-    ''
-  );
+export function getFieldCommentDisplayName(comment?: string): string {
+  const value = comment?.trim() || '';
+  const separator = value.search(/[，,；;：:]/);
+  const label = (separator < 0 ? value : value.slice(0, separator)).trim();
+  return label.length > 16 ? `${label.slice(0, 16)}…` : label;
 }
 
 export function getFieldCustomDisplayName(
   field: FieldDisplayMeta,
 ): string | undefined {
-  const fieldName = field.path?.[field.path.length - 1] || field.name || '';
+  const fieldName =
+    field.originName || field.path?.[field.path.length - 1] || field.name || '';
   const displayName = field.displayName?.trim();
-  const comment = field.comment?.trim();
+  const comments = [field.sourceComment, field.comment]
+    .map(value => value?.trim())
+    .filter(Boolean);
 
   if (!displayName) {
     return undefined;
@@ -466,11 +463,14 @@ export function getFieldCustomDisplayName(
   if (field.isDisplayNameCustom === false) {
     return undefined;
   }
+  if (field.fieldId || field.sourceComment !== undefined) {
+    return undefined;
+  }
 
   const defaultNames = [fieldName, field.name, field.path?.join('.')].filter(
     Boolean,
   );
-  if (defaultNames.includes(displayName) || displayName === comment) {
+  if (defaultNames.includes(displayName) || comments.includes(displayName)) {
     return undefined;
   }
 
@@ -478,8 +478,36 @@ export function getFieldCustomDisplayName(
 }
 
 export function getFieldDisplayName(field: FieldDisplayMeta): string {
-  const fieldName = field.path?.[field.path.length - 1] || field.name || '';
-  return getFieldCustomDisplayName(field) || field.comment?.trim() || fieldName;
+  const fieldName =
+    field.originName?.trim() ||
+    field.path?.[field.path.length - 1] ||
+    field.name?.trim() ||
+    '';
+  return (
+    field.customName?.trim() ||
+    getFieldCustomDisplayName(field) ||
+    getFieldCommentDisplayName(field.sourceComment) ||
+    getFieldCommentDisplayName(field.comment) ||
+    fieldName
+  );
+}
+
+/** Dataset/ViewField displayName is a compatibility fallback for canonical metadata. */
+export function getDatasetFieldDisplayName(field?: FieldDisplayMeta): string {
+  if (!field) {
+    return '';
+  }
+  return (
+    field.customName?.trim() ||
+    getFieldCustomDisplayName(field) ||
+    getFieldCommentDisplayName(field.sourceComment) ||
+    getFieldCommentDisplayName(field.comment) ||
+    field.displayName?.trim() ||
+    field.originName?.trim() ||
+    field.path?.[field.path.length - 1] ||
+    field.name?.trim() ||
+    ''
+  );
 }
 
 export function modelListFormsTreeByTableName(model, type) {

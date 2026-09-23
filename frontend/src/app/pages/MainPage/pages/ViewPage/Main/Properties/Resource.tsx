@@ -47,6 +47,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 import { SPACE_MD, SPACE_XS } from 'styles/StyleConstants';
 import { RootState } from 'types';
+import { getFieldDisplayName } from 'utils/utils';
 import { EditorContext } from '../../EditorContext';
 import {
   selectCurrentEditingViewAttr,
@@ -97,7 +98,13 @@ export const Resource = memo(() => {
             [],
             true,
           ),
-          { type: column?.type },
+          {
+            type: column?.type,
+            title: getFieldDisplayName({
+              name: column?.name[0],
+              comment: column?.comment,
+            }),
+          },
         );
       }) || [];
     return buildAntdTreeNodeModel(ancestors, table.tableName, children, false);

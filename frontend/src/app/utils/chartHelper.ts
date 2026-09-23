@@ -1488,6 +1488,10 @@ export function createDateLevelComputedFieldForConfigComputedFields(
           type: v.type as DataViewFieldType,
           expression: `${expression}(${FieldTemplate(field.path)})`,
           path: field.path,
+          fieldId: field.fieldId,
+          originName: field.originName,
+          sourceComment: field.sourceComment,
+          customName: field.customName,
           displayName: field.displayName,
           comment: field.comment,
         });

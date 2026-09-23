@@ -262,14 +262,15 @@ class ViewFieldServiceImplTest {
     }
 
     @Test
-    void sqlModelCommentWinsOverExactSchemaComment() {
+    void sqlExactSchemaCommentReplacesLegacyModelComment() {
         FakeViewFieldMapper mapper = new FakeViewFieldMapper();
         ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, schemaIndex("Schema Comment"));
         View sql = view("SQL", "{\"columns\":{\"id\":{\"name\":[\"db\",\"user\",\"id\"],\"comment\":\"历史用户编号\"}}}");
+        sql.setScript("SELECT t.id FROM db.`user` t");
 
         service.reconcile(sql);
 
-        assertEquals("历史用户编号", mapper.fields.get("SQL|id").getSourceComment());
+        assertEquals("Schema Comment", mapper.fields.get("SQL|id").getSourceComment());
     }
 
     @Test

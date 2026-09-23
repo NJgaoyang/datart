@@ -36,6 +36,20 @@ class SqlPreviewFieldMetadataResolverTest {
         assertTrue(fields.get(1).getSourcePath().isEmpty());
     }
 
+    @Test
+    void expandsSelectStarWithPhysicalComments() {
+        SourceSchemaIndex.Index schema = schema();
+        SqlPreviewFieldMetadataResolver resolver =
+                new SqlPreviewFieldMetadataResolver(new SqlFieldLineageResolver());
+
+        List<PreviewFieldMeta> fields = resolver.resolve("SELECT * FROM ads.daily", List.of(
+                Column.of(ValueType.STRING, "city"),
+                Column.of(ValueType.NUMERIC, "renting_users")), schema);
+
+        assertEquals("城市", fields.get(0).getDisplayName());
+        assertEquals("在租用户数", fields.get(1).getDisplayName());
+    }
+
     private SourceSchemaIndex.Index schema() {
         SourceSchemasMapperExt mapper = Mockito.mock(SourceSchemasMapperExt.class);
         SourceSchemas schemas = new SourceSchemas();

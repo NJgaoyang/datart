@@ -860,6 +860,8 @@ export const buildDragItem = (item, children: any[] = []) => {
   return {
     fieldId: item?.fieldId,
     originName: item?.originName ?? item?.name,
+    sourceComment: item?.sourceComment,
+    customName: item?.customName,
     colName: item?.name,
     type: item?.type,
     subType: item?.subType,
