@@ -26,6 +26,7 @@ import { getDesktopGridLayout, getMobileGridLayout } from '../utils/gridLayout';
 import { isTypingTarget, nudgeGridLayout } from '../utils/gridKeyboard';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { BoardActionContext } from '../components/ActionProvider/BoardActionProvider';
+import { BoardConfigValContext } from '../components/BoardProvider/BoardConfigProvider';
 import { WidgetActionContext } from '../components/ActionProvider/WidgetActionProvider';
 
 export default function useBoardEditorHotkeys() {
@@ -41,7 +42,7 @@ export default function useBoardEditorHotkeys() {
   const deviceType = useSelector(selectDeviceType);
   const widgetsMap = useSelector(selectLayoutWidgetMap);
   const widgets = useMemo(() => Object.values(widgetsMap), [widgetsMap]);
-  const allowOverlap = useSelector(selectEditBoard).config?.allowOverlap === true;
+  const allowOverlap = useContext(BoardConfigValContext).allowOverlap === true;
 
   useEffect(() => {
     if (boardType !== 'auto') return;
