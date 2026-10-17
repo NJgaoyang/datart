@@ -120,6 +120,8 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
     () => visibleLayoutWidgets.map(item => (
       <div
         key={item.id}
+        data-dashboard-widget-id={item.id}
+        tabIndex={-1}
         style={{
           zIndex: editingIds.has(item.id)
             ? LEVEL_DASHBOARD_EDIT_OVERLAY + 1
