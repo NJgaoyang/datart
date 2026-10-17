@@ -187,7 +187,7 @@ const ChartDataConfigSectionActionMenu: FC<
   // option merely because the chart copy only carries its stable fieldId.
   const canConfigureRatio = type === DataViewFieldType.NUMERIC
     && metric?.aggregate === AggregateFieldActionType.Sum
-    && category === ChartDataViewFieldCategory.ComputedField;
+    && category === ChartDataViewFieldCategory.ComputedField.toLowerCase();
 
   return (
     <Menu>
