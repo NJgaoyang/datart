@@ -106,6 +106,11 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
             SourceSchemaIndex.Index source = schemaIndex == null ? null : schemaIndex.forSource(view.getSourceId());
             Map<String, SqlFieldLineageResolver.SqlFieldLineage> sqlLineages = "SQL".equalsIgnoreCase(view.getType())
                     ? sqlFieldLineageResolver.resolve(view.getScript(), source) : Map.of();
+            Map<String, UpstreamIdentity> joinSources = readJoinSources(view);
+            Map<String, List<ViewField>> upstreamFields = new LinkedHashMap<>();
+            for (UpstreamIdentity identity : joinSources.values()) {
+                upstreamFields.computeIfAbsent(identity.viewId(), mapper::listByViewId);
+            }
             int ordinal = 0;
             for (Map.Entry<String, FieldReferences> entry : references.entrySet()) {
                 FieldReferences refs = entry.getValue();
@@ -139,7 +144,12 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
                     }
                     field.setCanonicalKey(data.canonicalKey());
                 }
-                List<String> physicalSourcePath = physicalSourcePath(view.getType(), data, sqlLineages);
+                UpstreamIdentity joinSource = joinSources.get(data.originName());
+                ViewField upstream = joinSource == null ? null
+                        : matchUpstreamField(upstreamFields.get(joinSource.viewId()), joinSource.columnKey());
+                List<String> physicalSourcePath = upstream != null
+                        ? fromJson(upstream.getSourcePath())
+                        : physicalSourcePath(view.getType(), data, sqlLineages);
                 field.setViewId(view.getId());
                 field.setCanonicalKey(data.canonicalKey());
                 field.setOriginName(data.originName());
@@ -151,7 +161,12 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
                 field.setExpression(data.expression());
                 field.setOrdinal(ordinal++);
                 field.setActive(true);
-                String sourceComment = sourceComment(view.getType(), data, refs, source, physicalSourcePath);
+                String sourceComment = upstream != null
+                        ? trimToNull(upstream.getSourceComment())
+                        : sourceComment(view.getType(), data, refs, source, physicalSourcePath);
+                if (!persisted && upstream != null && trimToNull(upstream.getCustomName()) != null) {
+                    field.setCustomName(trimToNull(upstream.getCustomName()));
+                }
                 if (sourceComment != null) {
                     field.setSourceComment(sourceComment);
                 } else if (physicalSourcePath.isEmpty()
@@ -277,6 +292,41 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
                                     SourceSchemaIndex.Index source) {
         ResolvedFieldMeta resolved = legacyResolver.resolve(fieldKey, refs.resolverColumn(), refs.hierarchy(), source, viewType);
         return resolved.displayNameCustom() ? trimToNull(resolved.customDisplayName()) : null;
+    }
+
+
+    private record UpstreamIdentity(String viewId, String columnKey) { }
+
+    private Map<String, UpstreamIdentity> readJoinSources(View view) {
+        Map<String, UpstreamIdentity> result = new LinkedHashMap<>();
+        if (view.getConfig() == null) return result;
+        try {
+            JsonNode root = OBJECT_MAPPER.readTree(view.getConfig());
+            JsonNode mapping = root.path("lineage").path("outputFieldSources");
+            if (mapping.isObject()) {
+                mapping.fields().forEachRemaining(entry -> {
+                    String viewId = trimToNull(entry.getValue().path("viewId").asText(null));
+                    String columnKey = trimToNull(entry.getValue().path("columnKey").asText(null));
+                    if (viewId != null && columnKey != null) {
+                        result.put(entry.getKey(), new UpstreamIdentity(viewId, columnKey));
+                    }
+                });
+            }
+        } catch (Exception ignored) {
+            // Corrupt lineage should never trigger guessed annotations.
+        }
+        return result;
+    }
+
+    private ViewField matchUpstreamField(List<ViewField> fields, String columnKey) {
+        if (fields == null) return null;
+        List<ViewField> matches = fields.stream()
+                .filter(field -> Boolean.TRUE.equals(field.getActive()))
+                .filter(field -> Objects.equals(columnKey, field.getCanonicalKey())
+                        || Objects.equals(columnKey, field.getOriginName())
+                        || Objects.equals(columnKey, String.join(".", fromJson(field.getSourcePath()))))
+                .toList();
+        return matches.size() == 1 ? matches.get(0) : null;
     }
 
     private String sourceComment(String viewType, FieldData data, FieldReferences refs,

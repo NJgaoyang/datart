@@ -142,8 +142,8 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         String rightSql = renderViewSql(providerSource, right);
         String selectList = buildSelectList(left, right);
         String conditions = param.getConditions().stream()
-                .map(condition -> quote("v0") + "." + quote(extractActualColumn(condition.getLeftColumn()))
-                        + " = " + quote("v1") + "." + quote(extractActualColumn(condition.getRightColumn())))
+                .map(condition -> quote("v0") + "." + quote(resolveInputColumnName(left, condition.getLeftColumn()))
+                        + " = " + quote("v1") + "." + quote(resolveInputColumnName(right, condition.getRightColumn())))
                 .collect(Collectors.joining(" AND "));
         String script = "SELECT " + selectList + "\n"
                 + "FROM (\n" + indent(leftSql) + "\n) " + quote("v0") + "\n"
@@ -153,6 +153,9 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         JSONObject config = new JSONObject();
         JSONObject lineage = new JSONObject();
         lineage.put("upstreamViewIds", Arrays.asList(left.getId(), right.getId()));
+        // Stable source identity: SQL subquery aliases alone cannot recover
+        // physical lineage, comments or distinct same-name JOIN fields.
+        lineage.put("outputFieldSources", outputFieldSources(left, right));
         config.put("lineage", lineage);
         JSONObject viewJoin = new JSONObject();
         viewJoin.put("leftViewId", left.getId());
@@ -259,6 +262,49 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         }
     }
 
+
+    private JSONObject outputFieldSources(View left, View right) {
+        JSONObject result = new JSONObject();
+        Set<String> used = new HashSet<>();
+        for (String column : modelColumns(left)) {
+            result.put(column, fieldSource(left.getId(), column));
+            used.add(column);
+        }
+        for (String column : modelColumns(right)) {
+            String alias = column;
+            int suffix = 1;
+            while (used.contains(alias)) {
+                alias = "right_" + column + (suffix == 1 ? "" : "_" + suffix);
+                suffix++;
+            }
+            used.add(alias);
+            result.put(alias, fieldSource(right.getId(), column));
+        }
+        return result;
+    }
+
+    private JSONObject fieldSource(String viewId, String sourceColumnKey) {
+        JSONObject source = new JSONObject();
+        source.put("viewId", viewId);
+        source.put("columnKey", sourceColumnKey);
+        return source;
+    }
+
+    /**
+     * A STRUCT table field is a physical path, but a SQL/composed View
+     * already exposes an output column name (possibly containing dots).
+     */
+    static String resolveInputColumnName(View view, String column) {
+        return "STRUCT".equalsIgnoreCase(view.getType())
+                ? extractPhysicalColumnName(column)
+                : column;
+    }
+
+    private static String extractPhysicalColumnName(String column) {
+        int lastDot = column.lastIndexOf('.');
+        return lastDot < 0 ? column : column.substring(lastDot + 1);
+    }
+
     private String buildSelectList(View left, View right) {
         Set<String> leftColumns = modelColumns(left);
         Set<String> rightColumns = modelColumns(right);
@@ -267,7 +313,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         }
         List<String> selections = new ArrayList<>();
         leftColumns.forEach(column -> selections.add(
-                quote("v0") + "." + quote(extractActualColumn(column)) + " AS " + quote(column)));
+                quote("v0") + "." + quote(resolveInputColumnName(left, column)) + " AS " + quote(column)));
         Set<String> usedAliases = new HashSet<>(leftColumns);
         for (String column : rightColumns) {
             String alias = column;
@@ -277,7 +323,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
                 suffix++;
             }
             usedAliases.add(alias);
-            selections.add(quote("v1") + "." + quote(extractActualColumn(column)) + " AS " + quote(alias));
+            selections.add(quote("v1") + "." + quote(resolveInputColumnName(right, column)) + " AS " + quote(alias));
         }
         return selections.stream().collect(Collectors.joining(",\n       "));
     }
@@ -345,8 +391,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
      * Simple column names like "renting_48v" are returned as-is.
      */
     private String extractActualColumn(String modelColumnKey) {
-        int lastDot = modelColumnKey.lastIndexOf('.');
-        return lastDot >= 0 ? modelColumnKey.substring(lastDot + 1) : modelColumnKey;
+        return extractPhysicalColumnName(modelColumnKey);
     }
 
     private String indent(String sql) {
