@@ -49,6 +49,23 @@ test('migrates v2 mobile 6-column rectangles to 24 columns, keeps desktop', () =
   assert.deepEqual(cfg.mRect, { x: 4, y: 0, width: 12, height: 4 });
 });
 
+test('keeps already-v2 mobile geometry when only desktop is v1', () => {
+  const source = fixture({
+    layoutVersion: 1, mobileLayoutVersion: 2, pcRowLayoutVersion: 2,
+  });
+  const { output } = migrateDashboardExport(source);
+  const cfg = JSON.parse(output.widgets[0].config);
+  assert.deepEqual(cfg.pRect, { x: 12, y: 1, width: 24, height: 6 });
+  assert.deepEqual(cfg.mRect, { x: 1, y: 0, width: 3, height: 4 });
+});
+
+test('v3 migrations are idempotent and leave persisted rectangles unchanged', () => {
+  const first = migrateDashboardExport(fixture()).output;
+  const second = migrateDashboardExport(first);
+  assert.equal(second.report.changed, 0);
+  assert.deepEqual(second.output, first);
+});
+
 test('refuses unknown future schema, leaves free layout untouched', () => {
   assert.throws(() =>
     migrateDashboardExport(fixture({ layoutVersion: 4 })), /future/);

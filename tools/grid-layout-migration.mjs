@@ -82,11 +82,12 @@ export function migrateDashboardExport(source) {
     if (desktopVersion < 2) {
       // The v1 desktop grid had 12 columns; v2/v3 use 72.
       pc = scaleRect(pc, 12, DESKTOP_COLS);
-      // Original v1 mobile coordinates used the same 12-column basis.
-      mobile = scaleRect(mobile || widgetConfig.pRect || widgetConfig.rect, 12, MOBILE_COLS);
-    } else if (mobileVersion < 2) {
-      // The v2 desktop is already 72 columns but the old mobile grid had 6.
-      mobile = mobile ? scaleRect(mobile, 6, MOBILE_COLS)
+    }
+    if (mobileVersion < 2) {
+      // V1 desktop mobile rectangles used 12 columns; v2 used 6.
+      const oldMobileCols = desktopVersion < 2 ? 12 : 6;
+      mobile = mobile
+        ? scaleRect(mobile, oldMobileCols, MOBILE_COLS)
         : scaleRect(pc, DESKTOP_COLS, MOBILE_COLS);
     } else if (!mobile) {
       mobile = scaleRect(pc, DESKTOP_COLS, MOBILE_COLS);
