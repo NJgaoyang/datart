@@ -70,4 +70,25 @@ class ColumnPermissionFilterTest {
                 .includeColumns(Set.of()).build());
         assertNull(df.getRows().get(0).get(0));
     }
+    @Test
+    void rejectsForgedOutputAliasesForSecretSourceColumns() {
+        Dataframe df = frame("__fcol_0");
+        QueryOutputProjection projection = new QueryOutputProjection();
+        projection.setOrdinal(0);
+        projection.setTechnicalAlias("id");
+        ExecuteParam param = ExecuteParam.builder()
+                .columns(List.of(SelectColumn.of("id", "secret_id")))
+                .outputProjections(List.of(projection))
+                .includeColumns(Set.of(SelectColumn.of(null, "id"))).build();
+        ColumnPermissionFilter.mask(df, param);
+        assertNull(df.getRows().get(0).get(0));
+    }
+
+    @Test
+    void nullPermissionSetIsNotUnrestricted() {
+        Dataframe df = frame("city");
+        ColumnPermissionFilter.mask(df, ExecuteParam.builder().build());
+        assertNull(df.getRows().get(0).get(0));
+    }
+
 }

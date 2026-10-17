@@ -744,9 +744,10 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
             }
             return columns;
         } catch (Exception e) {
-            Exceptions.e(e);
+            // A broken permission lookup must fail closed, not become the
+            // null "unrestricted" case in the data-provider layer.
+            throw new IllegalStateException("Unable to resolve view column permissions", e);
         }
-        return null;
     }
 
     /**

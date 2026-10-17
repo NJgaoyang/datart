@@ -21,12 +21,14 @@ public final class ColumnPermissionFilter {
     private ColumnPermissionFilter() { }
 
     public static void mask(Dataframe data, ExecuteParam param) {
-        if (data == null || data.getColumns() == null || param == null
-                || param.getIncludeColumns() == null) return;
+        if (data == null || data.getColumns() == null || param == null) return;
+        // An unavailable permission set is never equivalent to an owner '*'.
+        // SQL preview sends its own explicit wildcard entitlement.
 
         Set<String> authorized = new HashSet<>();
         boolean unrestricted = false;
-        for (SelectColumn selected : param.getIncludeColumns()) {
+        for (SelectColumn selected : param.getIncludeColumns() == null
+                ? Collections.<SelectColumn>emptySet() : param.getIncludeColumns()) {
             if (selected == null) continue;
             String key = selected.getColumnKey();
             if (StringUtils.isBlank(key)) continue;
@@ -39,14 +41,27 @@ public final class ColumnPermissionFilter {
         if (unrestricted) return;
 
         List<String> selectedInputs = new ArrayList<>();
+        List<String> expectedOutputAliases = new ArrayList<>();
+        // This is the SqlBuilder SELECT order: direct columns, GROUP keys,
+        // aggregate expressions. Permission identity always comes from the
+        // source expression, never from a caller-supplied display alias.
         if (param.getColumns() != null) {
-            for (SelectColumn item : param.getColumns()) selectedInputs.add(item.getColumnKey());
+            for (SelectColumn item : param.getColumns()) {
+                selectedInputs.add(item.getColumnKey());
+                expectedOutputAliases.add(item.getAlias());
+            }
         }
         if (param.getGroups() != null) {
-            for (GroupByOperator item : param.getGroups()) selectedInputs.add(item.getColumnKey());
+            for (GroupByOperator item : param.getGroups()) {
+                selectedInputs.add(item.getColumnKey());
+                expectedOutputAliases.add(item.getAlias());
+            }
         }
         if (param.getAggregators() != null) {
-            for (AggregateOperator item : param.getAggregators()) selectedInputs.add(item.getColumnKey());
+            for (AggregateOperator item : param.getAggregators()) {
+                selectedInputs.add(item.getColumnKey());
+                expectedOutputAliases.add(item.getAlias());
+            }
         }
         Map<String, String> functions = new HashMap<>();
         if (param.getFunctionColumns() != null) {
@@ -73,18 +88,24 @@ public final class ColumnPermissionFilter {
             String source = null;
             if (projection != null) {
                 String mapped = projection.getTechnicalAlias();
-                // Never interpret an unverified alias/ordinal as a grant.
-                if (StringUtils.equalsIgnoreCase(rawName, QueryOutputAlias.of(index))
-                        || StringUtils.equalsIgnoreCase(rawName, mapped)) {
-                    if (index < selectedInputs.size()) {
-                        source = selectedInputs.get(index);
-                    }
-                    if (source == null && functions.containsKey(mapped)) source = mapped;
+                boolean verifiedTransport = StringUtils.equalsIgnoreCase(rawName, QueryOutputAlias.of(index))
+                        || StringUtils.equalsIgnoreCase(rawName, mapped);
+                // A projection alias is *never* an authorization grant. It
+                // must also correspond to the source selection at this index.
+                if (verifiedTransport && index < selectedInputs.size()
+                        && StringUtils.equals(mapped, expectedOutputAliases.get(index))) {
+                    source = selectedInputs.get(index);
                 }
             } else if (index < selectedInputs.size()) {
-                source = selectedInputs.get(index);
+                String expectedAlias = expectedOutputAliases.get(index);
+                if (StringUtils.equals(rawName, expectedAlias)
+                        || StringUtils.equals(rawName, selectedInputs.get(index))) {
+                    source = selectedInputs.get(index);
+                }
+            } else if (!rawName.startsWith("__fcol_")) {
+                // Legacy direct SELECT * exposes actual view column keys.
+                source = rawName;
             }
-            if (source == null && !rawName.startsWith("__fcol_")) source = rawName;
             if (source == null || !isPermitted(source, functions, authorized, new HashSet<>())) {
                 denied.add(index);
             }
