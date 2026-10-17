@@ -1,4 +1,4 @@
-import { AUTO_GRID_COLS, MOBILE_GRID_COLS } from '../../constants';
+import { AUTO_GRID_COLS, AUTO_LAYOUT_VERSION, MOBILE_GRID_COLS, MOBILE_LAYOUT_VERSION, PC_ROW_LAYOUT_VERSION } from '../../constants';
 import { isMobileWidgetVisible, normalizeAutoRectForCols, scaleAutoRect } from '../autoLayout';
 
 describe('new automatic dashboard layouts', () => {
@@ -10,6 +10,9 @@ describe('new automatic dashboard layouts', () => {
       ),
     ).toEqual({ x: 4, y: 3, width: 8, height: 12 });
     expect(AUTO_GRID_COLS).toBe(72);
+    expect(AUTO_LAYOUT_VERSION).toBe(3);
+    expect(MOBILE_LAYOUT_VERSION).toBe(3);
+    expect(PC_ROW_LAYOUT_VERSION).toBe(3);
   });
 
   it('rounds responsive coordinates without mutating the source', () => {

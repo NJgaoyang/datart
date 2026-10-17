@@ -21,7 +21,7 @@ This branch (`dev20261017`) starts from `dev202609232` and establishes React-Gri
 
 ## Migration system (separate future project)
 
-Historical dashboards must **not** be silently converted while using the new editor. A future migration system should have:
+The new automatic-dashboard layout schema is explicitly marked as version **3** (desktop, mobile and row-layout versions). Historical dashboards must **not** be silently converted while using the new editor. A future migration system should have:
 
 1. Source version detection and snapshot/backup.
 2. Deterministic conversion of coordinates, columns, row heights, and mobile rules.
