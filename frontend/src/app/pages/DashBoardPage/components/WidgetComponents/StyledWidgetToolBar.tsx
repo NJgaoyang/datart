@@ -32,5 +32,17 @@ const StyleWrap = styled.div`
   text-align: right;
   .widget-tool-dropdown {
     visibility: hidden;
+    display: inline-flex;
+    width: 36px;
+    min-width: 36px;
+    height: 32px;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+  .widget-tool-dropdown:focus,
+  .widget-tool-dropdown:focus-visible {
+    visibility: visible;
   }
 `;

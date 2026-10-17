@@ -437,9 +437,41 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
   flex: 1;
   align-items: center;
   min-width: 0;
+  width: 100%;
+  container-type: inline-size;
+
   .control-form {
     flex: 1;
+    width: 100%;
     min-width: 0;
+
+    .ant-form-item-row {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .ant-form-item-label {
+      flex: 0 1 auto;
+      min-width: 0;
+      max-width: 40%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ant-form-item-control {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .ant-picker,
+    .ant-picker-input,
+    .ant-select,
+    .ant-select-selector {
+      min-width: 0;
+      max-width: 100%;
+    }
 
     .ant-select,
     .ant-checkbox-wrapper,
@@ -456,5 +488,29 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
   }
   .ant-input-number-handler {
     border-left: 0;
+  }
+
+  /* Narrow half-width widgets stack the label rather than shrink
+     a datetime picker beneath its calendar trigger. Saved grid geometry
+     remains unchanged. */
+  @container (max-width: 300px) {
+    .control-form .ant-form-item-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .control-form .ant-form-item-label {
+      flex: none;
+      max-width: 100%;
+      padding: 0;
+      line-height: 18px;
+      text-align: left;
+    }
+
+    .control-form .ant-form-item-control {
+      flex: 1;
+      width: 100%;
+      min-width: 0;
+    }
   }
 `;

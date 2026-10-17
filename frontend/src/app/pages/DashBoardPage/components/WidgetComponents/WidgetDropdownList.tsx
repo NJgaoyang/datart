@@ -84,11 +84,17 @@ export const WidgetDropdownList: React.FC<{
     <Dropdown
       className="widget-tool-dropdown"
       overlay={dropdownList}
-      placement="bottomCenter"
+      placement="bottomRight"
       trigger={['click']}
       arrow
     >
-      <Button icon={<EllipsisOutlined />} type="link" {...buttonProps} />
+      <Button
+        aria-label="Widget actions"
+        title="Widget actions"
+        icon={<EllipsisOutlined />}
+        type="link"
+        {...buttonProps}
+      />
     </Dropdown>
   );
 });

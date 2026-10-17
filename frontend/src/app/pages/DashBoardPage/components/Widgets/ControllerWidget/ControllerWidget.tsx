@@ -46,7 +46,16 @@ export const ControllerWidget: React.FC<{}> = memo(() => {
   );
   return (
     <WidgetWrapper background={background} border={border} padding={padding}>
-      <div ref={cacheWhRef} style={ZIndexStyle}>
+      <div
+        ref={cacheWhRef}
+        className="controller-widget-content"
+        style={{
+          ...ZIndexStyle,
+          // The picker/calendar and widget action use disjoint hit areas.
+          width: renderMode === 'edit' ? 'calc(100% - 40px)' : '100%',
+          minWidth: 0,
+        }}
+      >
         <div style={FlexStyle}>
           <ControllerWidgetCore />
         </div>

@@ -35,6 +35,8 @@ export const WidgetWrapper: React.FC<{
   return <Wrapper style={style}>{children}</Wrapper>;
 });
 const Wrapper = styled.div`
+  /* Give absolute toolbar its own stable local positioning context. */
+  position: relative;
   box-sizing: border-box;
   display: flex;
   flex: 1;
