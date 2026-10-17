@@ -527,7 +527,7 @@ class BasicTableChart extends ReactChart {
       );
       const headerWidth = this.getTextWidth(
         context,
-        String(header?.label || chartDataSet.getFieldKey(c)),
+        String(header?.label || getColumnRenderName(c)),
         headerFont?.fontWeight,
         headerFont?.fontSize,
         headerFont?.fontFamily,
