@@ -58,7 +58,7 @@ jobs:
       - name: Compile Java server with dependency modules
         run: mvn --batch-mode -pl server -am -DskipTests package
       - name: Security, SQL metrics, join and Excel export regression tests
-        run: mvn --batch-mode -pl server -am -Dtest=ColumnPermissionFilterTest,SqlBuilderAggregateTest,PoiConvertUtilsDisplayNameTest,ViewJoinColumnNameTest -Dsurefire.failIfNoSpecifiedTests=false test
+        run: mvn --batch-mode -pl server -am -Dtest=ColumnPermissionFilterTest,SqlBuilderAggregateTest,PoiConvertUtilsDisplayNameTest,ViewJoinColumnNameTest,DownloadServiceSecurityTest -Dsurefire.failIfNoSpecifiedTests=false test
 
   migration:
     runs-on: ubuntu-latest
