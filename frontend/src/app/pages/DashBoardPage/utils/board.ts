@@ -239,7 +239,7 @@ export const getChartDataView = (views: View[], dataCharts: DataChart[]) => {
 export const getBoardMarginPadding = (
   boardConfig: BoardConfigValue,
   colsKey: ColsKeyType,
-) => {
+): { curMargin: [number, number]; curPadding: [number, number] } => {
   const { margin, padding, mMargin, mPadding } = boardConfig;
   const isMobile = colsKey === 'sm';
   return isMobile
