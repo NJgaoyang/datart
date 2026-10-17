@@ -48,6 +48,22 @@ describe('new automatic dashboard grid mapping', () => {
     expect(result.current.sm?.[0].static).toBe(true);
   });
 
+  it('uses type-specific widths and does not cap mobile date ranges at three rows', () => {
+    const rangeTime = {
+      id: 'date-range',
+      config: {
+        originalType: 'rangeTime',
+        lock: false,
+        pRect: { x: 0, y: 0, width: 30, height: 4 },
+        mRect: { x: 0, y: 0, width: 24, height: 3 },
+      },
+    } as Widget;
+    const { result } = renderHook(() => useGridLayoutMap([rangeTime], 340, 'sm'));
+    expect(result.current.sm?.[0].minW).toBeGreaterThanOrEqual(20);
+    expect(result.current.sm?.[0].maxH).toBeGreaterThan(3);
+    expect(result.current.sm?.[0].minH).toBe(3);
+  });
+
   it('provides different minimum sizes for desktop and mobile controls', () => {
     const controller = {
       id: 'filter-1',
@@ -60,8 +76,8 @@ describe('new automatic dashboard grid mapping', () => {
     } as Widget;
     const { result } = renderHook(() => useGridLayoutMap([controller]));
     expect(result.current.lg?.[0].minW).toBe(18);
-    expect(result.current.sm?.[0].minW).toBe(1);
-    expect(result.current.lg?.[0].maxW).toBe(48);
+    expect(result.current.sm?.[0].minW).toBeGreaterThan(1);
+    expect(result.current.lg?.[0].maxW).toBe(72);
     expect(result.current.sm?.[0].maxW).toBe(24);
   });
 

@@ -72,7 +72,7 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
         : sortedLayoutWidgets,
     [activeColsKey, sortedLayoutWidgets],
   );
-  const layoutMap = useGridLayoutMap(visibleLayoutWidgets);
+  const layoutMap = useGridLayoutMap(visibleLayoutWidgets, canvasWidth, activeColsKey);
 
   // Keep pointer interactions in RGL; commit a single final layout after each gesture.
   const persistLayout = useCallback(
