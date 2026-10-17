@@ -28,7 +28,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { stopPPG } from 'utils/utils';
 import { dropLayerNodeAction } from '../../slice/actions/actions';
 import { editBoardStackActions } from '../../slice';
-import { getLayerBulkActions } from '../../../utils/layerBulkActions';
+import { getLayerBulkActions } from '../../../../utils/layerBulkActions';
 import {
   selectAllWidgetMap,
   selectEditBoard,
