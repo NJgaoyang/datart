@@ -10,8 +10,22 @@ const publicUrl = process.env.PUBLIC_URL || '';
 
 // 由 craco splitChunks cacheGroups 转换而来的 manualChunks（仅拆分 node_modules 大型库，
 // 避免拆分应用代码导致 barrel 导出循环依赖）
+const deferredAdminPages = [
+  'AuditLogPage',
+  'MonitorPage',
+  'ReadinessPage',
+  'ResourceMigrationPage',
+];
+
 const manualChunks = (id: string): string | undefined => {
   if (!id.includes('node_modules/')) {
+    // Keep these route-only modules outside the eagerly loaded app chunk.
+    // Scope is intentionally narrow to avoid splitting shared/barrel modules
+    // that previously triggered cross-chunk initialization failures.
+    if (deferredAdminPages.some(page =>
+      id.includes(`/src/app/pages/MainPage/pages/${page}/`))) {
+      return 'admin-tools';
+    }
     if (id.includes('/src/')) {
       // 入口模块（含 React 挂载副作用）保持独立 chunk，避免多入口副作用相互污染。
       if (id.endsWith('/src/index.tsx') || id.includes('.entry.ts')) return undefined;

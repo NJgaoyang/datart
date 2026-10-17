@@ -39,15 +39,15 @@ import { StoryPlayer } from '../StoryBoardPage/Player';
 import { AccessRoute } from './AccessRoute';
 import { Background } from './Background';
 import { Navbar } from './Navbar';
-import { AuditLogPage } from './pages/AuditLogPage';
+
 import { ConfirmInvitePage } from './pages/ConfirmInvitePage';
 import { MemberPage } from './pages/MemberPage';
-import { MonitorPage } from './pages/MonitorPage';
+
 import { OrgSettingPage } from './pages/OrgSettingPage';
 import { PermissionPage } from './pages/PermissionPage';
 import { ResourceTypes } from './pages/PermissionPage/constants';
-import { ResourceMigrationPage } from './pages/ResourceMigrationPage';
-import { ReadinessPage } from './pages/ReadinessPage';
+
+
 import { SchedulePage } from './pages/SchedulePage';
 import { SourcePage } from './pages/SourcePage';
 import { VariablePage } from './pages/VariablePage';
@@ -64,6 +64,21 @@ import {
   getLoggedInUserPermissions,
   getUserSettings,
 } from './slice/thunks';
+// Admin-only pages are never needed to open a read-only dashboard.
+// Keep React.lazy boundaries outside hooks and route elements.
+const AuditLogPage = React.lazy(() =>
+  import('./pages/AuditLogPage').then(mod => ({ default: mod.AuditLogPage })),
+);
+const MonitorPage = React.lazy(() =>
+  import('./pages/MonitorPage').then(mod => ({ default: mod.MonitorPage })),
+);
+const ReadinessPage = React.lazy(() =>
+  import('./pages/ReadinessPage').then(mod => ({ default: mod.ReadinessPage })),
+);
+const ResourceMigrationPage = React.lazy(() =>
+  import('./pages/ResourceMigrationPage').then(mod => ({ default: mod.ResourceMigrationPage })),
+);
+
 function ChartEditorRoute({
   orgId,
   onClose,
@@ -151,6 +166,7 @@ export function MainPage() {
       <Background />
       {!shouldUseMobileViz && <Navbar />}
       {orgId && (
+        <React.Suspense fallback={null}>
         <Routes>
           <Route
             path="/"
@@ -303,6 +319,7 @@ export function MainPage() {
           />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+        </React.Suspense>
       )}
     </AppContainer>
   );
