@@ -38,6 +38,7 @@ import {
   transformToDataSet,
 } from 'app/utils/chartHelper';
 import { precisionCalculation } from 'app/utils/number';
+import { fitTableColumnWidth, sumNumericTableValues } from './tableColumnWidth';
 import {
   canSumTableSummary,
   isFullTableResult,
@@ -499,9 +500,18 @@ class BasicTableChart extends ReactChart {
       summaryFont?.fontSize,
       summaryFont?.fontFamily,
     );
-    const aggregateConfigs = mixedSectionConfigRows.filter(
-      r => r.type === DataViewFieldType.NUMERIC,
+    // Only calculate a numeric summary when that specific numeric field is
+    // actually selected for summation. Dataset rows are string[][], so
+    // 0 + '2043' + '27196' is concatenation, not a numeric total.
+    // The previous implementation recalculated this for EVERY row, too.
+    const [aggregateFields] = getStyles(
+      settingConfigs,
+      ['summary'],
+      ['aggregateFields'],
     );
+    const summedFieldIds = Array.isArray(aggregateFields)
+      ? aggregateFields
+      : [];
     const maxContentByFields: {
       [p: string]: {
         columnWidthValue?: number | undefined;
@@ -510,62 +520,68 @@ class BasicTableChart extends ReactChart {
     }[] = mixedSectionConfigRows.map(c => {
       const header = this.findHeader(c.uid, tableHeaders);
       const rowUniqKey = chartDataSet.getFieldKey(c);
-
       const [columnWidth, getUseColumnWidth] = getStyles(
         getAllColumnListInfo,
         [c.uid!, 'columnStyle'],
         ['columnWidth', 'useColumnWidth'],
       );
-      const datas = chartDataSet?.map(dc => {
-        const text = dc.getCell(c);
-        const width = this.getTextWidth(
-          context,
-          toFormattedValue(text, c.format),
-          fontWeight,
-          fontSize,
-          fontFamily,
-        );
-        const headerWidth = this.getTextWidth(
-          context,
-          header?.label || chartDataSet.getFieldKey(c),
-          headerFont?.fontWeight,
-          headerFont?.fontSize,
-          headerFont?.fontFamily,
-        );
-        const currentSummaryField = aggregateConfigs.find(
-          ac => ac.uid === c.uid,
-        );
-        const total = chartDataSet?.map((dc: any) =>
-          dc.getCell(currentSummaryField),
-        );
-        const summaryText = total.reduce((acc, cur) => acc + cur, 0);
-        const summaryWidth = this.getTextWidth(
-          context,
-          toFormattedValue(summaryText, c.format),
-          summaryFont?.fontWeight,
-          summaryFont?.fontSize,
-          summaryFont?.fontFamily,
-        );
-        const sorterIconWidth = 12;
+      const headerWidth = this.getTextWidth(
+        context,
+        String(header?.label || chartDataSet.getFieldKey(c)),
+        headerFont?.fontWeight,
+        headerFont?.fontSize,
+        headerFont?.fontFamily,
+      );
+      const sorterIconWidth = 12;
+      const headerContentWidth =
+        headerWidth +
+        sorterIconWidth +
+        (c?.alias?.desc ? Number(headerFont?.fontSize) || 12 : 0);
+      const dataContentWidth = chartDataSet.reduce((maximum, row) => {
+        const formatted = toFormattedValue(row.getCell(c), c.format);
         return Math.max(
-          width,
-          headerWidth +
-            sorterIconWidth +
-            (c?.alias?.desc ? headerFont?.fontSize || 12 : 0),
-          summaryWidth + sorterIconWidth,
+          maximum,
+          this.getTextWidth(
+            context,
+            String(formatted),
+            fontWeight,
+            fontSize,
+            fontFamily,
+          ),
         );
+      }, 0);
+      let summaryContentWidth = 0;
+      if (
+        c.type === DataViewFieldType.NUMERIC &&
+        summedFieldIds.includes(c.uid) &&
+        canSumTableSummary(c)
+      ) {
+        const numericTotal = sumNumericTableValues(
+          chartDataSet.map(row => row.getCell(c)),
+        );
+        summaryContentWidth =
+          this.getTextWidth(
+            context,
+            String(toFormattedValue(numericTotal, c.format)),
+            summaryFont?.fontWeight,
+            summaryFont?.fontSize,
+            summaryFont?.fontFamily,
+          ) + sorterIconWidth;
+      }
+      const desiredWidth =
+        Math.max(headerContentWidth, dataContentWidth, summaryContentWidth) +
+        this.tablePadding * 2 +
+        this.tableCellBorder * 2;
+      const columnWidthValue = fitTableColumnWidth({
+        desiredWidth,
+        numeric: c.type === DataViewFieldType.NUMERIC,
+        customWidth: columnWidth,
+        useCustomWidth: Boolean(getUseColumnWidth),
+        isMobile,
       });
-
-      const columnWidthValue = getUseColumnWidth
-        ? columnWidth || 100
-        : (datas.length ? Math.max(...datas) : 0) +
-          this.tablePadding * 2 +
-          this.tableCellBorder * 2;
       return {
         [rowUniqKey]: {
-          columnWidthValue: isMobile
-            ? clampMobileTableColumnWidth(columnWidthValue)
-            : columnWidthValue,
+          columnWidthValue,
           getUseColumnWidth,
         },
       };
