@@ -38,4 +38,36 @@ class SqlBuilderAggregateTest {
 
         assertTrue(sql.contains(function + "(`amount`)"));
     }
+    @Test
+    void explicitAggregateRatioIsNotWrappedOrGroupedAgain() throws Exception {
+        datart.core.data.provider.sql.FunctionColumn ratio = new datart.core.data.provider.sql.FunctionColumn();
+        ratio.setAlias("ratio");
+        ratio.setSnippet("SUM(a)/NULLIF(SUM(b), 0)");
+        AggregateOperator ratioAgg = new AggregateOperator();
+        ratioAgg.setColumn("ratio");
+        ratioAgg.setAlias("ratio");
+        ratioAgg.setSqlOperator(AggregateOperator.SqlOperator.SUM);
+        AggregateOperator amount = new AggregateOperator();
+        amount.setColumn("total");
+        amount.setSqlOperator(AggregateOperator.SqlOperator.SUM);
+
+        QueryScriptProcessResult query = new QueryScriptProcessResult();
+        query.setFrom(new SqlIdentifier("daily_report", SqlParserPos.ZERO));
+        String sql = SqlBuilder.builder()
+                .withQueryScriptProcessResult(query)
+                .withExecuteParam(ExecuteParam.builder()
+                        .functionColumns(java.util.List.of(ratio))
+                        .aggregators(java.util.List.of(ratioAgg, amount))
+                        .build())
+                .withDialect(new StarRocksSqlStdOperatorSupport())
+                .withQuoteIdentifiers(true)
+                .build();
+
+        assertTrue(sql.toUpperCase().contains("SUM("));
+        org.junit.jupiter.api.Assertions.assertFalse(
+                sql.toUpperCase().contains("GROUP BY SUM("), sql);
+        org.junit.jupiter.api.Assertions.assertFalse(
+                sql.toUpperCase().contains("SUM(SUM("), sql);
+    }
+
 }

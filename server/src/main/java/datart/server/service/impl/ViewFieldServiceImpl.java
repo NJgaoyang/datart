@@ -143,7 +143,9 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
                 field.setViewId(view.getId());
                 field.setCanonicalKey(data.canonicalKey());
                 field.setOriginName(data.originName());
-                field.setSourcePath(toJson(physicalSourcePath));
+                String formerSourcePath = field.getSourcePath();
+                String nextSourcePath = toJson(physicalSourcePath);
+                field.setSourcePath(nextSourcePath);
                 field.setFieldType(data.type());
                 field.setFieldCategory(data.category());
                 field.setExpression(data.expression());
@@ -152,6 +154,16 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
                 String sourceComment = sourceComment(view.getType(), data, refs, source, physicalSourcePath);
                 if (sourceComment != null) {
                     field.setSourceComment(sourceComment);
+                } else if (physicalSourcePath.isEmpty()
+                        || !Objects.equals(formerSourcePath, nextSourcePath)) {
+                    // Confirmed disappearance or change of physical origin:
+                    // retaining the previous comment would mislabel a new field.
+                    field.setSourceComment(null);
+                } else {
+                    // Same known source but comment lookup unavailable:
+                    // do not erase the previously verified metadata.
+                    log.warn("Source comment unavailable for view {} field {} with unchanged physical lineage",
+                            view.getId(), field.getCanonicalKey());
                 }
                 if (migrateLegacyMetadata && trimToNull(field.getCustomName()) == null) {
                     String customName = legacyCustomName(view.getType(), data.canonicalKey(), refs, source);

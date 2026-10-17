@@ -37,6 +37,7 @@ public class AttachmentExcelServiceImpl implements AttachmentService {
         ViewService viewService = Application.getBean(ViewService.class);
 
         Workbook workbook = POIUtils.createEmpty();
+        try {
         for (int i = 0; i < downloadParams.getDownloadParams().size(); i++) {
             ViewExecuteParam viewExecuteParam = downloadParams.getDownloadParams().get(i);
             View view = viewService.retrieve(viewExecuteParam.getViewId(), false);
@@ -52,5 +53,17 @@ public class AttachmentExcelServiceImpl implements AttachmentService {
         POIUtils.save(workbook, file.getPath(), true);
         log.info("create excel file complete.");
         return file;
+        } finally {
+            // SXSSFWorkbook creates temporary sheet XML files. close() alone
+            // is not sufficient: dispose() removes those files on success
+            // and on query/write failures.
+            try {
+                workbook.close();
+            } finally {
+                if (workbook instanceof org.apache.poi.xssf.streaming.SXSSFWorkbook) {
+                    ((org.apache.poi.xssf.streaming.SXSSFWorkbook) workbook).dispose();
+                }
+            }
+        }
     }
 }

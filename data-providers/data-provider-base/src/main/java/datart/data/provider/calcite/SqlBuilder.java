@@ -205,7 +205,9 @@ public class SqlBuilder {
                     sqlNode = createColumnIdentifier(group.getColumnNames(withNamePrefix, namePrefix));
                     selectList.add(SqlNodeUtils.createAliasNode(sqlNode, outputTechnicalAlias(group.getAlias())));
                 }
-                groupBy.add(sqlNode);
+                if (!containsAggregate(sqlNode)) {
+                    groupBy.add(sqlNode);
+                }
             }
         }
 
@@ -227,7 +229,9 @@ public class SqlBuilder {
                 && !CollectionUtils.isEmpty(executeParam.getAggregators())) {
             boolean hasRealAggregate = false;
             for (AggregateOperator agg : executeParam.getAggregators()) {
-                if (agg.getSqlOperator() != null) {
+                if (agg.getSqlOperator() != null
+                        || (functionColumnMap.containsKey(agg.getColumnKey())
+                            && containsAggregate(functionColumnMap.get(agg.getColumnKey())))) {
                     hasRealAggregate = true;
                     break;
                 }
@@ -236,7 +240,10 @@ public class SqlBuilder {
                 for (AggregateOperator agg : executeParam.getAggregators()) {
                     if (agg.getSqlOperator() == null) {
                         if (functionColumnMap.containsKey(agg.getColumnKey())) {
-                            groupBy.add(functionColumnMap.get(agg.getColumnKey()));
+                            SqlNode expr = functionColumnMap.get(agg.getColumnKey());
+                            if (!containsAggregate(expr)) {
+                                groupBy.add(expr);
+                            }
                         } else {
                             // Date-level aggregator (AGG_DATE_YEAR, AGG_DATE_MONTH, etc.)
                             // rendered as scalar expression → add its column to GROUP BY
@@ -288,6 +295,22 @@ public class SqlBuilder {
         return SqlNodeUtils.toSql(sqlSelect, this.dialect, quoteIdentifiers);
     }
 
+
+    private static boolean containsAggregate(SqlNode node) {
+        if (node == null) return false;
+        if (node instanceof SqlCall call) {
+            if (call.getOperator() instanceof SqlAggFunction) return true;
+            for (SqlNode operand : call.getOperandList()) {
+                if (containsAggregate(operand)) return true;
+            }
+        } else if (node instanceof SqlNodeList nodes) {
+            for (SqlNode child : nodes) {
+                if (containsAggregate(child)) return true;
+            }
+        }
+        return false;
+    }
+
     private SqlNode createAggNode(AggregateOperator operator) {
         SqlNode sqlNode;
         String columnKey = operator.getColumnKey();
@@ -299,6 +322,11 @@ public class SqlBuilder {
         SqlOperator sqlOp = mappingSqlAggFunction(operator.getSqlOperator());
         SqlNode aggCall;
         if (operator.getSqlOperator() == null) {
+            aggCall = sqlNode;
+        } else if (containsAggregate(sqlNode)) {
+            // Explicit aggregate formula such as SUM(a)/NULLIF(SUM(b),0)
+            // already defines its aggregation. Do not turn it into SUM(formula).
+            // Plain a/b remains row-wise and is NOT implicitly rewritten.
             aggCall = sqlNode;
         } else if (operator.getSqlOperator() == AggregateOperator.SqlOperator.COUNT_DISTINCT) {
             aggCall = SqlNodeUtils
