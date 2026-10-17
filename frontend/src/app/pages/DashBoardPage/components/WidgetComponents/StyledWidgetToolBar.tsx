@@ -18,6 +18,7 @@
 import { memo, ReactNode } from 'react';
 import styled from 'styled-components';
 import { LEVEL_50 } from 'styles/StyleConstants';
+import { DASHBOARD_UI_TOKENS as T } from '../../styles/dashboardUiTokens';
 export const StyledWidgetToolBar: React.FC<{ children?: ReactNode }> = memo(
   props => {
     return <StyleWrap className="widget-action-toolbar">{props.children}</StyleWrap>;
@@ -37,9 +38,9 @@ const StyleWrap = styled.div`
     opacity: 0;
     pointer-events: none;
     display: inline-flex;
-    width: 36px;
-    min-width: 36px;
-    height: 32px;
+    width: ${T.actionButtonWidth}px;
+    min-width: ${T.actionButtonWidth}px;
+    height: ${T.actionButtonHeight}px;
     padding: 0;
     cursor: pointer;
     touch-action: manipulation;
@@ -49,9 +50,9 @@ const StyleWrap = styled.div`
   }
   @media (pointer: coarse) {
     .widget-tool-dropdown {
-      width: 44px;
-      min-width: 44px;
-      height: 44px;
+      width: ${T.touchActionSize}px;
+      min-width: ${T.touchActionSize}px;
+      height: ${T.touchActionSize}px;
     }
   }
 

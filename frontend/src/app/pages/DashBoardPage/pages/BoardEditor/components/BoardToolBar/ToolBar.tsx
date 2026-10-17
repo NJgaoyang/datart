@@ -25,6 +25,7 @@ import { BoardActionContext } from 'app/pages/DashBoardPage/components/ActionPro
 import useBoardEditorHotkeys from 'app/pages/DashBoardPage/hooks/useBoardEditorHotkeys';
 import React, { useContext } from 'react';
 import styled from 'styled-components';
+import { DASHBOARD_UI_TOKENS as T } from 'app/pages/DashBoardPage/styles/dashboardUiTokens';
 import { WidgetActionContext } from '../../../../components/ActionProvider/WidgetActionProvider';
 import { AddChart } from './AddChart/AddChart';
 import { AddContainer } from './AddContainer/AddContainer';
@@ -147,7 +148,7 @@ const Wrapper = styled.div`
     display: none;
   }
 
-  @container board-toolbar (max-width: 850px) {
+  @container board-toolbar (max-width: ${T.compactToolbarWidth}px) {
     .toolbar-secondary-desktop {
       display: none;
     }
