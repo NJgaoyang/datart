@@ -26,6 +26,7 @@ import useBoardScroll from 'app/pages/DashBoardPage/hooks/useBoardScroll';
 import useGridLayoutMap from 'app/pages/DashBoardPage/hooks/useGridLayoutMap';
 import useLayoutMap from 'app/pages/DashBoardPage/hooks/useLayoutMap';
 import { getBoardMarginPadding } from 'app/pages/DashBoardPage/utils/board';
+import { isMobileWidgetVisible } from 'app/pages/DashBoardPage/utils/autoLayout';
 import { memo, useCallback, useContext, useMemo } from 'react';
 import { DashboardGridLayout } from 'app/pages/DashBoardPage/components/GridLayout/DashboardGridLayout';
 import styled from 'styled-components';
@@ -46,7 +47,13 @@ export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
     const { gridWrapRef, thEmitScroll } = useBoardScroll(boardId);
 
     const sortedLayoutWidgets = useLayoutMap(boardId);
-    const layoutMap = useGridLayoutMap(sortedLayoutWidgets);
+    const visibleLayoutWidgets = useMemo(
+      () => colsKey === 'sm'
+        ? sortedLayoutWidgets.filter(isMobileWidgetVisible)
+        : sortedLayoutWidgets,
+      [colsKey, sortedLayoutWidgets],
+    );
+    const layoutMap = useGridLayoutMap(visibleLayoutWidgets);
 
     const onLayoutChange = useCallback(() => {
       thEmitScroll();
@@ -56,7 +63,7 @@ export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
     // positioning styles. The direct child MUST be a DOM node; only the
     // expensive widget contents are memoized.
     const boardChildren = useMemo(
-      () => sortedLayoutWidgets.map(item => (
+      () => visibleLayoutWidgets.map(item => (
         <div key={item.id}>
           <ReadWidgetContent
             id={item.id}
@@ -65,7 +72,7 @@ export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
           />
         </div>
       )),
-      [boardId, editing, sortedLayoutWidgets],
+      [boardId, editing, visibleLayoutWidgets],
     );
     return (
       <Wrapper>
@@ -89,7 +96,7 @@ export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
               </DashboardGridLayout>
             </div>
           </div>
-          {!sortedLayoutWidgets.length && (
+          {!visibleLayoutWidgets.length && (
             <div className="empty">
               <Empty description="" />
             </div>
