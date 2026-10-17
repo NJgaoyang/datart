@@ -17,7 +17,7 @@
  */
 
 import { Tree } from 'app/components';
-import { Input } from 'antd';
+import { Input, Select } from 'antd';
 import { renderIcon } from 'app/hooks/useGetVizIcon';
 import useResizeObserver from 'app/hooks/useResizeObserver';
 import { WidgetActionContext } from 'app/pages/DashBoardPage/components/ActionProvider/WidgetActionProvider';
@@ -31,22 +31,22 @@ import {
   selectLayerTree,
   selectSelectedIds,
 } from '../../slice/selectors';
-import { EventLayerNode, LayerTreeItem, LayerNode } from './LayerTreeItem';
+import { EventLayerNode, LayerTreeItem } from './LayerTreeItem';
+import { filterLayerNodes, getLayerNodeTypes } from './layerSearch';
 
 export const LayerTree: FC<{}> = memo(() => {
   const dispatch = useDispatch();
   const treeData = useSelector(selectLayerTree);
   const [query, setQuery] = useState('');
-  const filteredTree = useMemo(() => {
-    const needle = query.trim().toLocaleLowerCase();
-    if (!needle) return treeData;
-    const filter = (nodes: LayerNode[]): LayerNode[] => nodes.flatMap(node => {
-      const children = filter(node.children || []);
-      const match = String(node.title || '').toLocaleLowerCase().includes(needle);
-      return match ? [node] : children.length ? [{ ...node, children }] : [];
-    });
-    return filter(treeData as LayerNode[]);
-  }, [treeData, query]);
+  const [filterType, setFilterType] = useState<string | undefined>();
+  const typeOptions = useMemo(
+    () => getLayerNodeTypes(treeData).map(type => ({ label: type, value: type })),
+    [treeData],
+  );
+  const filteredTree = useMemo(
+    () => filterLayerNodes(treeData, query, filterType),
+    [treeData, query, filterType],
+  );
   const renderTreeItem = useCallback(n => <LayerTreeItem node={n} />, []);
   const { onEditSelectWidget } = useContext(WidgetActionContext);
   const editingWidgetIds = useSelector(selectEditingWidgetIds);
@@ -101,7 +101,17 @@ export const LayerTree: FC<{}> = memo(() => {
       onChange={event => setQuery(event.target.value)}
       style={{ padding: '8px 12px', flex: '0 0 auto' }}
     />
+    <Select
+      aria-label="组件类型筛选"
+      placeholder="全部组件类型"
+      allowClear
+      value={filterType}
+      onChange={value => setFilterType(value)}
+      options={typeOptions}
+      style={{ margin: '0 12px 8px', flex: '0 0 auto' }}
+    />
     <Tree
+      key={`${query}:${filterType || ''}`}
       className="medium"
       draggable={!editingWidgetIds ? { icon: false } : false}
       multiple
