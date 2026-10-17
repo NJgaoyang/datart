@@ -38,6 +38,7 @@ import {
   transformToDataSet,
 } from 'app/utils/chartHelper';
 import { precisionCalculation } from 'app/utils/number';
+import { canSumTableSummary } from './tableSummarySemantics';
 import { CalculationType, DATARTSEPERATOR } from 'globalConstants';
 import { darken, getLuminance, lighten } from 'polished';
 import { Debugger } from 'utils/debugger';
@@ -391,6 +392,11 @@ class BasicTableChart extends ReactChart {
               c => chartDataSet.getFieldKey(c) === k,
             );
             if (currentSummaryField) {
+              if (!canSumTableSummary(currentSummaryField)) {
+                // A false SUM of averages, ratios or distinct counts is worse
+                // than no total. A dedicated server-side total query is needed.
+                return !index ? context?.translator?.('viz.palette.graph.summary') : '—';
+              }
               const total = chartDataSet?.map((dc: any) =>
                 dc.getCell(currentSummaryField),
               );
