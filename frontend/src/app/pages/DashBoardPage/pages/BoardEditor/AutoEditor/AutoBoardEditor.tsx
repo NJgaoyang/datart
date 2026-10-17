@@ -34,7 +34,7 @@ import { DeviceType } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { getBoardMarginPadding } from 'app/pages/DashBoardPage/utils/board';
 import { isMobileWidgetVisible } from 'app/pages/DashBoardPage/utils/autoLayout';
 import { hasGridGeometryChanged } from 'app/pages/DashBoardPage/utils/gridLayout';
-import { memo, useCallback, useContext, useMemo } from 'react';
+import { memo, useCallback, useContext, useMemo, useState } from 'react';
 import type { Layout } from 'react-grid-layout';
 import { DashboardGridLayout } from 'app/pages/DashBoardPage/components/GridLayout/DashboardGridLayout';
 import { useDispatch, useSelector } from 'react-redux';
@@ -51,6 +51,7 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
   const boardConfig = useContext(BoardConfigValContext);
   const { background, allowOverlap, compactType, showGrid } = boardConfig;
   const deviceType = useSelector(selectDeviceType);
+  const [previewWidth, setPreviewWidth] = useState(340);
   const editingWidgetIds = useSelector(selectEditingWidgetIds);
   // Only the explicit device switch may edit mobile geometry/visibility.
   const mobilePreview = deviceType === DeviceType.Mobile;
@@ -141,11 +142,26 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
         className={`${deviceClassName}${
           deviceType === DeviceType.Mobile ? ' datart-mobile-board' : ''
         }`}
+        style={deviceType === DeviceType.Mobile
+          ? { width: `min(${previewWidth}px, calc(100% - 32px))` }
+          : undefined}
       >
         {deviceType === DeviceType.Mobile && (
           <MobilePreviewHeader>
-            <LeftOutlined />
+            <LeftOutlined aria-hidden />
             <span>{name}</span>
+            <select
+              aria-label="移动端预览宽度"
+              title="仅调整预览宽度，不修改布局数据"
+              value={previewWidth}
+              onChange={event => setPreviewWidth(Number(event.target.value))}
+            >
+              <option value={320}>320px</option>
+              <option value={340}>340px</option>
+              <option value={375}>375px</option>
+              <option value={430}>430px</option>
+              <option value={768}>768px 平板</option>
+            </select>
           </MobilePreviewHeader>
         )}
         {visibleLayoutWidgets.length ? (
@@ -293,10 +309,21 @@ const MobilePreviewHeader = styled.div`
   }
 
   span {
-    max-width: calc(100% - 72px);
+    flex: 1;
+    margin: 0 8px 0 40px;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  select {
+    margin-right: 12px;
+    max-width: 112px;
+    font-size: 12px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    background: #fff;
   }
 `;
 
