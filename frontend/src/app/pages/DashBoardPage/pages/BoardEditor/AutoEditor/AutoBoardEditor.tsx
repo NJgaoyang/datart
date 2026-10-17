@@ -105,13 +105,18 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
     };
   }, [deviceType]);
 
+  const editingIds = useMemo(
+    () => new Set(editingWidgetIds.split(',').filter(Boolean)),
+    [editingWidgetIds],
+  );
+
   const boardChildren = useMemo(() => {
     return visibleLayoutWidgets.map(item => {
       // TODO(Stephen): 将外层div与内层WidgetWrapProvider合并，同时修改FreeBoardEditor
       return (
         <div
           style={{
-            zIndex: editingWidgetIds.includes(item?.id)
+            zIndex: editingIds.has(item.id)
               ? LEVEL_DASHBOARD_EDIT_OVERLAY + 1
               : 'auto',
           }}
@@ -127,7 +132,7 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
         </div>
       );
     });
-  }, [boardId, editingWidgetIds, visibleLayoutWidgets]);
+  }, [boardId, editingIds, visibleLayoutWidgets]);
 
   /**
    * https://www.npmjs.com/package/react-grid-layout

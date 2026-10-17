@@ -47,4 +47,22 @@ describe('new automatic dashboard grid mapping', () => {
     expect(result.current.lg?.[0].static).toBe(true);
     expect(result.current.sm?.[0].static).toBe(true);
   });
+
+  it('provides different minimum sizes for desktop and mobile controls', () => {
+    const controller = {
+      id: 'filter-1',
+      config: {
+        originalType: 'dropdownList',
+        lock: false,
+        pRect: { x: 0, y: 0, width: 18, height: 2 },
+        mRect: { x: 0, y: 0, width: 8, height: 1 },
+      },
+    } as Widget;
+    const { result } = renderHook(() => useGridLayoutMap([controller]));
+    expect(result.current.lg?.[0].minW).toBe(18);
+    expect(result.current.sm?.[0].minW).toBe(1);
+    expect(result.current.lg?.[0].maxW).toBe(48);
+    expect(result.current.sm?.[0].maxW).toBe(24);
+  });
+
 });

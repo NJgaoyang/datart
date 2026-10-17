@@ -51,3 +51,20 @@ The new layout engine should remain unaware of previous schema versions. Histori
 - Geometry checks and reducers discard duplicate drag/resize results before writing an undo snapshot.
 - New desktop widgets are placed below the occupied desktop geometry, even when the mobile editor was selected when they were added. The editor's temporary `boardInfo.layouts` is no longer used as the desktop placement source.
 - New widget batches are packed left-to-right with explicit wrapping; this intentionally replaces the previous y-only insertion heuristic.
+
+## Local validation commands
+
+After pulling `dev20261017`:
+
+```bash
+git checkout dev20261017
+git pull origin dev20261017
+cd frontend
+npm ci --legacy-peer-deps
+npm run check:grid
+npm run build
+```
+
+The new `check:grid` command runs the project's full TypeScript check followed by focused v2 layout tests. It does not replace browser verification: exercise adding charts in desktop and mobile editor modes, drag/resize handles, locked widgets, overlap, group widgets, undo/redo, save/reopen, and browser scaling.
+
+No compatibility layer or automatic historical-data conversion is enabled. Existing dashboards from older versions must be migrated later through the dedicated migration service before production adoption.
