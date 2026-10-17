@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import datart.server.service.BaseService;
 import datart.server.service.ViewFieldService;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ import java.util.HashSet;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class ViewFieldServiceImpl extends BaseService implements ViewFieldService {
 
     private final ViewFieldMapperExt mapper;
