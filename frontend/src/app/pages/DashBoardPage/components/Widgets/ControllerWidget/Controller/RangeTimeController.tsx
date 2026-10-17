@@ -39,6 +39,7 @@ export const RangeTimeControllerForm: React.FC<TimeControllerProps> = memo(
       <Form.Item
         name={name}
         label={label}
+        className="mobile-range-time-form"
         validateTrigger={['onChange', 'onBlur']}
         rules={[{ required: false }]}
       >

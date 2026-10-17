@@ -508,4 +508,95 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
       min-height: 28px;
     }
   }
+
+  /*
+   * Mobile range dates follow the CONTROL's measured width, not the
+   * device viewport or a per-phone breakpoint. Keep "日期" and both dates
+   * on one row even in legacy half-width filter widgets. Text inputs
+   * shrink continuously with container units, retaining the calendar
+   * trigger and editable date fields.
+   */
+  .datart-mobile-board & {
+    .control-form .ant-form-item.mobile-range-time-form .ant-form-item-row {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .control-form .ant-form-item.mobile-range-time-form .ant-form-item-label {
+      flex: 0 0 auto !important;
+      width: auto;
+      max-width: 28%;
+      min-width: 0;
+      padding: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-align: left;
+    }
+
+    .control-form .ant-form-item.mobile-range-time-form .ant-form-item-label > label {
+      height: 32px;
+      white-space: nowrap;
+    }
+
+    .control-form .ant-form-item.mobile-range-time-form .widget-name {
+      display: inline-block;
+      padding: 0;
+      font-size: clamp(11px, 3.7cqi, 14px) !important;
+      line-height: 20px;
+      white-space: nowrap;
+    }
+
+    .control-form .ant-form-item.mobile-range-time-form .ant-form-item-control {
+      flex: 1 1 0 !important;
+      width: 0;
+      min-width: 0;
+    }
+
+    .control-form .ant-form-item.mobile-range-time-form .ant-form-item-control-input,
+    .control-form .ant-form-item.mobile-range-time-form .ant-form-item-control-input-content,
+    .control-form .ant-form-item.mobile-range-time-form .control-datePicker {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .control-form .ant-form-item.mobile-range-time-form .ant-picker-range {
+      display: flex;
+      align-items: center;
+      height: 36px;
+      min-height: 36px;
+      padding: 0 4px;
+      white-space: nowrap;
+    }
+
+    .control-form .ant-form-item.mobile-range-time-form .ant-picker-input {
+      flex: 1 1 0;
+      width: 0;
+      min-width: 0;
+    }
+
+    .control-form .ant-form-item.mobile-range-time-form .ant-picker-input > input {
+      width: 100%;
+      min-width: 0;
+      height: 30px;
+      min-height: 0;
+      font-size: clamp(10px, 3.4cqi, 13px) !important;
+      letter-spacing: -0.2px;
+    }
+
+    .control-form .ant-form-item.mobile-range-time-form .ant-picker-range-separator {
+      flex: 0 0 auto;
+      min-width: 0;
+      padding: 0 2px;
+    }
+
+    .control-form .ant-form-item.mobile-range-time-form .ant-picker-suffix {
+      flex: 0 0 auto;
+      margin-left: 2px;
+    }
+  }
+
 `;
