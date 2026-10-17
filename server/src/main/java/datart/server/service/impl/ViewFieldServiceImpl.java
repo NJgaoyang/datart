@@ -171,8 +171,10 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
                 }
                 if (sourceComment != null) {
                     field.setSourceComment(sourceComment);
-                } else if (physicalSourcePath.isEmpty()
-                        || !Objects.equals(formerSourcePath, nextSourcePath)) {
+                } else if (shouldClearMissingComment(formerSourcePath, nextSourcePath,
+                        physicalSourcePath.isEmpty() || "COMPUTED".equalsIgnoreCase(data.category()),
+                        upstream != null || (source != null && !physicalSourcePath.isEmpty()
+                                && source.exact(physicalSourcePath) != null))) {
                     // Confirmed disappearance or change of physical origin:
                     // retaining the previous comment would mislabel a new field.
                     field.setSourceComment(null);
@@ -331,17 +333,27 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
         return matches.size() == 1 ? matches.get(0) : null;
     }
 
+    /** A confirmed comment removal must not leave stale Chinese labels;
+     * an unavailable schema lookup must not erase valid previous labels. */
+    static boolean shouldClearMissingComment(String oldPath, String nextPath,
+                                             boolean sourceLost, boolean sourceVerified) {
+        return sourceLost || !Objects.equals(oldPath, nextPath) || sourceVerified;
+    }
+
     private String sourceComment(String viewType, FieldData data, FieldReferences refs,
                                  SourceSchemaIndex.Index source, List<String> physicalSourcePath) {
         if ("COMPUTED".equalsIgnoreCase(data.category())) {
             return null;
         }
         SourceSchemaIndex.ColumnMeta schema = source == null ? null : source.exact(physicalSourcePath);
-        String schemaComment = schema == null ? null : trimToNull(schema.comment());
+        if (schema != null) {
+            // A known column with an empty physical comment is a verified
+            // deletion. Do not resurrect stale annotations from the model.
+            return trimToNull(schema.comment());
+        }
         ResolvedFieldMeta resolved = legacyResolver.resolve(data.canonicalKey(), refs.resolverColumn(), refs.hierarchy(),
                 source, viewType);
-        String modelComment = trimToNull(resolved.comment());
-        return schemaComment == null ? modelComment : schemaComment;
+        return trimToNull(resolved.comment());
     }
 
     private List<String> physicalSourcePath(String viewType, FieldData data,
