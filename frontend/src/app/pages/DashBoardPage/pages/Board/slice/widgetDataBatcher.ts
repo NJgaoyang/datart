@@ -6,6 +6,8 @@
  */
 import { request2 } from 'utils/request';
 
+const preserveHttpError = (error: unknown): never => { throw error; };
+
 interface BatchEntry {
   boardId: string;
   widgetId: string;
@@ -70,7 +72,7 @@ async function flushBatch(): Promise<void> {
         method: 'POST',
         url: 'data-provider/execute',
         data: { ...entry.requestParams, queryId: entry.queryId },
-      });
+      }, undefined, { onRejected: preserveHttpError });
       if (data?.error) {
         entry.reject(new Error(`Widget query failed: ${data.error}`));
       } else {
@@ -88,7 +90,7 @@ async function flushBatch(): Promise<void> {
         queryId: entry.queryId,
         ...entry.requestParams,
       })),
-    });
+    }, undefined, { onRejected: preserveHttpError });
 
     const resultMap: Record<string, any> = response?.data || {};
 
@@ -134,7 +136,7 @@ async function flushBatch(): Promise<void> {
             method: 'POST',
             url: 'data-provider/execute',
             data: { ...entry.requestParams, queryId: entry.queryId },
-          });
+          }, undefined, { onRejected: preserveHttpError });
           if (data?.error) {
             entry.reject(new Error(`Widget query failed: ${data.error}`));
           } else {

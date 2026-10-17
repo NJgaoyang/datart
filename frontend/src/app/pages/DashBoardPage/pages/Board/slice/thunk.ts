@@ -34,7 +34,7 @@ import {
 import { filterSqlOperatorName } from 'app/utils/internalChartHelper';
 import { RootState } from 'types';
 import { request2 } from 'utils/request';
-import { getErrorMessage } from 'utils/utils';
+import { getWidgetQueryErrorMessage } from 'app/pages/DashBoardPage/utils/widgetQueryError';
 import { boardActions } from '.';
 import { getChartWidgetRequestParams } from '../../../utils';
 import { handleServerBoardAction } from './asyncActions';
@@ -325,7 +325,7 @@ export const syncBoardWidgetChartDataAsync = createAsyncThunk<
         boardActions.setWidgetErrInfo({
           boardId,
           widgetId,
-          errInfo: getErrorMessage(error),
+          errInfo: getWidgetQueryErrorMessage(error),
           errorType: 'request',
         }),
       );
@@ -410,7 +410,7 @@ export const getChartWidgetDataAsync = createAsyncThunk<
             executeToken: executeToken?.authorizedToken,
           },
           data: requestParams,
-        });
+        }, undefined, { onRejected: error => { throw error; } });
         widgetData = data;
       }
       dispatch(
@@ -439,7 +439,7 @@ export const getChartWidgetDataAsync = createAsyncThunk<
         boardActions.setWidgetErrInfo({
           boardId,
           widgetId,
-          errInfo: getErrorMessage(error),
+          errInfo: getWidgetQueryErrorMessage(error),
           errorType: 'request',
         }),
       );
@@ -526,7 +526,7 @@ export const getControllerOptions = createAsyncThunk<
             executeToken: executeToken?.authorizedToken,
           },
           data: requestParams,
-        });
+        }, undefined, { onRejected: error => { throw error; } });
         widgetData = data;
       } else {
         // 使用批量请求调度器
@@ -551,7 +551,7 @@ export const getControllerOptions = createAsyncThunk<
         boardActions.setWidgetErrInfo({
           boardId,
           widgetId,
-          errInfo: getErrorMessage(error),
+          errInfo: getWidgetQueryErrorMessage(error),
           errorType: 'request',
         }),
       );

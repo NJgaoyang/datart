@@ -11,6 +11,15 @@ describe('dashboard chart data states', () => {
     expect(getChartViewState({ loading: false, rendered: true, rows: [[1]], failed: false })).toBe('ready');
   });
 
+  it('never presents HTTP 403 authorization failures as an empty chart', () => {
+    expect(getChartViewState({
+      loading: false, rendered: true, rows: [], failed: true, forbidden: true,
+    })).toBe('forbidden');
+    expect(getChartViewState({
+      loading: true, rendered: false, failed: true, forbidden: true,
+    })).toBe('forbidden');
+  });
+
   it('shows a generic error when a per-widget query fails', () => {
     expect(getChartViewState({ loading: false, rendered: true, rows: [], failed: true })).toBe('error');
   });

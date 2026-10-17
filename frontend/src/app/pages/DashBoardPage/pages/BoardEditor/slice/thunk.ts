@@ -48,7 +48,8 @@ import { View } from 'app/types/View';
 import { filterSqlOperatorName } from 'app/utils/internalChartHelper';
 import { RootState } from 'types';
 import { request2 } from 'utils/request';
-import { getErrorMessage, uuidv4 } from 'utils/utils';
+import { uuidv4 } from 'utils/utils';
+import { getWidgetQueryErrorMessage } from 'app/pages/DashBoardPage/utils/widgetQueryError';
 import {
   editBoardStackActions,
   editDashBoardInfoActions,
@@ -565,7 +566,7 @@ export const syncEditBoardWidgetChartDataAsync = createAsyncThunk<
             editWidgetInfoActions.setWidgetErrInfo({
               boardId,
               widgetId,
-              errInfo: getErrorMessage(error),
+              errInfo: getWidgetQueryErrorMessage(error),
               errorType: 'request',
             }),
           );
@@ -670,7 +671,7 @@ export const getEditChartWidgetDataAsync = createAsyncThunk<
           await dispatch(
             editWidgetInfoActions.setWidgetErrInfo({
               widgetId,
-              errInfo: (error as any)?.message as any,
+              errInfo: getWidgetQueryErrorMessage(error),
               errorType: 'request',
             }),
           );
