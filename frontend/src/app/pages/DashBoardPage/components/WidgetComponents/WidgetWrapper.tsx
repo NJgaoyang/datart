@@ -66,6 +66,12 @@ const Wrapper = styled.div`
       align-self: center;
       overflow: visible;
     }
+
+    /* Unlike a floating overlay, this action has a predictable visible
+       target on touchscreens and narrow desktop inputs. */
+    .widget-tool-dropdown {
+      visibility: visible;
+    }
   }
 
   &:hover .widget-tool-dropdown {
