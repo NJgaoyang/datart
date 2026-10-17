@@ -33,7 +33,7 @@ The new layout engine should remain unaware of previous schema versions. Old con
 
 ## Validation before production
 
-- Run `cd frontend && npm install` to regenerate `package-lock.json` with RGL 2.2.4, then `npm run typecheck` and the frontend tests/build.
+- Run `cd frontend && npm ci --legacy-peer-deps` to verify the updated `package-lock.json` with RGL 2.2.4, then `npm run checkTs` and the frontend tests/build.
 - Check 72-column desktop and 24-column mobile dashboards; editing, viewing, locking, overlap, groups, resize from every handle, and switching devices.
 - Check dragging at browser zoom/DPI scales and varying container widths.
 - Confirm undo/redo, save/reopen, filters, and chart interactions.
@@ -43,4 +43,4 @@ The new layout engine should remain unaware of previous schema versions. Old con
 
 - Legacy dashboard import or automated compatibility conversion.
 - Reimplementing the pixel-based free dashboard with a grid.
-- Production rollout until lockfile update, build, and regression tests are completed.
+- Production rollout until an actual install, build, and regression tests are completed.
