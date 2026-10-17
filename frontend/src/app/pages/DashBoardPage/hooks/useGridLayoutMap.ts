@@ -56,7 +56,21 @@ export const getWidgetConstraints = (
     return { maxW: mobile ? 24 : 72, maxH: mobile ? 40 : 160 };
   }
   if (CONTROLLER_TYPES.has(originalType)) {
-    // Widths are specified by the control's actual interactive content.
+    if (mobile) {
+      // mRect is one 24-column mobile layout at every screen width.
+      // Legacy minima (rangeTime: 3 rows / 340px) made an already compact
+      // one-line date picker impossible to shrink. Do not change any saved
+      // rectangles here: only relax the RESIZE bounds on the editor.
+      // The date range keeps two 24px rows for a usable 36px picker; other
+      // controls may be as small as one grid row.
+      return {
+        minW: originalType === 'rangeTime' ? 16 : 4,
+        maxW: 24,
+        minH: originalType === 'rangeTime' ? 2 : 1,
+        maxH: 16,
+      };
+    }
+    // Desktop resizing continues using text/interaction minimum widths.
     // Grid columns alone are not a useful minimum for date ranges/tree inputs.
     const minimumPixels = ({
       rangeTime: 340,
@@ -71,18 +85,17 @@ export const getWidgetConstraints = (
       value: 200,
       text: 200,
     } as Record<string, number>)[originalType] || 220;
-    const cols = mobile ? 24 : 72;
+    const cols = 72;
     const minW = Math.min(
       cols,
-      Math.max(mobile ? 1 : 18, Math.ceil(minimumPixels / (Math.max(1, canvasWidth) / cols))),
+      Math.max(18, Math.ceil(minimumPixels / (Math.max(1, canvasWidth) / cols))),
     );
     const isComplex = ['rangeTime', 'dropDownTree', 'multiDropdownList', 'checkboxGroup', 'radioGroup'].includes(originalType);
     return {
       minW,
-      maxW: mobile ? 24 : 72,
+      maxW: 72,
       minH: originalType === 'rangeTime' ? 3 : isComplex ? 2 : 1,
-      // Mobile inputs may need multiple rows when the label wraps.
-      maxH: mobile ? 16 : 24,
+      maxH: 24,
     };
   }
   // 图表 / 媒体 / 容器等 —— 宽松约束

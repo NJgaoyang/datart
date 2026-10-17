@@ -240,11 +240,12 @@ const StyledContainer = styled(StyledBackground)`
   }
 
   &.mobile {
-    /* One responsive mobile layout for every editor pane width.
-       No phone presets, fixed preview width, or persisted breakpoints. */
+    /* A mobile-sized frame on wide WEB editor panes, without any resolution
+       selector or extra mobile layout. Narrow panes still fluidly shrink. */
     flex: 1 1 0;
     box-sizing: border-box;
     width: 100%;
+    max-width: 430px;
     min-width: 0;
     min-height: 0;
     padding: 0;
