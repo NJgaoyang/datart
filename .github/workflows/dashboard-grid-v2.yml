@@ -45,6 +45,8 @@ jobs:
         run: npm run bench:grid
       - name: Production frontend build
         run: npm run build
+      - name: Capture per-entry JavaScript bundle baseline
+        run: npm run report:bundles
 
   backend:
     runs-on: ubuntu-latest

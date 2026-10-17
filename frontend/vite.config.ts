@@ -101,6 +101,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'build',
+    manifest: true,
     chunkSizeWarningLimit: 4096,
     // 关闭产物 gzip 体积报告（纯 CPU 开销，对产物无影响，可缩短构建时间）
     reportCompressedSize: false,
