@@ -113,14 +113,20 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
     [editingWidgetIds],
   );
 
+  // RGL v2 clones direct children to inject ref/style/className. Keep a
+  // native DOM grid cell so drag, resize and initial layout positioning work.
   const boardChildren = useMemo(
     () => visibleLayoutWidgets.map(item => (
-      <EditGridCell
+      <div
         key={item.id}
-        id={item.id}
-        boardId={boardId}
-        selected={editingIds.has(item.id)}
-      />
+        style={{
+          zIndex: editingIds.has(item.id)
+            ? LEVEL_DASHBOARD_EDIT_OVERLAY + 1
+            : 'auto',
+        }}
+      >
+        <EditWidgetContent id={item.id} boardId={boardId} />
+      </div>
     )),
     [boardId, editingIds, visibleLayoutWidgets],
   );
@@ -290,15 +296,11 @@ const MobilePreviewHeader = styled.div`
   }
 `;
 
-/** Prevent editing one widget from remounting/rendering every other cell. */
-const EditGridCell = memo(
-  ({ id, boardId, selected }: { id: string; boardId: string; selected: boolean }) => (
-    <div style={{
-      zIndex: selected ? LEVEL_DASHBOARD_EDIT_OVERLAY + 1 : 'auto',
-    }}>
-      <WidgetWrapProvider id={id} boardEditing={true} boardId={boardId}>
-        <WidgetOfAutoEditor />
-      </WidgetWrapProvider>
-    </div>
+/** Stable widget contents without swallowing the native RGL DOM props. */
+const EditWidgetContent = memo(
+  ({ id, boardId }: { id: string; boardId: string }) => (
+    <WidgetWrapProvider id={id} boardEditing={true} boardId={boardId}>
+      <WidgetOfAutoEditor />
+    </WidgetWrapProvider>
   ),
 );

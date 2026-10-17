@@ -5,7 +5,6 @@
  * any import of old dashboard data belongs in the future migration service.
  */
 import { memo, useMemo, type ReactNode, type RefObject } from 'react';
-import styled from 'styled-components';
 import {
   GridLayout,
   useContainerWidth,
@@ -102,8 +101,8 @@ export const DashboardGridLayout = memo(
     );
 
     return (
-      <MeasuredGridShell
-        className={editable ? 'datart-grid-width editing' : 'datart-grid-width reading'}
+      <div
+        className="datart-grid-width"
         ref={containerRef as RefObject<HTMLDivElement>}
         style={{ width: '100%', minWidth: 0 }}
       >
@@ -124,16 +123,7 @@ export const DashboardGridLayout = memo(
             {children}
           </GridLayout>
         )}
-      </MeasuredGridShell>
+      </div>
     );
   },
 );
-
-const MeasuredGridShell = styled.div`
-  /* Browser skips paint/layout work for offscreen chart content without
-     unmounting it (which would break data subscriptions or export flows). */
-  &.reading .react-grid-item > div {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 240px;
-  }
-`;

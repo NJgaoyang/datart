@@ -52,14 +52,18 @@ export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
       thEmitScroll();
     }, [thEmitScroll]);
 
+    // RGL v2 clones each direct child to inject its DOM ref, className and
+    // positioning styles. The direct child MUST be a DOM node; only the
+    // expensive widget contents are memoized.
     const boardChildren = useMemo(
       () => sortedLayoutWidgets.map(item => (
-        <ReadGridCell
-          key={item.id}
-          id={item.id}
-          boardId={boardId}
-          editing={editing}
-        />
+        <div key={item.id}>
+          <ReadWidgetContent
+            id={item.id}
+            boardId={boardId}
+            editing={editing}
+          />
+        </div>
       )),
       [boardId, editing, sortedLayoutWidgets],
     );
@@ -127,13 +131,11 @@ const StyledContainer = styled(StyledBackground)`
   }
 `;
 
-/** Stable memoized cells avoid rerendering unrelated charts on geometry updates. */
-const ReadGridCell = memo(
+/** Memoize chart contents, never the native DOM element RGL needs to control. */
+const ReadWidgetContent = memo(
   ({ id, boardId, editing }: { id: string; boardId: string; editing: boolean }) => (
-    <div>
-      <WidgetWrapProvider id={id} boardEditing={editing} boardId={boardId}>
-        <WidgetOfAuto />
-      </WidgetWrapProvider>
-    </div>
+    <WidgetWrapProvider id={id} boardEditing={editing} boardId={boardId}>
+      <WidgetOfAuto />
+    </WidgetWrapProvider>
   ),
 );
