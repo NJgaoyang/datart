@@ -888,15 +888,10 @@ class BasicTableChart extends ReactChart {
             .reverse()
         : [];
       const columnConfig = this.dataColumnWidths?.[chartDataSet.getFieldKey(c)];
-      const colMaxWidth =
-        !this.exceedMaxContent &&
-        Object.values<{ getUseColumnWidth: undefined | boolean }>(
-          this.dataColumnWidths,
-        ).some(item => item.getUseColumnWidth)
-          ? columnConfig?.getUseColumnWidth
-            ? columnConfig?.columnWidthValue
-            : ''
-          : columnConfig?.columnWidthValue;
+      // A manually sized field must not force its siblings into flexible
+      // (empty-string) widths: rc-table then stretches those siblings to
+      // the whole dashboard, even though their text width was measured.
+      const colMaxWidth = columnConfig?.columnWidthValue;
       return {
         sorter: true,
         showSorterTooltip: false,

@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 import { vi } from 'vitest';
-import AntdTableWrapper from '../AntdTableWrapper';
+import AntdTableWrapper, { getExplicitTableWidth } from '../AntdTableWrapper';
 
 describe('AntdTableWrapper', () => {
   it('renders a stable widget id marker outside the Ant table DOM', () => {
@@ -15,6 +15,19 @@ describe('AntdTableWrapper', () => {
     expect(
       container.querySelector('[data-datart-widget-id="table-widget"]'),
     ).not.toBeNull();
+  });
+
+  it('sums content width for normal, grouped, and manually resized columns', () => {
+    expect(
+      getExplicitTableWidth([
+        { key: 'city', width: 88 },
+        { key: 'group', children: [{ width: 110 }, { width: '124px' }] },
+      ] as any),
+    ).toBe(322);
+    expect(getExplicitTableWidth([{ width: 88 }, { width: '' }])).toBeUndefined();
+    expect(getExplicitTableWidth([{ width: 88 }, { width: '25%' }])).toBeUndefined();
+    expect(getExplicitTableWidth([{ width: 88 }, { width: 0 }])).toBeUndefined();
+    expect(getExplicitTableWidth([])).toBeUndefined();
   });
 
   it('preserves content-sized columns instead of stretching to the widget width', () => {
@@ -45,6 +58,15 @@ describe('AntdTableWrapper', () => {
     ).toBe(true);
     expect(headerTable!.style.width).toBe('198px');
     expect(bodyTable!.style.width).toBe('198px');
+    // This is the regression assertion missing from the earlier CSS-only fix:
+    // measured width is now actively enforced, rather than relying on the
+    // rc-table 100% min-width override to shrink the table.
+    expect(
+      tableRules.some(rule =>
+        rule.cssText.includes('.ant-table-body>table') &&
+        rule.cssText.includes('width: 198px !important'),
+      ),
+    ).toBe(true);
   });
 
   it('does not shrink a fixed header in the mobile flex layout', () => {
