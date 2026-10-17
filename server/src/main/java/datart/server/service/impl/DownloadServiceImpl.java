@@ -33,6 +33,10 @@ import datart.server.service.BaseService;
 import datart.server.service.DownloadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.codec.digest.DigestUtils;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.Objects;
 import org.apache.tomcat.util.http.fileupload.util.Streams;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -126,8 +130,40 @@ public class DownloadServiceImpl extends BaseService implements DownloadService 
 
     @Override
     public Download downloadFile(String downloadId) {
+        // Authenticated downloads must belong to the actual current user;
+        // share tasks have independent token-bound ownership.
+        String caller = getCurrentUser() == null ? null : getCurrentUser().getId();
         Download download = downloadMapper.selectByPrimaryKey(downloadId);
-        if (download.getStatus() < 1) {
+        if (download == null || StringUtils.isBlank(caller)
+                || !Objects.equals(download.getCreateBy(), caller)) {
+            Exceptions.tr(NotAllowedException.class, "message.share.permission.denied");
+        }
+        return markDownloadComplete(download);
+    }
+
+    @Override
+    public Download downloadFileForShare(String downloadId, String authorizedToken, String clientId) {
+        if (StringUtils.isBlank(authorizedToken) || StringUtils.isBlank(clientId)) {
+            Exceptions.tr(NotAllowedException.class, "message.share.permission.denied");
+        }
+        Download download = downloadMapper.selectByPrimaryKey(downloadId);
+        String expectedOwner = scopedShareDownloadOwner(authorizedToken, clientId);
+        if (download == null || StringUtils.isBlank(download.getCreateBy())
+                || !MessageDigest.isEqual(
+                    download.getCreateBy().getBytes(StandardCharsets.UTF_8),
+                    expectedOwner.getBytes(StandardCharsets.UTF_8))) {
+            Exceptions.tr(NotAllowedException.class, "message.share.permission.denied");
+        }
+        return markDownloadComplete(download);
+    }
+
+    public static String scopedShareDownloadOwner(String authorizedToken, String clientId) {
+        return "share:" + DigestUtils.sha256Hex(authorizedToken) + ":" + clientId;
+    }
+
+    private Download markDownloadComplete(Download download) {
+        if (download.getStatus() == null || download.getStatus() < 1
+                || StringUtils.isBlank(download.getPath())) {
             Exceptions.tr(NotAllowedException.class, "message.download.not.finished");
         }
         download.setLastDownloadTime(new Date());

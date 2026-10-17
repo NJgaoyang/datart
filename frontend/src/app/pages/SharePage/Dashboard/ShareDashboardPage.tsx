@@ -187,6 +187,7 @@ function ShareDashboardPage() {
       downloadShareDataChartFile({
         downloadId: task.id,
         shareToken: executeToken,
+        clientId: shareClientId,
       }).then(() => {
         dispatch(actions.setShareDownloadPolling(true));
       });

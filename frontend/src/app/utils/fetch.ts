@@ -159,6 +159,7 @@ export const makeShareDownloadDataTask =
         fileName: fileName,
         executeToken,
         shareToken,
+        downloadToken: Object.values(executeToken || {})[0]?.authorizedToken,
       },
       params: {
         password,
@@ -297,6 +298,7 @@ export async function loadShareTask(params) {
 interface DownloadShareDashChartFileParams {
   downloadId: string;
   shareToken: string;
+  clientId: string;
   password?: string | null;
 }
 export async function downloadShareDataChartFile(

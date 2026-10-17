@@ -29,4 +29,7 @@ public class ShareDownloadParam extends DownloadCreateParam {
 
     private Map<String, ShareToken> executeToken;
 
+    /** Exact authorized VIEW token used for this browser's download ownership. */
+    private String downloadToken;
+
 }

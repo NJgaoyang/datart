@@ -284,21 +284,35 @@ public class ShareServiceImpl extends BaseService implements ShareService {
         downloadCreateParam.setFileName(downloadParam.getFileName());
         downloadCreateParam.setDownloadParams(viewExecuteParams);
 
-        return downloadService.submitDownloadTask(downloadCreateParam, clientId);
+        String downloadToken = downloadParam.getDownloadToken();
+        if (StringUtils.isBlank(clientId) || StringUtils.isBlank(downloadToken)
+                || !downloadParam.getExecuteToken().values().stream().anyMatch(token ->
+                    token != null && StringUtils.equals(downloadToken, token.getAuthorizedToken()))) {
+            Exceptions.tr(PermissionDeniedException.class, "message.share.permission.denied");
+        }
+        // Share tasks are scoped to BOTH a validated execution token and a
+        // per-browser client id. A bare task UUID is never sufficient.
+        return downloadService.submitDownloadTask(downloadCreateParam,
+                DownloadServiceImpl.scopedShareDownloadOwner(downloadToken, clientId));
     }
 
     @Override
     public List<Download> listDownloadTask(ShareToken shareToken, String clientId) {
         ShareAuthorizedToken authorizedToken = parseToken(shareToken);
         validateExpiration(authorizedToken);
-        return downloadService.listDownloadTasks(clientId);
+        if (StringUtils.isBlank(clientId) || StringUtils.isBlank(shareToken.getAuthorizedToken())) {
+            Exceptions.tr(PermissionDeniedException.class, "message.share.permission.denied");
+        }
+        return downloadService.listDownloadTasks(
+                DownloadServiceImpl.scopedShareDownloadOwner(shareToken.getAuthorizedToken(), clientId));
     }
 
     @Override
-    public Download download(ShareToken shareToken, String downloadId) {
+    public Download download(ShareToken shareToken, String downloadId, String clientId) {
         ShareAuthorizedToken authorizedToken = parseToken(shareToken);
         validateExpiration(authorizedToken);
-        return downloadService.downloadFile(downloadId);
+        return downloadService.downloadFileForShare(
+                downloadId, shareToken.getAuthorizedToken(), clientId);
     }
 
     @Override

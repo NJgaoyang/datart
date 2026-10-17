@@ -36,6 +36,8 @@ public interface DownloadService extends BaseCRUDService<Download, DownloadMappe
 
     Download downloadFile(String downloadId);
 
+    Download downloadFileForShare(String downloadId, String authorizedToken, String clientId);
+
     /**
      * Synchronous streaming download: generate file and stream directly to response.
      * No async task, no polling needed.
