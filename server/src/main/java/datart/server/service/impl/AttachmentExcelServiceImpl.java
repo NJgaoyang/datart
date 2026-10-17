@@ -51,18 +51,23 @@ public class AttachmentExcelServiceImpl implements AttachmentService {
             int exported = 0;
             int page = 1;
             while (exported < recordLimit) {
-                int limit = Math.min(batchSize, recordLimit - exported);
-                viewExecuteParam.setPageInfo(PageInfo.builder().pageNo(page).pageSize(limit).build());
+                // Keep the page size stable: changing it on the last page
+                // also changes SQL OFFSET=(pageNo-1)*pageSize, duplicating rows.
+                viewExecuteParam.setPageInfo(PageInfo.builder().pageNo(page).pageSize(batchSize).build());
                 Dataframe dataframe = dataProviderService.execute(viewExecuteParam);
+                int fetched = dataframe.getRows() == null ? 0 : dataframe.getRows().size();
+                int remaining = recordLimit - exported;
+                if (fetched > remaining) {
+                    dataframe.setRows(new java.util.ArrayList<>(dataframe.getRows().subList(0, remaining)));
+                }
                 if (poiSettings == null) {
                     poiSettings = PoiConvertUtils.covertToPoiSetting(chartConfigStr, dataframe);
                     POIUtils.withSheet(workbook, sheetName, dataframe, poiSettings);
                 } else {
                     POIUtils.appendSheetRows(workbook, sheetName, dataframe, poiSettings);
                 }
-                int fetched = dataframe.getRows() == null ? 0 : dataframe.getRows().size();
-                exported += fetched;
-                if (fetched < limit) break;
+                exported += Math.min(fetched, remaining);
+                if (fetched < batchSize) break;
                 page++;
             }
         }
