@@ -57,6 +57,7 @@ import { Widget } from '../types/widgetTypes';
 import { initAutoBoardConfig } from './autoBoard';
 import { initFreeBoardConfig } from './freeBoard';
 import { ensureMobileBoardSettings } from './mobileBoardSettings';
+import { ensureGridEngineSettings } from './gridEngineSettings';
 
 export const getDashBoardByResBoard = (data: ServerDashboard): Dashboard => {
   return {
@@ -74,6 +75,7 @@ export const getDashBoardByResBoard = (data: ServerDashboard): Dashboard => {
 };
 export const preprocessBoardConfig = (config: BoardConfig, boardId: string) => {
   ensureMobileBoardSettings(config);
+  ensureGridEngineSettings(config);
   config.jsonConfig.props.forEach(item => {
     if (item.key === 'background') {
       const rowsValue = item?.rows?.[0]?.value;
