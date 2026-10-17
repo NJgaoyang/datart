@@ -27,17 +27,20 @@ import useGridLayoutMap from 'app/pages/DashBoardPage/hooks/useGridLayoutMap';
 import useLayoutMap from 'app/pages/DashBoardPage/hooks/useLayoutMap';
 import { getBoardMarginPadding } from 'app/pages/DashBoardPage/utils/board';
 import { memo, useCallback, useContext, useMemo } from 'react';
-import RGL, { Layout, WidthProvider } from 'react-grid-layout';
+import { GridLayout, type Layout, useContainerWidth, verticalCompactor } from 'react-grid-layout';
+import { noOverlapCompactor } from 'react-grid-layout/core';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import styled from 'styled-components';
 import StyledBackground from '../../../components/WidgetComponents/StyledBackground';
 import { WidgetOfAuto } from './WidgetOfAuto';
 
-const ReactGridLayout = WidthProvider(RGL);
 export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
   ({ boardId }) => {
     const { ref, widgetRowHeight, colsKey } = useGridWidgetHeight();
+    const { width: gridWidth, containerRef, mounted } = useContainerWidth({
+      measureBeforeMount: true,
+    });
     const { editing } = useContext(BoardContext);
     const boardConfig = useContext(BoardConfigValContext);
     const { background, allowOverlap } = boardConfig;
@@ -52,7 +55,7 @@ export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
     const layoutMap = useGridLayoutMap(sortedLayoutWidgets);
 
     const onLayoutChange = useCallback(
-      (layouts: Layout[]) => {
+      (layouts: Layout) => {
         thEmitScroll();
       },
       [thEmitScroll],
@@ -78,21 +81,28 @@ export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
         <StyledContainer bg={background}>
           <div className="grid-wrap" ref={gridWrapRef}>
             <div className="widget-row-height" ref={ref}>
-              <ReactGridLayout
-                layout={layoutMap[colsKey]}
-                margin={curMargin}
-                containerPadding={curPadding}
-                cols={LAYOUT_COLS_MAP[colsKey]}
-                rowHeight={widgetRowHeight}
-                onLayoutChange={onLayoutChange}
-                isDraggable={false}
-                isResizable={false}
-                allowOverlap={allowOverlap}
-                measureBeforeMount={false}
-                useCSSTransforms={true}
-              >
-                {boardChildren}
-              </ReactGridLayout>
+              <div className="grid-width" ref={containerRef}>
+                {mounted && gridWidth > 0 && (
+                  <GridLayout
+                    width={gridWidth}
+                    layout={layoutMap[colsKey] || []}
+                    gridConfig={{
+                      cols: LAYOUT_COLS_MAP[colsKey],
+                      rowHeight: widgetRowHeight,
+                      margin: curMargin,
+                      containerPadding: curPadding,
+                    }}
+                    dragConfig={{ enabled: false }}
+                    resizeConfig={{ enabled: false }}
+                    compactor={
+                      allowOverlap ? noOverlapCompactor : verticalCompactor
+                    }
+                    onLayoutChange={onLayoutChange}
+                  >
+                    {boardChildren}
+                  </GridLayout>
+                )}
+              </div>
             </div>
           </div>
           {!sortedLayoutWidgets.length && (

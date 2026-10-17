@@ -273,7 +273,7 @@ export const editBoardStackSlice = createSlice({
 
     changeAutoBoardWidgetsRect(
       state,
-      action: PayloadAction<{ layouts: Layout[]; deviceType: DeviceType }>,
+      action: PayloadAction<{ layouts: Layout; deviceType: DeviceType }>,
     ) {
       const { layouts, deviceType } = action.payload;
       layouts.forEach(it => {

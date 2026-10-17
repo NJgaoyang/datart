@@ -33,9 +33,9 @@ import useGridLayoutMap from 'app/pages/DashBoardPage/hooks/useGridLayoutMap';
 import { DeviceType } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { getBoardMarginPadding } from 'app/pages/DashBoardPage/utils/board';
 import { isMobileWidgetVisible } from 'app/pages/DashBoardPage/utils/autoLayout';
-import debounce from 'lodash/debounce';
-import { memo, useCallback, useContext, useMemo, useRef } from 'react';
-import RGL, { Layout, WidthProvider } from 'react-grid-layout';
+import { memo, useCallback, useContext, useMemo } from 'react';
+import { GridLayout, type Layout, useContainerWidth, verticalCompactor } from 'react-grid-layout';
+import { noOverlapCompactor } from 'react-grid-layout/core';
 import 'react-grid-layout/css/styles.css';
 import { useDispatch, useSelector } from 'react-redux';
 import 'react-resizable/css/styles.css';
@@ -45,8 +45,6 @@ import BoardOverlay from '../components/BoardOverlay';
 import { editBoardStackActions, editDashBoardInfoActions } from '../slice';
 import { selectDeviceType, selectEditingWidgetIds } from '../slice/selectors';
 import { WidgetOfAutoEditor } from './WidgetOfAutoEditor';
-
-const ReactGridLayout = WidthProvider(RGL);
 
 export const AutoBoardEditor: React.FC<{}> = memo(() => {
   const dispatch = useDispatch();
@@ -63,17 +61,10 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
     return getBoardMarginPadding(boardConfig, activeColsKey);
   }, [activeColsKey, boardConfig]);
 
-  const currentLayout = useRef<Layout[]>([]);
-  const pixelDragRef = useRef<{
-    element: HTMLElement;
-    startX: number;
-    startY: number;
-    left: number;
-    top: number;
-  } | null>(null);
-  const pixelDragFrameRef = useRef<number | null>(null);
-
   const { gridWrapRef, thEmitScroll } = useBoardScroll(boardId);
+  const { width: gridWidth, containerRef, mounted } = useContainerWidth({
+    measureBeforeMount: true,
+  });
 
   const sortedLayoutWidgets = useEditAutoLayoutMap(boardId);
   const visibleLayoutWidgets = useMemo(
@@ -85,76 +76,42 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
   );
   const layoutMap = useGridLayoutMap(visibleLayoutWidgets);
 
-  const changeWidgetLayouts = debounce((layouts: Layout[]) => {
-    dispatch(
-      editBoardStackActions.changeAutoBoardWidgetsRect({
-        layouts,
-        deviceType: deviceType,
-      }),
-    );
-  }, 300);
-
-  const clearPixelDrag = useCallback(() => {
-    if (pixelDragFrameRef.current !== null) {
-      cancelAnimationFrame(pixelDragFrameRef.current);
-      pixelDragFrameRef.current = null;
-    }
-    if (pixelDragRef.current) {
-      pixelDragRef.current.element.style.removeProperty('will-change');
-      pixelDragRef.current.element.style.removeProperty('transform');
-    }
-    pixelDragRef.current = null;
-  }, []);
-
-  const onPixelDragStart = useCallback(
-    (...args: any[]) => {
-      const [, oldItem, , , event, element] = args;
-      const grid = element?.closest('.react-grid-layout') as HTMLElement | null;
-      if (!grid || !element || !event) return;
-
-      const cols = LAYOUT_COLS_MAP[activeColsKey];
-      const columnWidth =
-        (grid.clientWidth - curMargin[0] * (cols - 1) - curPadding[0] * 2) /
-        cols;
-      pixelDragRef.current = {
-        element,
-        startX: event.clientX,
-        startY: event.clientY,
-        left: curPadding[0] + oldItem.x * (columnWidth + curMargin[0]),
-        top: curPadding[1] + oldItem.y * (widgetRowHeight + curMargin[1]),
-      };
-      element.style.willChange = 'transform';
+  // Keep pointer interactions in RGL; commit a single final layout after each gesture.
+  const persistLayout = useCallback(
+    (layouts: Layout) => {
+      const previous = layoutMap[activeColsKey] || [];
+      if (
+        previous.length === layouts.length &&
+        layouts.every(item => {
+          const old = previous.find(candidate => candidate.i === item.i);
+          return (
+            old &&
+            old.x === item.x &&
+            old.y === item.y &&
+            old.w === item.w &&
+            old.h === item.h
+          );
+        })
+      ) {
+        return;
+      }
+      dispatch(
+        editBoardStackActions.changeAutoBoardWidgetsRect({
+          layouts,
+          deviceType,
+        }),
+      );
     },
-    [activeColsKey, curMargin, curPadding, widgetRowHeight],
+    [activeColsKey, deviceType, dispatch, layoutMap],
   );
 
-  const onPixelDrag = useCallback((...args: any[]) => {
-    const [, , , , event] = args;
-    const drag = pixelDragRef.current;
-    if (!drag || !event) return;
-
-    const left = drag.left + event.clientX - drag.startX;
-    const top = drag.top + event.clientY - drag.startY;
-    if (pixelDragFrameRef.current !== null) {
-      cancelAnimationFrame(pixelDragFrameRef.current);
-    }
-    pixelDragFrameRef.current = requestAnimationFrame(() => {
-      if (pixelDragRef.current === drag) {
-        drag.element.style.transform = `translate3d(${left}px, ${top}px, 0)`;
-      }
-      pixelDragFrameRef.current = null;
-    });
-  }, []);
-
-  const onLayoutChange = (layouts: Layout[]) => {
-    currentLayout.current = layouts;
-    thEmitScroll();
-    // ignore isDraggable item from out
-    if (layouts.find(item => item.isDraggable === true)) {
-      return;
-    }
-    dispatch(editDashBoardInfoActions.adjustDashLayouts(layouts));
-  };
+  const onLayoutChange = useCallback(
+    (layouts: Layout) => {
+      thEmitScroll();
+      dispatch(editDashBoardInfoActions.adjustDashLayouts(layouts));
+    },
+    [dispatch, thEmitScroll],
+  );
 
   const { deviceClassName } = useMemo(() => {
     let deviceClassName: string = 'desktop';
@@ -211,31 +168,38 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
         {visibleLayoutWidgets.length ? (
           <>
             <div className="grid-wrap" ref={gridWrapRef}>
-              <ReactGridLayout
-                layout={layoutMap[activeColsKey]}
-                cols={LAYOUT_COLS_MAP[activeColsKey]}
-                margin={curMargin}
-                containerPadding={curPadding}
-                rowHeight={widgetRowHeight}
-                useCSSTransforms={true}
-                measureBeforeMount={false}
-                onResizeStop={changeWidgetLayouts}
-                resizeHandles={['n', 'e', 's', 'w', 'ne', 'nw', 'se', 'sw']}
-                onDragStart={onPixelDragStart}
-                onDrag={onPixelDrag}
-                onDragStop={(...args: any[]) => {
-                  clearPixelDrag();
-                  changeWidgetLayouts(args[0]);
-                }}
-                isBounded={false}
-                onLayoutChange={onLayoutChange}
-                isDraggable={true}
-                isResizable={true}
-                allowOverlap={allowOverlap}
-                draggableHandle={`.${WIDGET_DRAG_HANDLE}`}
-              >
-                {boardChildren}
-              </ReactGridLayout>
+              <div className="grid-width" ref={containerRef}>
+                {mounted && gridWidth > 0 && (
+                  <GridLayout
+                    width={gridWidth}
+                    layout={layoutMap[activeColsKey] || []}
+                    gridConfig={{
+                      cols: LAYOUT_COLS_MAP[activeColsKey],
+                      margin: curMargin,
+                      containerPadding: curPadding,
+                      rowHeight: widgetRowHeight,
+                    }}
+                    dragConfig={{
+                      enabled: true,
+                      bounded: false,
+                      handle: `.${WIDGET_DRAG_HANDLE}`,
+                      threshold: 3,
+                    }}
+                    resizeConfig={{
+                      enabled: true,
+                      handles: ['n', 'e', 's', 'w', 'ne', 'nw', 'se', 'sw'],
+                    }}
+                    compactor={
+                      allowOverlap ? noOverlapCompactor : verticalCompactor
+                    }
+                    onResizeStop={persistLayout}
+                    onDragStop={persistLayout}
+                    onLayoutChange={onLayoutChange}
+                  >
+                    {boardChildren}
+                  </GridLayout>
+                )}
+              </div>
             </div>
             {!!editingWidgetIds && <BoardOverlay />}
           </>

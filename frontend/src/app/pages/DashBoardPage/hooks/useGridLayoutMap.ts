@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { useMemo } from 'react';
-import { Layouts } from 'react-grid-layout';
+import type { LayoutItem, ResponsiveLayouts } from 'react-grid-layout';
 import { LAYOUT_COLS_MAP } from '../constants';
 import { normalizeAutoRectForCols } from '../utils/autoLayout';
 import { RectConfig } from '../pages/Board/slice/types';
@@ -67,13 +67,11 @@ const getWidgetConstraints = (
 };
 
 export default function useGridLayoutMap(layoutWidgets: Widget[]) {
-  const layoutMap = useMemo(() => {
-    const layoutMap: Layouts = {
-      lg: [],
-      sm: [],
-    };
+  const layoutMap = useMemo<ResponsiveLayouts>(() => {
+    const lg: LayoutItem[] = [];
+    const sm: LayoutItem[] = [];
     layoutWidgets.forEach(widget => {
-      const lg = widget.config.pRect || widget.config.mRect || {};
+      const desktopRect = widget.config.pRect;
       const sm: RectConfig =
         widget.config.mRect ||
         (widget.config.pRect
@@ -86,19 +84,19 @@ export default function useGridLayoutMap(layoutWidgets: Widget[]) {
         true,
       );
 
-      layoutMap.lg.push({
+      lg.push({
         i: widget.id,
-        x: lg.x,
-        y: lg.y,
-        w: lg.width,
-        h: lg.height,
+        x: desktopRect.x,
+        y: desktopRect.y,
+        w: desktopRect.width,
+        h: desktopRect.height,
         static: lock,
         minW: constraints.minW,
         maxW: constraints.maxW,
         minH: constraints.minH,
         maxH: constraints.maxH,
       });
-      layoutMap.sm.push({
+      sm.push({
         i: widget.id,
         x: sm.x,
         y: sm.y,
@@ -111,7 +109,7 @@ export default function useGridLayoutMap(layoutWidgets: Widget[]) {
         maxH: mobileConstraints.maxH,
       });
     });
-    return layoutMap;
+    return { lg, sm };
   }, [layoutWidgets]);
   return layoutMap;
 }

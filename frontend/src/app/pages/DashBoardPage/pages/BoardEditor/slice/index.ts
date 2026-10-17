@@ -60,7 +60,7 @@ const editDashBoardInfoSlice = createSlice({
       state.controllerPanel = action.payload;
     },
 
-    adjustDashLayouts(state, action: PayloadAction<Layout[]>) {
+    adjustDashLayouts(state, action: PayloadAction<Layout>) {
       state.layouts = JSON.parse(JSON.stringify(action.payload));
     },
     changeShowBlockMask(state, action: PayloadAction<boolean>) {
