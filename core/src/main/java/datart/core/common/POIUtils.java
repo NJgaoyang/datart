@@ -80,6 +80,15 @@ public class POIUtils {
         setColumnWidth(sheet, poiSettings.getColumnSetting());
     }
 
+    /** Append one bounded query page without recreating headers or holding
+     * all export rows in memory. The caller owns workbook lifecycle. */
+    public static void appendSheetRows(Workbook workbook, String sheetName,
+                                       Dataframe page, POISettings settings) {
+        Sheet sheet = workbook.getSheet(sheetName);
+        if (sheet == null) throw new IllegalArgumentException("Unknown export sheet");
+        fillSheetWithSetting(sheet, page, settings.getColumnSetting(), sheet.getLastRowNum() + 1);
+    }
+
     private static void setColumnWidth(Sheet sheet, Map<Integer, ColumnSetting> columnSetting) {
         for (Integer num : columnSetting.keySet()) {
             ColumnSetting setting = columnSetting.get(num);
