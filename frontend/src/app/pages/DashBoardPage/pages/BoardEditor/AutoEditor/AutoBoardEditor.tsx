@@ -33,6 +33,7 @@ import useGridLayoutMap from 'app/pages/DashBoardPage/hooks/useGridLayoutMap';
 import { DeviceType } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { getBoardMarginPadding } from 'app/pages/DashBoardPage/utils/board';
 import { isMobileWidgetVisible } from 'app/pages/DashBoardPage/utils/autoLayout';
+import { hasGridGeometryChanged } from 'app/pages/DashBoardPage/utils/gridLayout';
 import { memo, useCallback, useContext, useMemo } from 'react';
 import type { Layout } from 'react-grid-layout';
 import { DashboardGridLayout } from 'app/pages/DashBoardPage/components/GridLayout/DashboardGridLayout';
@@ -75,21 +76,7 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
   const persistLayout = useCallback(
     (layouts: Layout) => {
       const previous = layoutMap[activeColsKey] || [];
-      if (
-        previous.length === layouts.length &&
-        layouts.every(item => {
-          const old = previous.find(candidate => candidate.i === item.i);
-          return (
-            old &&
-            old.x === item.x &&
-            old.y === item.y &&
-            old.w === item.w &&
-            old.h === item.h
-          );
-        })
-      ) {
-        return;
-      }
+      if (!hasGridGeometryChanged(previous, layouts)) return;
       dispatch(
         editBoardStackActions.changeAutoBoardWidgetsRect({
           layouts,

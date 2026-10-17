@@ -14,7 +14,8 @@ import { EditBoardState } from 'app/pages/DashBoardPage/pages/BoardEditor/slice/
 import { getInitBoardInfo } from 'app/pages/DashBoardPage/utils/board';
 import { PageInfo } from 'app/pages/MainPage/pages/ViewPage/slice/types';
 import { SelectedItem } from 'app/types/ChartConfig';
-import { Layout } from 'react-grid-layout';
+import type { Layout } from 'react-grid-layout';
+import { hasGridGeometryChanged } from 'app/pages/DashBoardPage/utils/gridLayout';
 /** { excludeAction,includeAction } */
 import undoable, { includeAction } from 'redux-undo';
 import { useInjectReducer } from 'utils/@reduxjs/injectReducer';
@@ -61,6 +62,7 @@ const editDashBoardInfoSlice = createSlice({
     },
 
     adjustDashLayouts(state, action: PayloadAction<Layout>) {
+      if (!hasGridGeometryChanged(state.layouts, action.payload)) return;
       state.layouts = JSON.parse(JSON.stringify(action.payload));
     },
     changeShowBlockMask(state, action: PayloadAction<boolean>) {

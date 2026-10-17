@@ -38,7 +38,7 @@ import { Variable } from 'app/pages/MainPage/pages/VariablePage/slice/types';
 import { ChartStyleConfig } from 'app/types/ChartConfig';
 import { updateCollectionByAction } from 'app/utils/mutation';
 import { produce } from 'immer';
-import { Layout } from 'react-grid-layout';
+import type { Layout } from 'react-grid-layout';
 import { createSlice } from 'utils/@reduxjs/toolkit';
 import { ORIGINAL_TYPE_MAP } from '../../../../constants';
 import { EditBoardStack } from '../types';
@@ -278,13 +278,24 @@ export const editBoardStackSlice = createSlice({
       const { layouts, deviceType } = action.payload;
       layouts.forEach(it => {
         const { i, x, y, w, h } = it;
-        if (!state.widgetRecord?.[i]?.config) return;
+        const widgetConfig = state.widgetRecord?.[i]?.config;
+        if (!widgetConfig) return;
+        const previousRect =
+          deviceType === DeviceType.Mobile ? widgetConfig.mRect : widgetConfig.pRect;
+        if (
+          previousRect &&
+          previousRect.x === x &&
+          previousRect.y === y &&
+          previousRect.width === w &&
+          previousRect.height === h
+        ) {
+          return;
+        }
         const rectItem = { x, y, width: w, height: h };
         if (deviceType === DeviceType.Desktop) {
-          state.widgetRecord[i].config.pRect = rectItem;
-        }
-        if (deviceType === DeviceType.Mobile) {
-          state.widgetRecord[i].config.mRect = rectItem;
+          widgetConfig.pRect = rectItem;
+        } else if (deviceType === DeviceType.Mobile) {
+          widgetConfig.mRect = rectItem;
         }
       });
     },

@@ -195,31 +195,44 @@ export const adjustWidgetsToBoard = (args: {
   return widgets;
 };
 
+/**
+ * Place added widgets beneath the occupied grid area, packing each new row
+ * left to right. Avoids collisions with existing widgets and between a batch
+ * of newly-added widgets even when they have different heights.
+ */
 export const updateAutoWidgetsRect = (
   widgets: Widget[],
   layouts: Layout,
 ): Widget[] => {
-  const upDatedWidgets: Widget[] = [];
-  const dashWidgetRectYs = layouts.map(ele => ele.y);
-  let widgetsCount = dashWidgetRectYs.length;
-  let itemYs = [...dashWidgetRectYs];
-  widgets.forEach(widget => {
-    const itemX =
-      (widgetsCount * widget.config.pRect.width) % LAYOUT_COLS_MAP.lg;
-    const itemY = Math.max(...itemYs, 0);
-    const nextRect = {
-      ...widget.config.pRect,
-      x: itemX,
-      y: itemY,
-    };
-    widget = produce(widget, draft => {
-      draft.config.pRect = nextRect;
+  const cols = LAYOUT_COLS_MAP.lg;
+  let nextY = layouts.reduce((bottom, item) => Math.max(bottom, item.y + item.h), 0);
+  let nextX = 0;
+  let tallestInRow = 0;
+
+  return widgets.map(widget => {
+    const { width, height } = widget.config.pRect;
+    const w = Math.max(1, Math.min(cols, Math.round(Number(width) || 1)));
+    const h = Math.max(1, Math.round(Number(height) || 1));
+
+    if (nextX > 0 && nextX + w > cols) {
+      nextY += tallestInRow;
+      nextX = 0;
+      tallestInRow = 0;
+    }
+
+    const placedWidget = produce(widget, draft => {
+      draft.config.pRect = {
+        ...draft.config.pRect,
+        x: nextX,
+        y: nextY,
+        width: w,
+        height: h,
+      };
     });
-    upDatedWidgets.push(widget);
-    widgetsCount++;
-    itemYs.push(itemY);
+    nextX += w;
+    tallestInRow = Math.max(tallestInRow, h);
+    return placedWidget;
   });
-  return upDatedWidgets;
 };
 
 export const updateFreeWidgetsRect = (widgets: Widget[]) => {
