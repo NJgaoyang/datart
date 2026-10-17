@@ -53,6 +53,27 @@ export const initAutoBoardConfig = () => {
               value: false,
               comType: 'switch',
             },
+            {
+              label: 'basic.compactType',
+              key: 'compactType',
+              default: 'vertical',
+              value: 'vertical',
+              comType: 'select',
+              options: {
+                items: [
+                  { label: 'Vertical', value: 'vertical' },
+                  { label: 'Horizontal', value: 'horizontal' },
+                  { label: 'None', value: 'none' },
+                ],
+              },
+            },
+            {
+              label: 'basic.showGrid',
+              key: 'showGrid',
+              default: false,
+              value: false,
+              comType: 'switch',
+            },
           ],
         },
         {
@@ -158,6 +179,8 @@ export const initAutoBoardConfig = () => {
               basic: '基本属性',
               initialQuery: '开启初始化查询',
               allowOverlap: '允许组件重叠',
+              compactType: '组件压缩方向',
+              showGrid: '显示栅格辅助线',
             },
             space: {
               space: '间距',
@@ -185,6 +208,8 @@ export const initAutoBoardConfig = () => {
               basic: 'Basic',
               initialQuery: 'Open Init Query',
               allowOverlap: 'Allow Overlap',
+              compactType: 'Grid Compaction',
+              showGrid: 'Show Grid Guides',
             },
             space: {
               space: 'Space',

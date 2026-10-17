@@ -34,6 +34,8 @@ export interface BoardConfigValue {
   scaleMode: ScaleModeType;
   // auto
   allowOverlap: boolean;
+  compactType: 'vertical' | 'horizontal' | 'none';
+  showGrid: boolean;
   margin: [number, number];
   padding: [number, number];
   mMargin: [number, number];
@@ -50,10 +52,10 @@ export const BoardConfigProvider: FC<{
   children?: ReactNode;
 }> = memo(({ config, boardId, children }) => {
   const props = config.jsonConfig.props;
-  const [initialQuery, allowOverlap, scaleMode] = getJsonConfigs(
+  const [initialQuery, allowOverlap, scaleMode, rawCompactType, rawShowGrid] = getJsonConfigs(
     props,
     ['basic'],
-    ['initialQuery', 'allowOverlap', 'scaleMode'],
+    ['initialQuery', 'allowOverlap', 'scaleMode', 'compactType', 'showGrid'],
   );
   const [background] = getJsonConfigs(props, ['background'], ['background']);
   const [width, height] = getJsonConfigs(props, ['size'], ['width', 'height']);
@@ -79,6 +81,8 @@ export const BoardConfigProvider: FC<{
     height,
     scaleMode,
     allowOverlap,
+    compactType: rawCompactType === 'horizontal' || rawCompactType === 'none' ? rawCompactType : 'vertical',
+    showGrid: rawShowGrid === true,
     margin: [marginLR, marginTB],
     padding: [paddingLR, paddingTB],
     mMargin: [mMarginLR, mMarginTB],

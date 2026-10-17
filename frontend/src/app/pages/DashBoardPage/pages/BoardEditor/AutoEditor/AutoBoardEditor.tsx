@@ -49,7 +49,7 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
   const dispatch = useDispatch();
   const { boardId, name } = useContext(BoardContext);
   const boardConfig = useContext(BoardConfigValContext);
-  const { background, allowOverlap } = boardConfig;
+  const { background, allowOverlap, compactType, showGrid } = boardConfig;
   const deviceType = useSelector(selectDeviceType);
   const editingWidgetIds = useSelector(selectEditingWidgetIds);
   const { ref, widgetRowHeight, colsKey } = useGridWidgetHeight();
@@ -169,6 +169,8 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
                 }
                 editable={true}
                 allowOverlap={allowOverlap}
+                compactType={compactType}
+                showGrid={showGrid}
                 onLayoutCommit={persistLayout}
                 onLayoutChange={onLayoutChange}
               >

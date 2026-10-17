@@ -8,15 +8,15 @@ import { memo, useMemo, type ReactNode, type RefObject } from 'react';
 import {
   GridLayout,
   useContainerWidth,
-  verticalCompactor,
   type Layout,
 } from 'react-grid-layout';
-import { noOverlapCompactor } from 'react-grid-layout/core';
+import { getCompactor } from 'react-grid-layout/core';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
 import { WIDGET_DRAG_HANDLE } from '../../constants';
 import { getResponsiveGridSpacing } from '../../utils/gridSpacing';
+import { getGridGuideStyle, resolveGridCompactType } from '../../utils/gridEngineOptions';
 
 const ALL_RESIZE_HANDLES = [
   'n', 'e', 's', 'w', 'ne', 'nw', 'se', 'sw',
@@ -31,6 +31,8 @@ export interface DashboardGridLayoutProps {
   margin: [number, number];
   containerPadding: [number, number];
   allowOverlap: boolean;
+  compactType?: 'vertical' | 'horizontal' | 'none';
+  showGrid?: boolean;
   editable: boolean;
   onLayoutChange?: (layout: Layout) => void;
   onLayoutCommit?: (layout: Layout) => void;
@@ -48,6 +50,8 @@ export const DashboardGridLayout = memo(
     margin,
     containerPadding,
     allowOverlap,
+    compactType = 'vertical',
+    showGrid = false,
     editable,
     onLayoutChange,
     onLayoutCommit,
@@ -85,7 +89,16 @@ export const DashboardGridLayout = memo(
       }),
       [editable],
     );
-    const compactor = allowOverlap ? noOverlapCompactor : verticalCompactor;
+    const compactor = useMemo(
+      () => getCompactor(resolveGridCompactType(compactType), allowOverlap),
+      [compactType, allowOverlap],
+    );
+    const guideStyle = useMemo(
+      () => editable && showGrid
+        ? getGridGuideStyle(width, gridConfig)
+        : undefined,
+      [editable, showGrid, width, gridConfig],
+    );
 
     return (
       <div
@@ -98,6 +111,7 @@ export const DashboardGridLayout = memo(
             key={`${boardId}:${deviceKey}:${editable ? 'edit' : 'read'}`}
             width={width}
             layout={layout}
+            style={guideStyle}
             gridConfig={gridConfig}
             dragConfig={dragConfig}
             resizeConfig={resizeConfig}

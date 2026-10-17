@@ -32,7 +32,7 @@
     "prepare": "cd .. && husky install frontend/.husky",
     "doc:types": "tsc --project tsconfig.dHelper.json",
     "doc:html": "jsdoc -c jsdoc.config.json",
-    "test:grid": "vitest run src/app/pages/DashBoardPage/hooks/__tests__/useGridLayoutMap.test.tsx src/app/pages/DashBoardPage/utils/__tests__/gridLayout.test.ts src/app/pages/DashBoardPage/utils/__tests__/widgetPlacement.test.ts src/app/pages/DashBoardPage/utils/__tests__/autoLayout.test.ts src/app/pages/DashBoardPage/utils/__tests__/gridSpacing.test.ts",
+    "test:grid": "vitest run src/app/pages/DashBoardPage/hooks/__tests__/useGridLayoutMap.test.tsx src/app/pages/DashBoardPage/utils/__tests__/gridLayout.test.ts src/app/pages/DashBoardPage/utils/__tests__/widgetPlacement.test.ts src/app/pages/DashBoardPage/utils/__tests__/autoLayout.test.ts src/app/pages/DashBoardPage/utils/__tests__/gridSpacing.test.ts src/app/pages/DashBoardPage/utils/__tests__/gridEngineOptions.test.ts",
     "check:grid": "npm run checkTs && npm run test:grid"
   },
   "eslintConfig": {
