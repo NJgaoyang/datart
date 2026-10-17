@@ -71,7 +71,11 @@ async function flushBatch(): Promise<void> {
         url: 'data-provider/execute',
         data: { ...entry.requestParams, queryId: entry.queryId },
       });
-      entry.resolve(data);
+      if (data?.error) {
+        entry.reject(new Error(`Widget query failed: ${data.error}`));
+      } else {
+        entry.resolve(data);
+      }
       return;
     }
 
@@ -91,7 +95,11 @@ async function flushBatch(): Promise<void> {
     batch.forEach(entry => {
       const result = resultMap[entry.widgetId];
       if (result !== undefined) {
-        entry.resolve(result);
+        if (result?.error) {
+          entry.reject(new Error(`Widget query failed: ${result.error}`));
+        } else {
+          entry.resolve(result);
+        }
       } else {
         // 尝试无 requestId 的降级查找
         const fallback =
@@ -101,7 +109,11 @@ async function flushBatch(): Promise<void> {
             ) || ''
           ];
         if (fallback !== undefined) {
-          entry.resolve(fallback);
+          if (fallback?.error) {
+            entry.reject(new Error(`Widget query failed: ${fallback.error}`));
+          } else {
+            entry.resolve(fallback);
+          }
         } else {
           entry.reject(
             new Error(
@@ -123,7 +135,11 @@ async function flushBatch(): Promise<void> {
             url: 'data-provider/execute',
             data: { ...entry.requestParams, queryId: entry.queryId },
           });
-          entry.resolve(data);
+          if (data?.error) {
+            entry.reject(new Error(`Widget query failed: ${data.error}`));
+          } else {
+            entry.resolve(data);
+          }
         } catch (singleError) {
           entry.reject(singleError);
         }

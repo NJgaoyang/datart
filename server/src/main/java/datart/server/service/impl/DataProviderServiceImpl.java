@@ -393,14 +393,15 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
         // The subject is thread-local; workers must explicitly impersonate
         // the authenticated request user and always release their context.
         final String username = getCurrentUser().getUsername();
+        final BatchContext batchContext = new BatchContext();
         List<CompletableFuture<Dataframe>> jobs = new ArrayList<>();
         for (ViewExecuteParam param : params) {
             try {
                 jobs.add(CompletableFuture.supplyAsync(() -> {
                     try {
                         securityManager.runAs(username);
-                        // A BatchContext owns mutable maps, never shared across workers.
-                        return execute(param, true, new BatchContext());
+                        // Concurrent maps safely reuse metadata within the batch.
+                        return execute(param, true, batchContext);
                     } catch (Exception e) {
                         log.error("Batch query failed for view {}", param.getViewId(), e);
                         Dataframe failed = Dataframe.empty();
@@ -415,7 +416,7 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
                 // Honor backpressure instead of spawning unbounded threads.
                 try {
                     jobs.add(CompletableFuture.completedFuture(
-                            execute(param, true, new BatchContext())));
+                            execute(param, true, batchContext)));
                 } catch (Exception e) {
                     log.error("Batch query failed for view {}", param.getViewId(), e);
                     Dataframe failed = Dataframe.empty();
@@ -449,11 +450,11 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
      * 避免同一批次内对相同 View 的重复数据库查询。
      */
     private class BatchContext {
-        private final Map<String, View> viewCache = new HashMap<>();
-        private final Map<String, Source> sourceCache = new HashMap<>();
-        private final Map<String, DataProviderSource> providerSourceCache = new HashMap<>();
-        private final Map<String, Set<SelectColumn>> columnPermCache = new HashMap<>();
-        private final Map<String, List<ScriptVariable>> baseVariableCache = new HashMap<>();
+        private final Map<String, View> viewCache = new ConcurrentHashMap<>();
+        private final Map<String, Source> sourceCache = new ConcurrentHashMap<>();
+        private final Map<String, DataProviderSource> providerSourceCache = new ConcurrentHashMap<>();
+        private final Map<String, Set<SelectColumn>> columnPermCache = new ConcurrentHashMap<>();
+        private final Map<String, List<ScriptVariable>> baseVariableCache = new ConcurrentHashMap<>();
 
         View getView(String viewId, boolean checkViewPermission) {
             return viewCache.computeIfAbsent(viewId,
