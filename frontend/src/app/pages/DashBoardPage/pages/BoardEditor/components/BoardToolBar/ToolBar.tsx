@@ -53,7 +53,7 @@ export const ToolBar = () => {
   const t = useI18NPrefix(`viz.board.action`);
   return (
     <Wrapper onClick={ssp}>
-      <Space>
+      <Space className="toolbar-primary" size={6}>
         <AddChart />
 
         <AddController />
@@ -96,4 +96,20 @@ const Wrapper = styled.div`
   display: flex;
   flex: 1;
   justify-content: space-between;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+
+  .toolbar-primary {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    white-space: nowrap;
+  }
+
+  > :last-child {
+    flex: 0 0 auto;
+  }
 `;

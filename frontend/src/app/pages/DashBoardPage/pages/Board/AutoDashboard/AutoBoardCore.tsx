@@ -99,7 +99,7 @@ export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
           </div>
           {!visibleLayoutWidgets.length && (
             <div className="empty">
-              <Empty description="" />
+              <Empty description="当前仪表板还没有可展示的组件" />
             </div>
           )}
         </StyledContainer>

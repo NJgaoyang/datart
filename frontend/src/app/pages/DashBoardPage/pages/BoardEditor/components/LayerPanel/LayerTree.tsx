@@ -17,11 +17,12 @@
  */
 
 import { Tree } from 'app/components';
+import { Input } from 'antd';
 import { renderIcon } from 'app/hooks/useGetVizIcon';
 import useResizeObserver from 'app/hooks/useResizeObserver';
 import { WidgetActionContext } from 'app/pages/DashBoardPage/components/ActionProvider/WidgetActionProvider';
 import widgetManager from 'app/pages/DashBoardPage/components/WidgetManager';
-import { FC, memo, useCallback, useContext } from 'react';
+import { FC, memo, useCallback, useContext, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { stopPPG } from 'utils/utils';
 import { dropLayerNodeAction } from '../../slice/actions/actions';
@@ -30,11 +31,22 @@ import {
   selectLayerTree,
   selectSelectedIds,
 } from '../../slice/selectors';
-import { EventLayerNode, LayerTreeItem } from './LayerTreeItem';
+import { EventLayerNode, LayerTreeItem, LayerNode } from './LayerTreeItem';
 
 export const LayerTree: FC<{}> = memo(() => {
   const dispatch = useDispatch();
   const treeData = useSelector(selectLayerTree);
+  const [query, setQuery] = useState('');
+  const filteredTree = useMemo(() => {
+    const needle = query.trim().toLocaleLowerCase();
+    if (!needle) return treeData;
+    const filter = (nodes: LayerNode[]): LayerNode[] => nodes.flatMap(node => {
+      const children = filter(node.children || []);
+      const match = String(node.title || '').toLocaleLowerCase().includes(needle);
+      return match ? [node] : children.length ? [{ ...node, children }] : [];
+    });
+    return filter(treeData as LayerNode[]);
+  }, [treeData, query]);
   const renderTreeItem = useCallback(n => <LayerTreeItem node={n} />, []);
   const { onEditSelectWidget } = useContext(WidgetActionContext);
   const editingWidgetIds = useSelector(selectEditingWidgetIds);
@@ -80,6 +92,15 @@ export const LayerTree: FC<{}> = memo(() => {
   );
 
   return (
+    <div className="layer-tree-search" style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
+    <Input.Search
+      aria-label="搜索组件图层"
+      placeholder="搜索组件"
+      allowClear
+      value={query}
+      onChange={event => setQuery(event.target.value)}
+      style={{ padding: '8px 12px', flex: '0 0 auto' }}
+    />
     <Tree
       className="medium"
       draggable={!editingWidgetIds ? { icon: false } : false}
@@ -90,11 +111,12 @@ export const LayerTree: FC<{}> = memo(() => {
       onSelect={treeSelect}
       onClick={stopPPG}
       onDrop={onDrop}
-      treeData={treeData}
+      treeData={filteredTree}
       selectedKeys={selectedIds ? selectedIds.split(',') : []}
       height={height}
       wrapperRef={ref}
       defaultExpandAll
     />
+    </div>
   );
 });

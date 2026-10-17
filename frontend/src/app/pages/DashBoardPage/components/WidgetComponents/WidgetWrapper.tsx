@@ -74,7 +74,14 @@ const Wrapper = styled.div`
     }
   }
 
-  &:hover .widget-tool-dropdown {
+  &:hover .widget-tool-dropdown,
+  &:focus-within .widget-tool-dropdown {
     visibility: visible;
+  }
+
+  @media (pointer: coarse) {
+    .widget-tool-dropdown {
+      visibility: visible;
+    }
   }
 `;

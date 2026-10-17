@@ -68,6 +68,7 @@ const EditorHeader: FC<PropsWithChildren> = memo(({ children }) => {
         {title}
       </h1>
       <Space>
+        {saving && <span aria-live="polite" role="status">保存中…</span>}
         {children}
         <>
           <Button

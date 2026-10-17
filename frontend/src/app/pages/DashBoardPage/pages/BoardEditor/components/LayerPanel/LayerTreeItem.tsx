@@ -96,10 +96,15 @@ const Item = styled.div`
     display: none;
   }
 
-  &:hover {
+  &:hover,
+  &:focus-within {
     .widget-tool-dropdown {
       display: block;
     }
+  }
+
+  @media (pointer: coarse) {
+    .widget-tool-dropdown { display: inline-flex; }
   }
 `;
 

@@ -178,7 +178,7 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
           </>
         ) : (
           <div className="empty">
-            <Empty description="" />
+            <Empty description="暂无组件，请使用顶部工具栏添加图表或筛选控件" />
           </div>
         )}
       </StyledContainer>
