@@ -182,9 +182,12 @@ const ChartDataConfigSectionActionMenu: FC<
   };
 
   const metric = config.rows?.find(row => row.uid === uid);
+  // Persisted chart fields commonly omit the computed expression text:
+  // it lives in dataView.computedFields. Do not hide the explicit metric
+  // option merely because the chart copy only carries its stable fieldId.
   const canConfigureRatio = type === DataViewFieldType.NUMERIC
     && metric?.aggregate === AggregateFieldActionType.Sum
-    && Boolean(metric.expression?.includes('/'));
+    && category === ChartDataViewFieldCategory.ComputedField;
 
   return (
     <Menu>
