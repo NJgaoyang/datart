@@ -58,6 +58,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import java.util.concurrent.*;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
@@ -79,6 +81,16 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
     private static final String SERVER_AGGREGATE = "serverAggregate";
 
     private ObjectMapper objectMapper;
+
+    // Global per-service bound: never create one unbounded worker per widget.
+    private final ThreadPoolExecutor batchWorkers = new ThreadPoolExecutor(
+            4, 4, 0, TimeUnit.MILLISECONDS,
+            new ArrayBlockingQueue<>(128), new ThreadPoolExecutor.AbortPolicy());
+
+    @PreDestroy
+    public void shutdownBatchWorkers() {
+        batchWorkers.shutdownNow();
+    }
 
     private final DataProviderManager dataProviderManager;
 
@@ -375,17 +387,59 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
 
     @Override
     public Map<String, Dataframe> executeBatch(List<ViewExecuteParam> params) throws Exception {
-        Map<String, Dataframe> results = new HashMap<>();
-        if (CollectionUtils.isEmpty(params)) {
-            return results;
-        }
-        BatchContext batchContext = new BatchContext();
+        Map<String, Dataframe> results = new LinkedHashMap<>();
+        if (CollectionUtils.isEmpty(params)) return results;
+
+        // The subject is thread-local; workers must explicitly impersonate
+        // the authenticated request user and always release their context.
+        final String username = getCurrentUser().getUsername();
+        List<CompletableFuture<Dataframe>> jobs = new ArrayList<>();
         for (ViewExecuteParam param : params) {
+            try {
+                jobs.add(CompletableFuture.supplyAsync(() -> {
+                    try {
+                        securityManager.runAs(username);
+                        // A BatchContext owns mutable maps, never shared across workers.
+                        return execute(param, true, new BatchContext());
+                    } catch (Exception e) {
+                        log.error("Batch query failed for view {}", param.getViewId(), e);
+                        Dataframe failed = Dataframe.empty();
+                        failed.setError("QUERY_FAILED");
+                        return failed;
+                    } finally {
+                        RequestContext.clean();
+                        securityManager.logoutCurrent();
+                    }
+                }, batchWorkers));
+            } catch (RejectedExecutionException saturated) {
+                // Honor backpressure instead of spawning unbounded threads.
+                try {
+                    jobs.add(CompletableFuture.completedFuture(
+                            execute(param, true, new BatchContext())));
+                } catch (Exception e) {
+                    log.error("Batch query failed for view {}", param.getViewId(), e);
+                    Dataframe failed = Dataframe.empty();
+                    failed.setError("QUERY_FAILED");
+                    jobs.add(CompletableFuture.completedFuture(failed));
+                }
+            }
+        }
+        for (int index = 0; index < params.size(); index++) {
+            ViewExecuteParam param = params.get(index);
             String resultKey = StringUtils.isNotBlank(param.getRequestId())
-                    ? param.getRequestId()
-                    : param.getVizId();
-            Dataframe df = execute(param, true, batchContext);
-            results.put(resultKey, df);
+                    ? param.getRequestId() : param.getVizId();
+            try {
+                results.put(resultKey, jobs.get(index).get());
+            } catch (InterruptedException e) {
+                jobs.forEach(job -> job.cancel(true));
+                Thread.currentThread().interrupt();
+                throw e;
+            } catch (ExecutionException e) {
+                log.error("Unexpected batch query error for view {}", param.getViewId(), e);
+                Dataframe failed = Dataframe.empty();
+                failed.setError("QUERY_FAILED");
+                results.put(resultKey, failed);
+            }
         }
         return results;
     }

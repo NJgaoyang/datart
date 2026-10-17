@@ -51,6 +51,9 @@ public class Dataframe implements Serializable {
 
     private String script;
 
+    /** Per-chart batch failure marker; never expose SQL or database credentials. */
+    private String error;
+
     public Dataframe() {
         this.id = "DF" + UUIDGenerator.generate();
 
