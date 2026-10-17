@@ -35,7 +35,8 @@ if (!path) {
   // Startup regression guard: do not reintroduce the admin-tools chunk.
   // Its cross-imports with app caused an initialization TDZ and a blank login.
   const unsafeAdminChunks = Object.values(manifest).filter(asset =>
-    /(?:^|\\/)admin-tools\\.[^/]+\\.js$/.test(asset.file || ''));
+    asset.file?.split('/').pop()?.startsWith('admin-tools.') &&
+    asset.file?.endsWith('.js'));
   if (unsafeAdminChunks.length > 0) {
     console.error('Unsafe admin-tools chunk detected: keep app modules together.');
     process.exitCode = 1;
