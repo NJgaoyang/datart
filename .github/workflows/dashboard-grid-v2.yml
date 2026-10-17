@@ -39,6 +39,8 @@ jobs:
         run: npm ci --legacy-peer-deps
       - name: TypeScript and targeted native RGL v2 tests
         run: npm run check:grid
+      - name: Native v2 compaction performance baseline (100/500/1000 widgets)
+        run: npm run bench:grid
       - name: Production frontend build
         run: npm run build
 
