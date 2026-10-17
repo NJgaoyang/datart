@@ -143,7 +143,7 @@ function ShareDashboardPage() {
     } else {
       const id = uuidv4();
       setShareClientId(id);
-      localStorage.setItem(StorageKeys.ShareClientId, uuidv4());
+      localStorage.setItem(StorageKeys.ShareClientId, id);
     }
     const executeToken = Object.values(executeTokenMap)[0]?.authorizedToken;
     return () =>
