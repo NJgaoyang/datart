@@ -4,7 +4,7 @@
  * This is a new-system component: all coordinates use RGL v2 Layout and
  * any import of old dashboard data belongs in the future migration service.
  */
-import { memo, useMemo, type ReactNode } from 'react';
+import { memo, useMemo, type ReactNode, type RefObject } from 'react';
 import {
   GridLayout,
   useContainerWidth,
@@ -78,7 +78,11 @@ export const DashboardGridLayout = memo(
     const compactor = allowOverlap ? noOverlapCompactor : verticalCompactor;
 
     return (
-      <div className="datart-grid-width" ref={containerRef} style={{ width: '100%', minWidth: 0 }}>
+      <div
+        className="datart-grid-width"
+        ref={containerRef as RefObject<HTMLDivElement>}
+        style={{ width: '100%', minWidth: 0 }}
+      >
         {mounted && width > 0 && (
           <GridLayout
             key={`${boardId}:${deviceKey}:${editable ? 'edit' : 'read'}`}

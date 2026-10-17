@@ -68,3 +68,11 @@ npm run build
 The new `check:grid` command runs the project's full TypeScript check followed by focused v2 layout tests. It does not replace browser verification: exercise adding charts in desktop and mobile editor modes, drag/resize handles, locked widgets, overlap, group widgets, undo/redo, save/reopen, and browser scaling.
 
 No compatibility layer or automatic historical-data conversion is enabled. Existing dashboards from older versions must be migrated later through the dedicated migration service before production adoption.
+
+## Compiler fixes from initial local verification (2026-10-17)
+
+- The ordinary widget parsing pipeline no longer calls the removed `migrateAutoWidgetsLayout`. Historical grid geometry is left unchanged on read; it requires an explicit migration process before use in the new editor.
+- The RGL v2 `useContainerWidth` ref is narrowed to the project's React 18 ref type for the host `div`; runtime behavior is unchanged.
+- The Redux board-info state keeps a writable `LayoutItem[]`; RGL v2 `Layout` is readonly and must not be used for mutable Immer state.
+
+These changes address the three TypeScript diagnostics reported for `npm run check:grid`. Re-run the command locally to confirm that compilation proceeds to the test stage.
