@@ -23,6 +23,7 @@ import {
   dataModelColumnSorter,
   diffMergeHierarchyModel,
   findViewFieldMeta,
+  getColumnWidthMap,
   getPreviewFieldDisplayName,
   normalizeModelDisplayNames,
   resolveSchemaColumnComment,
@@ -658,5 +659,25 @@ describe('addPathToHierarchyStructureAndChangeName test', () => {
         ],
       },
     });
+  });
+});
+
+describe('content-fit source preview columns', () => {
+  it('measures displayed names instead of long internal field keys', () => {
+    const model: any = {
+      's_order_daily_report.some_long_database_city_field_identifier': {
+        type: DataViewFieldType.STRING,
+        displayName: '城市',
+        isDisplayNameCustom: true,
+      },
+    };
+    const widths = getColumnWidthMap(model, [{ 's_order_daily_report.some_long_database_city_field_identifier': '南京市' }]);
+    expect(widths['s_order_daily_report.some_long_database_city_field_identifier']).toBeLessThan(160);
+  });
+
+  it('caps exceptional long values and fits ordinary compact data', () => {
+    const model: any = { city: { type: DataViewFieldType.STRING } };
+    expect(getColumnWidthMap(model, [{city:'a'.repeat(200)}])['city']).toBeLessThanOrEqual(360);
+    expect(getColumnWidthMap(model, [{city:'杭州'}])['city']).toBeLessThan(160);
   });
 });

@@ -57,25 +57,25 @@ describe('test getBoardMarginPadding', () => {
   });
 });
 
-describe('zero default spacing for newly created dashboards', () => {
-  it('initializes all auto-dashboard desktop and mobile spacing to zero', () => {
+describe('one-pixel default spacing for newly created dashboards', () => {
+  it('initializes all auto-dashboard desktop and mobile spacing to one', () => {
     const config = initAutoBoardConfig();
     for (const key of ['space', 'mSpace']) {
       const group = config.jsonConfig.props.find(item => item.key === key);
       expect(group?.rows).toHaveLength(4);
       for (const item of group?.rows || []) {
-        expect(item.value).toBe(0);
-        expect(item.default).toBe(0);
+        expect(item.value).toBe(1);
+        expect(item.default).toBe(1);
       }
     }
   });
 
-  it('keeps legacy config defaults zero, without overriding existing custom spacing', () => {
+  it('uses one-pixel legacy defaults, without overriding existing custom spacing', () => {
     const config = getInitBoardConfigBeta3('auto');
-    expect(config.margin).toEqual([0, 0]);
-    expect(config.containerPadding).toEqual([0, 0]);
-    expect(config.mobileMargin).toEqual([0, 0]);
-    expect(config.mobileContainerPadding).toEqual([0, 0]);
+    expect(config.margin).toEqual([1, 1]);
+    expect(config.containerPadding).toEqual([1, 1]);
+    expect(config.mobileMargin).toEqual([1, 1]);
+    expect(config.mobileContainerPadding).toEqual([1, 1]);
   });
 
   it('preserves explicit existing spacing and supports zeros', () => {

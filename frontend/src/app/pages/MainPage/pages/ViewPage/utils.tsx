@@ -335,18 +335,23 @@ export function getColumnWidthMap(
 
   return Object.keys(model).reduce((map, name) => {
     if (!map[name]) {
-      // header width
+      // Measure the displayed column label, not its internal database key.
+      // SchemaTable renders these labels and must not expand short headers
+      // such as 城市 because their SQL identifiers are long.
+      const field = model[name];
+      const displayName = getFieldDisplayName({ ...field, name });
       map[name] =
-        getTextWidth(name, `${FONT_WEIGHT_MEDIUM}`) +
+        getTextWidth(displayName, `${FONT_WEIGHT_MEDIUM}`) +
         HEADER_PADDING +
         ICON_WIDTH * 2 +
         ICON_MARGIN;
     }
+    map[name] = Math.min(360, Math.max(88, map[name]));
     if (dataSource.length > 0) {
       map[name] = dataSource.reduce((width, o) => {
         // column width
         return Math.min(
-          // MAX_RESULT_TABLE_COLUMN_WIDTH,
+          360,
           Math.max(
             width,
             map[name],
