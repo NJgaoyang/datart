@@ -20,7 +20,7 @@ import styled from 'styled-components';
 import { LEVEL_50 } from 'styles/StyleConstants';
 export const StyledWidgetToolBar: React.FC<{ children?: ReactNode }> = memo(
   props => {
-    return <StyleWrap>{props.children} </StyleWrap>;
+    return <StyleWrap className="widget-action-toolbar">{props.children}</StyleWrap>;
   },
 );
 const StyleWrap = styled.div`

@@ -45,15 +45,16 @@ export const ControllerWidget: React.FC<{}> = memo(() => {
     widget.config.customConfig.props,
   );
   return (
-    <WidgetWrapper background={background} border={border} padding={padding}>
+    <WidgetWrapper className="controller-widget" background={background} border={border} padding={padding}>
       <div
         ref={cacheWhRef}
         className="controller-widget-content"
         style={{
           ...ZIndexStyle,
-          // The picker/calendar and widget action use disjoint hit areas.
-          width: renderMode === 'edit' ? 'calc(100% - 40px)' : '100%',
+          // The sibling action toolbar occupies its own flex width.
+          width: 'auto',
           minWidth: 0,
+          flex: '1 1 auto',
         }}
       >
         <div style={FlexStyle}>

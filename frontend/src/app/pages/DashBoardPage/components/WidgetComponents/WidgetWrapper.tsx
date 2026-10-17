@@ -28,11 +28,12 @@ export const WidgetWrapper: React.FC<{
   background: BackgroundConfig;
   padding: WidgetPadding;
   border: BorderConfig;
+  className?: string;
   children?: ReactNode;
 }> = memo(props => {
-  const { children, ...rest } = props;
+  const { children, className, ...rest } = props;
   const style = getWidgetSomeStyle(rest);
-  return <Wrapper style={style}>{children}</Wrapper>;
+  return <Wrapper className={className} style={style}>{children}</Wrapper>;
 });
 const Wrapper = styled.div`
   /* Give absolute toolbar its own stable local positioning context. */
@@ -43,6 +44,29 @@ const Wrapper = styled.div`
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+
+  /* Controller toolbar belongs in a true flex column, not painted over the
+     DatePicker suffix. Its width automatically includes status/lock icons. */
+  &.controller-widget {
+    align-items: center;
+
+    .controller-widget-content {
+      flex: 1 1 auto;
+      min-width: 0;
+      max-width: 100%;
+      width: auto;
+      height: 100%;
+    }
+
+    .widget-action-toolbar {
+      position: relative;
+      top: auto;
+      right: auto;
+      flex: 0 0 auto;
+      align-self: center;
+      overflow: visible;
+    }
+  }
 
   &:hover .widget-tool-dropdown {
     visibility: visible;
