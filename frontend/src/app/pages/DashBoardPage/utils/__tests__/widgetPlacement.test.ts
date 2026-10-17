@@ -14,6 +14,9 @@ describe('new dashboard widget placement', () => {
       x: 0, y: 22, width: 20, height: 6,
     });
     expect(input[0].config.pRect.x).toBe(8);
+    expect(result[0].config.mRect).toEqual({
+      x: 0, y: 0, width: 7, height: 6,
+    });
   });
 
   it('packs batches left to right and wraps after the widest row', () => {
@@ -35,4 +38,18 @@ describe('new dashboard widget placement', () => {
       x: 0, y: 0, width: 72, height: 3,
     });
   });
+  it('places mobile widgets after existing mobile content, not desktop rows', () => {
+    const result = updateAutoWidgetsRect(
+      [makeWidget('new', 36, 7)],
+      [{ i: 'desktop-existing', x: 0, y: 1, w: 36, h: 6 }],
+      [{ i: 'mobile-existing', x: 0, y: 22, w: 24, h: 10 }],
+    );
+    expect(result[0].config.pRect).toEqual({
+      x: 0, y: 7, width: 36, height: 7,
+    });
+    expect(result[0].config.mRect).toEqual({
+      x: 0, y: 32, width: 12, height: 7,
+    });
+  });
+
 });

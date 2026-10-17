@@ -46,6 +46,7 @@ import { CloneValueDeep } from 'utils/object';
 import { adaptBoardImageUrl, fillPx, getBackgroundImage } from '.';
 import { initClientId } from '../components/WidgetManager/utils/init';
 import { LAYOUT_COLS_MAP, ORIGINAL_TYPE_MAP } from '../constants';
+import { normalizeAutoRectForCols } from './autoLayout';
 import {
   BackgroundConfig,
   BoardType,
@@ -184,11 +185,12 @@ export const adjustWidgetsToBoard = (args: {
   boardType: BoardType;
   boardId: string;
   layouts?: Layout;
+  mobileLayouts?: Layout;
 }) => {
-  const { widgets, boardType, layouts } = args;
+  const { widgets, boardType, layouts, mobileLayouts } = args;
 
   if (boardType === 'auto') {
-    return updateAutoWidgetsRect(widgets, layouts || []);
+    return updateAutoWidgetsRect(widgets, layouts || [], mobileLayouts || []);
   } else if (boardType === 'free') {
     return updateFreeWidgetsRect(widgets);
   }
@@ -203,34 +205,60 @@ export const adjustWidgetsToBoard = (args: {
 export const updateAutoWidgetsRect = (
   widgets: Widget[],
   layouts: Layout,
+  mobileLayouts: Layout = [],
 ): Widget[] => {
-  const cols = LAYOUT_COLS_MAP.lg;
-  let nextY = layouts.reduce((bottom, item) => Math.max(bottom, item.y + item.h), 0);
-  let nextX = 0;
-  let tallestInRow = 0;
+  // The two device layouts are independent. New widgets receive explicit
+  // rectangles in both instead of being placed from the active editor viewport.
+  const desktopCols = LAYOUT_COLS_MAP.lg;
+  const mobileCols = LAYOUT_COLS_MAP.sm;
+  let desktopY = layouts.reduce((bottom, item) => Math.max(bottom, item.y + item.h), 0);
+  let mobileY = mobileLayouts.reduce((bottom, item) => Math.max(bottom, item.y + item.h), 0);
+  let desktopX = 0;
+  let mobileX = 0;
+  let desktopRowHeight = 0;
+  let mobileRowHeight = 0;
 
   return widgets.map(widget => {
-    const { width, height } = widget.config.pRect;
-    const w = Math.max(1, Math.min(cols, Math.round(Number(width) || 1)));
-    const h = Math.max(1, Math.round(Number(height) || 1));
+    const desktopRect = widget.config.pRect;
+    const mobileRect =
+      widget.config.mRect || normalizeAutoRectForCols(desktopRect, mobileCols);
+    const desktopW = Math.max(1, Math.min(desktopCols, Math.round(Number(desktopRect.width) || 1)));
+    const desktopH = Math.max(1, Math.round(Number(desktopRect.height) || 1));
+    const mobileW = Math.max(1, Math.min(mobileCols, Math.round(Number(mobileRect.width) || 1)));
+    const mobileH = Math.max(1, Math.round(Number(mobileRect.height) || 1));
 
-    if (nextX > 0 && nextX + w > cols) {
-      nextY += tallestInRow;
-      nextX = 0;
-      tallestInRow = 0;
+    if (desktopX && desktopX + desktopW > desktopCols) {
+      desktopY += desktopRowHeight;
+      desktopX = 0;
+      desktopRowHeight = 0;
+    }
+    if (mobileX && mobileX + mobileW > mobileCols) {
+      mobileY += mobileRowHeight;
+      mobileX = 0;
+      mobileRowHeight = 0;
     }
 
     const placedWidget = produce(widget, draft => {
       draft.config.pRect = {
-        ...draft.config.pRect,
-        x: nextX,
-        y: nextY,
-        width: w,
-        height: h,
+        ...desktopRect,
+        x: desktopX,
+        y: desktopY,
+        width: desktopW,
+        height: desktopH,
+      };
+      draft.config.mRect = {
+        ...mobileRect,
+        x: mobileX,
+        y: mobileY,
+        width: mobileW,
+        height: mobileH,
       };
     });
-    nextX += w;
-    tallestInRow = Math.max(tallestInRow, h);
+
+    desktopX += desktopW;
+    desktopRowHeight = Math.max(desktopRowHeight, desktopH);
+    mobileX += mobileW;
+    mobileRowHeight = Math.max(mobileRowHeight, mobileH);
     return placedWidget;
   });
 };

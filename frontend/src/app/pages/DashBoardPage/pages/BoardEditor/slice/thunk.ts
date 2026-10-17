@@ -40,7 +40,7 @@ import {
   getWidgetMap,
   getLayoutWidgets,
 } from 'app/pages/DashBoardPage/utils/widget';
-import { getDesktopGridLayout } from 'app/pages/DashBoardPage/utils/gridLayout';
+import { getDesktopGridLayout, getMobileGridLayout } from 'app/pages/DashBoardPage/utils/gridLayout';
 import { Variable } from 'app/pages/MainPage/pages/VariablePage/slice/types';
 import { PendingChartDataRequestFilter } from 'app/types/ChartDataRequest';
 import ChartDataView from 'app/types/ChartDataView';
@@ -243,13 +243,16 @@ export const addWidgetsToEditBoard = createAsyncThunk<
       editBoard: HistoryEditBoard;
     },
   );
-  const layouts = getDesktopGridLayout(getLayoutWidgets(widgetRecord));
+  const existingWidgets = getLayoutWidgets(widgetRecord);
+  const layouts = getDesktopGridLayout(existingWidgets);
+  const mobileLayouts = getMobileGridLayout(existingWidgets);
   const widgetInfos = widgets.map(item => createWidgetInfo(item.id));
   const updatedWidgets = adjustWidgetsToBoard({
     widgets,
     boardType: dashBoard.config.type,
     boardId: dashBoard.id,
     layouts,
+    mobileLayouts,
   });
   // widgetInfoRecord
   dispatch(editWidgetInfoActions.addWidgetInfos(widgetInfos));
@@ -268,13 +271,16 @@ export const addGroupWidgetToEditBoard = createAsyncThunk<
       editBoard: HistoryEditBoard;
     },
   );
-  const layouts = getDesktopGridLayout(getLayoutWidgets(widgetRecord));
+  const existingWidgets = getLayoutWidgets(widgetRecord);
+  const layouts = getDesktopGridLayout(existingWidgets);
+  const mobileLayouts = getMobileGridLayout(existingWidgets);
   const widgetInfos = widgets.map(t => createWidgetInfo(t.id));
   const updatedWidgets = adjustWidgetsToBoard({
     widgets,
     boardType: dashBoard.config.type,
     boardId: dashBoard.id,
     layouts,
+    mobileLayouts,
   });
   // widgetInfoRecord
   dispatch(editWidgetInfoActions.addWidgetInfos(widgetInfos));

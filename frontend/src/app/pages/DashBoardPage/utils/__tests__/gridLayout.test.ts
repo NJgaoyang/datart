@@ -1,4 +1,4 @@
-import { getDesktopGridLayout, hasGridGeometryChanged } from '../gridLayout';
+import { getDesktopGridLayout, getMobileGridLayout, hasGridGeometryChanged } from '../gridLayout';
 
 describe('native grid geometry', () => {
   const original = [
@@ -31,6 +31,15 @@ describe('native grid geometry', () => {
       { i: 'three', x: 0, y: 10, w: 1, h: 1 },
     ])).toBe(true);
   });
+
+  it('provides a responsive default for new widgets with no mobile rect', () => {
+    const widgets = [
+      { id: 'new', config: { pRect: { x: 18, y: 3, width: 36, height: 8 } } },
+    ] as any;
+    expect(getMobileGridLayout(widgets)).toEqual([
+      { i: 'new', x: 6, y: 3, w: 12, h: 8 },
+    ]);
+  });
 });
 
 describe('desktop insertion snapshots', () => {
@@ -46,6 +55,9 @@ describe('desktop insertion snapshots', () => {
     ] as any;
     expect(getDesktopGridLayout(widgets)).toEqual([
       { i: 'a', x: 50, y: 10, w: 22, h: 9 },
+    ]);
+    expect(getMobileGridLayout(widgets)).toEqual([
+      { i: 'a', x: 0, y: 1, w: 8, h: 4 },
     ]);
   });
 });

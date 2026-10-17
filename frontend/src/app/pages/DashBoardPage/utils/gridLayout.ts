@@ -3,6 +3,8 @@
  */
 import type { Layout } from 'react-grid-layout';
 import type { Widget } from '../types/widgetTypes';
+import { LAYOUT_COLS_MAP } from '../constants';
+import { normalizeAutoRectForCols } from './autoLayout';
 
 /** Compare only persisted geometry, not transient drag/resize metadata. */
 export const hasGridGeometryChanged = (previous: Layout, next: Layout): boolean => {
@@ -23,4 +25,19 @@ export const getDesktopGridLayout = (widgets: Widget[]): Layout =>
   widgets.map(widget => {
     const { x, y, width, height } = widget.config.pRect;
     return { i: widget.id, x, y, w: width, h: height };
+  });
+
+/** Use the current system's explicit mobile rectangle, or its responsive default. */
+export const getMobileGridLayout = (widgets: Widget[]): Layout =>
+  widgets.map(widget => {
+    const rect =
+      widget.config.mRect ||
+      normalizeAutoRectForCols(widget.config.pRect, LAYOUT_COLS_MAP.sm);
+    return {
+      i: widget.id,
+      x: rect.x,
+      y: rect.y,
+      w: rect.width,
+      h: rect.height,
+    };
   });
