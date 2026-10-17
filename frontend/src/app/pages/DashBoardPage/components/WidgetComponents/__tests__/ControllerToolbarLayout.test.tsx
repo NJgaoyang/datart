@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { StyledWidgetToolBar } from '../StyledWidgetToolBar';
 import { WidgetWrapper } from '../WidgetWrapper';
@@ -8,6 +9,12 @@ vi.mock('app/pages/DashBoardPage/utils/widget', () => ({
 }));
 
 describe('controller widget action hit areas', () => {
+  it('keeps chart actions keyboard-focusable when mouse actions are hidden', async () => {
+    const user = userEvent.setup();
+    render(<StyledWidgetToolBar><button className="widget-tool-dropdown">More actions</button></StyledWidgetToolBar>);
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'More actions' })).toBe(document.activeElement);
+  });
   it('keeps the calendar input and widget actions in distinct flex siblings', () => {
     const openCalendar = vi.fn();
     const openActions = vi.fn();

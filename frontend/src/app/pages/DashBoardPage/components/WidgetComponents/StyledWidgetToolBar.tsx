@@ -31,7 +31,11 @@ const StyleWrap = styled.div`
   overflow: hidden;
   text-align: right;
   .widget-tool-dropdown {
-    visibility: hidden;
+    /* Opacity keeps this action in keyboard tab order without allowing
+       invisible mouse targets to intercept the chart. */
+    visibility: visible;
+    opacity: 0;
+    pointer-events: none;
     display: inline-flex;
     width: 36px;
     min-width: 36px;
@@ -53,6 +57,7 @@ const StyleWrap = styled.div`
 
   .widget-tool-dropdown:focus,
   .widget-tool-dropdown:focus-visible {
-    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
   }
 `;

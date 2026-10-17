@@ -70,18 +70,21 @@ const Wrapper = styled.div`
     /* Unlike a floating overlay, this action has a predictable visible
        target on touchscreens and narrow desktop inputs. */
     .widget-tool-dropdown {
-      visibility: visible;
+      opacity: 1;
+      pointer-events: auto;
     }
   }
 
   &:hover .widget-tool-dropdown,
   &:focus-within .widget-tool-dropdown {
-    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
   }
 
   @media (pointer: coarse) {
     .widget-tool-dropdown {
-      visibility: visible;
+      opacity: 1;
+      pointer-events: auto;
     }
   }
 `;
