@@ -72,7 +72,7 @@ export default function useGridLayoutMap(layoutWidgets: Widget[]) {
     const sm: LayoutItem[] = [];
     layoutWidgets.forEach(widget => {
       const desktopRect = widget.config.pRect;
-      const sm: RectConfig =
+      const mobileRect: RectConfig =
         widget.config.mRect ||
         (widget.config.pRect
           ? normalizeAutoRectForCols(widget.config.pRect, LAYOUT_COLS_MAP.sm)
@@ -98,10 +98,10 @@ export default function useGridLayoutMap(layoutWidgets: Widget[]) {
       });
       sm.push({
         i: widget.id,
-        x: sm.x,
-        y: sm.y,
-        w: sm.width,
-        h: sm.height,
+        x: mobileRect.x,
+        y: mobileRect.y,
+        w: mobileRect.width,
+        h: mobileRect.height,
         static: lock,
         minW: mobileConstraints.minW,
         maxW: mobileConstraints.maxW,
