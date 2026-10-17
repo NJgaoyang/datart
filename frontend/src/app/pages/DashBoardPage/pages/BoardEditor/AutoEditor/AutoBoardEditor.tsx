@@ -25,7 +25,7 @@ import StyledBackground from 'app/pages/DashBoardPage/components/WidgetComponent
 import { WidgetWrapProvider } from 'app/pages/DashBoardPage/components/WidgetProvider/WidgetWrapProvider';
 import {
   LAYOUT_COLS_MAP,
-  WIDGET_DRAG_HANDLE,
+  MOBILE_ROW_HEIGHT,
 } from 'app/pages/DashBoardPage/constants';
 import useBoardScroll from 'app/pages/DashBoardPage/hooks/useBoardScroll';
 import useEditAutoLayoutMap from 'app/pages/DashBoardPage/hooks/useEditAutoLayoutMap';
@@ -34,11 +34,9 @@ import { DeviceType } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { getBoardMarginPadding } from 'app/pages/DashBoardPage/utils/board';
 import { isMobileWidgetVisible } from 'app/pages/DashBoardPage/utils/autoLayout';
 import { memo, useCallback, useContext, useMemo } from 'react';
-import { GridLayout, type Layout, useContainerWidth, verticalCompactor } from 'react-grid-layout';
-import { noOverlapCompactor } from 'react-grid-layout/core';
-import 'react-grid-layout/css/styles.css';
+import type { Layout } from 'react-grid-layout';
+import { DashboardGridLayout } from 'app/pages/DashBoardPage/components/GridLayout/DashboardGridLayout';
 import { useDispatch, useSelector } from 'react-redux';
-import 'react-resizable/css/styles.css';
 import styled from 'styled-components';
 import { LEVEL_100, LEVEL_DASHBOARD_EDIT_OVERLAY } from 'styles/StyleConstants';
 import BoardOverlay from '../components/BoardOverlay';
@@ -62,9 +60,6 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
   }, [activeColsKey, boardConfig]);
 
   const { gridWrapRef, thEmitScroll } = useBoardScroll(boardId);
-  const { width: gridWidth, containerRef, mounted } = useContainerWidth({
-    measureBeforeMount: true,
-  });
 
   const sortedLayoutWidgets = useEditAutoLayoutMap(boardId);
   const visibleLayoutWidgets = useMemo(
@@ -168,38 +163,23 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
         {visibleLayoutWidgets.length ? (
           <>
             <div className="grid-wrap" ref={gridWrapRef}>
-              <div className="grid-width" ref={containerRef}>
-                {mounted && gridWidth > 0 && (
-                  <GridLayout
-                    width={gridWidth}
-                    layout={layoutMap[activeColsKey] || []}
-                    gridConfig={{
-                      cols: LAYOUT_COLS_MAP[activeColsKey],
-                      margin: curMargin,
-                      containerPadding: curPadding,
-                      rowHeight: widgetRowHeight,
-                    }}
-                    dragConfig={{
-                      enabled: true,
-                      bounded: false,
-                      handle: `.${WIDGET_DRAG_HANDLE}`,
-                      threshold: 3,
-                    }}
-                    resizeConfig={{
-                      enabled: true,
-                      handles: ['n', 'e', 's', 'w', 'ne', 'nw', 'se', 'sw'],
-                    }}
-                    compactor={
-                      allowOverlap ? noOverlapCompactor : verticalCompactor
-                    }
-                    onResizeStop={persistLayout}
-                    onDragStop={persistLayout}
-                    onLayoutChange={onLayoutChange}
-                  >
-                    {boardChildren}
-                  </GridLayout>
-                )}
-              </div>
+              <DashboardGridLayout
+                boardId={boardId}
+                deviceKey={activeColsKey}
+                layout={layoutMap[activeColsKey] || []}
+                cols={LAYOUT_COLS_MAP[activeColsKey]}
+                margin={curMargin}
+                containerPadding={curPadding}
+                rowHeight={
+                  activeColsKey === 'sm' ? MOBILE_ROW_HEIGHT : widgetRowHeight
+                }
+                editable={true}
+                allowOverlap={allowOverlap}
+                onLayoutCommit={persistLayout}
+                onLayoutChange={onLayoutChange}
+              >
+                {boardChildren}
+              </DashboardGridLayout>
             </div>
             {!!editingWidgetIds && <BoardOverlay />}
           </>

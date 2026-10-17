@@ -27,10 +27,7 @@ import useGridLayoutMap from 'app/pages/DashBoardPage/hooks/useGridLayoutMap';
 import useLayoutMap from 'app/pages/DashBoardPage/hooks/useLayoutMap';
 import { getBoardMarginPadding } from 'app/pages/DashBoardPage/utils/board';
 import { memo, useCallback, useContext, useMemo } from 'react';
-import { GridLayout, type Layout, useContainerWidth, verticalCompactor } from 'react-grid-layout';
-import { noOverlapCompactor } from 'react-grid-layout/core';
-import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
+import { DashboardGridLayout } from 'app/pages/DashBoardPage/components/GridLayout/DashboardGridLayout';
 import styled from 'styled-components';
 import StyledBackground from '../../../components/WidgetComponents/StyledBackground';
 import { WidgetOfAuto } from './WidgetOfAuto';
@@ -38,9 +35,6 @@ import { WidgetOfAuto } from './WidgetOfAuto';
 export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
   ({ boardId }) => {
     const { ref, widgetRowHeight, colsKey } = useGridWidgetHeight();
-    const { width: gridWidth, containerRef, mounted } = useContainerWidth({
-      measureBeforeMount: true,
-    });
     const { editing } = useContext(BoardContext);
     const boardConfig = useContext(BoardConfigValContext);
     const { background, allowOverlap } = boardConfig;
@@ -54,12 +48,9 @@ export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
     const sortedLayoutWidgets = useLayoutMap(boardId);
     const layoutMap = useGridLayoutMap(sortedLayoutWidgets);
 
-    const onLayoutChange = useCallback(
-      (layouts: Layout) => {
-        thEmitScroll();
-      },
-      [thEmitScroll],
-    );
+    const onLayoutChange = useCallback(() => {
+      thEmitScroll();
+    }, [thEmitScroll]);
 
     const boardChildren = useMemo(() => {
       return sortedLayoutWidgets.map(item => {
@@ -81,28 +72,20 @@ export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
         <StyledContainer bg={background}>
           <div className="grid-wrap" ref={gridWrapRef}>
             <div className="widget-row-height" ref={ref}>
-              <div className="grid-width" ref={containerRef}>
-                {mounted && gridWidth > 0 && (
-                  <GridLayout
-                    width={gridWidth}
-                    layout={layoutMap[colsKey] || []}
-                    gridConfig={{
-                      cols: LAYOUT_COLS_MAP[colsKey],
-                      rowHeight: widgetRowHeight,
-                      margin: curMargin,
-                      containerPadding: curPadding,
-                    }}
-                    dragConfig={{ enabled: false }}
-                    resizeConfig={{ enabled: false }}
-                    compactor={
-                      allowOverlap ? noOverlapCompactor : verticalCompactor
-                    }
-                    onLayoutChange={onLayoutChange}
-                  >
-                    {boardChildren}
-                  </GridLayout>
-                )}
-              </div>
+              <DashboardGridLayout
+                boardId={boardId}
+                deviceKey={colsKey}
+                layout={layoutMap[colsKey] || []}
+                cols={LAYOUT_COLS_MAP[colsKey]}
+                rowHeight={widgetRowHeight}
+                margin={curMargin}
+                containerPadding={curPadding}
+                editable={false}
+                allowOverlap={allowOverlap}
+                onLayoutChange={onLayoutChange}
+              >
+                {boardChildren}
+              </DashboardGridLayout>
             </div>
           </div>
           {!sortedLayoutWidgets.length && (
