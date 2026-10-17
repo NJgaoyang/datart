@@ -5,6 +5,7 @@ import datart.core.data.provider.sql.*;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.commons.lang3.StringUtils;
 
@@ -105,7 +106,9 @@ public final class ColumnPermissionFilter {
         if (StringUtils.isBlank(expression)) return false;
         Set<String> references = new HashSet<>();
         try {
-            SqlNode statement = SqlParser.create("SELECT " + expression).parseQuery();
+            SqlNode statement = SqlParser.create("SELECT " + expression, SqlParser.config()
+                    .withUnquotedCasing(Casing.UNCHANGED)
+                    .withQuotedCasing(Casing.UNCHANGED)).parseQuery();
             statement.accept(new SqlShuttle() {
                 @Override
                 public SqlNode visit(SqlIdentifier id) {

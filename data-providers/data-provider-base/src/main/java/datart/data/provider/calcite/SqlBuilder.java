@@ -299,7 +299,14 @@ public class SqlBuilder {
     private static boolean containsAggregate(SqlNode node) {
         if (node == null) return false;
         if (node instanceof SqlCall call) {
-            if (call.getOperator() instanceof SqlAggFunction) return true;
+            // SQL snippets contain SqlUnresolvedFunction nodes before validation,
+            // so relying only on SqlAggFunction misses SUM(a)/SUM(b).
+            if (call.getOperator() instanceof SqlAggFunction
+                    || Set.of("SUM", "AVG", "MIN", "MAX", "COUNT",
+                            "STDDEV", "STDDEV_POP", "STDDEV_SAMP",
+                            "VARIANCE", "VAR_POP", "VAR_SAMP",
+                            "APPROX_COUNT_DISTINCT", "GROUP_CONCAT")
+                        .contains(call.getOperator().getName().toUpperCase(Locale.ROOT))) return true;
             for (SqlNode operand : call.getOperandList()) {
                 if (containsAggregate(operand)) return true;
             }
