@@ -136,6 +136,16 @@ export const editBoardStackSlice = createSlice({
       });
     },
     //
+    toggleWidgetsLock(
+      state,
+      action: PayloadAction<{ ids: string[]; lock: boolean }>,
+    ) {
+      for (const id of action.payload.ids) {
+        if (state.widgetRecord?.[id]?.config) {
+          state.widgetRecord[id].config.lock = action.payload.lock;
+        }
+      }
+    },
     toggleLockWidget(
       state,
       action: PayloadAction<{ id: string; lock: boolean }>,

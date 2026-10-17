@@ -31,6 +31,8 @@ export const Hotkeys = [
   { key: 'ctrl + V', text: 'paste' },
   { key: 'ctrl + shift + ↑', text: 'toTop' },
   { key: 'ctrl + shift + ↓', text: 'toBottom' },
+  { key: '↑ / ↓ / ← / →', text: '', label: '方向键微调组件（自动布局）' },
+  { key: 'ctrl + shift + L', text: '', label: '锁定 / 解锁选中组件' },
 ];
 export const ShortcutKeys = () => {
   const t = useI18NPrefix(`viz.board.action`);
@@ -41,7 +43,7 @@ export const ShortcutKeys = () => {
       {Hotkeys.map(item => (
         <Menu.Item key={item.text}>
           <StyledWrap>
-            <div>{t(item.text)}</div>
+            <div>{item.label || t(item.text)}</div>
             <div>{item.key}</div>
           </StyledWrap>
         </Menu.Item>
