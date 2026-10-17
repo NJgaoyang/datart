@@ -43,6 +43,10 @@ const Wrapper = styled.div`
   align-items: center;
   justify-content: space-between;
   min-height: 52px;
+  width: 100%;
+  min-width: 0;
+  container-type: inline-size;
+  container-name: board-toolbar;
   padding: 0 ${SPACE_XL};
   background-color: ${p => p.theme.componentBackground};
   border-bottom: 1px solid ${p => p.theme.borderColorSplit};

@@ -15,7 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Divider, Space } from 'antd';
+import { Divider, Dropdown, Menu, Space } from 'antd';
+import { CopyOutlined, DeleteOutlined, MoreOutlined, SnippetsOutlined, VerticalAlignBottomOutlined, VerticalAlignTopOutlined } from '@ant-design/icons';
+import { ToolbarButton } from 'app/components';
+import { useSelector } from 'react-redux';
+import { selectClipboardWidgets, selectSelectedIds } from '../../slice/selectors';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { BoardActionContext } from 'app/pages/DashBoardPage/components/ActionProvider/BoardActionProvider';
 import useBoardEditorHotkeys from 'app/pages/DashBoardPage/hooks/useBoardEditorHotkeys';
@@ -39,6 +43,10 @@ export const ToolBar = () => {
     e.stopPropagation();
   };
   const { boardType } = useContext(BoardToolBarContext);
+  const selectedIds = useSelector(selectSelectedIds);
+  const clipboardWidgets = useSelector(selectClipboardWidgets);
+  const hasSelection = Boolean(selectedIds);
+  const hasClipboard = Object.keys(clipboardWidgets).length > 0;
   const {
     onEditLayerToTop,
     onEditLayerToBottom,
@@ -51,6 +59,23 @@ export const ToolBar = () => {
   useBoardEditorHotkeys();
 
   const t = useI18NPrefix(`viz.board.action`);
+  const compactActions = (
+    <Menu onClick={({ key }) => {
+      switch (key) {
+        case 'delete': onEditDeleteActiveWidgets(); break;
+        case 'top': onEditLayerToTop(); break;
+        case 'bottom': onEditLayerToBottom(); break;
+        case 'copy': onEditCopyWidgets(); break;
+        case 'paste': onEditPasteWidgets(); break;
+      }
+    }}>
+      <Menu.Item key="delete" disabled={!hasSelection} icon={<DeleteOutlined />} danger>{t('delete')}</Menu.Item>
+      <Menu.Item key="top" disabled={!hasSelection} icon={<VerticalAlignTopOutlined />}>{t('toTop')}</Menu.Item>
+      <Menu.Item key="bottom" disabled={!hasSelection} icon={<VerticalAlignBottomOutlined />}>{t('toBottom')}</Menu.Item>
+      <Menu.Item key="copy" disabled={!hasSelection} icon={<CopyOutlined />}>{t('copy')}</Menu.Item>
+      <Menu.Item key="paste" disabled={!hasClipboard} icon={<SnippetsOutlined />}>{t('paste')}</Menu.Item>
+    </Menu>
+  );
   return (
     <Wrapper onClick={ssp}>
       <Space className="toolbar-primary" size={6}>
@@ -67,16 +92,20 @@ export const ToolBar = () => {
         <UndoBtn fn={undo} title={t('undo')} />
         <RedoBtn fn={redo} title={t('redo')} />
 
-        <Divider type="vertical" />
-
-        <DelWidgetsBtn fn={onEditDeleteActiveWidgets} title={t('delete')} />
-        <Divider type="vertical" />
-
-        <ToTopBtn fn={onEditLayerToTop} title={t('toTop')} />
-        <ToBottomBtn fn={onEditLayerToBottom} title={t('toBottom')} />
-
-        <CopyBtn fn={onEditCopyWidgets} title={t('copy')} />
-        <PasteBtn fn={onEditPasteWidgets} title={t('paste')} />
+        <span className="toolbar-secondary-desktop">
+          <Divider type="vertical" />
+          <DelWidgetsBtn fn={onEditDeleteActiveWidgets} title={t('delete')} />
+          <Divider type="vertical" />
+          <ToTopBtn fn={onEditLayerToTop} title={t('toTop')} />
+          <ToBottomBtn fn={onEditLayerToBottom} title={t('toBottom')} />
+          <CopyBtn fn={onEditCopyWidgets} title={t('copy')} />
+          <PasteBtn fn={onEditPasteWidgets} title={t('paste')} />
+        </span>
+        <span className="toolbar-secondary-compact">
+          <Dropdown overlay={compactActions} placement="bottomRight" trigger={['click']}>
+            <ToolbarButton icon={<MoreOutlined />} title="更多编辑操作" aria-label="更多编辑操作" />
+          </Dropdown>
+        </span>
 
         {boardType === 'auto' && (
           <>
@@ -107,6 +136,30 @@ const Wrapper = styled.div`
     overflow-y: hidden;
     scrollbar-width: thin;
     white-space: nowrap;
+  }
+
+  .toolbar-secondary-desktop {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .toolbar-secondary-compact {
+    display: none;
+  }
+
+  @container board-toolbar (max-width: 850px) {
+    .toolbar-secondary-desktop {
+      display: none;
+    }
+
+    .toolbar-secondary-compact {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .toolbar-primary {
+      overflow-x: auto;
+    }
   }
 
   > :last-child {
