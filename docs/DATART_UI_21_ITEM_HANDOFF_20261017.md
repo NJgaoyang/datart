@@ -190,3 +190,10 @@ npm run build
 - **结构化视图 Join 编辑**：`StructView` 将表连接操作区域组织成稳定的列结构，执行/删除按钮不再随 hover display 切换，删除固定右上角、条件行的加减操作占位稳定；字段下拉根据显示字段最后一节测量宽度，同一 Join 条件行对齐，去除表单下方多余空白并缩小相邻条件间距。
 - **组件默认上下左右间距为 1**：桌面和移动端新建自动布局的 margin/padding 全部 1px，旧版 Beta3 初始化和移动缺省回退同步。已存在的用户自定义非零值原样保留；开发机仅对「测试1」的四组历史 0 值做过独立备份并改为 1，不修改任意仪表板坐标。
 - **验证**：数据视图、Join 宽度与仪表板默认值共 41 个定向单测和 TypeScript 检查通过；Chromium 真浏览器中的共享虚拟表格在 1120px 父容器里，表头/单元格实际宽度为 88、120、135px，无多余拉伸。实际登录后的编辑页面完整增删条件和保存重开仍待验收。
+
+## 15. 数据集长注释省略与移动端共享函数权限（2026-10-18）
+
+- **数据集字段显示**：新增 `DatasetCommentLabel`，数据集模型字段、分组节点、计算字段和 SchemaTable 数据预览表头，在注释超长时保留前部 22 个 Unicode 字符、尾部省略号；悬停 Tooltip 显示完整原始 `sourceComment/comment`。自定义字段别名继续优先，字段数据及持久化内容不裁剪。使用 CSS `text-overflow: ellipsis` 适配实际容器宽度。
+- **移动/共享查看报错根因**：开发机 2026-10-18 日志确认，`POST /shares/function/support/{sourceId}`（`@SkipLogin`）调用 `SourceServiceImpl.requirePermission`，因匿名请求 `getCurrentUser()==null` 产生空指针。不是手机 CSS。
+- **安全修复**：`ShareServiceImpl.supportedStdFunctions` 要求有效且未过期的 VIEW 执行令牌，仅允许 `token.vizId` 所指 View 对应的 `sourceId`；随后 `runAs(token.permissionBy)` 执行原有数据源 READ 权限检查，并在 finally 中 `releaseRunAs` 恢复上下文。禁止使用不匹配的数据源、缺失令牌或越权访问；不直接绕过 `requirePermission`。
+- **回归**：`ShareSupportedFunctionSecurityTest` 覆盖 View-Source 配对与拒绝跨数据源/错误资源/缺失身份；前端 `DatasetCommentLabel.test.tsx` 覆盖前缀省略、完整 tooltip 数据、自定义别名保留。待移动端实际分享令牌下进一步验证授权成功、过期和非关联数据源拒绝，以及日常用户登录流程。

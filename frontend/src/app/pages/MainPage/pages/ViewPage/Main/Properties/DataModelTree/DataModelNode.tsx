@@ -34,6 +34,7 @@ import { FC, memo, useState } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import styled from 'styled-components';
 import { getFieldDisplayName } from 'utils/utils';
+import { DatasetCommentLabel } from '../../../components/DatasetCommentLabel';
 import {
   FONT_SIZE_BASE,
   FONT_SIZE_TITLE,
@@ -120,7 +121,11 @@ const DataModelNode: FC<{
             hasCategory={hasCategory}
             icon={<StyledIW fontSize={FONT_SIZE_TITLE}>{icon}</StyledIW>}
           />
-          <span>{getFieldDisplayName(node)}</span>
+          <DatasetCommentLabel
+              label={getFieldDisplayName(node)}
+              comment={node.sourceComment || node.comment}
+              hasCustomName={Boolean(node.customName || node.isDisplayNameCustom)}
+            />
           <div className="action">
             {isHover && !isDragging && onEditDisplayName && (
               <Tooltip title={t('setDisplayName')}>
@@ -208,6 +213,7 @@ const StyledDataModelNode = styled.div<{
   & .content {
     display: flex;
     align-items: center;
+    min-width: 0;
   }
 
   & .action {

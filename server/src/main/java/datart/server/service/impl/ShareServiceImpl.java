@@ -317,9 +317,39 @@ public class ShareServiceImpl extends BaseService implements ShareService {
 
     @Override
     public Set<StdSqlOperator> supportedStdFunctions(ShareToken shareToken, String sourceId) {
+        // The share endpoint has @SkipLogin; there is no session principal.
+        // It must be authorized by a VIEW execution token rather than the
+        // ordinary login session, and must never expose an unrelated source.
+        if (shareToken == null || StringUtils.isBlank(shareToken.getAuthorizedToken())) {
+            Exceptions.tr(PermissionDeniedException.class, "message.provider.execute.permission.denied");
+        }
         ShareAuthorizedToken authorizedToken = parseToken(shareToken);
         validateExpiration(authorizedToken);
-        return dataProviderService.supportedStdFunctions(sourceId);
+        View view = ResourceType.VIEW.equals(authorizedToken.getVizType())
+                && StringUtils.isNotBlank(authorizedToken.getVizId())
+                ? retrieve(authorizedToken.getVizId(), View.class, false) : null;
+        requireSharedFunctionSource(authorizedToken, sourceId, view);
+
+        getSecurityManager().runAs(authorizedToken.getPermissionBy());
+        try {
+            // Reuse the normal source permission check under the share's
+            // validated execution identity. Do not bypass authorization.
+            return dataProviderService.supportedStdFunctions(sourceId);
+        } finally {
+            getSecurityManager().releaseRunAs();
+        }
+    }
+
+    static void requireSharedFunctionSource(ShareAuthorizedToken token, String sourceId, View view) {
+        if (token == null || !ResourceType.VIEW.equals(token.getVizType())
+                || StringUtils.isBlank(token.getVizId())
+                || StringUtils.isBlank(token.getPermissionBy())
+                || StringUtils.isBlank(sourceId)
+                || view == null
+                || !StringUtils.equals(view.getId(), token.getVizId())
+                || !StringUtils.equals(view.getSourceId(), sourceId)) {
+            Exceptions.tr(PermissionDeniedException.class, "message.provider.execute.permission.denied");
+        }
     }
 
     private ShareVizDetail getVizDetail(ShareAuthorizedToken authorizedToken) {
