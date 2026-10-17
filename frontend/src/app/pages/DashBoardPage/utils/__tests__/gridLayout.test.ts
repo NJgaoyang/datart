@@ -60,4 +60,25 @@ describe('desktop insertion snapshots', () => {
       { i: 'a', x: 0, y: 1, w: 8, h: 4 },
     ]);
   });
+  it('excludes widgets explicitly hidden on mobile from placement', () => {
+    const widgets = [
+      {
+        id: 'hidden',
+        config: {
+          pRect: { x: 0, y: 0, width: 36, height: 8 },
+          mRect: { x: 0, y: 500, width: 24, height: 20 },
+          mVisible: false,
+        },
+      },
+      {
+        id: 'visible',
+        config: {
+          pRect: { x: 0, y: 0, width: 36, height: 8 },
+          mRect: { x: 0, y: 12, width: 24, height: 5 },
+        },
+      },
+    ] as any;
+    expect(getMobileGridLayout(widgets).map(item => item.i)).toEqual(['visible']);
+  });
+
 });

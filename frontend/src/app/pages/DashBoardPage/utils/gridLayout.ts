@@ -29,7 +29,7 @@ export const getDesktopGridLayout = (widgets: Widget[]): Layout =>
 
 /** Use the current system's explicit mobile rectangle, or its responsive default. */
 export const getMobileGridLayout = (widgets: Widget[]): Layout =>
-  widgets.map(widget => {
+  widgets.filter(widget => widget.config.mVisible !== false).map(widget => {
     const rect =
       widget.config.mRect ||
       normalizeAutoRectForCols(widget.config.pRect, LAYOUT_COLS_MAP.sm);
