@@ -41,6 +41,7 @@ import {
 } from 'globalConstants';
 import { produce } from 'immer';
 import { CSSProperties } from 'react';
+import type { Layout } from 'react-grid-layout';
 import { CloneValueDeep } from 'utils/object';
 import { adaptBoardImageUrl, fillPx, getBackgroundImage } from '.';
 import { initClientId } from '../components/WidgetManager/utils/init';
@@ -182,7 +183,7 @@ export const adjustWidgetsToBoard = (args: {
   widgets: Widget[];
   boardType: BoardType;
   boardId: string;
-  layouts?: ReactGridLayout.Layout[];
+  layouts?: Layout;
 }) => {
   const { widgets, boardType, layouts } = args;
 
@@ -196,7 +197,7 @@ export const adjustWidgetsToBoard = (args: {
 
 export const updateAutoWidgetsRect = (
   widgets: Widget[],
-  layouts: ReactGridLayout.Layout[],
+  layouts: Layout,
 ): Widget[] => {
   const upDatedWidgets: Widget[] = [];
   const dashWidgetRectYs = layouts.map(ele => ele.y);

@@ -29,7 +29,7 @@ Historical dashboards must **not** be silently converted while using the new edi
 4. An explicit one-time migration command, audit record, and rollback procedure.
 5. Post-migration validation for nested widgets, filters, chart links, and saved dashboards.
 
-The new layout engine should remain unaware of previous schema versions. Old conversion helpers that still exist elsewhere in the repository are **not** part of this v2 contract; remove/relocate them as the separate migration subsystem is built.
+The new layout engine should remain unaware of previous schema versions. Historical auto-layout conversion helpers have been removed from the new layout runtime; implement them later only inside the separate migration subsystem.
 
 ## Validation before production
 
