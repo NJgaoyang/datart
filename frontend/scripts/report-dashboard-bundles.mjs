@@ -4,8 +4,10 @@ import { join, resolve } from 'node:path';
 // Vite manifest models static entry imports separately from deferred imports.
 // Only graph reachability is reported, not hypothetical gzip transfer times.
 const root = resolve(process.cwd(), 'build');
-const path = join(root, '.vite', 'manifest.json');
-if (!existsSync(path)) {
+// Vite 4 emits build/manifest.json; newer Vite versions use build/.vite/manifest.json.
+const path = [join(root, 'manifest.json'), join(root, '.vite', 'manifest.json')]
+  .find(candidate => existsSync(candidate));
+if (!path) {
   console.error('No Vite manifest. Run npm run build first.');
   process.exitCode = 1;
 } else {
