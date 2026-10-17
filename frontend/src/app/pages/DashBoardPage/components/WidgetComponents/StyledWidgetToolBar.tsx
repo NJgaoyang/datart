@@ -37,10 +37,20 @@ const StyleWrap = styled.div`
     min-width: 36px;
     height: 32px;
     padding: 0;
+    cursor: pointer;
+    touch-action: manipulation;
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
   }
+  @media (pointer: coarse) {
+    .widget-tool-dropdown {
+      width: 44px;
+      min-width: 44px;
+      height: 44px;
+    }
+  }
+
   .widget-tool-dropdown:focus,
   .widget-tool-dropdown:focus-visible {
     visibility: visible;

@@ -92,6 +92,8 @@ export const WidgetDropdownList: React.FC<{
         aria-label="Widget actions"
         title="Widget actions"
         icon={<EllipsisOutlined />}
+        onPointerDown={event => event.stopPropagation()}
+        onMouseDown={event => event.stopPropagation()}
         type="link"
         {...buttonProps}
       />

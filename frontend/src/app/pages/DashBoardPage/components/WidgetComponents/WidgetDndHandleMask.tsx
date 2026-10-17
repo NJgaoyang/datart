@@ -56,6 +56,7 @@ export const WidgetDndHandleMask: React.FC<WidgetDndHandleMaskProps> = memo(
             cursor: 'grabbing',
             width: '100%',
             height: '100%',
+            pointerEvents: 'none',
           }}
         ></div>
         <div
