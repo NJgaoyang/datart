@@ -65,13 +65,13 @@ describe('new dashboard widget placement', () => {
     const result = updateAutoWidgetsRect([controller, chart], []);
 
     expect(result[0].config.pRect).toEqual({
-      x: 0, y: 0, width: 18, height: 6,
+      x: 0, y: 0, width: 24, height: 8,
     });
     expect(result[0].config.mRect).toEqual({
-      x: 0, y: 0, width: 12, height: 2,
+      x: 0, y: 0, width: 12, height: 3,
     });
     expect(result[1].config.pRect).toEqual({
-      x: 18, y: 0, width: 36, height: 24,
+      x: 24, y: 0, width: 36, height: 24,
     });
     expect(result[1].config.mRect).toEqual({
       x: 12, y: 0, width: 12, height: 24,

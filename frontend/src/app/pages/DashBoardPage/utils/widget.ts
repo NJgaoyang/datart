@@ -229,13 +229,13 @@ export const updateAutoWidgetsRect = (
       desktopRect.height === 24 &&
       !widget.config.mRect;
     const mobileRect = isDefaultController
-      ? { x: 0, y: 0, width: 12, height: 2 }
+      ? { x: 0, y: 0, width: 12, height: 3 }
       : widget.config.mRect || normalizeAutoRectForCols(desktopRect, mobileCols);
     const desktopW = isDefaultController
-      ? 18
+      ? 24
       : Math.max(1, Math.min(desktopCols, Math.round(Number(desktopRect.width) || 1)));
     const desktopH = isDefaultController
-      ? 6
+      ? 8
       : Math.max(1, Math.round(Number(desktopRect.height) || 1));
     const mobileW = Math.max(1, Math.min(mobileCols, Math.round(Number(mobileRect.width) || 1)));
     const mobileH = Math.max(1, Math.round(Number(mobileRect.height) || 1));

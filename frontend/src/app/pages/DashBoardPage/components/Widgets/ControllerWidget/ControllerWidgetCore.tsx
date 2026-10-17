@@ -512,5 +512,11 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
       width: 100%;
       min-width: 0;
     }
+
+    /* Fit the stacked label + picker in a compact 6-row legacy widget. */
+    .control-form .ant-picker {
+      height: 28px;
+      min-height: 28px;
+    }
   }
 `;

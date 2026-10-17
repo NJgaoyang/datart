@@ -20,7 +20,6 @@ import { BoardContext } from 'app/pages/DashBoardPage/components/BoardProvider/B
 import {
   BASE_ROW_HEIGHT,
   BASE_VIEW_WIDTH,
-  BREAK_POINT_MAP,
   LAYOUT_COLS_KEYS,
   MOBILE_ROW_HEIGHT,
   MIN_ROW_HEIGHT,
@@ -30,6 +29,7 @@ import { ColsKeyType } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { useContext, useLayoutEffect, useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import useResizeObserver from './useResizeObserver';
+import { getAdaptiveGridColsKey } from 'app/pages/DashBoardPage/utils/gridViewport';
 
 export const useGridWidgetHeight = () => {
   const { boardId, renderMode } = useContext(BoardContext);
@@ -39,15 +39,10 @@ export const useGridWidgetHeight = () => {
   const { ref, width = 0, height = 0 } = useResizeObserver<HTMLDivElement>();
 
   useLayoutEffect(() => {
-    if (width > 0 && height > 0) {
+    if (width > 0) {
       setCacheW(width);
-      //  BREAK_POINT_MAP['sm']=768px
-      if (width <= BREAK_POINT_MAP['sm']) {
-        setColsKey('sm');
-      } else {
-        setColsKey('lg');
-      }
-      if (renderMode !== 'edit') {
+      setColsKey(getAdaptiveGridColsKey(width));
+      if (height > 0 && renderMode !== 'edit') {
         dispatch(
           boardActions.setBoardWidthHeight({ boardId, wh: [width, height] }),
         );
