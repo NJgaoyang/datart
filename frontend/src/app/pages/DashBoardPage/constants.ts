@@ -46,8 +46,8 @@ export const MIN_ROW_HEIGHT = 6;
 export const MOBILE_ROW_HEIGHT = 24;
 export const MIN_MARGIN = 8;
 export const MIN_PADDING = 8;
-export const MOBILE_MIN_MARGIN = 2;
-export const MOBILE_MIN_PADDING = 4;
+export const MOBILE_MIN_MARGIN = 0;
+export const MOBILE_MIN_PADDING = 0;
 export const LAYOUT_COLS_KEYS = ['lg', 'md', 'sm', 'xs', 'xxs'] as const;
 export const LAYOUT_COLS_MAP = {
   lg: AUTO_GRID_COLS,
