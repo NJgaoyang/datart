@@ -136,6 +136,16 @@ export const editBoardStackSlice = createSlice({
       });
     },
     //
+    setWidgetsMobileVisible(
+      state,
+      action: PayloadAction<{ ids: string[]; visible: boolean }>,
+    ) {
+      for (const id of action.payload.ids) {
+        if (state.widgetRecord?.[id]?.config) {
+          state.widgetRecord[id].config.mVisible = action.payload.visible;
+        }
+      }
+    },
     toggleWidgetsLock(
       state,
       action: PayloadAction<{ ids: string[]; lock: boolean }>,

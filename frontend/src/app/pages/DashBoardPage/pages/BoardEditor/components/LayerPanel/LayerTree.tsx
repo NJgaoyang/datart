@@ -17,7 +17,8 @@
  */
 
 import { Tree } from 'app/components';
-import { Input, Select } from 'antd';
+import { Button, Input, Select, Space } from 'antd';
+import { EyeInvisibleOutlined, EyeOutlined, LockOutlined, UnlockOutlined } from '@ant-design/icons';
 import { renderIcon } from 'app/hooks/useGetVizIcon';
 import useResizeObserver from 'app/hooks/useResizeObserver';
 import { WidgetActionContext } from 'app/pages/DashBoardPage/components/ActionProvider/WidgetActionProvider';
@@ -26,7 +27,11 @@ import { FC, memo, useCallback, useContext, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { stopPPG } from 'utils/utils';
 import { dropLayerNodeAction } from '../../slice/actions/actions';
+import { editBoardStackActions } from '../../slice';
+import { getLayerBulkActions } from '../../../utils/layerBulkActions';
 import {
+  selectAllWidgetMap,
+  selectEditBoard,
   selectEditingWidgetIds,
   selectLayerTree,
   selectSelectedIds,
@@ -51,6 +56,12 @@ export const LayerTree: FC<{}> = memo(() => {
   const { onEditSelectWidget } = useContext(WidgetActionContext);
   const editingWidgetIds = useSelector(selectEditingWidgetIds);
   const selectedIds = useSelector(selectSelectedIds);
+  const widgetMap = useSelector(selectAllWidgetMap);
+  const boardType = useSelector(selectEditBoard).config?.type;
+  const bulk = useMemo(
+    () => getLayerBulkActions(selectedIds ? selectedIds.split(',') : [], widgetMap),
+    [selectedIds, widgetMap],
+  );
 
   const { height, ref } = useResizeObserver({
     refreshMode: 'debounce',
@@ -110,6 +121,40 @@ export const LayerTree: FC<{}> = memo(() => {
       options={typeOptions}
       style={{ margin: '0 12px 8px', flex: '0 0 auto' }}
     />
+    <Space size={4} style={{ padding: '0 12px 8px', flex: '0 0 auto' }}>
+      <Button
+        type="text"
+        size="small"
+        disabled={!bulk.ids.length}
+        icon={bulk.nextLock ? <LockOutlined /> : <UnlockOutlined />}
+        aria-label={bulk.nextLock ? '批量锁定组件' : '批量解锁组件'}
+        onClick={event => {
+          event.stopPropagation();
+          dispatch(editBoardStackActions.toggleWidgetsLock({
+            ids: bulk.ids, lock: bulk.nextLock,
+          }));
+        }}
+      >
+        {bulk.nextLock ? '锁定所选' : '解锁所选'}
+      </Button>
+      {boardType === 'auto' && (
+        <Button
+          type="text"
+          size="small"
+          disabled={!bulk.ids.length}
+          icon={bulk.nextMobileVisible ? <EyeOutlined /> : <EyeInvisibleOutlined />}
+          aria-label={bulk.nextMobileVisible ? '移动端显示所选组件' : '移动端隐藏所选组件'}
+          onClick={event => {
+            event.stopPropagation();
+            dispatch(editBoardStackActions.setWidgetsMobileVisible({
+              ids: bulk.ids, visible: bulk.nextMobileVisible,
+            }));
+          }}
+        >
+          {bulk.nextMobileVisible ? '移动端显示' : '移动端隐藏'}
+        </Button>
+      )}
+    </Space>
     <Tree
       key={`${query}:${filterType || ''}`}
       className="medium"

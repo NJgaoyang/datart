@@ -366,6 +366,7 @@ const filterActions = [
 
   editBoardStackActions.toggleLockWidget,
   editBoardStackActions.toggleWidgetsLock,
+  editBoardStackActions.setWidgetsMobileVisible,
   editBoardStackActions.updateBoardConfigByKey,
   editBoardStackActions.updateWidgetStyleConfigByPath,
   editBoardStackActions.changeFreeWidgetRect,
