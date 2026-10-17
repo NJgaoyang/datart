@@ -38,7 +38,9 @@ import {
   createToSaveWidgetGroup,
   createWidgetInfo,
   getWidgetMap,
+  getLayoutWidgets,
 } from 'app/pages/DashBoardPage/utils/widget';
+import { getDesktopGridLayout } from 'app/pages/DashBoardPage/utils/gridLayout';
 import { Variable } from 'app/pages/MainPage/pages/VariablePage/slice/types';
 import { PendingChartDataRequestFilter } from 'app/types/ChartDataRequest';
 import ChartDataView from 'app/types/ChartDataView';
@@ -236,14 +238,12 @@ export const addWidgetsToEditBoard = createAsyncThunk<
   Widget[],
   { state: RootState }
 >('editBoard/addWidgetsToEditBoard', (widgets, { getState, dispatch }) => {
-  const { dashBoard } = editBoardStackState(
+  const { dashBoard, widgetRecord } = editBoardStackState(
     getState() as unknown as {
       editBoard: HistoryEditBoard;
     },
   );
-  const { layouts } = boardInfoState(
-    getState() as { editBoard: EditBoardState },
-  );
+  const layouts = getDesktopGridLayout(getLayoutWidgets(widgetRecord));
   const widgetInfos = widgets.map(item => createWidgetInfo(item.id));
   const updatedWidgets = adjustWidgetsToBoard({
     widgets,
@@ -263,14 +263,12 @@ export const addGroupWidgetToEditBoard = createAsyncThunk<
   Widget[],
   { state: RootState }
 >('editBoard/addGroupWidgetToEditBoard', (widgets, { getState, dispatch }) => {
-  const { dashBoard } = editBoardStackState(
+  const { dashBoard, widgetRecord } = editBoardStackState(
     getState() as unknown as {
       editBoard: HistoryEditBoard;
     },
   );
-  const { layouts } = boardInfoState(
-    getState() as { editBoard: EditBoardState },
-  );
+  const layouts = getDesktopGridLayout(getLayoutWidgets(widgetRecord));
   const widgetInfos = widgets.map(t => createWidgetInfo(t.id));
   const updatedWidgets = adjustWidgetsToBoard({
     widgets,

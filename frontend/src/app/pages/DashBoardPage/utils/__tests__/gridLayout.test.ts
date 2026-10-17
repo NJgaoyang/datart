@@ -1,4 +1,4 @@
-import { hasGridGeometryChanged } from '../gridLayout';
+import { getDesktopGridLayout, hasGridGeometryChanged } from '../gridLayout';
 
 describe('native grid geometry', () => {
   const original = [
@@ -30,5 +30,22 @@ describe('native grid geometry', () => {
       ...original,
       { i: 'three', x: 0, y: 10, w: 1, h: 1 },
     ])).toBe(true);
+  });
+});
+
+describe('desktop insertion snapshots', () => {
+  it('reads persisted desktop geometry independently of mobile positions', () => {
+    const widgets = [
+      {
+        id: 'a',
+        config: {
+          pRect: { x: 50, y: 10, width: 22, height: 9 },
+          mRect: { x: 0, y: 1, width: 8, height: 4 },
+        },
+      },
+    ] as any;
+    expect(getDesktopGridLayout(widgets)).toEqual([
+      { i: 'a', x: 50, y: 10, w: 22, h: 9 },
+    ]);
   });
 });

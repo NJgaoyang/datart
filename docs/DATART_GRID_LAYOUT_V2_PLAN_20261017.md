@@ -44,3 +44,10 @@ The new layout engine should remain unaware of previous schema versions. Histori
 - Legacy dashboard import or automated compatibility conversion.
 - Reimplementing the pixel-based free dashboard with a grid.
 - Production rollout until an actual install, build, and regression tests are completed.
+
+## Additional correctness changes
+
+- The editor and viewer now use one `DashboardGridLayout` wrapper, which owns width observation and native RGL v2 settings.
+- Geometry checks and reducers discard duplicate drag/resize results before writing an undo snapshot.
+- New desktop widgets are placed below the occupied desktop geometry, even when the mobile editor was selected when they were added. The editor's temporary `boardInfo.layouts` is no longer used as the desktop placement source.
+- New widget batches are packed left-to-right with explicit wrapping; this intentionally replaces the previous y-only insertion heuristic.
