@@ -114,6 +114,18 @@ const StyledTable = styled(Table)<{ tableStyleConfig?: TableStyleConfigProps }>`
     background: transparent;
   }
 
+  /* rc-table sets min-width: 100% when scroll.x is enabled, even when
+     BasicTableChart calculated explicit content widths for every column.
+     That expands short numeric columns across a wide dashboard widget.
+     Respect the calculated scroll.x width; overflow is handled by the
+     table's scroll container when columns exceed the available space. */
+  .ant-table-content > table,
+  .ant-table-header > table,
+  .ant-table-body > table,
+  .ant-table-summary > table {
+    min-width: 0 !important;
+  }
+
   .ant-table-default .ant-table-thead > tr > th {
     padding: 12px;
   }
