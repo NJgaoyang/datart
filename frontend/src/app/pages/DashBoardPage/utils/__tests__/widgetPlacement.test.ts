@@ -52,4 +52,44 @@ describe('new dashboard widget placement', () => {
     });
   });
 
+  it('uses a compact default for new filter fields without affecting charts', () => {
+    const controller = {
+      ...makeWidget('filter', 36, 24),
+      config: {
+        ...makeWidget('filter', 36, 24).config,
+        type: 'controller',
+        originalType: 'dropdownList',
+      },
+    } as Widget;
+    const chart = makeWidget('chart', 36, 24);
+    const result = updateAutoWidgetsRect([controller, chart], []);
+
+    expect(result[0].config.pRect).toEqual({
+      x: 0, y: 0, width: 18, height: 6,
+    });
+    expect(result[0].config.mRect).toEqual({
+      x: 0, y: 0, width: 12, height: 2,
+    });
+    expect(result[1].config.pRect).toEqual({
+      x: 18, y: 0, width: 36, height: 24,
+    });
+    expect(result[1].config.mRect).toEqual({
+      x: 12, y: 0, width: 12, height: 24,
+    });
+  });
+
+  it('preserves explicit controller rectangles instead of forcing defaults', () => {
+    const controller = {
+      ...makeWidget('custom-filter', 24, 8),
+      config: {
+        ...makeWidget('custom-filter', 24, 8).config,
+        type: 'controller',
+        originalType: 'dropdownList',
+      },
+    } as Widget;
+    const [result] = updateAutoWidgetsRect([controller], []);
+    expect(result.config.pRect.width).toBe(24);
+    expect(result.config.pRect.height).toBe(8);
+  });
+
 });

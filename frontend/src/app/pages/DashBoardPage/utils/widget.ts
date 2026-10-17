@@ -220,10 +220,23 @@ export const updateAutoWidgetsRect = (
 
   return widgets.map(widget => {
     const desktopRect = widget.config.pRect;
-    const mobileRect =
-      widget.config.mRect || normalizeAutoRectForCols(desktopRect, mobileCols);
-    const desktopW = Math.max(1, Math.min(desktopCols, Math.round(Number(desktopRect.width) || 1)));
-    const desktopH = Math.max(1, Math.round(Number(desktopRect.height) || 1));
+    // A newly created controller uses the generic 36x24 chart template.
+    // That would create excessively tall filter fields (especially on mobile).
+    // Only replace the untouched template; keep explicitly sized widgets intact.
+    const isDefaultController =
+      widget.config.type === 'controller' &&
+      desktopRect.width === desktopCols / 2 &&
+      desktopRect.height === 24 &&
+      !widget.config.mRect;
+    const mobileRect = isDefaultController
+      ? { x: 0, y: 0, width: 12, height: 2 }
+      : widget.config.mRect || normalizeAutoRectForCols(desktopRect, mobileCols);
+    const desktopW = isDefaultController
+      ? 18
+      : Math.max(1, Math.min(desktopCols, Math.round(Number(desktopRect.width) || 1)));
+    const desktopH = isDefaultController
+      ? 6
+      : Math.max(1, Math.round(Number(desktopRect.height) || 1));
     const mobileW = Math.max(1, Math.min(mobileCols, Math.round(Number(mobileRect.width) || 1)));
     const mobileH = Math.max(1, Math.round(Number(mobileRect.height) || 1));
 

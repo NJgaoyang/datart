@@ -76,3 +76,11 @@ No compatibility layer or automatic historical-data conversion is enabled. Exist
 - The Redux board-info state keeps a writable `LayoutItem[]`; RGL v2 `Layout` is readonly and must not be used for mutable Immer state.
 
 These changes address the three TypeScript diagnostics reported for `npm run check:grid`. Re-run the command locally to confirm that compilation proceeds to the test stage.
+
+## Container-width spacing and delete-query fixes (2026-10-17)
+
+- Dashboard deletion reference checks normalize both storyboard identifiers to `utf8mb4_unicode_ci` after explicit conversion to `utf8mb4`. No database-wide collation rewrite is required for this targeted fix, but both Java and frontend deployments must be refreshed.
+- The automatic grid scales configured pixel margins/padding based on the *measured grid container width*, so a narrow browser or split-pane editor has smaller visible gaps without rewriting saved grid-unit coordinates. Mobile preview retains its own dedicated spacing settings.
+- New automatically laid-out dashboards default to 4px widget gutters and 8px canvas padding. Explicit user spacing settings are still respected on wide screens and proportionally reduced on narrow desktop containers.
+- The old 769px desktop editor minimum width was removed so the container can actually shrink; on sub-768px widths, the active mobile layout is used and drag/resize updates write to `mRect`, not `pRect`.
+- New untouched controller widgets receive compact desktop 18x6 and mobile 12x2 rectangles instead of the generic chart template 36x24; chart widgets and already customized controller rectangles are preserved.
