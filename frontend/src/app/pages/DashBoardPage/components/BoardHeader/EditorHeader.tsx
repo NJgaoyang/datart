@@ -17,11 +17,13 @@
  */
 
 import { CloseOutlined, LeftOutlined, SaveOutlined } from '@ant-design/icons';
-import { Button, Space } from 'antd';
+import { Button, Modal, Space } from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import classnames from 'classnames';
 import { FC, memo, PropsWithChildren, useContext } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import type { HistoryEditBoard } from 'app/pages/DashBoardPage/pages/BoardEditor/slice/types';
+import { hasUnsavedBoardChanges } from 'app/pages/DashBoardPage/utils/boardUnsavedState';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import {
@@ -45,19 +47,38 @@ const EditorHeader: FC<PropsWithChildren> = memo(({ children }) => {
   const t = useI18NPrefix(`viz.action`);
   const { updateBoard } = useContext(BoardActionContext);
   const { onEditClearActiveWidgets } = useContext(WidgetActionContext);
-  const { name, status } = useContext(BoardContext);
+  const { name, status, boardId } = useContext(BoardContext);
+  const hasUnsavedChanges = useSelector((state: { editBoard: HistoryEditBoard }) =>
+    hasUnsavedBoardChanges(state.editBoard?.stack?.past, boardId),
+  );
   const { saving } = useContext(BoardInfoContext);
   const title = useStatusTitle(name, status);
-  const onCloseBoardEditor = () => {
+  const closeWithoutPrompt = () => {
     const pathName = location.pathname;
     const prePath = pathName.split('/boardEditor')[0];
     navigate(`${prePath}`);
     dispatch(clearEditBoardState());
   };
+  const onCloseBoardEditor = () => {
+    if (saving) return;
+    if (hasUnsavedChanges) {
+      Modal.confirm({
+        title: '退出仪表板编辑？',
+        content: '当前修改尚未保存。退出后这些修改将丢失。',
+        okText: '不保存并退出',
+        okButtonProps: { danger: true },
+        cancelText: '继续编辑',
+        onOk: closeWithoutPrompt,
+      });
+    } else {
+      closeWithoutPrompt();
+    }
+  };
+
   const onUpdateBoard = () => {
     onEditClearActiveWidgets();
     setImmediate(() => {
-      updateBoard?.(onCloseBoardEditor);
+      updateBoard?.(closeWithoutPrompt);
     });
   };
 
@@ -68,13 +89,16 @@ const EditorHeader: FC<PropsWithChildren> = memo(({ children }) => {
         {title}
       </h1>
       <Space>
-        {saving && <span aria-live="polite" role="status">保存中…</span>}
+        <span aria-live="polite" role="status" style={{ fontSize: 12 }}>
+          {saving ? '保存中…' : hasUnsavedChanges ? '● 有未保存的修改' : ''}
+        </span>
         {children}
         <>
           <Button
             key="cancel"
             icon={<CloseOutlined />}
             onClick={onCloseBoardEditor}
+            disabled={saving}
           >
             {t('common.cancel')}
           </Button>
