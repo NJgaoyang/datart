@@ -53,8 +53,10 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
   const deviceType = useSelector(selectDeviceType);
   const editingWidgetIds = useSelector(selectEditingWidgetIds);
   const { ref, widgetRowHeight, colsKey } = useGridWidgetHeight();
-  // 编辑器本身通常仍然占用桌面宽度，不能用容器宽度判断移动端列数。
+  // The current grid may switch to mobile columns when a desktop window narrows.
+  // Persist geometry to the active grid, not blindly to the preview toolbar mode.
   const activeColsKey = deviceType === DeviceType.Mobile ? 'sm' : colsKey;
+  const layoutDeviceType = activeColsKey === 'sm' ? DeviceType.Mobile : DeviceType.Desktop;
 
   const { curMargin, curPadding } = useMemo(() => {
     return getBoardMarginPadding(boardConfig, activeColsKey);
@@ -65,10 +67,10 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
   const sortedLayoutWidgets = useEditAutoLayoutMap(boardId);
   const visibleLayoutWidgets = useMemo(
     () =>
-      deviceType === DeviceType.Mobile
+      activeColsKey === 'sm'
         ? sortedLayoutWidgets.filter(isMobileWidgetVisible)
         : sortedLayoutWidgets,
-    [deviceType, sortedLayoutWidgets],
+    [activeColsKey, sortedLayoutWidgets],
   );
   const layoutMap = useGridLayoutMap(visibleLayoutWidgets);
 
@@ -80,11 +82,11 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
       dispatch(
         editBoardStackActions.changeAutoBoardWidgetsRect({
           layouts,
-          deviceType,
+          deviceType: layoutDeviceType,
         }),
       );
     },
-    [activeColsKey, deviceType, dispatch, layoutMap],
+    [activeColsKey, layoutDeviceType, dispatch, layoutMap],
   );
 
   const onLayoutChange = useCallback(
@@ -190,7 +192,8 @@ const Wrapper = styled.div<{}>`
   flex: 1;
   flex-direction: column;
   align-items: center;
-  width: 100px;
+  width: 100%;
+  min-width: 0;
   min-height: 0;
 
   .react-resizable-handle {
@@ -211,7 +214,7 @@ const Wrapper = styled.div<{}>`
   }
 
   &.desktop {
-    min-width: 769px;
+    min-width: 0;
   }
 `;
 
@@ -229,6 +232,7 @@ const StyledContainer = styled(StyledBackground)`
 
   .grid-wrap {
     flex: 1;
+    min-width: 0;
     overflow-y: auto;
     -ms-overflow-style: none;
   }

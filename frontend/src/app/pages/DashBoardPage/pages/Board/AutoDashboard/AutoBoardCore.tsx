@@ -104,6 +104,7 @@ const Wrapper = styled.div`
   flex: 1;
   flex-direction: column;
   width: 100%;
+  min-width: 0;
   min-height: 0;
 `;
 const StyledContainer = styled(StyledBackground)`
@@ -113,6 +114,7 @@ const StyledContainer = styled(StyledBackground)`
   min-height: 0;
   .grid-wrap {
     flex: 1;
+    min-width: 0;
     overflow-y: auto;
     -ms-overflow-style: none;
   }

@@ -16,6 +16,7 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
 import { WIDGET_DRAG_HANDLE } from '../../constants';
+import { getResponsiveGridSpacing } from '../../utils/gridSpacing';
 
 const ALL_RESIZE_HANDLES = [
   'n', 'e', 's', 'w', 'ne', 'nw', 'se', 'sw',
@@ -56,8 +57,17 @@ export const DashboardGridLayout = memo(
       measureBeforeMount: true,
     });
     const gridConfig = useMemo(
-      () => ({ cols, rowHeight, margin, containerPadding }),
-      [cols, rowHeight, margin, containerPadding],
+      () => ({
+        cols,
+        rowHeight,
+        ...getResponsiveGridSpacing({
+          width,
+          cols,
+          margin,
+          containerPadding,
+        }),
+      }),
+      [width, cols, rowHeight, margin, containerPadding],
     );
     const dragConfig = useMemo(
       () => ({
