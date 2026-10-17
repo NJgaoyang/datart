@@ -35,7 +35,7 @@ import { WidgetOfAuto } from './WidgetOfAuto';
 
 export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
   ({ boardId }) => {
-    const { ref, widgetRowHeight, colsKey } = useGridWidgetHeight();
+    const { ref, widgetRowHeight, colsKey, canvasWidth } = useGridWidgetHeight(false);
     const { editing } = useContext(BoardContext);
     const boardConfig = useContext(BoardConfigValContext);
     const { background, allowOverlap, compactType } = boardConfig;
@@ -82,6 +82,7 @@ export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
               <DashboardGridLayout
                 boardId={boardId}
                 deviceKey={colsKey}
+                measuredWidth={canvasWidth}
                 layout={layoutMap[colsKey] || []}
                 cols={LAYOUT_COLS_MAP[colsKey]}
                 rowHeight={widgetRowHeight}
@@ -124,10 +125,12 @@ const StyledContainer = styled(StyledBackground)`
     flex: 1;
     min-width: 0;
     overflow-y: auto;
-    -ms-overflow-style: none;
+    overflow-x: auto;
+    scrollbar-width: thin;
   }
   .grid-wrap::-webkit-scrollbar {
-    width: 0 !important;
+    width: 8px;
+    height: 8px;
   }
 
   .empty {

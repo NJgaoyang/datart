@@ -4,10 +4,9 @@
  * This is a new-system component: all coordinates use RGL v2 Layout and
  * any import of old dashboard data belongs in the future migration service.
  */
-import { memo, useMemo, type ReactNode, type RefObject } from 'react';
+import { memo, useMemo, type ReactNode } from 'react';
 import {
   GridLayout,
-  useContainerWidth,
   type Layout,
 } from 'react-grid-layout';
 import { getCompactor } from 'react-grid-layout/core';
@@ -25,6 +24,8 @@ const ALL_RESIZE_HANDLES = [
 export interface DashboardGridLayoutProps {
   boardId: string;
   deviceKey: string;
+  /** Same canvas measurement used for row-height and device selection. */
+  measuredWidth: number;
   layout: Layout;
   cols: number;
   rowHeight: number;
@@ -44,6 +45,7 @@ export const DashboardGridLayout = memo(
   ({
     boardId,
     deviceKey,
+    measuredWidth,
     layout,
     cols,
     rowHeight,
@@ -57,9 +59,8 @@ export const DashboardGridLayout = memo(
     onLayoutCommit,
     children,
   }: DashboardGridLayoutProps) => {
-    const { width, containerRef, mounted } = useContainerWidth({
-      measureBeforeMount: true,
-    });
+    // A second independent ResizeObserver caused hit-area and width drift.
+    const width = measuredWidth;
     const gridConfig = useMemo(
       () => ({
         cols,
@@ -103,10 +104,9 @@ export const DashboardGridLayout = memo(
     return (
       <div
         className="datart-grid-width"
-        ref={containerRef as RefObject<HTMLDivElement>}
-        style={{ width: '100%', minWidth: 0 }}
+        style={{ width, minWidth: width }}
       >
-        {mounted && width > 0 && (
+        {width > 0 && (
           <GridLayout
             key={`${boardId}:${deviceKey}:${editable ? 'edit' : 'read'}`}
             width={width}

@@ -1,8 +1,14 @@
 import { BREAK_POINT_MAP } from '../constants';
 
-/** Use the grid container's measured width, not window.innerWidth:
- * editor sidebars and split panes can leave a desktop viewport with too
- * little space for several date/filter inputs side by side.
- */
-export const getAdaptiveGridColsKey = (containerWidth: number): 'lg' | 'sm' =>
-  containerWidth > 0 && containerWidth <= BREAK_POINT_MAP.md ? 'sm' : 'lg';
+/** A narrow desktop pane must not change the persisted mobile layout. */
+export const getAdaptiveGridColsKey = (
+  _containerWidth: number,
+  mobileMode = false,
+): 'lg' | 'sm' => mobileMode ? 'sm' : 'lg';
+
+/** Desktop geometry keeps a readable minimum width, with horizontal scroll. */
+export const getGridCanvasWidth = (
+  containerWidth: number,
+  mobileMode = false,
+): number => mobileMode ? Math.max(0, containerWidth)
+  : Math.max(containerWidth, BREAK_POINT_MAP.md);

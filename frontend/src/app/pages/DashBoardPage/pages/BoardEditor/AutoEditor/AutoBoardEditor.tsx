@@ -52,11 +52,11 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
   const { background, allowOverlap, compactType, showGrid } = boardConfig;
   const deviceType = useSelector(selectDeviceType);
   const editingWidgetIds = useSelector(selectEditingWidgetIds);
-  const { ref, widgetRowHeight, colsKey } = useGridWidgetHeight();
-  // The current grid may switch to mobile columns when a desktop window narrows.
-  // Persist geometry to the active grid, not blindly to the preview toolbar mode.
-  const activeColsKey = deviceType === DeviceType.Mobile ? 'sm' : colsKey;
-  const layoutDeviceType = activeColsKey === 'sm' ? DeviceType.Mobile : DeviceType.Desktop;
+  // Only the explicit device switch may edit mobile geometry/visibility.
+  const mobilePreview = deviceType === DeviceType.Mobile;
+  const { ref, widgetRowHeight, colsKey: activeColsKey, canvasWidth } =
+    useGridWidgetHeight(mobilePreview);
+  const layoutDeviceType = deviceType;
 
   const { curMargin, curPadding } = useMemo(() => {
     return getBoardMarginPadding(boardConfig, activeColsKey);
@@ -141,7 +141,6 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
         className={`${deviceClassName}${
           deviceType === DeviceType.Mobile ? ' datart-mobile-board' : ''
         }`}
-        ref={ref}
       >
         {deviceType === DeviceType.Mobile && (
           <MobilePreviewHeader>
@@ -152,9 +151,11 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
         {visibleLayoutWidgets.length ? (
           <>
             <div className="grid-wrap" ref={gridWrapRef}>
+              <div className="widget-row-height" ref={ref}>
               <DashboardGridLayout
                 boardId={boardId}
                 deviceKey={activeColsKey}
+                measuredWidth={canvasWidth}
                 layout={layoutMap[activeColsKey] || []}
                 cols={LAYOUT_COLS_MAP[activeColsKey]}
                 margin={curMargin}
@@ -171,6 +172,7 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
               >
                 {boardChildren}
               </DashboardGridLayout>
+              </div>
             </div>
             {!!editingWidgetIds && <BoardOverlay />}
           </>
@@ -231,7 +233,8 @@ const StyledContainer = styled(StyledBackground)`
     flex: 1;
     min-width: 0;
     overflow-y: auto;
-    -ms-overflow-style: none;
+    overflow-x: auto;
+    scrollbar-width: thin;
   }
 
   &.mobile {
@@ -260,7 +263,8 @@ const StyledContainer = styled(StyledBackground)`
   }
 
   .grid-wrap::-webkit-scrollbar {
-    width: 0 !important;
+    width: 8px;
+    height: 8px;
   }
 
   .empty {

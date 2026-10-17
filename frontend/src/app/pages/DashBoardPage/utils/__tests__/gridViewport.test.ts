@@ -1,17 +1,17 @@
-import { getAdaptiveGridColsKey } from '../gridViewport';
+import { getAdaptiveGridColsKey, getGridCanvasWidth } from '../gridViewport';
 
-describe('automatic dashboard container breakpoints', () => {
-  it('uses the full desktop geometry only when the actual canvas has room', () => {
-    expect(getAdaptiveGridColsKey(1600)).toBe('lg');
-    expect(getAdaptiveGridColsKey(1200)).toBe('lg');
-    expect(getAdaptiveGridColsKey(997)).toBe('lg');
+describe('explicit dashboard device mode and canvas width', () => {
+  it('does not switch the saved desktop layout merely when the pane narrows', () => {
+    for (const width of [1920, 1200, 996, 768, 360])
+      expect(getAdaptiveGridColsKey(width)).toBe('lg');
   });
-  it('uses the separately saved compact layout in split panes and tablets', () => {
-    expect(getAdaptiveGridColsKey(996)).toBe('sm');
-    expect(getAdaptiveGridColsKey(800)).toBe('sm');
-    expect(getAdaptiveGridColsKey(360)).toBe('sm');
+  it('uses mobile columns only in the explicitly selected preview', () => {
+    expect(getAdaptiveGridColsKey(1200, true)).toBe('sm');
+    expect(getAdaptiveGridColsKey(340, true)).toBe('sm');
   });
-  it('does not switch layout before the first positive width measurement', () => {
-    expect(getAdaptiveGridColsKey(0)).toBe('lg');
+  it('keeps a minimum desktop canvas width without changing mobile width', () => {
+    expect(getGridCanvasWidth(1366)).toBe(1366);
+    expect(getGridCanvasWidth(720)).toBe(996);
+    expect(getGridCanvasWidth(340, true)).toBe(340);
   });
 });
