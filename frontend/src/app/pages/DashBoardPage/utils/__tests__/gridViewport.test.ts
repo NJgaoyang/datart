@@ -11,7 +11,7 @@ describe('explicit dashboard device mode and canvas width', () => {
   });
   it('keeps a minimum desktop canvas width without changing mobile width', () => {
     expect(getGridCanvasWidth(1366)).toBe(1366);
-    expect(getGridCanvasWidth(720)).toBe(996);
+    expect(getGridCanvasWidth(720)).toBe(768);
     expect(getGridCanvasWidth(340, true)).toBe(340);
   });
 });

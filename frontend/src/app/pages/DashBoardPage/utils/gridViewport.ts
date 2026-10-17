@@ -11,4 +11,4 @@ export const getGridCanvasWidth = (
   containerWidth: number,
   mobileMode = false,
 ): number => mobileMode ? Math.max(0, containerWidth)
-  : Math.max(containerWidth, BREAK_POINT_MAP.md);
+  : Math.max(containerWidth, BREAK_POINT_MAP.sm);
