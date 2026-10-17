@@ -52,21 +52,17 @@ export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
       thEmitScroll();
     }, [thEmitScroll]);
 
-    const boardChildren = useMemo(() => {
-      return sortedLayoutWidgets.map(item => {
-        return (
-          <div key={item.id}>
-            <WidgetWrapProvider
-              id={item.id}
-              boardEditing={editing}
-              boardId={boardId}
-            >
-              <WidgetOfAuto />
-            </WidgetWrapProvider>
-          </div>
-        );
-      });
-    }, [boardId, editing, sortedLayoutWidgets]);
+    const boardChildren = useMemo(
+      () => sortedLayoutWidgets.map(item => (
+        <ReadGridCell
+          key={item.id}
+          id={item.id}
+          boardId={boardId}
+          editing={editing}
+        />
+      )),
+      [boardId, editing, sortedLayoutWidgets],
+    );
     return (
       <Wrapper>
         <StyledContainer bg={background}>
@@ -130,3 +126,14 @@ const StyledContainer = styled(StyledBackground)`
     justify-content: center;
   }
 `;
+
+/** Stable memoized cells avoid rerendering unrelated charts on geometry updates. */
+const ReadGridCell = memo(
+  ({ id, boardId, editing }: { id: string; boardId: string; editing: boolean }) => (
+    <div>
+      <WidgetWrapProvider id={id} boardEditing={editing} boardId={boardId}>
+        <WidgetOfAuto />
+      </WidgetWrapProvider>
+    </div>
+  ),
+);

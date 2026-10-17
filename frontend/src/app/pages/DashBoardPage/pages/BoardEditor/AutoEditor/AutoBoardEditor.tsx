@@ -79,23 +79,24 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
     (layouts: Layout) => {
       const previous = layoutMap[activeColsKey] || [];
       if (!hasGridGeometryChanged(previous, layouts)) return;
+      // A gesture creates one persistent widget update / undo snapshot.
+      // Live drag and resize previews are owned by RGL, not Redux.
       dispatch(
         editBoardStackActions.changeAutoBoardWidgetsRect({
           layouts,
           deviceType: layoutDeviceType,
         }),
       );
+      dispatch(editDashBoardInfoActions.adjustDashLayouts(layouts));
+      thEmitScroll();
     },
-    [activeColsKey, layoutDeviceType, dispatch, layoutMap],
+    [activeColsKey, layoutDeviceType, dispatch, layoutMap, thEmitScroll],
   );
 
-  const onLayoutChange = useCallback(
-    (layouts: Layout) => {
-      thEmitScroll();
-      dispatch(editDashBoardInfoActions.adjustDashLayouts(layouts));
-    },
-    [dispatch, thEmitScroll],
-  );
+  const onLayoutChange = useCallback(() => {
+    // Do not dispatch Redux actions for every preview/collision frame.
+    thEmitScroll();
+  }, [thEmitScroll]);
 
   const { deviceClassName } = useMemo(() => {
     let deviceClassName: string = 'desktop';
@@ -112,29 +113,17 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
     [editingWidgetIds],
   );
 
-  const boardChildren = useMemo(() => {
-    return visibleLayoutWidgets.map(item => {
-      // TODO(Stephen): 将外层div与内层WidgetWrapProvider合并，同时修改FreeBoardEditor
-      return (
-        <div
-          style={{
-            zIndex: editingIds.has(item.id)
-              ? LEVEL_DASHBOARD_EDIT_OVERLAY + 1
-              : 'auto',
-          }}
-          key={item.id}
-        >
-          <WidgetWrapProvider
-            id={item.id}
-            boardEditing={true}
-            boardId={boardId}
-          >
-            <WidgetOfAutoEditor />
-          </WidgetWrapProvider>
-        </div>
-      );
-    });
-  }, [boardId, editingIds, visibleLayoutWidgets]);
+  const boardChildren = useMemo(
+    () => visibleLayoutWidgets.map(item => (
+      <EditGridCell
+        key={item.id}
+        id={item.id}
+        boardId={boardId}
+        selected={editingIds.has(item.id)}
+      />
+    )),
+    [boardId, editingIds, visibleLayoutWidgets],
+  );
 
   /**
    * https://www.npmjs.com/package/react-grid-layout
@@ -300,3 +289,16 @@ const MobilePreviewHeader = styled.div`
     white-space: nowrap;
   }
 `;
+
+/** Prevent editing one widget from remounting/rendering every other cell. */
+const EditGridCell = memo(
+  ({ id, boardId, selected }: { id: string; boardId: string; selected: boolean }) => (
+    <div style={{
+      zIndex: selected ? LEVEL_DASHBOARD_EDIT_OVERLAY + 1 : 'auto',
+    }}>
+      <WidgetWrapProvider id={id} boardEditing={true} boardId={boardId}>
+        <WidgetOfAutoEditor />
+      </WidgetWrapProvider>
+    </div>
+  ),
+);
