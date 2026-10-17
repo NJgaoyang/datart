@@ -68,6 +68,7 @@ test('previews, backs up, applies and restores without overwriting files', () =>
   assert.equal(runCli(['--input', input]).changed, 1);
   assert.equal(runCli(['--input', input, '--apply', '--output', output]).changed, 1);
   assert.equal(JSON.parse(readFileSync(output)).widgets.length, 1);
+  assert.equal(JSON.parse(readFileSync(output + '.audit.json')).report.changed, 1);
   assert.equal(readFileSync(input, 'utf8'), original);
   assert.throws(() => runCli(['--input', input, '--apply', '--output', output]), /Destination/);
   runCli(['--rollback', input + '.bak', '--output', restored]);

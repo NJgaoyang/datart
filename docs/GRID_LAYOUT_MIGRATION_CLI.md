@@ -59,3 +59,10 @@ coordinates should migrate; inspect group widgets before importing.
 On a staging system: export/backup, preview changes, validate collision
 warnings, migrate, import, open editor, drag/resize, save/reopen, check desktop
 and mobile, verify links/filters/group widgets, and practice a restore.
+
+## Audit trail and repeatability
+
+Applying a migration also creates `<output>.audit.json` with the source and
+converted SHA-256 hashes, UTC timestamp, widget rectangle diffs, warnings and
+backup location. Both the backup and audit path are guarded against overwrite.
+Record these artifacts in your deployment change ticket before importing.

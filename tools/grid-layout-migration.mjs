@@ -9,6 +9,7 @@
  */
 import { readFileSync, writeFileSync, copyFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const VERSION = 3;
@@ -173,21 +174,35 @@ export function runCli(argv) {
   }
   if (!args.input) throw new Error('Expected --input JSON export');
   const input = resolve(args.input);
-  const { output, report } = migrateDashboardExport(JSON.parse(readFileSync(input, 'utf8')));
+  const original = readFileSync(input, 'utf8');
+  const { output, report } = migrateDashboardExport(JSON.parse(original));
   if (args.apply) {
     if (!args.output) throw new Error('--apply requires --output');
     const destination = resolve(args.output);
-    if (destination === input || existsSync(destination)) {
-      throw new Error('Destination must be a new path, different from input');
+    const auditPath = destination + '.audit.json';
+    if (destination === input || existsSync(destination) || existsSync(auditPath)) {
+      throw new Error('Destination or audit path exists; use a new output filename');
     }
     if (report.warnings.length && !args['accept-warnings']) {
       throw new Error('Migration has warnings; review preview or pass --accept-warnings');
     }
     const backup = input + '.bak';
     if (existsSync(backup)) throw new Error('Backup already exists; refusing to overwrite');
+    const converted = JSON.stringify(output, null, 2) + '\n';
+    const hash = content => createHash('sha256').update(content).digest('hex');
     copyFileSync(input, backup);
-    writeFileSync(destination, JSON.stringify(output, null, 2) + '\n');
-    return { ...report, backup, output: destination };
+    writeFileSync(destination, converted);
+    const audit = {
+      migratedAt: new Date().toISOString(),
+      input,
+      backup,
+      output: destination,
+      originalSha256: hash(original),
+      convertedSha256: hash(converted),
+      report,
+    };
+    writeFileSync(auditPath, JSON.stringify(audit, null, 2) + '\n');
+    return { ...report, backup, output: destination, audit: auditPath };
   }
   return report;
 }

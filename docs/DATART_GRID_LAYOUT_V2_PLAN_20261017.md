@@ -84,3 +84,28 @@ These changes address the three TypeScript diagnostics reported for `npm run che
 - New automatically laid-out dashboards default to 4px widget gutters and 8px canvas padding. Explicit user spacing settings are still respected on wide screens and proportionally reduced on narrow desktop containers.
 - The old 769px desktop editor minimum width was removed so the container can actually shrink; on sub-768px widths, the active mobile layout is used and drag/resize updates write to `mRect`, not `pRect`.
 - New untouched controller widgets receive compact desktop 18x6 and mobile 12x2 rectangles instead of the generic chart template 36x24; chart widgets and already customized controller rectangles are preserved.
+
+## P0–P2 implementation and verification gate (2026-10-17)
+
+- P0: an explicitly invoked offline migration tool under `tools/` transforms
+  v1/v2 dashboard JSON exports to v3 with dry-run diffs, warnings, immutable
+  backup, recorded SHA-256 audit and rollback. This does **not** silently
+  transform or import a production dashboard, and it does not provide automatic
+  legacy rendering on the new engine.
+- P1: live gesture preview is owned by native RGL v2. Final layout commit is
+  a single `changeAutoBoardWidgetsRect` action per changed drag/resize.
+  `BoardInfo.layouts` is updated after commit instead of every preview
+  frame. Desktop/mobile widget rectangles remain independent. Each widget
+  receives a memoized React shell.
+- P2: the dashboard settings now expose vertical/horizontal/no compaction
+  plus a CSS grid-guide toggle. For read-only dashboards the browser can
+  skip offscreen widget paint with `content-visibility:auto`; this keeps
+  widget subscriptions mounted and is **not** React virtualization.
+- `npm run bench:grid` runs a repeatable native-core CPU compaction benchmark
+  at 100/500/1000 widgets; benchmark values are environment-specific and do
+  not measure browser drag FPS. Record React/paint profiles with DevTools
+  before claiming production-scale performance.
+- GitHub Actions workflow `dashboard-grid-v2.yml` runs locked dependency
+  installation, TypeScript, grid-specific tests, production frontend build,
+  Java backend package, and offline migration tests. Browser acceptance
+  still requires an actual Datart instance with real dashboards and database.

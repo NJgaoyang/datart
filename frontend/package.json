@@ -33,7 +33,8 @@
     "doc:types": "tsc --project tsconfig.dHelper.json",
     "doc:html": "jsdoc -c jsdoc.config.json",
     "test:grid": "vitest run src/app/pages/DashBoardPage/hooks/__tests__/useGridLayoutMap.test.tsx src/app/pages/DashBoardPage/utils/__tests__/gridLayout.test.ts src/app/pages/DashBoardPage/utils/__tests__/widgetPlacement.test.ts src/app/pages/DashBoardPage/utils/__tests__/autoLayout.test.ts src/app/pages/DashBoardPage/utils/__tests__/gridSpacing.test.ts src/app/pages/DashBoardPage/utils/__tests__/gridEngineOptions.test.ts src/app/pages/DashBoardPage/utils/__tests__/gridPerformance.test.tsx",
-    "check:grid": "npm run checkTs && npm run test:grid"
+    "check:grid": "npm run checkTs && npm run test:grid",
+    "bench:grid": "node scripts/bench-grid-layout.mjs"
   },
   "eslintConfig": {
     "extends": [
