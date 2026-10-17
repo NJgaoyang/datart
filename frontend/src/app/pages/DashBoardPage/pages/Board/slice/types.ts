@@ -183,6 +183,8 @@ export interface WidgetInfo {
 }
 export interface WidgetData {
   id: string;
+  /** Bounded batch errors are intentionally generic; do not expose SQL. */
+  error?: string;
   columns?: ChartDatasetMeta[];
   name?: string;
   rows?: string[][];
