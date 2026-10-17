@@ -125,3 +125,32 @@ npm test
 - [ ] 真实浏览器/真实数据源验收。
 - [ ] 未完成子项实现及相应专项测试。
 - [ ] 性能和跨浏览器指标达标后，再评估生产上线。
+
+## 9. 续接开发记录（2026-10-17，基于 dev20261017）
+
+> **本节晚于上述历史快照。** 第 1–8 节仍是截至 `b9c9777403` 的交接状态，后续工作以本节和最新代码为准。下面的「实现」仍不等于真实浏览器验收。
+
+| 项目 | 新提交 | 本轮新增能力 | 未完成 / 验收限制 |
+|---|---|---|---|
+| **10. 移动预览** | [`cead6ef`](https://github.com/NJgaoyang/datart/commit/cead6ef139c642a1304227b143bec2319e2f82da) | 新增 667×375、736×414、812×375 横屏预设，自定义 280–1024px 宽度、非法值不应用；竖屏和平板模拟保持可用 | 均使用**显式 Mobile / 24 列**，不创建平板第三套坐标，未完成真机截图与缩放验收 |
+| **12. 图表状态** | [`bbc0abe`](https://github.com/NJgaoyang/datart/commit/bbc0abe82595efd63dc82970e792852946d4951b) | HTTP 403 明确识别为无权限；一般查询失败有手动“重新查询”；保存错误状态不会显示原始 SQL；重试期间禁止重复提交 | 403 以结构化 HTTP 状态判断，不能将任意错误文案猜测为无权限；业务响应体的权限错误码、嵌入/分享实例还需联合验收 |
+| **15. 保存反馈** | [`2c0e36b`](https://github.com/NJgaoyang/datart/commit/2c0e36b4e27ea149c40ea95580fedb77f0014d61) | 提供保存中/已保存/未保存/失败状态；请求失败仍留在编辑器并允许重试；有未保存修改时刷新/关闭标签页提示 | React Router 当前是传统 `BrowserRouter`；未接入安全可用的跨 SPA 内部路由阻断器，不能宣称所有导航受到保护 |
+
+补充说明：
+
+- 本轮新增专项测试：`mobilePreviewSize.test.ts`、`widgetQueryError.test.ts`、`boardSaveStatus.test.ts`，以及扩展 `chartViewState.test.ts`。以上测试入口已经添加到 `frontend/package.json` 的 `test:grid`。
+- `cead6ef` 的 CI [39037355384](https://github.com/NJgaoyang/datart/actions/runs/39037355384) 已显示 **success**。
+- `2c0e36b` 的 CI [39037788152](https://github.com/NJgaoyang/datart/actions/runs/39037788152) 中，前端 TypeScript、专项 Grid 单测、Compactor CPU 基准、生产构建和包体积采集步骤已显示 **success**；完整工作流结论请以 GitHub Actions 页面最新状态为准。文档更新提交如触发后续工作流，需单独查看其结果。
+- **没有真实已登录 Datart 测试实例的 Playwright 执行证据。** 不得将 CI 的 JSDOM 单测或生产构建视为真实鼠标热区、保存重开、移动触摸与跨浏览器验收通过。
+
+下一步仍按第 7 节推进：先在授权的非生产实例跑 P0-1～5 和第 21 项真实交互；然后处理第 15 项跨 SPA 路由保护、第 1/5/9 项边界和第 16/18/20/21 项性能与规范。特别注意当前应用入口 `AppRouter.tsx` 使用 `BrowserRouter`，不可直接添加仅适用于 data router 的阻断 Hook；任何导航方案都需要测试返回、手动退出、保存后退出、刷新及登录重定向，不得污染浏览器历史。
+
+本轮代码的定向复核命令（依赖安装完成后）：
+
+```bash
+cd frontend
+npm run checkTs
+npx vitest run src/app/pages/DashBoardPage/utils/__tests__/mobilePreviewSize.test.ts src/app/pages/DashBoardPage/utils/__tests__/widgetQueryError.test.ts src/app/pages/DashBoardPage/utils/__tests__/boardSaveStatus.test.ts src/app/pages/DashBoardPage/components/Widgets/DataChartWidget/__tests__/chartViewState.test.ts
+npm run build
+```
+

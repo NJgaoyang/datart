@@ -598,7 +598,7 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
     if (dataState === 'error') {
       return (
         <Empty description="图表查询失败，请稍后重试或检查数据源">
-          <Button onClick={() => onWidgetGetData(widgetRef.current)}>
+          <Button loading={loading} disabled={loading} onClick={() => onWidgetGetData(widgetRef.current)}>
             重新查询
           </Button>
         </Empty>
@@ -628,6 +628,7 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
     errText,
     dataState,
     chart,
+    loading,
     onWidgetGetData,
     dataset,
     selectedItems,
