@@ -144,8 +144,10 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
                         field.setCreateBy(currentUserId());
                         field.setCreateTime(new Date());
                     }
-                    field.setCanonicalKey(data.canonicalKey());
                 }
+                // Keep the previous identity until we have compared source
+                // changes; existing-by-ID fields can change canonical key.
+                String previousCanonicalKey = field.getCanonicalKey();
                 UpstreamIdentity joinSource = joinSources.get(data.originName());
                 ViewField upstream = joinSource == null ? null
                         : matchUpstreamField(upstreamFields.get(joinSource.viewId()), joinSource.columnKey());
@@ -155,7 +157,10 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
                 field.setViewId(view.getId());
                 field.setCanonicalKey(data.canonicalKey());
                 field.setOriginName(data.originName());
-                String formerSourcePath = field.getSourcePath();
+                // A legacy record may have a null sourcePath. For an
+                // unchanged computed field, null and [] represent the same
+                // lack of physical lineage, not a source transition.
+                String formerSourcePath = toJson(fromJson(field.getSourcePath()));
                 String nextSourcePath = toJson(physicalSourcePath);
                 field.setSourcePath(nextSourcePath);
                 field.setFieldType(data.type());
@@ -172,11 +177,13 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
                 if (sourceComment != null) {
                     field.setSourceComment(sourceComment);
                 } else if (shouldClearMissingComment(formerSourcePath, nextSourcePath,
-                        physicalSourcePath.isEmpty() || "COMPUTED".equalsIgnoreCase(data.category()),
+                        persisted && !Objects.equals(previousCanonicalKey, data.canonicalKey()),
                         upstream != null || (source != null && !physicalSourcePath.isEmpty()
                                 && source.exact(physicalSourcePath) != null))) {
-                    // Confirmed disappearance or change of physical origin:
-                    // retaining the previous comment would mislabel a new field.
+                    // Clear only when the physical path or stable field
+                    // identity changed, or the source is verified to lack a
+                    // comment. An unchanged computed field has no physical
+                    // path but can still retain its existing annotation.
                     field.setSourceComment(null);
                 } else {
                     // Same known source but comment lookup unavailable:
