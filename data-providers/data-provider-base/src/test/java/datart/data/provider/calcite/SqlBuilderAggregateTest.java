@@ -70,4 +70,49 @@ class SqlBuilderAggregateTest {
                 sql.toUpperCase().contains("SUM(SUM("), sql);
     }
 
+    @Test
+    void optedInRatioAggregatesOperandsAndGuardsZeroDenominator() throws Exception {
+        datart.core.data.provider.sql.FunctionColumn ratio = new datart.core.data.provider.sql.FunctionColumn();
+        ratio.setAlias("rate");
+        ratio.setSnippet("a / b");
+        AggregateOperator aggregate = new AggregateOperator();
+        aggregate.setColumn("rate");
+        aggregate.setSqlOperator(AggregateOperator.SqlOperator.SUM);
+        aggregate.setRatioOfSums(true);
+
+        QueryScriptProcessResult source = new QueryScriptProcessResult();
+        source.setFrom(new SqlIdentifier("orders", SqlParserPos.ZERO));
+        String sql = SqlBuilder.builder()
+                .withQueryScriptProcessResult(source)
+                .withExecuteParam(ExecuteParam.builder()
+                        .functionColumns(java.util.List.of(ratio))
+                        .aggregators(java.util.List.of(aggregate)).build())
+                .withDialect(new StarRocksSqlStdOperatorSupport())
+                .withQuoteIdentifiers(true).build();
+
+        assertTrue(sql.toUpperCase().contains("NULLIF("), sql);
+        assertTrue(sql.toUpperCase().contains("SUM("), sql);
+        org.junit.jupiter.api.Assertions.assertFalse(sql.toUpperCase().contains("SUM(`A` / `B`)"), sql);
+    }
+
+    @Test
+    void ordinaryRowWiseDivisionRemainsUnchangedWhenNotOptedIn() throws Exception {
+        datart.core.data.provider.sql.FunctionColumn ratio = new datart.core.data.provider.sql.FunctionColumn();
+        ratio.setAlias("unit_price");
+        ratio.setSnippet("a / b");
+        AggregateOperator aggregate = new AggregateOperator();
+        aggregate.setColumn("unit_price");
+        aggregate.setSqlOperator(AggregateOperator.SqlOperator.SUM);
+        QueryScriptProcessResult source = new QueryScriptProcessResult();
+        source.setFrom(new SqlIdentifier("orders", SqlParserPos.ZERO));
+        String sql = SqlBuilder.builder()
+                .withQueryScriptProcessResult(source)
+                .withExecuteParam(ExecuteParam.builder()
+                        .functionColumns(java.util.List.of(ratio))
+                        .aggregators(java.util.List.of(aggregate)).build())
+                .withDialect(new StarRocksSqlStdOperatorSupport())
+                .withQuoteIdentifiers(true).build();
+        org.junit.jupiter.api.Assertions.assertFalse(sql.toUpperCase().contains("NULLIF("), sql);
+    }
+
 }

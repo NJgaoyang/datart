@@ -32,6 +32,9 @@ public class AggregateOperator extends ColumnOperator implements Alias {
 
     private String alias;
 
+    /** Explicit metric semantics: SUM(numerator) / NULLIF(SUM(denominator), 0). */
+    private boolean ratioOfSums;
+
     public enum SqlOperator implements Serializable {
 
         MIN,

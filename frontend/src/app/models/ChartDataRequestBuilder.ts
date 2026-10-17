@@ -167,9 +167,11 @@ export class ChartDataRequestBuilder {
         alias: this.buildAliasName(aggCol),
         column: this.buildColumnName(aggCol),
         sqlOperator: aggCol.aggregate!,
+        ratioOfSums: aggCol.ratioOfSums === true,
       })),
       (a, b) =>
-        isEqualObject(a.column, b.column) && a.sqlOperator === b.sqlOperator,
+        isEqualObject(a.column, b.column) && a.sqlOperator === b.sqlOperator
+          && a.ratioOfSums === b.ratioOfSums,
     );
   }
 

@@ -321,7 +321,24 @@ public class SqlBuilder {
         }
         SqlOperator sqlOp = mappingSqlAggFunction(operator.getSqlOperator());
         SqlNode aggCall;
-        if (operator.getSqlOperator() == null) {
+        if (operator.isRatioOfSums()) {
+            if (operator.getSqlOperator() != AggregateOperator.SqlOperator.SUM
+                    || !(sqlNode instanceof SqlBasicCall division)
+                    || division.getKind() != SqlKind.DIVIDE
+                    || containsAggregate(sqlNode)) {
+                throw new IllegalArgumentException(
+                        "ratioOfSums requires a scalar numerator / denominator and SUM aggregation");
+            }
+            SqlNode numerator = SqlNodeUtils.createSqlBasicCall(
+                    SqlStdOperatorTable.SUM, Collections.singletonList(division.operand(0)));
+            SqlNode denominator = SqlNodeUtils.createSqlBasicCall(
+                    SqlStdOperatorTable.SUM, Collections.singletonList(division.operand(1)));
+            SqlNode zeroGuard = SqlNodeUtils.createSqlBasicCall(
+                    SqlStdOperatorTable.NULLIF,
+                    Arrays.asList(denominator, SqlLiteral.createExactNumeric("0", SqlParserPos.ZERO)));
+            aggCall = SqlNodeUtils.createSqlBasicCall(
+                    SqlStdOperatorTable.DIVIDE, Arrays.asList(numerator, zeroGuard));
+        } else if (operator.getSqlOperator() == null) {
             aggCall = sqlNode;
         } else if (containsAggregate(sqlNode)) {
             // Explicit aggregate formula such as SUM(a)/NULLIF(SUM(b),0)

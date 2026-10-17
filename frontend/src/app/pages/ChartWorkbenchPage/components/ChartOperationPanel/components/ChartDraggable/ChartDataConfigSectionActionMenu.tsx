@@ -21,6 +21,8 @@ import SubMenu from 'antd/lib/menu/SubMenu';
 import {
   ChartDataSectionFieldActionType,
   ChartDataViewFieldCategory,
+  AggregateFieldActionType,
+  DataViewFieldType,
 } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { ChartDataSectionField } from 'app/types/ChartConfig';
@@ -179,8 +181,25 @@ const ChartDataConfigSectionActionMenu: FC<
     }
   };
 
+  const metric = config.rows?.find(row => row.uid === uid);
+  const canConfigureRatio = type === DataViewFieldType.NUMERIC
+    && metric?.aggregate === AggregateFieldActionType.Sum
+    && Boolean(metric.expression?.includes('/'));
+
   return (
     <Menu>
+      {canConfigureRatio && metric && (
+        <Menu.Item
+          key="ratioOfSums"
+          onClick={() => handleFieldConfigChanged(uid, {
+            ...metric, ratioOfSums: !metric.ratioOfSums,
+          }, true)}
+        >
+          {metric.ratioOfSums
+            ? '✓ 汇总比率：先求和后相除'
+            : '汇总比率：先求和后相除'}
+        </Menu.Item>
+      )}
       {getModalActions(config?.actions, type, category).map(actionName => (
         <Menu.Item
           key={actionName}
