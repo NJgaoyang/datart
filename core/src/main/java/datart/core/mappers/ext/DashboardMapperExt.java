@@ -32,7 +32,8 @@ public interface DashboardMapperExt extends DashboardMapper {
     @Select({
             "SELECT COUNT(*)",
             "FROM storypage sp",
-            "JOIN storyboard sb ON sb.id COLLATE utf8mb3_unicode_ci = sp.storyboard_id COLLATE utf8mb3_unicode_ci",
+            "JOIN storyboard sb ON CONVERT(sb.id USING utf8mb4) COLLATE utf8mb4_unicode_ci",
+            " = CONVERT(sp.storyboard_id USING utf8mb4) COLLATE utf8mb4_unicode_ci",
             "WHERE sp.rel_type = 'DASHBOARD'",
             "AND sp.rel_id = #{dashboardId}",
             "AND sb.status != 0"
@@ -42,7 +43,8 @@ public interface DashboardMapperExt extends DashboardMapper {
     @Select({
             "SELECT DISTINCT sb.name",
             "FROM storypage sp",
-            "JOIN storyboard sb ON sb.id COLLATE utf8mb3_unicode_ci = sp.storyboard_id COLLATE utf8mb3_unicode_ci",
+            "JOIN storyboard sb ON CONVERT(sb.id USING utf8mb4) COLLATE utf8mb4_unicode_ci",
+            " = CONVERT(sp.storyboard_id USING utf8mb4) COLLATE utf8mb4_unicode_ci",
             "WHERE sp.rel_type = 'DASHBOARD'",
             "AND sp.rel_id = #{dashboardId}",
             "AND sb.status != 0"
