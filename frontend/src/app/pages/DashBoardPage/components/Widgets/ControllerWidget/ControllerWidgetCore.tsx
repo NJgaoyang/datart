@@ -34,10 +34,8 @@ import React, {
   useContext,
   useEffect,
   useMemo,
-  useRef,
 } from 'react';
 import styled from 'styled-components';
-import { LEVEL_1000 } from 'styles/StyleConstants';
 import { isEmpty } from 'utils/object';
 import { convertToTree } from '../../../utils/widget';
 import { WidgetActionContext } from '../../ActionProvider/WidgetActionProvider';
@@ -65,25 +63,12 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
   // TODO 由控制器自己控制 要不要触发查询
   // const emitQuery = getControlQueryEnable(widget.config.customConfig.props!);
   const [form] = Form.useForm();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const popupMountRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    const div = document.createElement('div');
-    div.style.cssText =
-      'position:fixed;top:0;left:0;z-index:' + LEVEL_1000 + ';';
-    document.body.appendChild(div);
-    popupMountRef.current = div;
-    return () => {
-      document.body.removeChild(div);
-      popupMountRef.current = null;
-    };
-  }, []);
-
-  const popupContainer = useMemo(
-    () => () =>
-      (document.fullscreenElement || popupMountRef.current ||
-        document.body) as HTMLElement,
+  // One native body/fullscreen portal is enough for all controls.
+  // Per-widget position:fixed hosts drifted under zoom/scroll and created
+  // hundreds of temporary DOM nodes on large dashboards.
+  const popupContainer = useCallback(
+    () => (document.fullscreenElement || document.body) as HTMLElement,
     [],
   );
 
@@ -259,13 +244,38 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
     ],
   );
 
+  // Synchronize persisted filter values after render. Calling setFieldsValue
+  // inside useMemo mutates the AntD form during React's render phase.
+  useEffect(() => {
+    const isRangeTime = facadeType === ControllerFacadeTypes.RangeTime;
+    const isTime = facadeType === ControllerFacadeTypes.Time;
+    const isArrayControl = [
+      ControllerFacadeTypes.MultiDropdownList,
+      ControllerFacadeTypes.CheckboxGroup,
+      ControllerFacadeTypes.RangeValue,
+      ControllerFacadeTypes.DropDownTree,
+    ].includes(facadeType);
+    const value = isTime || isRangeTime
+      ? getControllerDateValues({
+          controlType: facadeType,
+          filterDate: config!.controllerDate!,
+        })
+      : controllerValues;
+    form.setFieldsValue({
+      value: isTime
+        ? value?.[0]
+        : isRangeTime || isArrayControl
+          ? value
+          : value?.[0],
+    });
+  }, [facadeType, controllerValues, config, form]);
+
   const control = useMemo(() => {
     let selectOptions = optionRows?.map(ele => {
       return { value: ele.key, label: ele.label } as ControlOption;
     });
     switch (facadeType) {
       case ControllerFacadeTypes.DropdownList:
-        form.setFieldsValue({ value: controllerValues?.[0] });
         return (
           <SelectControllerForm
             onChange={onControllerChange}
@@ -276,7 +286,6 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
         );
 
       case ControllerFacadeTypes.MultiDropdownList:
-        form.setFieldsValue({ value: controllerValues });
         return (
           <MultiSelectControllerForm
             onChange={onControllerChange}
@@ -286,7 +295,6 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
           />
         );
       case ControllerFacadeTypes.CheckboxGroup:
-        form.setFieldsValue({ value: controllerValues });
         return (
           <CheckboxGroupControllerForm
             onChange={onControllerChange}
@@ -296,7 +304,6 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
           />
         );
       case ControllerFacadeTypes.Slider:
-        form.setFieldsValue({ value: controllerValues?.[0] });
         const step = config.sliderConfig?.step || 1;
         const showMarks = config.sliderConfig?.showMarks || false;
         let minValue = config.minValue === 0 ? 0 : config.minValue || 1;
@@ -314,7 +321,6 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
         );
 
       case ControllerFacadeTypes.Value:
-        form.setFieldsValue({ value: controllerValues?.[0] });
         return (
           <NumberControllerForm
             onChange={onControllerChange}
@@ -324,7 +330,6 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
         );
 
       case ControllerFacadeTypes.RangeValue:
-        form.setFieldsValue({ value: controllerValues });
         return (
           <RangeNumberControllerForm
             onChange={onControllerChange}
@@ -334,7 +339,6 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
         );
 
       case ControllerFacadeTypes.Text:
-        form.setFieldsValue({ value: controllerValues?.[0] });
         return (
           <TextControllerForm
             onChange={onControllerChange}
@@ -344,7 +348,6 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
         );
 
       case ControllerFacadeTypes.RadioGroup:
-        form.setFieldsValue({ value: controllerValues?.[0] });
         let RadioOptions = optionRows?.map(ele => {
           return { value: ele.key, label: ele.label } as ControlOption;
         });
@@ -360,12 +363,6 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
         );
 
       case ControllerFacadeTypes.RangeTime:
-        const rangeTimeValues = getControllerDateValues({
-          controlType: facadeType,
-          filterDate: config!.controllerDate!,
-        });
-
-        form.setFieldsValue({ value: rangeTimeValues });
         let rangePickerType = controllerDate!.pickerType;
         return (
           <RangeTimeControllerForm
@@ -377,12 +374,7 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
         );
 
       case ControllerFacadeTypes.Time:
-        const timeValues = getControllerDateValues({
-          controlType: facadeType,
-          filterDate: config!.controllerDate!,
-        });
         let pickerType = controllerDate!.pickerType;
-        form.setFieldsValue({ value: timeValues[0] });
         return (
           <TimeControllerForm
             label={leftControlLabel}
@@ -393,7 +385,6 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
         );
 
       case ControllerFacadeTypes.DropDownTree:
-        form.setFieldsValue({ value: controllerValues });
         return (
           <TreeControllerForm
             parentFields={parentFields}
@@ -410,8 +401,6 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
   }, [
     optionRows,
     facadeType,
-    form,
-    controllerValues,
     onControllerChange,
     leftControlLabel,
     config,
@@ -422,7 +411,7 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
   ]);
 
   return (
-    <Wrapper ref={containerRef} formFrontColor={title?.font?.color}>
+    <Wrapper formFrontColor={title?.font?.color}>
       <ConfigProvider getPopupContainer={popupContainer}>
         <Form form={form} className="control-form" onFinish={onFinish}>
           {centerControlLabel}
