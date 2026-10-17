@@ -5,9 +5,11 @@ describe('explicit dashboard device mode and canvas width', () => {
     for (const width of [1920, 1200, 996, 768, 360])
       expect(getAdaptiveGridColsKey(width)).toBe('lg');
   });
-  it('uses mobile columns only in the explicitly selected preview', () => {
-    expect(getAdaptiveGridColsKey(1200, true)).toBe('sm');
-    expect(getAdaptiveGridColsKey(340, true)).toBe('sm');
+  it('uses a single mobile layout at every container width', () => {
+    for (const width of [280, 320, 340, 375, 430, 600, 768, 900, 1200]) {
+      expect(getAdaptiveGridColsKey(width, true)).toBe('sm');
+      expect(getGridCanvasWidth(width, true)).toBe(width);
+    }
   });
   it('keeps a minimum desktop canvas width without changing mobile width', () => {
     expect(getGridCanvasWidth(1366)).toBe(1366);

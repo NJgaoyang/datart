@@ -34,12 +34,7 @@ import { DeviceType } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { getBoardMarginPadding } from 'app/pages/DashBoardPage/utils/board';
 import { isMobileWidgetVisible } from 'app/pages/DashBoardPage/utils/autoLayout';
 import { hasGridGeometryChanged } from 'app/pages/DashBoardPage/utils/gridLayout';
-import {
-  getMobilePreviewPresetKey,
-  MOBILE_PREVIEW_PRESETS,
-  parseMobilePreviewWidth,
-} from 'app/pages/DashBoardPage/utils/mobilePreviewSize';
-import { memo, useCallback, useContext, useMemo, useState } from 'react';
+import { memo, useCallback, useContext, useMemo } from 'react';
 import type { Layout } from 'react-grid-layout';
 import { DashboardGridLayout } from 'app/pages/DashBoardPage/components/GridLayout/DashboardGridLayout';
 import { useDispatch, useSelector } from 'react-redux';
@@ -56,28 +51,12 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
   const boardConfig = useContext(BoardConfigValContext);
   const { background, allowOverlap, compactType, showGrid } = boardConfig;
   const deviceType = useSelector(selectDeviceType);
-  const [previewSize, setPreviewSize] = useState({ width: 340, height: 640 });
-  const [previewWidthDraft, setPreviewWidthDraft] = useState('340');
   const editingWidgetIds = useSelector(selectEditingWidgetIds);
   // Only the explicit device switch may edit mobile geometry/visibility.
   const mobilePreview = deviceType === DeviceType.Mobile;
   const { ref, widgetRowHeight, colsKey: activeColsKey, canvasWidth } =
     useGridWidgetHeight(mobilePreview);
   const layoutDeviceType = deviceType;
-  const previewPresetKey = getMobilePreviewPresetKey(
-    previewSize.width,
-    previewSize.height,
-  );
-  const commitPreviewWidth = useCallback(() => {
-    const width = parseMobilePreviewWidth(previewWidthDraft);
-    if (width !== undefined) {
-      setPreviewSize(previous => ({ ...previous, width }));
-      setPreviewWidthDraft(String(width));
-    } else {
-      setPreviewWidthDraft(String(previewSize.width));
-    }
-  }, [previewWidthDraft, previewSize.width]);
-
   const { curMargin, curPadding } = useMemo(() => {
     return getBoardMarginPadding(boardConfig, activeColsKey);
   }, [activeColsKey, boardConfig]);
@@ -163,54 +142,11 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
         className={`${deviceClassName}${
           deviceType === DeviceType.Mobile ? ' datart-mobile-board' : ''
         }`}
-        style={
-          mobilePreview
-            ? { width: previewSize.width, height: previewSize.height }
-            : undefined
-        }
       >
         {deviceType === DeviceType.Mobile && (
           <MobilePreviewHeader>
             <LeftOutlined aria-hidden />
             <span>{name}</span>
-            <select
-              aria-label="移动端预览尺寸预设"
-              title="仅改变预览尺寸，不修改桌面或移动端布局坐标"
-              value={previewPresetKey}
-              onChange={event => {
-                const preset = MOBILE_PREVIEW_PRESETS.find(
-                  item => item.key === event.target.value,
-                );
-                if (!preset) return;
-                setPreviewSize({ width: preset.width, height: preset.height });
-                setPreviewWidthDraft(String(preset.width));
-              }}
-            >
-              {MOBILE_PREVIEW_PRESETS.map(preset => (
-                <option key={preset.key} value={preset.key}>
-                  {preset.label}
-                </option>
-              ))}
-              <option value="custom" disabled>自定义尺寸</option>
-            </select>
-            <input
-              aria-label="自定义预览宽度（280 到 1024 像素）"
-              title="280–1024px，失焦或按回车应用；不会更改布局数据"
-              type="number"
-              min={280}
-              max={1024}
-              step={1}
-              value={previewWidthDraft}
-              onChange={event => setPreviewWidthDraft(event.target.value)}
-              onBlur={commitPreviewWidth}
-              onKeyDown={event => {
-                if (event.key === 'Enter') event.currentTarget.blur();
-                if (event.key === 'Escape') {
-                  setPreviewWidthDraft(String(previewSize.width));
-                  event.currentTarget.blur();
-                }
-              }}
-            />
           </MobilePreviewHeader>
         )}
         {visibleLayoutWidgets.length ? (
@@ -304,9 +240,12 @@ const StyledContainer = styled(StyledBackground)`
   }
 
   &.mobile {
-    flex: 0 0 auto;
-    width: 340px;
-    height: 640px;
+    /* One responsive mobile layout for every editor pane width.
+       No phone presets, fixed preview width, or persisted breakpoints. */
+    flex: 1 1 0;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
     min-height: 0;
     padding: 0;
     margin: 12px auto;
@@ -317,8 +256,8 @@ const StyledContainer = styled(StyledBackground)`
     box-shadow: 0 8px 28px rgb(31 35 41 / 22%);
 
     .grid-wrap {
-      flex: 0 0 auto;
-      height: calc(100% - 44px);
+      flex: 1 1 0;
+      min-height: 0;
       overflow-y: auto;
       background: #edf4ff;
     }
@@ -367,22 +306,6 @@ const MobilePreviewHeader = styled.div`
     white-space: nowrap;
   }
 
-  select, input {
-    font-size: 12px;
-    border: 1px solid #d9d9d9;
-    border-radius: 4px;
-    background: #fff;
-  }
-
-  select {
-    max-width: 122px;
-  }
-
-  input {
-    width: 64px;
-    min-width: 0;
-    margin: 0 8px 0 4px;
-  }
 `;
 
 /** Stable widget contents without swallowing the native RGL DOM props. */
