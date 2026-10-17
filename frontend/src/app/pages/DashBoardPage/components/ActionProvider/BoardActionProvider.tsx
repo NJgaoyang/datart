@@ -44,7 +44,7 @@ export interface BoardActionContextProps {
   }) => any;
   onBoardToDownLoad: (downloadType: DownloadFileType) => any;
   // edit
-  updateBoard?: (callback?: () => void) => void;
+  updateBoard?: (callback?: () => void) => Promise<boolean>;
 
   onCloseBoardEditor: (boardId: string) => void;
   undo: () => void;
@@ -63,8 +63,9 @@ export const BoardActionProvider: FC<{
 
   const actions = useMemo(() => {
     const actionObj: BoardActionContextProps = {
-      updateBoard: (callback?: () => void) => {
-        dispatch(toUpdateDashboard({ boardId, callback }));
+      updateBoard: async (callback?: () => void) => {
+        const result = await dispatch(toUpdateDashboard({ boardId, callback }));
+        return toUpdateDashboard.fulfilled.match(result);
       },
 
       onGenerateShareLink: async ({

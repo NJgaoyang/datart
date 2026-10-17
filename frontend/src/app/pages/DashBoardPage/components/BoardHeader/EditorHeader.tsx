@@ -20,10 +20,11 @@ import { CloseOutlined, LeftOutlined, SaveOutlined } from '@ant-design/icons';
 import { Button, Modal, Space } from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import classnames from 'classnames';
-import { FC, memo, PropsWithChildren, useContext } from 'react';
+import { FC, memo, PropsWithChildren, useContext, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { HistoryEditBoard } from 'app/pages/DashBoardPage/pages/BoardEditor/slice/types';
 import { hasUnsavedBoardChanges } from 'app/pages/DashBoardPage/utils/boardUnsavedState';
+import { getBoardSaveStatus } from 'app/pages/DashBoardPage/utils/boardSaveStatus';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import {
@@ -52,6 +53,22 @@ const EditorHeader: FC<PropsWithChildren> = memo(({ children }) => {
     hasUnsavedBoardChanges(state.editBoard?.stack?.past, boardId),
   );
   const { saving } = useContext(BoardInfoContext);
+  const [saveAttempt, setSaveAttempt] = useState<'idle' | 'saving' | 'failed' | 'saved'>('idle');
+  const isSaving = saving || saveAttempt === 'saving';
+  const saveStatus = getBoardSaveStatus(isSaving, hasUnsavedChanges, saveAttempt === 'failed');
+
+  // The browser can protect refresh/close; BrowserRouter cannot safely use
+  // the data-router-only useBlocker hook for in-app navigation.
+  useEffect(() => {
+    if (!hasUnsavedChanges && !isSaving) return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges, isSaving]);
+
   const title = useStatusTitle(name, status);
   const closeWithoutPrompt = () => {
     const pathName = location.pathname;
@@ -60,7 +77,7 @@ const EditorHeader: FC<PropsWithChildren> = memo(({ children }) => {
     dispatch(clearEditBoardState());
   };
   const onCloseBoardEditor = () => {
-    if (saving) return;
+    if (isSaving) return;
     if (hasUnsavedChanges) {
       Modal.confirm({
         title: '退出仪表板编辑？',
@@ -76,9 +93,22 @@ const EditorHeader: FC<PropsWithChildren> = memo(({ children }) => {
   };
 
   const onUpdateBoard = () => {
+    if (isSaving) return;
     onEditClearActiveWidgets();
-    setImmediate(() => {
-      updateBoard?.(closeWithoutPrompt);
+    setSaveAttempt('saving');
+    // Let the current form input blur before taking its final save snapshot.
+    setImmediate(async () => {
+      try {
+        const succeeded = await updateBoard?.();
+        if (succeeded) {
+          setSaveAttempt('saved');
+          closeWithoutPrompt();
+        } else {
+          setSaveAttempt('failed');
+        }
+      } catch {
+        setSaveAttempt('failed');
+      }
     });
   };
 
@@ -90,7 +120,13 @@ const EditorHeader: FC<PropsWithChildren> = memo(({ children }) => {
       </h1>
       <Space>
         <span aria-live="polite" role="status" style={{ fontSize: 12 }}>
-          {saving ? '保存中…' : hasUnsavedChanges ? '● 有未保存的修改' : ''}
+          {saveStatus === 'saving'
+            ? '保存中…'
+            : saveStatus === 'failed'
+            ? '保存失败，请重试'
+            : saveStatus === 'unsaved'
+            ? '● 有未保存的修改'
+            : '已保存'}
         </span>
         {children}
         <>
@@ -98,7 +134,7 @@ const EditorHeader: FC<PropsWithChildren> = memo(({ children }) => {
             key="cancel"
             icon={<CloseOutlined />}
             onClick={onCloseBoardEditor}
-            disabled={saving}
+            disabled={isSaving}
           >
             {t('common.cancel')}
           </Button>
@@ -106,11 +142,11 @@ const EditorHeader: FC<PropsWithChildren> = memo(({ children }) => {
           <Button
             key="update"
             type="primary"
-            loading={saving}
+            loading={isSaving}
             icon={<SaveOutlined />}
             onClick={onUpdateBoard}
           >
-            {t('common.save')}
+            {saveStatus === 'failed' ? '重试保存' : t('common.save')}
           </Button>
         </>
       </Space>
