@@ -32,6 +32,14 @@ if (!path) {
     const initialSize = [...staticChunks].reduce((total, child) => total + fileSize(child), 0);
     console.log(`  ${asset.name || key}: initial=${kb(initialSize)}, static chunks=${staticChunks.size}`);
   }
+  // Startup regression guard: do not reintroduce the admin-tools chunk.
+  // Its cross-imports with app caused an initialization TDZ and a blank login.
+  const unsafeAdminChunks = Object.values(manifest).filter(asset =>
+    /(?:^|\\/)admin-tools\\.[^/]+\\.js$/.test(asset.file || ''));
+  if (unsafeAdminChunks.length > 0) {
+    console.error('Unsafe admin-tools chunk detected: keep app modules together.');
+    process.exitCode = 1;
+  }
   const js = Object.entries(manifest).filter(([, asset]) =>
     asset.file?.endsWith('.js'));
   const uniqueJs = new Set(js.map(([, asset]) => asset.file));

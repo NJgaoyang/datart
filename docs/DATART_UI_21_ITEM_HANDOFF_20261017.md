@@ -154,3 +154,11 @@ npx vitest run src/app/pages/DashBoardPage/utils/__tests__/mobilePreviewSize.tes
 npm run build
 ```
 
+## 10. 紧急修复：登录白屏与后台页分包循环依赖（2026-10-17）
+
+- **报告现象**：浏览器在登录页报 `Uncaught ReferenceError: Cannot access 'v' before initialization at admin-tools.43ad351f.js:1:4641`，页面无法显示。
+- **代码层面发现**：`frontend/vite.config.ts` 曾将 4 个管理页面源码强制划分到 `admin-tools`，其他源码划分到 `app`，会在应用共享模块互相引用时制造跨 chunk 的初始化顺序风险。**没有拿到报错 JS 的 sourcemap，因此严格意义上属于高概率根因而非已证明的精确变量映射。**
+- **修复策略**：撤销强制 `admin-tools` 分包，全部应用源码维持一个 `app` chunk，依赖仍在 `vendor` chunk；没有更改登录业务流程或任意布局数据。Bundle 体积脚本新增 `admin-tools` 回归检查，避免之后无意恢复高风险拆分。该策略优先保证登录和仪表板入口可用，牺牲部分管理页的场景级 JS 延迟加载，后续必须先用实际浏览器证明安全再做新的分包优化。
+- **验收尚需**：在授权开发/测试环境以**最新 commit 重新构建并部署**，清理旧版静态资源缓存，打开无缓存登录窗口核对 Network 加载资源和 Console，无 `admin-tools.*.js`、无初始化异常，能登录进入仪表板。随后再抽查后台管理页与分享页。GitHub Actions 代码构建通过只能证明编译/打包，**不能代替真实浏览器运行验证**。
+- **环境限制**：排查时开发机 `VM-0-13-tencentos` 远程代理离线，无法读取实际服务器运行进程或直接部署，因此没有声明开发机已修复。
+
