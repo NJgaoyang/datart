@@ -680,29 +680,40 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
 
     private List<ScriptVariable> getViewVariables(View view) {
         List<ScriptVariable> variables = new LinkedList<>();
-        collectViewVariables(view, variables, new HashSet<>());
+        collectViewVariables(view, variables, new HashSet<>(), "");
         return variables;
     }
 
-    private void collectViewVariables(View view, List<ScriptVariable> variables, Set<String> visited) {
-        if (view == null || !visited.add(view.getId())) {
-            return;
-        }
-        variables.addAll(getViewVariables(view.getId()));
-        if (StringUtils.isBlank(view.getConfig())) {
-            return;
-        }
+    private void collectViewVariables(View view, List<ScriptVariable> variables,
+                                      Set<String> visiting, String prefix) {
+        if (view == null || !visiting.add(view.getId())) return;
         try {
+            for (ScriptVariable variable : getViewVariables(view.getId())) {
+                // Scope belongs to the *upstream view*, not the variable name.
+                // Never mutate shared org variables or another branch's values.
+                variable.setName(prefix + variable.getName());
+                variable.setNameWithQuote(null);
+                variables.add(variable);
+            }
+            if (StringUtils.isBlank(view.getConfig())) return;
             JSONObject config = JSON.parseObject(view.getConfig());
-            JSONObject lineage = config.getJSONObject("lineage");
+            JSONObject lineage = config == null ? null : config.getJSONObject("lineage");
             JSONArray upstreamIds = lineage == null ? null : lineage.getJSONArray("upstreamViewIds");
+            JSONObject scopes = lineage == null ? null : lineage.getJSONObject("variableScopes");
             if (upstreamIds != null) {
                 for (String upstreamId : upstreamIds.toJavaList(String.class)) {
-                    collectViewVariables(retrieve(upstreamId, View.class, false), variables, visited);
+                    String childScope = scopes == null ? null : scopes.getString(upstreamId);
+                    collectViewVariables(retrieve(upstreamId, View.class, false),
+                            variables, visiting, prefix + StringUtils.defaultString(childScope));
                 }
             }
         } catch (JSONException e) {
             log.warn("Failed to parse view lineage config for view {}", view.getId(), e);
+            throw new IllegalStateException("Unable to resolve JOIN variable ownership", e);
+        } finally {
+            // This is a cycle guard, not a global deduplication: a view may
+            // legitimately participate in multiple independently scoped arms.
+            visiting.remove(view.getId());
         }
     }
 

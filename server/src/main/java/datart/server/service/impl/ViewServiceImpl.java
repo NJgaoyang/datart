@@ -138,8 +138,15 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         String joinType = normalizeJoinType(param.getJoinType());
         DataProviderService dataProviderService = Application.getBean(DataProviderService.class);
         DataProviderSource providerSource = dataProviderService.parseDataProviderConfig(source);
-        String leftSql = renderViewSql(providerSource, left);
-        String rightSql = renderViewSql(providerSource, right);
+        // SQL source scripts must stay as templates until the real viewer
+        // executes the composed view; rendering with an empty variable map
+        // here would silently erase view-specific security predicates.
+        String leftPrefix = "__join0__";
+        String rightPrefix = "__join1__";
+        String leftSql = namespaceSqlVariables(renderViewSql(providerSource, left),
+                leftPrefix, runtimeViewVariableNames(left, new HashSet<>()));
+        String rightSql = namespaceSqlVariables(renderViewSql(providerSource, right),
+                rightPrefix, runtimeViewVariableNames(right, new HashSet<>()));
         String selectList = buildSelectList(left, right);
         String conditions = param.getConditions().stream()
                 .map(condition -> quote("v0") + "." + quote(resolveInputColumnName(left, condition.getLeftColumn()))
@@ -153,6 +160,10 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         JSONObject config = new JSONObject();
         JSONObject lineage = new JSONObject();
         lineage.put("upstreamViewIds", Arrays.asList(left.getId(), right.getId()));
+        Map<String, String> variableScopes = new LinkedHashMap<>();
+        variableScopes.put(left.getId(), leftPrefix);
+        variableScopes.put(right.getId(), rightPrefix);
+        lineage.put("variableScopes", variableScopes);
         // Stable source identity: SQL subquery aliases alone cannot recover
         // physical lineage, comments or distinct same-name JOIN fields.
         lineage.put("outputFieldSources", outputFieldSources(left, right));
@@ -237,7 +248,56 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         }
     }
 
+
+    /** Exact FreeMarker and SQL fragment placeholders; never replace raw
+     * identifier substrings (e.g. city in city_code). */
+    static String namespaceSqlVariables(String sql, String prefix, Set<String> names) {
+        if (sql == null || names.isEmpty()) return sql;
+        String result = sql;
+        for (String name : names) {
+            result = result.replace("${" + name + "}", "${" + prefix + name + "}");
+            result = result.replace("$" + name + "$", "$" + prefix + name + "$");
+        }
+        return result;
+    }
+
+    /** These names are what a composed upstream view actually exposes,
+     * including earlier JOIN namespaces. Organization variables stay global. */
+    private Set<String> runtimeViewVariableNames(View view, Set<String> visiting) {
+        Set<String> names = new LinkedHashSet<>();
+        if (view == null || !visiting.add(view.getId())) return names;
+        try {
+            for (Variable item : variableMapper.selectViewVariables(view.getId())) {
+                if (item.getName() != null) names.add(item.getName());
+            }
+            if (view.getConfig() != null) {
+                JSONObject cfg = JSON.parseObject(view.getConfig());
+                JSONObject lineage = cfg == null ? null : cfg.getJSONObject("lineage");
+                JSONArray ids = lineage == null ? null : lineage.getJSONArray("upstreamViewIds");
+                JSONObject scopes = lineage == null ? null : lineage.getJSONObject("variableScopes");
+                if (ids != null) {
+                    for (String id : ids.toJavaList(String.class)) {
+                        View upstream = viewMapper.selectActiveByPrimaryKey(id);
+                        String prefix = scopes == null ? "" : scopes.getString(id);
+                        if (prefix == null) prefix = "";
+                        for (String name : runtimeViewVariableNames(upstream, visiting)) {
+                            names.add(prefix + name);
+                        }
+                    }
+                }
+            }
+            return names;
+        } finally {
+            visiting.remove(view.getId());
+        }
+    }
+
     private String renderViewSql(DataProviderSource providerSource, View view) throws Exception {
+        // Do not resolve source SQL variables at JOIN design time.
+        // The composed SQL must evaluate them under the eventual viewer.
+        if ("SQL".equalsIgnoreCase(view.getType())) {
+            return view.getScript().trim().replaceFirst(";\\s*$", "");
+        }
         QueryScript queryScript = QueryScript.builder()
                 .test(true)
                 .sourceId(view.getSourceId())
