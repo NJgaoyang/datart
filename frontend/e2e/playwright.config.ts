@@ -22,6 +22,23 @@ export default defineConfig({
       testMatch: /bundle-entry-smoke\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    // Public entrypoints need no credentials, so CI can exercise the three
+    // actual browser engines on an Ubuntu runner (not on TencentOS).
+    {
+      name: 'firefox-smoke',
+      testMatch: /bundle-entry-smoke\.spec\.ts/,
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit-smoke',
+      testMatch: /bundle-entry-smoke\.spec\.ts/,
+      use: { ...devices['Desktop Safari'] },
+    },
+    {
+      name: 'webkit-mobile-smoke',
+      testMatch: /bundle-entry-smoke\.spec\.ts/,
+      use: { ...devices['iPhone 13'] },
+    },
     {
       name: 'chromium-editor',
       testMatch: /dashboard-interactions\.spec\.ts/,

@@ -29,7 +29,11 @@ import datart.server.controller.BaseController;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.CacheControl;
 import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import java.nio.file.Path;
+import java.time.Duration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -41,6 +45,10 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Value("${datart.server.path-prefix}")
     private String pathPrefix;
+
+    @Value("${datart.env.file-path}")
+    private String staticFilePath;
+
 
     private final LoginInterceptor loginInterceptor;
 
@@ -65,6 +73,24 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(loginInterceptor).addPathPatterns(prefix + "/**");
         //i18n locale interceptor
         registry.addInterceptor(new BasicValidRequestInterceptor()).addPathPatterns("/**");
+    }
+
+    /**
+     * Vite publishes content-hashed JavaScript and CSS (app.ab12cd34.js).
+     * Let browsers reuse these immutable assets; HTML remains no-cache under
+     * the existing Spring Boot resource handler so deployments pick up new
+     * entrypoint hashes. Do NOT apply this to unversioned uploads or API paths.
+     */
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        CacheControl immutable = CacheControl.maxAge(Duration.ofDays(365))
+                .cachePublic().immutable();
+        registry.addResourceHandler("/static/js/**")
+                .addResourceLocations(Path.of(staticFilePath, "static", "js").toUri().toString())
+                .setCacheControl(immutable);
+        registry.addResourceHandler("/static/css/**")
+                .addResourceLocations(Path.of(staticFilePath, "static", "css").toUri().toString())
+                .setCacheControl(immutable);
     }
 
     //Add request url prefix

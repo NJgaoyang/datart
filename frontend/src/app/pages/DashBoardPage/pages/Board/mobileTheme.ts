@@ -13,4 +13,7 @@ export const MOBILE_BOARD_THEME = {
   titleColor: light.text,
   secondaryTextColor: light.secondaryText,
   primaryTextColor: light.text,
+  navTextColor: light.navText,
+  navDividerColor: light.divider,
+  iconColor: light.icon,
 } as const;

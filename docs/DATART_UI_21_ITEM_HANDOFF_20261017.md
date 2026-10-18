@@ -341,3 +341,11 @@ npm run build
 - Tomcat gzip 采用 chunked 传输，可能没有 `Content-Length`；初版压缩检查误将其当失败，现 `check-js-transfer-compression.mjs` 直接读取原始 HTTP 压缩数据并通过 `gunzipSync` 对比，**实际验证成功**：`app.f8d25ba8.js` 原始 **3,316,933 bytes**、gzip **1,328,450 bytes**（比率 0.401）；`vendor.ace8640f.js` 原始 **9,356,010 bytes**、gzip **2,741,838 bytes**（比率 0.293）。两包合计传输由 **12,672,943 bytes** 减至 **4,070,288 bytes**，节约约 **67.88%**（仅传输字节，非 JS 执行耗时）。未改 manualChunks，未引发 admin-tools TDZ。
 - 将 `DASHBOARD_DESIGN_TOKENS` 进一步用于 `MobileTablePresentation.tsx` 的 12 组重复的边距、色值、字号和圆角；与既有 `MOBILE_BOARD_THEME` 共用语义值，浅色外观、已有存储布局无变化。对应 4 项 Token 单测和 TypeScript 已通过。
 - 真实编辑器写入验收仍受专用授权测试登录态、独立测试仪表板副本限制；Firefox/WebKit 仍因环境受限未通过完整引擎验收。大量真实图表数据库 SQL 取消效果仍待安全隔离压测。
+
+## 26. 未完成项继续推进：跨浏览器 CI、静态资源缓存、导航 Token 与 JDBC SQL 取消探针（2026-10-18）
+
+- **#21 Firefox/WebKit**：增加 `firefox-smoke`、`webkit-smoke`、`webkit-mobile-smoke` 三个公开入口项目，加上既有 Chromium，共 **8 项登录页/分享 HTML 入口测试**。修改 `.github/workflows/dashboard-grid-v2.yml`：GitHub Ubuntu runner 安装 Playwright chromium/firefox/webkit 与操作系统依赖后运行这 8 项，不要求登录态或分享 Token。能查出跨引擎入口初始化/白屏问题，但不等同于完整私有仪表板、真实手机触摸验收。
+- **#16 版本化静态资源浏览器缓存**：`WebMvcConfig` 为 Vite 生成的 `/static/js/**` 和 `/static/css/**` 添加 `Cache-Control: public, max-age=31536000, immutable` 资源映射，HTML 保留原有 `no-cache`。部署采取覆盖保留旧版哈希文件，避免缓存中的旧入口引用 404；新增 `npm run check:static-cache` 验证实际 JS/CSS HTTP 200、immutable 与 HTML 不缓存。此次无需改变 Vite manualChunks、保留之前避免 TDZ 白屏的固定 app/vendor 结构。实际效果须按部署结果确认。
+- **#20 继续统一移动端 UI Token**：移动端顶部导航背景、标题文字、底部分隔线、返回图标和空状态的颜色改用 `MOBILE_BOARD_THEME` 从 `dashboardDesignTokens` 获取，浅色默认值完全相同；浅色/深色语义 Token 补齐 nav/icon/divider 角色，不自动打开暗色模式，不更改 `pRect/mRect`。Token 定向单测和 TypeScript 检查通过。
+- **#18 真正 JDBC SQL 中断小样本探针**：增加可选 `tools/SqlCancellationProbe.java`，仅在提供独立授权测试 MySQL JDBC URL、用户名、密码环境变量时执行一条 `SELECT SLEEP(8)`，验证不同 owner 不可取消，正确 owner 调用 Registry.cancel 后 SQL 能在规定时间内结束。脚本不会写业务表或运行大批量 SQL；初次探针尝试因错误的连接地址/数据库身份被拒绝，**尚无成功的真实 JDBC 取消延迟结果**。真实 100/500/1000 图表压测仍需独立大型测试数据与账号，不虚构指标。
+- **剩余验收**：已登录隔离仪表板拖拽→保存失败→重试→重开的可变更测试、真实 iOS/Android 触屏、真实多图表 SQL/P95/内存压力，以及深色主题完整切换。CI/部署结论以相应成功记录为准。

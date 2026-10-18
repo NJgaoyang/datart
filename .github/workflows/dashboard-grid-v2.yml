@@ -47,12 +47,12 @@ jobs:
         run: npm run build
       - name: Capture per-entry JavaScript bundle baseline
         run: npm run report:bundles
-      - name: Install locked Playwright and Chromium (entry-point smoke only)
+      - name: Install locked Playwright and browser engines (public entry smoke)
         run: |
           cd e2e
           npm ci --registry=https://registry.npmjs.org
-          npx playwright install --with-deps chromium
-      - name: Check built login and share entries in real Chromium
+          npx playwright install --with-deps chromium firefox webkit
+      - name: Check built public entries across Chromium, Firefox and WebKit
         env:
           DATART_TEST_BASE_URL: http://127.0.0.1:4173
         run: |
@@ -63,12 +63,12 @@ jobs:
           done
           curl -fsS http://127.0.0.1:4173/shareDashboard.html > /dev/null
           cd e2e
-          npm test -- --project=chromium-smoke --workers=1
-      - name: Upload Chromium entry smoke diagnostics (no auth state)
+          npm test -- --project=chromium-smoke --project=firefox-smoke --project=webkit-smoke --project=webkit-mobile-smoke --workers=1
+      - name: Upload public entry smoke diagnostics (no auth state)
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: dashboard-chromium-entry-smoke
+          name: dashboard-crossbrowser-entry-smoke
           if-no-files-found: ignore
           path: |
             frontend/e2e/test-results/

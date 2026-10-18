@@ -8,6 +8,8 @@ describe('dashboard semantic visual tokens', () => {
     expect(MOBILE_BOARD_THEME.cardRadius).toBe(12);
     expect(MOBILE_BOARD_THEME.cardBackground).toBe('#fff');
     expect(MOBILE_BOARD_THEME.titleColor).toBe('#1f2329');
+    expect(MOBILE_BOARD_THEME.navTextColor).toBe('#1a1a1a');
+    expect(MOBILE_BOARD_THEME.navDividerColor).toBe('rgba(0, 0, 0, 0.08)');
   });
   it('defines distinct theme palettes without altering existing light mode', () => {
     for (const mode of ['light', 'dark'] as const) {

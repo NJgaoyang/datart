@@ -143,3 +143,28 @@ DATART_TEST_BASE_URL=http://127.0.0.1:8080 npm run check:js-compression
 
 This is separate from risky manual chunk splitting. The check fails
 if the server silently returns uncompressed JavaScript.
+
+## 7. Cross-engine public-entry CI smoke
+
+The dashboard-grid-v2 Ubuntu CI job runs **Chromium, Firefox and WebKit**,
+including a WebKit iPhone viewport, against the same built login/share HTML.
+These entrypoint checks need no identity tokens and do not assert access to
+private share records. They help catch engine-specific JavaScript initialization
+crashes without installing graphical dependencies on the TencentOS deployment.
+
+The separately authorized `firefox-share-*` and `webkit-share-*` suites
+still need a valid share path; real iPhone/Android touchscreen interaction
+needs physical-device acceptance and is not implied by Playwright emulation.
+
+## 8. Repeat-navigation cache headers
+
+For Vite's versioned JS/CSS, Datart serves
+`Cache-Control: public, max-age=31536000, immutable`. Unversioned entry HTML
+must remain `no-cache`, so deployment can always select the new hashed files.
+The server must retain old versioned assets while clients still reference
+them. Targeted read-only check after server deployment:
+
+```bash
+cd frontend
+DATART_TEST_BASE_URL=http://127.0.0.1:8080 npm run check:static-cache
+```

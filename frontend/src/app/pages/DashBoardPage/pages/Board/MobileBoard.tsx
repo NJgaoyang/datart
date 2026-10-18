@@ -678,7 +678,7 @@ const NavBar = styled.div`
   min-height: 40px;
   padding: 0 ${SPACE}px;
   padding-top: calc(env(safe-area-inset-top, 0px) + 0px);
-  background-color: #fff;
+  background-color: ${MOBILE_BOARD_THEME.cardBackground};
 
   /* 细分割线 */
   &::after {
@@ -688,7 +688,7 @@ const NavBar = styled.div`
     left: 0;
     height: 0.5px;
     content: '';
-    background-color: rgba(0, 0, 0, 0.08);
+    background-color: ${MOBILE_BOARD_THEME.navDividerColor};
   }
 `;
 
@@ -699,7 +699,7 @@ const NavTitle = styled.h1`
   font-size: 15px;
   font-weight: 600;
   line-height: 40px;
-  color: #1a1a1a;
+  color: ${MOBILE_BOARD_THEME.navTextColor};
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -716,7 +716,7 @@ const BackBtn = styled(Button)`
   height: 28px;
   padding: 0;
   font-size: 16px;
-  color: #333;
+  color: ${MOBILE_BOARD_THEME.iconColor};
 `;
 
 /* ========== 可滚动主体 ========== */
@@ -832,6 +832,6 @@ const MobileUnavailable = styled.div`
   align-items: center;
   justify-content: center;
   padding: 24px;
-  color: #8f959e;
+  color: ${MOBILE_BOARD_THEME.secondaryTextColor};
   text-align: center;
 `;

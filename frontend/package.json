@@ -36,7 +36,8 @@
     "check:grid": "npm run checkTs && npm run test:grid",
     "bench:grid": "node scripts/bench-grid-layout.mjs",
     "report:bundles": "node scripts/report-dashboard-bundles.mjs",
-    "check:js-compression": "node scripts/check-js-transfer-compression.mjs"
+    "check:js-compression": "node scripts/check-js-transfer-compression.mjs",
+    "check:static-cache": "node scripts/check-static-cache.mjs"
   },
   "eslintConfig": {
     "extends": [
