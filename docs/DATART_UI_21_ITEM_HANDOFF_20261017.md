@@ -305,3 +305,32 @@ npm run build
 - `widgetDataBatcher.ts` 现在仅在第一条待发请求进入队列时启动 150ms 计时，后续请求不延长首批等待。每批最大 **40 Widget**，最多 **2 批 HTTP 同时在途**；其余队列在已发批次完成时自动补位，原有同 Widget 去重、参数变更取消、按 boardId 独立取消、结果映射与失败降级均保留。
 - `widgetDataBatcher.test.ts` 新增持续请求防饥饿、40/2 上限、100/500/1000 个**模拟请求**排队并全部正确完成、背压期间独立看板取消等测试；合计 **14/14 通过**，TypeScript `checkTs` 通过。大规模合成测试只证明请求数量与正确性，**不等于真实 100/500/1000 Widget 的 SQL、DOM、内存、FPS 生产性能达标**。
 - 不更改服务端批量 API、数据库、`pRect/mRect`、用户自定义组件间距；更新开发机前需独立构建并验证登录/分享入口。仍待授权账号测试跨过滤器取消 SQL 是否及时释放连接、用户感知延迟和移动触摸实机浏览器验收。
+
+## 24. #21 编辑器隔离保存验收、#18 真实浏览器基线、#16 JS 传输压缩、#20 语义 Token（2026-10-18）
+
+### #21 只读 / 写入验收严格分离
+
+- 新增 `e2e/specs/editor-save-reopen.spec.ts` 及独立 `chromium-editor-save` project。仅当同时配置 `DATART_TEST_DASHBOARD_EDITOR_PATH`、`DATART_TEST_STORAGE_STATE`、`DATART_TEST_ALLOW_EDITOR_MUTATION=true` 才执行：真实 React Grid Layout v2 拖拽、模拟第一次保存 HTTP 500、验证错误后仍可重试、重试调用真实保存并重新打开验证原 Widget 坐标。**会修改测试仪表板，必须是专用可丢弃副本**。当前开发机无授权的测试编辑器登录态，不操作用户现有看板，用例实际执行结果为 **1 skipped**，不是通过。
+- Firefox/WebKit 的基础分享脚手架上一节已添加。TencentOS Firefox 缺少系统 `libx11-xcb1` 等依赖，浏览器未启动；WebKit 下载停止。需要在官方支持的 Linux/macOS Browser Runner 或实体设备完成。**Playwright 的设备仿真不等于真机。**
+
+### #18 真实环境可重复的只读采样
+
+- 新增 `e2e/specs/shared-performance.spec.ts` 和 `chromium-share-performance` 项目：仅用已授权公开测试分享，测量实际 FCP、DOM 节点、JS 堆内存（浏览器支持时）、渲染 Widget 数、HTTP 查询数/耗时、错误响应和稳定后 1 秒 RAF 帧率采样；输出本地脱敏 JSON，不包含分享 token/业务数据，也不生成模拟 SQL。
+- 2026-10-18 开发机 Chromium 单次样本：**375px**：4 Widget、FCP **2280ms**、JS Heap **44.7 MB**、DOM **182**、API **3 次**、请求耗时中位 **188ms** / P95（仅 3 次）**230ms**、采样约 **61.8fps**、横向溢出 0；**1200px**：4 Widget、FCP **2316ms**、JS Heap **53.5 MB**、DOM **793**、API **3 次**、中位 **140ms** / P95 **291ms**、采样约 **61.1fps**、横向溢出 0。2/2 通过。**小样本且刷新稳定后的 RAF 仅反映空闲状态，不可声称达到 100/500/1000 Widget 的真实 SQL/拖拽 FPS/内存目标。**
+- 大型独立测试环境 100/500/1000 图表的真实压力、后端 SQL 取消资源释放及有登录态的数据源测试仍未完成。
+
+### #16 不更改分包关系的首屏网络优化
+
+- 开发机实际 HTTP GET `/static/js/app.*.js` 的 Content-Type 为 **`text/javascript`**，虽然服务端 `server.compression.enabled=true`，旧 `mime-types` 仅包含 `application/javascript`，所以 JS Content-Length 仍是 **3,316,178 字节**无压缩；而 CSS 已正确 gzip。
+- 补齐 `server/src/main/resources/application.yml` 和 `application-demo.yml` 的 `text/javascript` 压缩 MIME。保持 vendor/app 单 chunk，**不会重现曾发生的 admin-tools TDZ 分包白屏**。新增 `frontend/scripts/check-js-transfer-compression.mjs`，从真实部署的登录 HTML 找到版本 JS，请求 gzip 并断言类型、Content-Encoding、传输体积显著小于解码体积。只有在更新服务端部署并实际 HTTP 验证成功后才能宣称压缩生效。
+- 继续禁止未经跨入口浏览器测试的强制细粒度 manualChunks。大文件解析/执行开销和进一步安全拆包仍待独立分支探索。
+
+### #20 设计 Token 逐步统一
+
+- 新增 `dashboardDesignTokens.ts`，明确间距、圆角、字号、行高、浅/深主题语义角色，现有 `MOBILE_BOARD_THEME` 改为从语义 Token 取值，**原来所有浅色视觉值保持完全一致**，不覆盖任何用户持久化布局间距和 `pRect/mRect`。
+- `dashboardDesignTokens.test.ts` 与既有尺寸 Token 测试 4/4 通过，前端 `checkTs` 通过。深色 Token 仅定义接口，**尚未全面接入主题切换**；其他桌面、编辑器、图表插件仍待渐进统一。
+
+### 本次范围与剩余
+
+- 只运行改动对应定向测试、TypeScript、前端/后端构建及 CI 冒烟，不做每次全量回归。
+- 剩余最大阻塞是**隔离测试账号与可变更仪表板副本、可用 Firefox/WebKit Runner、真实 100/500/1000 数据集**。在没有它们的情况下不伪造成功、不触碰已有用户数据。

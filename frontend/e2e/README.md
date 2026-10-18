@@ -89,3 +89,57 @@ isolated-fixture** drag/save/reopen tests before declaring those flows accepted.
   than attempting to bypass authentication or invent test availability.
 - Chromium is the initial baseline; Firefox, WebKit, physical touch devices,
   non-default DPR and genuine 100/500/1000-widget performance remain open.
+
+## 4. Isolated drag / failed-save / retry / reopen (destructive, explicit opt-in)
+
+The previous editor suite is non-mutating. The dedicated `chromium-editor-save`
+project can **move a widget and save the resulting layout**. Run it ONLY on
+an intentionally disposable, independent fixture you own (not a dashboard
+another user depends on). Its first save is mocked as an HTTP 500; retry
+uses the real backend, reopens, and checks the widget position. This test
+intentionally leaves the fixture modified, so use a disposable clone or
+restore it through the application's own UI afterward.
+
+```bash
+export DATART_TEST_BASE_URL=http://127.0.0.1:8080
+export DATART_TEST_STORAGE_STATE=/private/path/to/test-account-storage.json
+export DATART_TEST_DASHBOARD_EDITOR_PATH=/organizations/TEST_ORG/.../boardEditor/TEST_BOARD
+export DATART_TEST_ALLOW_EDITOR_MUTATION=true
+npx playwright test --project=chromium-editor-save
+```
+
+All three preconditions are required; otherwise the test is **skipped**.
+An authenticated editor in which the native RGL drag handle cannot be
+found is a test failure, not a silently skipped feature.
+
+## 5. Real read-only dashboard performance baseline
+
+```bash
+export DATART_TEST_BASE_URL=http://127.0.0.1:8080
+export DATART_TEST_SHARED_DASHBOARD_PATH=/shareDashboard/AUTHORIZED_TEST_SHARE
+npx playwright test --project=chromium-share-performance
+```
+
+Creates **local** JSON files (never public CI artifacts) for 375px and
+1200px. Measures paint timing, DOM count, sampled idle animation frames,
+JS heap when supported, and real network API durations. It never sends
+synthetic SQL, changes widget layout, or prints the share token. These
+are observations from the number of Widgets present in that test share,
+NOT predictions for 100/500/1000 actual widgets. Query cancellation
+effectiveness still requires an authorized, instrumented SQL test
+instance, not this read-only share.
+
+## 6. JS transfer compression (real deployment check)
+
+The server config enables compression, but Vite produces `text/javascript`
+which must be included in `server.compression.mime-types`. Compare
+`Content-Encoding: gzip` and transfer bytes on an authorized deployed
+instance:
+
+```bash
+cd frontend
+DATART_TEST_BASE_URL=http://127.0.0.1:8080 npm run check:js-compression
+```
+
+This is separate from risky manual chunk splitting. The check fails
+if the server silently returns uncompressed JavaScript.

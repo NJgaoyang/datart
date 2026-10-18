@@ -28,6 +28,11 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      name: 'chromium-editor-save',
+      testMatch: /editor-save-reopen\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       name: 'chromium-share-mobile',
       testMatch: /shared-mobile\.spec\.ts/,
       use: { ...devices['Pixel 5'] },
@@ -35,6 +40,11 @@ export default defineConfig({
     {
       name: 'chromium-share-desktop',
       testMatch: /shared-desktop\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'chromium-share-performance',
+      testMatch: /shared-performance\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
     {
