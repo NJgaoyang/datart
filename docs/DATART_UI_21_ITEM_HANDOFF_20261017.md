@@ -243,3 +243,10 @@ npm run build
 4. **保持用户已经确定的产品取舍**：移动端一个自适应布局（不是按设备型号选择布局），Web 编辑器最大 430px 只是视觉预览框；图层列表不恢复顶部搜索区；新建默认间距为 1px。
 5. **仅跑被改模块的单测、TypeScript / 安全所需构建**；不因单个 CSS 或小修复反复全回归。需要服务端运行时验收时，先保证开发机在线并做好回滚。
 
+
+## 17. #15 — BrowserRouter 站内未保存离开拦截（2026-10-18）
+
+- **新增 `appHistory.ts`**：在不迁移现有 `Routes` 与应用结构的前提下，用共享 `history@5` 浏览器历史替换主应用内层 `BrowserRouter` 为 `unstable_HistoryRouter`。因目前 react-router v6.30 HistoryRouter 的 History 类型期望包含 `createURL`、`encodeLocation` 和 `listen.delta`，加入显式适配器，监听回传 `delta:null`；保持原有 `PUBLIC_URL` basename 与路由配置不变。独立分享页的 BrowserRouter 未修改。
+- **新增 `utils/blockBoardNavigation.ts`**：只在编辑器有未保存修改或正在保存时注册历史阻断，拦截 PUSH / REPLACE / POP；未保存时明确确认离开、取消则保留编辑器，保存中禁止导航，确认后先解除阻断再 `transition.retry()`，避免返回栈污染/重复弹窗。编辑器主动取消或成功保存后的退出则提前解除阻断，仍保留此前刷新/关标签的 `beforeunload` 提示。
+- **专项测试**：`blockBoardNavigation.test.ts` 覆盖 PUSH、REPLACE、POP、取消后重试、保存中禁止离开、无修改时允许离开；`boardRouterIntegration.test.tsx` 用真实 `HistoryRouter + Link + Routes` 验证批准离开后 UI 实际导航。配合旧 `boardSaveStatus`、`boardUnsavedState` 测试和 `npm run checkTs`。使用 `history@5.3.0` 显式依赖并锁定安装。
+- **风险与未完成验证**：主路由共享 history 是高风险入口变更，必须检查登录、用户路由、SPA 导航和刷新及保存成功/失败流程，之后再部署。不能只以 JSDOM 单测宣称浏览器端完全验收，也不能误改移动端 `mRect` 或桌面 `pRect`。

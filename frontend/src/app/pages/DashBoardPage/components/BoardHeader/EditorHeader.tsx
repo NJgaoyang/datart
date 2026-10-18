@@ -20,11 +20,13 @@ import { CloseOutlined, LeftOutlined, SaveOutlined } from '@ant-design/icons';
 import { Button, Modal, Space } from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import classnames from 'classnames';
-import { FC, memo, PropsWithChildren, useContext, useEffect, useState } from 'react';
+import { FC, memo, PropsWithChildren, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { HistoryEditBoard } from 'app/pages/DashBoardPage/pages/BoardEditor/slice/types';
 import { hasUnsavedBoardChanges } from 'app/pages/DashBoardPage/utils/boardUnsavedState';
 import { getBoardSaveStatus } from 'app/pages/DashBoardPage/utils/boardSaveStatus';
+import { appHistory } from 'app/appHistory';
+import { blockBoardNavigation } from 'app/utils/blockBoardNavigation';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import {
@@ -56,9 +58,47 @@ const EditorHeader: FC<PropsWithChildren> = memo(({ children }) => {
   const [saveAttempt, setSaveAttempt] = useState<'idle' | 'saving' | 'failed' | 'saved'>('idle');
   const isSaving = saving || saveAttempt === 'saving';
   const saveStatus = getBoardSaveStatus(isSaving, hasUnsavedChanges, saveAttempt === 'failed');
+  // Dispose the blocked transition before any approved explicit exit; otherwise
+  // the user sees the editor's own confirmation followed by another prompt.
+  const unblockNavigationRef = useRef<() => void>(() => undefined);
+  const clearEditor = useCallback(() => {
+    dispatch(clearEditBoardState());
+  }, [dispatch]);
+  useEffect(() => {
+    const dispose = blockBoardNavigation(appHistory, {
+      dirty: hasUnsavedChanges,
+      saving: isSaving,
+      confirmExit: (proceed, stay) => {
+        Modal.confirm({
+          title: '离开仪表板编辑？',
+          content: '当前修改尚未保存。离开后这些修改将丢失。',
+          okText: '不保存并离开',
+          cancelText: '继续编辑',
+          okButtonProps: { danger: true },
+          onOk: proceed,
+          onCancel: stay,
+        });
+      },
+      onBlockedWhileSaving: () => {
+        Modal.warning({
+          title: '正在保存',
+          content: '请等待保存完成后再切换页面。',
+        });
+      },
+      onLeave: clearEditor,
+    });
+    unblockNavigationRef.current = dispose;
+    return () => {
+      dispose();
+      if (unblockNavigationRef.current === dispose) {
+        unblockNavigationRef.current = () => undefined;
+      }
+    };
+  }, [hasUnsavedChanges, isSaving, clearEditor]);
 
-  // The browser can protect refresh/close; BrowserRouter cannot safely use
-  // the data-router-only useBlocker hook for in-app navigation.
+
+  // Hard reload / tab close still needs the browser-native confirmation;
+  // the shared history blocker above handles SPA PUSH/REPLACE/POP.
   useEffect(() => {
     if (!hasUnsavedChanges && !isSaving) return;
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -71,10 +111,11 @@ const EditorHeader: FC<PropsWithChildren> = memo(({ children }) => {
 
   const title = useStatusTitle(name, status);
   const closeWithoutPrompt = () => {
+    unblockNavigationRef.current();
     const pathName = location.pathname;
     const prePath = pathName.split('/boardEditor')[0];
     navigate(`${prePath}`);
-    dispatch(clearEditBoardState());
+    clearEditor();
   };
   const onCloseBoardEditor = () => {
     if (isSaving) return;
