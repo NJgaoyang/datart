@@ -349,3 +349,11 @@ npm run build
 - **#20 继续统一移动端 UI Token**：移动端顶部导航背景、标题文字、底部分隔线、返回图标和空状态的颜色改用 `MOBILE_BOARD_THEME` 从 `dashboardDesignTokens` 获取，浅色默认值完全相同；浅色/深色语义 Token 补齐 nav/icon/divider 角色，不自动打开暗色模式，不更改 `pRect/mRect`。Token 定向单测和 TypeScript 检查通过。
 - **#18 真正 JDBC SQL 中断小样本探针**：增加可选 `tools/SqlCancellationProbe.java`，仅在提供独立授权测试 MySQL JDBC URL、用户名、密码环境变量时执行一条 `SELECT SLEEP(8)`，验证不同 owner 不可取消，正确 owner 调用 Registry.cancel 后 SQL 能在规定时间内结束。脚本不会写业务表或运行大批量 SQL；初次探针尝试因错误的连接地址/数据库身份被拒绝，**尚无成功的真实 JDBC 取消延迟结果**。真实 100/500/1000 图表压测仍需独立大型测试数据与账号，不虚构指标。
 - **剩余验收**：已登录隔离仪表板拖拽→保存失败→重试→重开的可变更测试、真实 iOS/Android 触屏、真实多图表 SQL/P95/内存压力，以及深色主题完整切换。CI/部署结论以相应成功记录为准。
+
+## 27. #18 SQL 取消句柄安全回归持续执行（2026-10-18）
+
+- `data-providers/jdbc-data-provider/.../QueryCancellationRegistryTest.java` 从 1 项扩展到 **3 项**：已注册请求只能由相同 owner 取消；旧 SQL 的异步关闭不能清掉相同 queryId 的新 `Statement`；JDBC `Statement.cancel()` 抛出 `SQLException` 时必须返回 false，且最终释放查询句柄。
+- 开发机运行 `mvn -q -pl data-providers/jdbc-data-provider -am -Dtest=QueryCancellationRegistryTest -Dsurefire.failIfNoSpecifiedTests=false test`，**3/3 通过**。同时将该类加入 `.github/workflows/dashboard-grid-v2.yml` 原有后端安全回归定向测试，避免后续回归。
+- #21 首轮 Ubuntu Chromium、Firefox、WebKit、WebKit 移动视口的公开入口 Playwright **8/8 通过**，GitHub Actions `39102810899` 全部成功；开发机新版 `app.75519225.js` 登录/分享 Chromium **2/2** 通过。
+- #16 真实部署 `check:static-cache` 检测哈希 JS/CSS `max-age=31536000, public, immutable`，登录 HTML `no-cache`；`check:js-compression` 检查 gzip 压缩继续有效，均通过。
+- **注意**：这 3 项后端取消句柄单测仍不是受控实际 MySQL SQL 的取消时间测量。尚需有权限的专用测试连接执行 `tools/SqlCancellationProbe.java`，并测量 100/500/1000 真实图表负载。
