@@ -334,3 +334,10 @@ npm run build
 
 - 只运行改动对应定向测试、TypeScript、前端/后端构建及 CI 冒烟，不做每次全量回归。
 - 剩余最大阻塞是**隔离测试账号与可变更仪表板副本、可用 Firefox/WebKit Runner、真实 100/500/1000 数据集**。在没有它们的情况下不伪造成功、不触碰已有用户数据。
+
+## 25. #16 服务端 gzip 实际部署验证与 #20 进一步接入（2026-10-18）
+
+- 已在开发机重新构建服务端 JAR、备份旧 JAR/静态资源后受控重启（原进程结束后新服务恢复 HTTP 200）。默认及 Demo 压缩 MIME 均包含 `text/javascript`。真实 `curl Accept-Encoding:gzip` 验证返回 `Content-Encoding: gzip`。
+- Tomcat gzip 采用 chunked 传输，可能没有 `Content-Length`；初版压缩检查误将其当失败，现 `check-js-transfer-compression.mjs` 直接读取原始 HTTP 压缩数据并通过 `gunzipSync` 对比，**实际验证成功**：`app.f8d25ba8.js` 原始 **3,316,933 bytes**、gzip **1,328,450 bytes**（比率 0.401）；`vendor.ace8640f.js` 原始 **9,356,010 bytes**、gzip **2,741,838 bytes**（比率 0.293）。两包合计传输由 **12,672,943 bytes** 减至 **4,070,288 bytes**，节约约 **67.88%**（仅传输字节，非 JS 执行耗时）。未改 manualChunks，未引发 admin-tools TDZ。
+- 将 `DASHBOARD_DESIGN_TOKENS` 进一步用于 `MobileTablePresentation.tsx` 的 12 组重复的边距、色值、字号和圆角；与既有 `MOBILE_BOARD_THEME` 共用语义值，浅色外观、已有存储布局无变化。对应 4 项 Token 单测和 TypeScript 已通过。
+- 真实编辑器写入验收仍受专用授权测试登录态、独立测试仪表板副本限制；Firefox/WebKit 仍因环境受限未通过完整引擎验收。大量真实图表数据库 SQL 取消效果仍待安全隔离压测。
