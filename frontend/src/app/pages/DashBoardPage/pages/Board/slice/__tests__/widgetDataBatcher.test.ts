@@ -21,6 +21,108 @@ describe('dashboard batch query request lifecycle', () => {
     vi.useRealTimers();
   });
 
+  it('does not starve the first query under a continuous stream of new widgets', async () => {
+    request.mockImplementation(async (config: any) => ({
+      data: config.url === 'data-provider/execute/batch'
+        ? Object.fromEntries(config.data.map((x: any) => [x.requestId, { rows: [x.requestId] }]))
+        : { rows: ['ok'] },
+    }) as any);
+    const first = enqueueWidgetFetch('board-one', 'first', { vizId: 'test' });
+    // New widgets arrive every 100ms, faster than the 150ms flush interval.
+    await vi.advanceTimersByTimeAsync(100);
+    const second = enqueueWidgetFetch('board-one', 'second', { vizId: 'test' });
+    await vi.advanceTimersByTimeAsync(51);
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(await first).toEqual({ rows: ['first'] });
+    expect(await second).toEqual({ rows: ['second'] });
+  });
+
+  it('limits simultaneous HTTP batch work and sends only bounded payloads', async () => {
+    let active = 0;
+    let maximumActive = 0;
+    const callbacks: Array<() => void> = [];
+    const requests: Array<{ url: string; count: number }> = [];
+    request.mockImplementation((config: any) => {
+      if (config.url?.includes('/cancel/')) return Promise.resolve({ data: {} }) as any;
+      if (config.url !== 'data-provider/execute/batch') throw Error('Expected batching');
+      const records = config.data as Array<{ requestId: string }>;
+      requests.push({ url: config.url, count: records.length });
+      active++;
+      maximumActive = Math.max(active, maximumActive);
+      return new Promise(resolve => callbacks.push(() => {
+        active--;
+        resolve({
+          data: Object.fromEntries(records.map(entry => [entry.requestId, { rows: [entry.requestId] }])),
+        });
+      })) as any;
+    });
+    const all = Array.from({ length: 100 }, (_, i) =>
+      enqueueWidgetFetch('board-one', `widget-${i}`, { vizId: 'view-A', filter: i }),
+    );
+    await vi.advanceTimersByTimeAsync(151);
+    expect(requests.map(item => item.count)).toEqual([40, 40]);
+    callbacks.shift()?.();
+    // Let the prior chunk's await/finally finish and admit the queued one.
+    await vi.advanceTimersByTimeAsync(1);
+    expect(requests.map(item => item.count)).toEqual([40, 40, 20]);
+    callbacks.shift()?.();
+    callbacks.shift()?.();
+    expect((await Promise.all(all)).length).toBe(100);
+    expect(maximumActive).toBeLessThanOrEqual(2);
+  });
+
+  it.each([100, 500, 1000])('settles %i synthetic widget queries without oversized batches', async count => {
+    const sizes: number[] = [];
+    request.mockImplementation(async (config: any) => {
+      if (config.url !== 'data-provider/execute/batch') throw Error('Expected batch query');
+      const records = config.data as Array<{ requestId: string }>;
+      sizes.push(records.length);
+      return {
+        data: Object.fromEntries(records.map(entry =>
+          [entry.requestId, { rows: [entry.requestId] }],
+        )),
+      } as any;
+    });
+    const requests = Array.from({ length: count }, (_, i) =>
+      enqueueWidgetFetch('board-one', `widget-${i}`, { vizId: 'view-A', filter: i }),
+    );
+    await vi.advanceTimersByTimeAsync(151);
+    const results = await Promise.all(requests);
+    expect(results).toHaveLength(count);
+    expect(results[0].rows[0]).toBe('widget-0');
+    expect(results[count - 1].rows[0]).toBe(`widget-${count - 1}`);
+    expect(sizes.every(size => size <= 40)).toBe(true);
+    expect(sizes.reduce((sum, size) => sum + size, 0)).toBe(count);
+    expect(sizes.length).toBe(Math.ceil(count / 40));
+  });
+
+  it('cancels a queued board without disturbing another board under backpressure', async () => {
+    const callbacks: Array<() => void> = [];
+    request.mockImplementation((config: any) => {
+      const records = config.data as Array<{ requestId: string }>;
+      return new Promise(resolve => callbacks.push(() => resolve({
+        data: Object.fromEntries(records.map(entry =>
+          [entry.requestId, { rows: [entry.requestId] }],
+        )),
+      }))) as any;
+    });
+    // Exactly two active batches and one queued batch.
+    const promises = Array.from({ length: 85 }, (_, i) =>
+      enqueueWidgetFetch(i < 80 ? 'board-two' : 'board-one',
+        `widget-${i}`, { vizId: 'view-A' }),
+    );
+    const rejected = Promise.all(promises.slice(80).map(p =>
+      expect(p).rejects.toBeInstanceOf(WidgetFetchCancelledError)));
+    await vi.advanceTimersByTimeAsync(151);
+    expect(callbacks).toHaveLength(2);
+    cancelPendingWidgetFetches('board-one');
+    await rejected;
+    callbacks.shift()?.();
+    callbacks.shift()?.();
+    expect((await Promise.all(promises.slice(0, 80))).length).toBe(80);
+    expect(request).toHaveBeenCalledTimes(2);
+  });
+
   it('does not retry a failed single query and retains its structured permission code', async () => {
     request.mockResolvedValue({
       success: false, errCode: 403, message: 'sensitive query details', data: null,

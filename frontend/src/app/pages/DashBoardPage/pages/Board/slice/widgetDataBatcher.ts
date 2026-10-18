@@ -25,6 +25,13 @@ interface BatchEntry {
 let pendingQueue: BatchEntry[] = [];
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 const inFlight = new Map<string, BatchEntry>();
+// Never send all 500/1000 widgets in one HTTP request or start an unbounded
+// number of batch requests together. Keep admission queue separate from the
+// actively executing chunks, so an old slow query cannot stall all pending
+// widgets forever.
+const MAX_BATCH_ENTRIES = 40;
+const MAX_CONCURRENT_BATCHES = 2;
+let activeBatchCount = 0;
 
 // Exact same widget + serialized query (including filters, sort, paging and
 // source) shares one promise. Different widgets/sources NEVER share results.
@@ -124,18 +131,33 @@ export function enqueueWidgetFetch(
 }
 
 function scheduleFlush(): void {
-  if (flushTimer !== null) {
-    clearTimeout(flushTimer);
-  }
-  flushTimer = setTimeout(flushBatch, BATCH_DEBOUNCE_MS);
+  // Do not reset this timer on each arrival: otherwise a steady stream
+  // of filters (<150ms between events) can postpone *all* queries forever.
+  if (flushTimer !== null || pendingQueue.length === 0 ||
+      activeBatchCount >= MAX_CONCURRENT_BATCHES) return;
+  flushTimer = setTimeout(() => {
+    flushTimer = null;
+    drainPendingBatches();
+  }, BATCH_DEBOUNCE_MS);
 }
 
-async function flushBatch(): Promise<void> {
-  const batch = pendingQueue;
-  pendingQueue = [];
-  flushTimer = null;
+function drainPendingBatches(): void {
+  while (
+    activeBatchCount < MAX_CONCURRENT_BATCHES &&
+    pendingQueue.length > 0
+  ) {
+    const batch = pendingQueue.splice(0, MAX_BATCH_ENTRIES);
+    activeBatchCount++;
+    void flushBatch(batch).finally(() => {
+      activeBatchCount--;
+      // Run queued chunks as a previous one finishes; no timer reset here.
+      drainPendingBatches();
+    });
+  }
+}
 
-  if (batch.length === 0) return;
+async function flushBatch(batch: BatchEntry[]): Promise<void> {
+  if (!batch.length) return;
 
   batch.forEach(entry => inFlight.set(entry.queryId, entry));
   try {

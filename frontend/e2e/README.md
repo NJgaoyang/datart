@@ -49,6 +49,19 @@ filter when available. The desktop check verifies resize back to pRect above
 960px. Missing date/table widgets are reported as **skipped**. No dashboard
 coordinates or data are modified by these tests.
 
+## Cross-browser authenticated share acceptance (opt-in)
+
+The same read-only mobile share assertions can also run under Firefox and
+WebKit. These projects are **not** part of the no-credentials CI smoke job,
+and require the test deployment + authorized share path described above.
+WebKit is the browser-engine check, not a substitute for a physical iPhone.
+
+```bash
+cd frontend/e2e
+npx playwright install firefox webkit
+npx playwright test   --project=firefox-share-mobile --project=firefox-share-desktop   --project=webkit-share-mobile --project=webkit-share-desktop
+```
+
 ## 3. Authenticated dashboard editor acceptance (opt-in)
 
 This requires a dedicated test account. Never use production login credentials

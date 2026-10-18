@@ -8,7 +8,13 @@ test.describe('authorized shared dashboard uses one responsive mRect layout', ()
   test('mobile layouts at 320–960px never turn into a wide desktop canvas', async ({ page }) => {
     const exceptions: string[] = [];
     const wrongQueryPaths: string[] = [];
+    const failingApiStatuses: number[] = [];
     page.on('pageerror', e => exceptions.push(e.message));
+    page.on('response', response => {
+      if (new URL(response.url()).pathname.includes('/api/') && response.status() >= 400) {
+        failingApiStatuses.push(response.status());
+      }
+    });
     page.on('request', request => {
       const path = new URL(request.url()).pathname;
       if (/\/data-provider\/execute(\/|$)/.test(path)) wrongQueryPaths.push(path);
@@ -34,6 +40,7 @@ test.describe('authorized shared dashboard uses one responsive mRect layout', ()
 
     expect(wrongQueryPaths, 'shared widgets should never use login-only query endpoints').toEqual([]);
     expect(exceptions).toEqual([]);
+    expect(failingApiStatuses, 'shared data API calls should not fail').toEqual([]);
   });
 
   test('mobile page does not steal the table horizontal scroll from the page', async ({ page }) => {

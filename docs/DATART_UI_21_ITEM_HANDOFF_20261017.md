@@ -290,3 +290,18 @@ npm run build
 - **自动适配**：只有一个移动端 `mRect`，没有新增手机尺寸预设、也不会改写旧 `pRect/mRect`；编辑器内移动预览因 `isMobile` 为 true 同样应用上述弹层规则，CSS 不依赖外部浏览器窗口大小来判断是否是移动看板。
 - **定向测试**：原 `RangeTimeController.test.tsx` 拓展日期范围/单日期弹层，新增 `MobileFilterPopup.test.tsx` 覆盖单选、多选、树形选择与完整长标签，**6/6 通过**，`npm run checkTs` 通过。开发机临时 Vite 单独测试页挂载真实组件与全局样式，Chromium 在 **320、375、430 CSS px** 验证日期弹层纵向排列、面板实际宽度 **288px**、文档没有横向溢出、JS 异常为零；下拉真实选项 title 保留。临时测试入口已删除，不纳入生产代码。
 - **待验收**：真正登录态/分享的复杂筛选业务场景、日期时间制式/多层树、横竖屏切换与所有历史极小 Widget；已实现控件适配不等于全部 #5/#9 验收完成。
+
+## 23. #21 授权分享 Chromium 实测与跨浏览器脚手架；#18 大批量请求背压（2026-10-18）
+
+### #21 授权公开分享的真实页面验收
+
+- 在开发机现有公开测试分享上，运行 `chromium-share-mobile` / `chromium-share-desktop` Playwright：**3 passed、1 skipped**（320～960px 单套 `mRect`、日期弹层交互、375→1200px 桌面切换通过）。跳过原因：该测试分享没有满足用例的可水平滚动 AntD 数据表格，**不能把它视为表格滚动已验收**。测试仅发起只读请求，不提交业务写操作，不输出分享令牌。
+- 为相同的只读分享测试增加 `firefox-share-mobile` / `firefox-share-desktop` / `webkit-share-mobile` / `webkit-share-desktop` 项目，保持与已有 Chromium 断言相同；同时在测试中记录并断言真实分享 API 不出现 4xx/5xx，验证移动模式请求不回退登录态 `data-provider/execute`。这些项目是 **opt-in**，CI 默认不跑需要 token 的测试，访问令牌不得放入追踪或公开 Artifact。
+- **跨浏览器结果界限**：TencentOS 开发机 Playwright Firefox 下载完成，但因缺少 `libx11-xcb1` 对应系统依赖未能启动浏览器，Firefox 4 个用例在启动阶段全部失败，属于**环境阻塞、不是页面验证失败**；WebKit 下载速度极慢，已停止并未运行。待切换到带 Firefox/WebKit 依赖的专用 Ubuntu Browser Runner 再执行；真实物理手机、编辑器登录态仍未完成。
+
+### #18 请求背压与连续到达防饥饿
+
+- 原有 150ms debounce 每到一个 Widget 都重置定时器，持续到达时间间隔小于 150ms 时首批请求可能被**无限推迟**；并发导入大量 Widget 时会把 1000 条数据请求组成一次巨大的批量 HTTP，缺乏前端背压。
+- `widgetDataBatcher.ts` 现在仅在第一条待发请求进入队列时启动 150ms 计时，后续请求不延长首批等待。每批最大 **40 Widget**，最多 **2 批 HTTP 同时在途**；其余队列在已发批次完成时自动补位，原有同 Widget 去重、参数变更取消、按 boardId 独立取消、结果映射与失败降级均保留。
+- `widgetDataBatcher.test.ts` 新增持续请求防饥饿、40/2 上限、100/500/1000 个**模拟请求**排队并全部正确完成、背压期间独立看板取消等测试；合计 **14/14 通过**，TypeScript `checkTs` 通过。大规模合成测试只证明请求数量与正确性，**不等于真实 100/500/1000 Widget 的 SQL、DOM、内存、FPS 生产性能达标**。
+- 不更改服务端批量 API、数据库、`pRect/mRect`、用户自定义组件间距；更新开发机前需独立构建并验证登录/分享入口。仍待授权账号测试跨过滤器取消 SQL 是否及时释放连接、用户感知延迟和移动触摸实机浏览器验收。

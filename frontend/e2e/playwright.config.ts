@@ -37,5 +37,25 @@ export default defineConfig({
       testMatch: /shared-desktop\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      name: 'firefox-share-mobile',
+      testMatch: /shared-mobile\.spec\.ts/,
+      use: { ...devices['Desktop Firefox'], viewport: { width: 393, height: 851 } },
+    },
+    {
+      name: 'firefox-share-desktop',
+      testMatch: /shared-desktop\.spec\.ts/,
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit-share-mobile',
+      testMatch: /shared-mobile\.spec\.ts/,
+      use: { ...devices['Desktop Safari'], viewport: { width: 393, height: 852 }, hasTouch: true },
+    },
+    {
+      name: 'webkit-share-desktop',
+      testMatch: /shared-desktop\.spec\.ts/,
+      use: { ...devices['Desktop Safari'] },
+    },
   ],
 });
