@@ -18,7 +18,8 @@
 import { Form, Tree, TreeSelect } from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { RelationFilterValue } from 'app/types/ChartConfig';
-import React, { memo, useCallback } from 'react';
+import { BoardContext } from 'app/pages/DashBoardPage/components/BoardProvider/BoardProvider';
+import React, { memo, useCallback, useContext } from 'react';
 import styled from 'styled-components';
 
 export interface TreeControllerFormProps {
@@ -49,6 +50,7 @@ export const TreeControllerForm: React.FC<TreeControllerFormProps> = memo(
 export const TreeSelectController: React.FC<TreeControllerFormProps> = memo(
   ({ treeData, onChange, value }) => {
     const t = useI18NPrefix(`viz.common.enum.controllerPlaceHolders`);
+    const { isMobile } = useContext(BoardContext);
     const handleonChange = useCallback(
       checkedObj => {
         onChange(checkedObj?.checked);
@@ -59,6 +61,8 @@ export const TreeSelectController: React.FC<TreeControllerFormProps> = memo(
     return (
       <StyledTreeSelect
         allowClear
+        classNames={{ popup: { root: isMobile ? 'datart-mobile-filter-popup' : undefined } }}
+        popupMatchSelectWidth={!isMobile}
         value={value}
         style={{ width: '100%' }}
         placeholder={t('treeSelectController')}
@@ -68,7 +72,7 @@ export const TreeSelectController: React.FC<TreeControllerFormProps> = memo(
         multiple
         bordered={false}
         treeData={treeData}
-        dropdownStyle={{ height: '300px', overflowY: 'auto' }}
+        dropdownStyle={{ maxHeight: 'min(55dvh, 300px)', overflowY: 'auto' }}
         dropdownRender={() => {
           return (
             <Tree
@@ -77,7 +81,8 @@ export const TreeSelectController: React.FC<TreeControllerFormProps> = memo(
               checkable
               checkStrictly
               titleRender={(node: any) => {
-                return node.title || node.key;
+                const text = String(node.title || node.key || '');
+                return <span className="datart-filter-tree-label" title={text}>{text}</span>;
               }}
               treeData={treeData}
             />

@@ -282,3 +282,11 @@ npm run build
 - **请求接入**：普通单图表、批量图表、批量失败降级单图表均使用响应包解封装；单图表失败不再重复发起第二次请求；普通/分享 `fetchChartDataSet` 均检查业务失败并保留 Axios HTTP 403 原状，图表错误状态使用既有 `getWidgetQueryErrorMessage` 分类。
 - **定向测试**：`widgetQueryError.test.ts`、`widgetDataBatcher.test.ts`、新增 `fetchChartDataSetResponse.test.ts` 共 **16 项**通过，包含 HTTP 200 业务失败、结构化 403、安全消息、共享 token 请求、单请求失败不重复发送、多组件 Batch 降级；前端 `npm run checkTs` 通过。用户可见的空态、权限态及分享查询实际浏览器效果仍需有权限的真实账号/令牌独立验收。
 - **仍有后端边界**：当前服务端通用异常处理把部分 `PermissionDeniedException` 返回 HTTP 400 且不含结构化 `errCode`；在没有可靠状态码时前端显示普通查询失败，不擅自根据错误文案判为“无权限”。如需所有权限异常精确区分，应进一步约定服务端 API 统一返回 HTTP 403 和业务 403，并单独回归旧客户端。
+
+## 22. #5/#9 移动端复杂筛选器与弹层宽度（2026-10-18）
+
+- **根因**：`ControllerWidgetCore` 通过 `ConfigProvider.getPopupContainer` 把 AntD DatePicker / Select 弹层挂到 `document.body` / Fullscreen，先前写在 `.datart-mobile-board` 容器内的 `.ant-picker-dropdown` 样式无法选择到门户节点。范围日历默认双月横排宽约 560px，在 320/375px 手机上会被裁切；长下拉字段在窄 Widget 内没有完整提示。
+- **修复**：所有 RangeTime、Time、单选、多选与 TreeSelect 都基于已有 `BoardContext.isMobile` 给弹层添加专属类（AntD 5 `classNames.popup.root`），桌面沿用原行为。全局 `Viz` 样式按门户节点类名限定：移动范围月历纵排；日历容器最大宽度 `min(320px, viewport - 12px)`、内部滚动与视口高度上限；下拉宽度限制在手机可视范围内，最低可用 240px，长选项文本省略并通过 title 查看完整内容；组件表单的超长标签本身可省略，不再挤压输入框。保留现有的日期原值/校验/筛选查询逻辑。
+- **自动适配**：只有一个移动端 `mRect`，没有新增手机尺寸预设、也不会改写旧 `pRect/mRect`；编辑器内移动预览因 `isMobile` 为 true 同样应用上述弹层规则，CSS 不依赖外部浏览器窗口大小来判断是否是移动看板。
+- **定向测试**：原 `RangeTimeController.test.tsx` 拓展日期范围/单日期弹层，新增 `MobileFilterPopup.test.tsx` 覆盖单选、多选、树形选择与完整长标签，**6/6 通过**，`npm run checkTs` 通过。开发机临时 Vite 单独测试页挂载真实组件与全局样式，Chromium 在 **320、375、430 CSS px** 验证日期弹层纵向排列、面板实际宽度 **288px**、文档没有横向溢出、JS 异常为零；下拉真实选项 title 保留。临时测试入口已删除，不纳入生产代码。
+- **待验收**：真正登录态/分享的复杂筛选业务场景、日期时间制式/多层树、横竖屏切换与所有历史极小 Widget；已实现控件适配不等于全部 #5/#9 验收完成。

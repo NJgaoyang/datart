@@ -19,7 +19,8 @@ import { DatePicker, Form, FormItemProps } from 'antd';
 import { PickerType } from 'app/pages/DashBoardPage/pages/BoardEditor/components/ControllerWidgetPanel/types';
 import { formatDateByPickType } from 'app/pages/DashBoardPage/pages/BoardEditor/components/ControllerWidgetPanel/utils';
 import dayjs from 'dayjs';
-import React, { memo } from 'react';
+import { BoardContext } from 'app/pages/DashBoardPage/components/BoardProvider/BoardProvider';
+import React, { memo, useContext } from 'react';
 import styled from 'styled-components';
 
 export interface TimeControllerProps {
@@ -54,6 +55,7 @@ export interface SingleTimeSetProps extends FormItemProps<any> {
 }
 export const TimeController: React.FC<SingleTimeSetProps> = memo(
   ({ pickerType, value, onChange }) => {
+    const { isMobile } = useContext(BoardContext);
     const _onChange = (time, strTime) => {
       if (!time) {
         return onChange(null);
@@ -73,6 +75,7 @@ export const TimeController: React.FC<SingleTimeSetProps> = memo(
             showTime
             onChange={_onChange}
             className="control-datePicker"
+            classNames={{ popup: { root: isMobile ? 'datart-mobile-date-popup' : undefined } }}
             bordered={false}
           />
         ) : (
@@ -83,6 +86,7 @@ export const TimeController: React.FC<SingleTimeSetProps> = memo(
             onChange={_onChange}
             picker={pickerType as any}
             className="control-datePicker"
+            classNames={{ popup: { root: isMobile ? 'datart-mobile-date-popup' : undefined } }}
             bordered={false}
           />
         )}

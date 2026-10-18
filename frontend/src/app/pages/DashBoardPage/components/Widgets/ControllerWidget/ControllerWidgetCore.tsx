@@ -479,6 +479,16 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
     border-left: 0;
   }
 
+  /* Long custom labels must not consume the entire picker/selection area.
+     Full text remains available through the widget title, when present. */
+  .control-form .ant-form-item-label label {
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   /* Narrow half-width widgets stack the label rather than shrink
      a datetime picker beneath its calendar trigger. Saved grid geometry
      remains unchanged. */
@@ -508,6 +518,7 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
       min-height: 28px;
     }
   }
+
 
   /*
    * Mobile range dates follow the CONTROL's measured width, not the
@@ -598,5 +609,4 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
       margin-left: 2px;
     }
   }
-
 `;
