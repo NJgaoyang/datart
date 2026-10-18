@@ -372,3 +372,10 @@ npm run build
 - 只在 `DATART_TEST_MYSQL_CANCEL_URL` 显式存在时运行该 JUnit 测试；无配置自动 Skip。数据库连接、用户、口令来自测试环境变量，日志不打印密码。新增 `com.mysql:mysql-connector-j:8.4.0` 测试作用域依赖，不进入 Datart 服务端运行时依赖。
 - GitHub Actions 新增**独立** `mysql-cancel-integration` Job：仅在 Ubuntu Runner 内启动一次性 `mysql:8.0` 容器与非生产测试 schema，执行 `mvn -pl data-providers/jdbc-data-provider -am -Dtest=LiveMysqlQueryCancellationTest ...`；现有 backend/前端测试 job 不依赖 MySQL 容器启动。该用例是真正驱动和服务器的 SQL 取消，不是模拟调用，但只有单次短查询，不代表 100/500/1000 个图表压测。
 - 本节记录代码和 CI 配置；**运行结果须待本次 Actions 实际完成后再标记通过**，不得从提交成功推断集成测试成功。开发机当前 Offline，不能更新服务器或执行用户账号下的操作。
+
+## 30. #18 一次性 MySQL 真实中断验收结果与 #16 构建门禁（2026-10-18）
+
+- 提交 `04f8e9823718cf657d7f2a1bc5bdb09ec6f3a518` 的 GitHub Actions `39138327974` **全部成功**。其中新增原生 Node 6 项 JS 体积守卫单测和 Vite manifest 体积限制检查通过，原有 React/TypeScript、前端构建、Chromium/Firefox/WebKit 公开入口测试及后端检查均通过。注意：该检查是**防止原始 JS 字节膨胀的门禁**，并未完成安全细粒度拆包。
+- 提交 `c915e4671cab7b73c8b45c0a5983e8089cfd96c4` 的 GitHub Actions `39138821507`：**独立 `mysql-cancel-integration` 测试通过**。Runner 一次性 MySQL 8.0 真正执行单条只读 `SELECT SLEEP(8)`，验证 owner 隔离、正确 owner 的 `Statement.cancel()` 及查询线程提前结束。日志明确为 `MYSQL_CANCEL_INTEGRATION_OK latencyMs=27 ownerIsolation=true`，JUnit **1 run / 0 failures / 0 errors / 0 skips**。27ms 仅代表本次 CI 单次样本，不外推生产 SQL。
+- 同次 CI 的前端任务、布局迁移任务也已完成且通过；后端常规编译回归在记录本节时尚未完成，**需要以本次 Actions 最终结论为准**。前端本轮桌面编辑器 Token 仅替换原样式数值，未更改 `pRect/mRect`。
+- **环境限制**：开发机 `VM-0-13-tencentos` 本轮 Offline，无法将两次新提交部署到 `/opt/datar_dev20261017/static` 或重启服务，不能声称开发机已更新。独立授权测试账户下的编辑器保存重开、物理手机触屏、100/500/1000 真正图表 SQL/FPS/内存测试、生产数据库中断指标和全面深色主题仍未完成。
