@@ -15,11 +15,52 @@ interface BatchEntry {
   requestParams: any;
   resolve: (value: any) => void;
   reject: (reason?: any) => void;
+  cacheKey?: string;
+  promise?: Promise<any>;
+  widgetKey?: string;
+  cancelled?: boolean;
 }
 
 let pendingQueue: BatchEntry[] = [];
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 const inFlight = new Map<string, BatchEntry>();
+
+// Exact same widget + serialized query (including filters, sort, paging and
+// source) shares one promise. Different widgets/sources NEVER share results.
+const activeQueries = new Map<string, Promise<any>>();
+const activeByWidget = new Map<string, BatchEntry>();
+
+export class WidgetFetchCancelledError extends Error {
+  constructor() {
+    super('Widget fetch cancelled');
+    this.name = 'WidgetFetchCancelledError';
+  }
+}
+
+const forgetActiveQuery = (entry: BatchEntry) => {
+  if (entry.cacheKey && activeQueries.get(entry.cacheKey) === entry.promise) {
+    activeQueries.delete(entry.cacheKey);
+  }
+  if (entry.widgetKey && activeByWidget.get(entry.widgetKey) === entry) {
+    activeByWidget.delete(entry.widgetKey);
+  }
+};
+
+/** Do not allow an older query to overwrite the result after filters change. */
+const cancelEntry = (entry: BatchEntry) => {
+  if (entry.cancelled) return;
+  entry.cancelled = true;
+  pendingQueue = pendingQueue.filter(item => item !== entry);
+  forgetActiveQuery(entry);
+  entry.reject(new WidgetFetchCancelledError());
+  if (inFlight.has(entry.queryId)) {
+    void request2({
+      method: 'POST',
+      url: `data-provider/execute/cancel/${entry.queryId}`,
+    }).catch(() => undefined);
+  }
+};
+
 
 /** 防抖延迟(ms): 在此窗口内到达的请求会合并为一个批次 */
 const BATCH_DEBOUNCE_MS = 150;
@@ -36,17 +77,49 @@ export function enqueueWidgetFetch(
   widgetId: string,
   requestParams: any,
 ): Promise<any> {
-  return new Promise((resolve, reject) => {
-    pendingQueue.push({
-      boardId,
-      widgetId,
-      queryId: createQueryId(),
-      requestParams,
-      resolve,
-      reject,
-    });
-    scheduleFlush();
+  let key: string | undefined;
+  try {
+    key = JSON.stringify([boardId, widgetId, requestParams]);
+  } catch {
+    // A non-serializable query cannot be safely compared: send it normally.
+  }
+  const existing = key === undefined ? undefined : activeQueries.get(key);
+  if (existing) return existing;
+
+  // A widget can only have ONE effective query in flight. If a date/filter
+  // changes during a slow query, discard the older response and stop it
+  // server-side when possible, instead of confusing the batch response map
+  // which indexes results by widgetId.
+  const widgetKey = JSON.stringify([boardId, widgetId]);
+  const previous = activeByWidget.get(widgetKey);
+  if (previous) cancelEntry(previous);
+
+  const entry: BatchEntry = {
+    boardId,
+    widgetId,
+    queryId: createQueryId(),
+    requestParams,
+    cacheKey: key,
+    widgetKey,
+    resolve: () => undefined,
+    reject: () => undefined,
+  };
+  const promise = new Promise<any>((resolve, reject) => {
+    entry.resolve = resolve;
+    entry.reject = reject;
   });
+  entry.promise = promise;
+  if (key !== undefined) activeQueries.set(key, promise);
+  activeByWidget.set(widgetKey, entry);
+  pendingQueue.push(entry);
+  scheduleFlush();
+  // Fulfillment or failure permits a new fetch next time. Do not delete a
+  // newer replacement when an older cancelled request finishes late.
+  void promise.then(
+    () => forgetActiveQuery(entry),
+    () => forgetActiveQuery(entry),
+  );
+  return promise;
 }
 
 function scheduleFlush(): void {
@@ -73,10 +146,12 @@ async function flushBatch(): Promise<void> {
         url: 'data-provider/execute',
         data: { ...entry.requestParams, queryId: entry.queryId },
       }, undefined, { onRejected: preserveHttpError });
-      if (data?.error) {
-        entry.reject(new Error(`Widget query failed: ${data.error}`));
-      } else {
-        entry.resolve(data);
+      if (!entry.cancelled) {
+        if (data?.error) {
+          entry.reject(new Error(`Widget query failed: ${data.error}`));
+        } else {
+          entry.resolve(data);
+        }
       }
       return;
     }
@@ -95,6 +170,7 @@ async function flushBatch(): Promise<void> {
     const resultMap: Record<string, any> = response?.data || {};
 
     batch.forEach(entry => {
+      if (entry.cancelled) return;
       const result = resultMap[entry.widgetId];
       if (result !== undefined) {
         if (result?.error) {
@@ -131,19 +207,21 @@ async function flushBatch(): Promise<void> {
     // while the failed widget still receives the real backend error.
     await Promise.all(
       batch.map(async entry => {
+        if (entry.cancelled) return;
         try {
           const { data } = await request2<any>({
             method: 'POST',
             url: 'data-provider/execute',
             data: { ...entry.requestParams, queryId: entry.queryId },
           }, undefined, { onRejected: preserveHttpError });
+          if (entry.cancelled) return;
           if (data?.error) {
             entry.reject(new Error(`Widget query failed: ${data.error}`));
           } else {
             entry.resolve(data);
           }
         } catch (singleError) {
-          entry.reject(singleError);
+          if (!entry.cancelled) entry.reject(singleError);
         }
       }),
     );
@@ -157,19 +235,10 @@ export function cancelPendingWidgetFetches(boardId: string): void {
   const cancelled = pendingQueue.filter(entry => entry.boardId === boardId);
   pendingQueue = pendingQueue.filter(entry => entry.boardId !== boardId);
 
-  cancelled.forEach(entry => {
-    entry.reject(new Error('Widget fetch cancelled'));
-  });
-
+  cancelled.forEach(cancelEntry);
   Array.from(inFlight.values())
     .filter(entry => entry.boardId === boardId)
-    .forEach(entry => {
-      entry.reject(new Error('Widget fetch cancelled'));
-      void request2({
-        method: 'POST',
-        url: `data-provider/execute/cancel/${entry.queryId}`,
-      }).catch(() => undefined);
-    });
+    .forEach(cancelEntry);
 
   if (pendingQueue.length === 0 && flushTimer !== null) {
     clearTimeout(flushTimer);

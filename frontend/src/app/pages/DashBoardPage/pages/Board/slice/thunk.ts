@@ -48,7 +48,7 @@ import {
   VizRenderMode,
   WidgetData,
 } from './types';
-import { enqueueWidgetFetch } from './widgetDataBatcher';
+import { enqueueWidgetFetch, WidgetFetchCancelledError } from './widgetDataBatcher';
 
 /**
  * @param ''
@@ -321,6 +321,7 @@ export const syncBoardWidgetChartDataAsync = createAsyncThunk<
         }),
       );
     } catch (error) {
+      if (error instanceof WidgetFetchCancelledError) return null;
       await dispatch(
         boardActions.setWidgetErrInfo({
           boardId,
@@ -435,6 +436,7 @@ export const getChartWidgetDataAsync = createAsyncThunk<
         }),
       );
     } catch (error) {
+      if (error instanceof WidgetFetchCancelledError) return null;
       dispatch(
         boardActions.setWidgetErrInfo({
           boardId,
@@ -547,6 +549,7 @@ export const getControllerOptions = createAsyncThunk<
         }),
       );
     } catch (error) {
+      if (error instanceof WidgetFetchCancelledError) return null;
       dispatch(
         boardActions.setWidgetErrInfo({
           boardId,

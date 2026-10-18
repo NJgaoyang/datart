@@ -250,3 +250,11 @@ npm run build
 - **新增 `utils/blockBoardNavigation.ts`**：只在编辑器有未保存修改或正在保存时注册历史阻断，拦截 PUSH / REPLACE / POP；未保存时明确确认离开、取消则保留编辑器，保存中禁止导航，确认后先解除阻断再 `transition.retry()`，避免返回栈污染/重复弹窗。编辑器主动取消或成功保存后的退出则提前解除阻断，仍保留此前刷新/关标签的 `beforeunload` 提示。
 - **专项测试**：`blockBoardNavigation.test.ts` 覆盖 PUSH、REPLACE、POP、取消后重试、保存中禁止离开、无修改时允许离开；`boardRouterIntegration.test.tsx` 用真实 `HistoryRouter + Link + Routes` 验证批准离开后 UI 实际导航。配合旧 `boardSaveStatus`、`boardUnsavedState` 测试和 `npm run checkTs`。使用 `history@5.3.0` 显式依赖并锁定安装。
 - **风险与未完成验证**：主路由共享 history 是高风险入口变更，必须检查登录、用户路由、SPA 导航和刷新及保存成功/失败流程，之后再部署。不能只以 JSDOM 单测宣称浏览器端完全验收，也不能误改移动端 `mRect` 或桌面 `pRect`。
+
+## 18. #18 请求去重与在途取消可靠性（2026-10-18）
+
+- **请求去重**：`widgetDataBatcher.ts` 新增同一 boardId、widgetId、完整 requestParams（含过滤器、分页、排序等）作为标识的活跃 Promise 复用。同一组件、完全相同的并发请求只发送一次；不同组件绝不共享结果；结果完成/失败及时移除记录，避免误复用旧数据。不支持序列化的请求退化为原流程。
+- **最新筛选优先**：同一 Widget 的查询参数变化时，自动取消之前尚在排队或仍在途的请求，旧结果即使晚于新请求返回也不会再 resolve；新请求不会复用旧的拒绝状态。后端支持的 `/execute/cancel/{queryId}` 用于尝试停止在途 SQL；取消后的批量失败回退会跳过已取消请求。
+- **错误状态**：增加类型化 `WidgetFetchCancelledError`，`thunk.ts` 中取消只是卸载/新筛选的正常行为，不再错误地显示“图表查询失败”；真正的权限/网络/SQL 错误保留原有错误提示。
+- **定向测试**：新增 `widgetDataBatcher.test.ts` 6 项，涵盖相同查询合并、不同 Widget 隔离、排队取消后重发、在途晚到后重发、快速更换筛选条件、旧结果乱序返回；`npm run checkTs` 通过。
+- **剩余**：完整端到端加载 100/500/1000 个 Widget 的网络数量、总耗时、浏览器 FPS/内存仍需有授权的登录状态实测；分享模式的请求路径不直接使用本批处理器，应另测；服务端实际取消 SQL 是否及时释放资源需要专门压测。
