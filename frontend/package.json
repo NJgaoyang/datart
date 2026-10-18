@@ -37,7 +37,9 @@
     "bench:grid": "node scripts/bench-grid-layout.mjs",
     "report:bundles": "node scripts/report-dashboard-bundles.mjs",
     "check:js-compression": "node scripts/check-js-transfer-compression.mjs",
-    "check:static-cache": "node scripts/check-static-cache.mjs"
+    "check:static-cache": "node scripts/check-static-cache.mjs",
+    "test:bundle-budget": "node --test scripts/__tests__/check-bundle-budget.test.mjs",
+    "check:bundle-budget": "node scripts/check-bundle-budget.mjs"
   },
   "eslintConfig": {
     "extends": [

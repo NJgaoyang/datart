@@ -357,3 +357,11 @@ npm run build
 - #21 首轮 Ubuntu Chromium、Firefox、WebKit、WebKit 移动视口的公开入口 Playwright **8/8 通过**，GitHub Actions `39102810899` 全部成功；开发机新版 `app.75519225.js` 登录/分享 Chromium **2/2** 通过。
 - #16 真实部署 `check:static-cache` 检测哈希 JS/CSS `max-age=31536000, public, immutable`，登录 HTML `no-cache`；`check:js-compression` 检查 gzip 压缩继续有效，均通过。
 - **注意**：这 3 项后端取消句柄单测仍不是受控实际 MySQL SQL 的取消时间测量。尚需有权限的专用测试连接执行 `tools/SqlCancellationProbe.java`，并测量 100/500/1000 真实图表负载。
+
+## 28. #16 首屏 JS 预算保护与 #20 桌面编辑 UI Token 推进（2026-10-18）
+
+- **环境**：此轮开发机 `VM-0-13-tencentos` 连接状态 Offline（最后在线约 7 小时前），不能在那里验证真实前后端服务或部署静态资源；本次只在 GitHub 最新 `dev20261017` 代码上提交，由 GitHub Actions 执行构建/浏览器测试。不要声称开发机已发布。
+- **#16 可持续 JS 体积门禁**：新增 `frontend/scripts/check-bundle-budget.mjs`，通过构建后 Vite manifest 的 `isEntry/imports` 图计算每个入口的**实际首次同步加载 JS 字节数**，去重并单独累计 `dynamicImports` 所属的全部构建 JS。上限：每入口 **15,000,000 原始字节**、整个站点 **16,000,000**、最大单 Chunk **10,500,000**。选取基于已实测 `app+vendor` 约 12.67 MB，留有限迭代余量。这是**防回退门槛**，非已实现按路由拆包或目标 FCP。检测旧 `admin-tools.` 独立分包，阻止引发过 TDZ 白屏的风险重新进入主分支。
+- **自动验证**：新增原生 Node 测试 `check-bundle-budget.test.mjs` 覆盖同步 import 去重、动态 import 不计入入口首屏、超过预算直接失败、被禁止的 chunk、缺失依赖、异常文件大小；在 GitHub `dashboard-grid-v2` 前端 job 完成 `npm run build` 和旧 `report:bundles` 后执行 `npm run test:bundle-budget && npm run check:bundle-budget`，与现有 Chromium/Firefox/WebKit 浏览器入口烟测一同确保构建门禁有效。
+- **#20 桌面编辑器局部去硬编码**：`BoardToolBar/ToolBar.tsx` 复用 `DASHBOARD_DESIGN_TOKENS.spacing.card/page`（6px / 8px），`BoardHeader/EditorHeader.tsx` 保存状态字号复用 `typography.caption`（12px），替换后像素值保持不变；增补语义值单测，避免改变布局或用户已保存的 `pRect/mRect`。
+- **仍未完成**：已登录编辑器的隔离数据真拖拽/保存重开、实机触屏、100/500/1000 真实图表与受控 SQL 取消耗时、下一阶段安全拆包和全面深色主题。这一轮新 CI 结果以实际运行结论为准。

@@ -47,6 +47,8 @@ jobs:
         run: npm run build
       - name: Capture per-entry JavaScript bundle baseline
         run: npm run report:bundles
+      - name: Check JS size budget rules and built chunk size
+        run: npm run test:bundle-budget && npm run check:bundle-budget
       - name: Install locked Playwright and browser engines (public entry smoke)
         run: |
           cd e2e

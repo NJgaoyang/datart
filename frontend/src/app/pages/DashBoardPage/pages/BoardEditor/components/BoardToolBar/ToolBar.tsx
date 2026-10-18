@@ -26,6 +26,7 @@ import useBoardEditorHotkeys from 'app/pages/DashBoardPage/hooks/useBoardEditorH
 import React, { useContext } from 'react';
 import styled from 'styled-components';
 import { DASHBOARD_UI_TOKENS as T } from 'app/pages/DashBoardPage/styles/dashboardUiTokens';
+import { DASHBOARD_DESIGN_TOKENS as D } from 'app/pages/DashBoardPage/styles/dashboardDesignTokens';
 import { WidgetActionContext } from '../../../../components/ActionProvider/WidgetActionProvider';
 import { AddChart } from './AddChart/AddChart';
 import { AddContainer } from './AddContainer/AddContainer';
@@ -79,7 +80,7 @@ export const ToolBar = () => {
   );
   return (
     <Wrapper onClick={ssp}>
-      <Space className="toolbar-primary" size={6}>
+      <Space className="toolbar-primary" size={D.spacing.card}>
         <AddChart />
 
         <AddController />
@@ -128,7 +129,7 @@ const Wrapper = styled.div`
   justify-content: space-between;
   align-items: center;
   min-width: 0;
-  gap: 8px;
+  gap: ${D.spacing.page}px;
 
   .toolbar-primary {
     flex: 1 1 auto;

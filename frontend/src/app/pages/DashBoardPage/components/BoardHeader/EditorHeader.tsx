@@ -26,6 +26,7 @@ import type { HistoryEditBoard } from 'app/pages/DashBoardPage/pages/BoardEditor
 import { hasUnsavedBoardChanges } from 'app/pages/DashBoardPage/utils/boardUnsavedState';
 import { getBoardSaveStatus } from 'app/pages/DashBoardPage/utils/boardSaveStatus';
 import { appHistory } from 'app/appHistory';
+import { DASHBOARD_DESIGN_TOKENS as D } from 'app/pages/DashBoardPage/styles/dashboardDesignTokens';
 import { blockBoardNavigation } from 'app/utils/blockBoardNavigation';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
@@ -160,7 +161,7 @@ const EditorHeader: FC<PropsWithChildren> = memo(({ children }) => {
         {title}
       </h1>
       <Space>
-        <span aria-live="polite" role="status" style={{ fontSize: 12 }}>
+        <span aria-live="polite" role="status" style={{ fontSize: D.typography.caption }}>
           {saveStatus === 'saving'
             ? '保存中…'
             : saveStatus === 'failed'
