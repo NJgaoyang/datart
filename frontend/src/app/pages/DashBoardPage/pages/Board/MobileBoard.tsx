@@ -22,7 +22,9 @@ import {
 } from 'app/pages/DashBoardPage/pages/Board/slice/thunk';
 import {
   BoardState,
+  Dashboard,
   RectConfig,
+  VizRenderMode,
 } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { cancelPendingWidgetFetches } from 'app/pages/DashBoardPage/pages/Board/slice/widgetDataBatcher';
 import { Widget } from 'app/pages/DashBoardPage/types/widgetTypes';
@@ -110,6 +112,40 @@ const getMobileRect = (widget: Widget): RectConfig => {
     height: Math.max(1, Math.round(Number(rect.height) || 1)),
   };
 };
+
+/** Shared data is already loaded through the share token. Never fetch a
+ * login-only board endpoint when viewing a mobile shared dashboard. */
+export const SharedMobileBoardCore: FC<{
+  dashboard: Dashboard;
+  renderMode: VizRenderMode;
+}> = memo(({ dashboard, renderMode }) => {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const widgets = useLayoutMap(dashboard.id);
+  const widgetMap = useSelector((state: { board: BoardState }) =>
+    selectBoardWidgetMap(state)[dashboard.id] || {},
+  );
+  const dataChartMap = useSelector((state: { board: BoardState }) =>
+    state.board.dataChartMap[dashboard.id] || {},
+  );
+  // The mobileVisible flag controls the in-app mobile listing. An explicit
+  // valid share token already authorizes viewing this board on any device.
+  return (
+    <MobileWrapper ref={wrapperRef} className="datart-mobile-board datart-mobile-share">
+      <MobileBoardContent
+        widgets={widgets}
+        widgetMap={widgetMap}
+        dataChartMap={dataChartMap}
+        boardId={dashboard.id}
+        boardName={dashboard.name}
+        onBack={() => undefined}
+        wrapperRef={wrapperRef}
+        embedded={true}
+        shareMode={true}
+        renderMode={renderMode}
+      />
+    </MobileWrapper>
+  );
+});
 
 export interface MobileBoardProps {
   id: string;
@@ -249,6 +285,8 @@ interface MobileBoardContentProps {
   onBack: () => void;
   wrapperRef: React.RefObject<HTMLDivElement>;
   embedded: boolean;
+  shareMode?: boolean;
+  renderMode?: VizRenderMode;
 }
 
 const MobileBoardContent: FC<MobileBoardContentProps> = memo(
@@ -261,6 +299,8 @@ const MobileBoardContent: FC<MobileBoardContentProps> = memo(
     onBack,
     wrapperRef,
     embedded,
+    shareMode = false,
+    renderMode = 'read',
   }) => {
     const dispatch = useDispatch();
     const widgetDataMap = useSelector(
@@ -509,7 +549,7 @@ const MobileBoardContent: FC<MobileBoardContentProps> = memo(
             renderedWidgetAsync({
               boardId,
               widgetId,
-              renderMode: 'read',
+              renderMode,
             }),
           );
         });
@@ -522,7 +562,7 @@ const MobileBoardContent: FC<MobileBoardContentProps> = memo(
       );
       return () => window.clearTimeout(timer);
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [boardId, mobileWidgetIds]);
+    }, [boardId, mobileWidgetIds, renderMode]);
 
     // 移动端：将筛选器弹窗挂载到 MobileWrapper，避免被窄容器裁剪
     const mobileControlValue: MobileControlContextValue = useMemo(
@@ -535,13 +575,15 @@ const MobileBoardContent: FC<MobileBoardContentProps> = memo(
     return (
       <PageWrapper>
         {/* 顶部导航栏 */}
-        {!embedded && (
+        {(!embedded || shareMode) && (
           <NavBar>
-            <BackBtn
-              type="text"
-              icon={<ArrowLeftOutlined />}
-              onClick={onBack}
-            />
+            {shareMode ? <NavSpacer /> : (
+              <BackBtn
+                type="text"
+                icon={<ArrowLeftOutlined />}
+                onClick={onBack}
+              />
+            )}
             <NavTitle>{boardName}</NavTitle>
             <NavSpacer />
           </NavBar>

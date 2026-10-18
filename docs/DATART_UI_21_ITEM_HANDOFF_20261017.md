@@ -258,3 +258,11 @@ npm run build
 - **错误状态**：增加类型化 `WidgetFetchCancelledError`，`thunk.ts` 中取消只是卸载/新筛选的正常行为，不再错误地显示“图表查询失败”；真正的权限/网络/SQL 错误保留原有错误提示。
 - **定向测试**：新增 `widgetDataBatcher.test.ts` 6 项，涵盖相同查询合并、不同 Widget 隔离、排队取消后重发、在途晚到后重发、快速更换筛选条件、旧结果乱序返回；`npm run checkTs` 通过。
 - **剩余**：完整端到端加载 100/500/1000 个 Widget 的网络数量、总耗时、浏览器 FPS/内存仍需有授权的登录状态实测；分享模式的请求路径不直接使用本批处理器，应另测；服务端实际取消 SQL 是否及时释放资源需要专门压测。
+
+## 19. 分享链接窄屏视图复用真正的移动布局（2026-10-18）
+
+- **用户反馈**：分享出去的 `/shareDashboard/:token` 在手机上仍使用 PC 端 `AutoBoardCore`，一整行日期筛选、查询按钮和表格列被挤到右侧，手机页面出现横向裁剪。根因在 `DashboardForShare` 分享入口未选择 `MobileBoard` 的 `mRect` 呈现层。
+- **修复逻辑**：当分享模式 `share` 且仪表板为 `auto`、可见窗口不超过 960px 时，自动复用 `MobileBoard.tsx` 已实现的单套 24 列移动排布组件 `MobileBoardContent`，从 `mRect` 读取坐标、移动控件弹层、卡片紧凑高度与表格内部滚动规则均与普通移动展示一致。桌面大于阈值和定时任务 `schedule` 保持原样；**960px 只决定 PC/移动呈现方式，不是多个手机分辨率预设或持久化断点**，设备旋转或窗口缩放自动重新判断，不重写 `pRect/mRect`。
+- **分享令牌安全**：新增 `SharedMobileBoardCore` 只复用移动呈现层，不调用普通 `MobileBoard` 的 `fetchBoardDetail`（需要登录）；分享页继续由 `fetchShareVizInfo` 取得已有看板数据，`BoardInitProvider` 保留 `renderMode='share'`，移动可见 Widget 的异步加载也明确传入分享模式，继续使用令牌授权的 `shares/execute`。公开分享令牌授权不再受内部导航 `mobileVisible` 开关限制。
+- **界面细节**：移动分享页保留精简标题栏，无内部组织返回按钮；分享页原有更多/刷新按钮以及定时导出路径不变。
+- **定向测试**：`shareMobileLayout.test.ts` 测试 280～960px、桌面和定时导出边界；`DashboardForShareResponsive.test.tsx` 用 React 实际挂载切换 375px→1200px，确认注入 `isMobile` 的移动/桌面布局选择，TypeScript 检查通过。真正手机下的有效分享令牌查询和触屏滚动仍需在授权 URL 上验收。
