@@ -365,3 +365,10 @@ npm run build
 - **自动验证**：新增原生 Node 测试 `check-bundle-budget.test.mjs` 覆盖同步 import 去重、动态 import 不计入入口首屏、超过预算直接失败、被禁止的 chunk、缺失依赖、异常文件大小；在 GitHub `dashboard-grid-v2` 前端 job 完成 `npm run build` 和旧 `report:bundles` 后执行 `npm run test:bundle-budget && npm run check:bundle-budget`，与现有 Chromium/Firefox/WebKit 浏览器入口烟测一同确保构建门禁有效。
 - **#20 桌面编辑器局部去硬编码**：`BoardToolBar/ToolBar.tsx` 复用 `DASHBOARD_DESIGN_TOKENS.spacing.card/page`（6px / 8px），`BoardHeader/EditorHeader.tsx` 保存状态字号复用 `typography.caption`（12px），替换后像素值保持不变；增补语义值单测，避免改变布局或用户已保存的 `pRect/mRect`。
 - **仍未完成**：已登录编辑器的隔离数据真拖拽/保存重开、实机触屏、100/500/1000 真实图表与受控 SQL 取消耗时、下一阶段安全拆包和全面深色主题。这一轮新 CI 结果以实际运行结论为准。
+
+## 29. #18 一次性 MySQL CI 真实 JDBC 取消测试（2026-10-18）
+
+- 原先仅运行 Mockito 的 `QueryCancellationRegistryTest`，真正的 JDBC SQL 取消探针因为开发机数据库连接身份不正确而未完成。新增 `LiveMysqlQueryCancellationTest.java`：专用 MySQL 测试实例执行 **一条只读 `SELECT SLEEP(8)`**，不查询或修改业务表，验证其他 owner 无法取消、相同 owner 能中断运行中 JDBC `Statement`，并在最多 5 秒内获得取消结果，之后必须注销句柄。
+- 只在 `DATART_TEST_MYSQL_CANCEL_URL` 显式存在时运行该 JUnit 测试；无配置自动 Skip。数据库连接、用户、口令来自测试环境变量，日志不打印密码。新增 `com.mysql:mysql-connector-j:8.4.0` 测试作用域依赖，不进入 Datart 服务端运行时依赖。
+- GitHub Actions 新增**独立** `mysql-cancel-integration` Job：仅在 Ubuntu Runner 内启动一次性 `mysql:8.0` 容器与非生产测试 schema，执行 `mvn -pl data-providers/jdbc-data-provider -am -Dtest=LiveMysqlQueryCancellationTest ...`；现有 backend/前端测试 job 不依赖 MySQL 容器启动。该用例是真正驱动和服务器的 SQL 取消，不是模拟调用，但只有单次短查询，不代表 100/500/1000 个图表压测。
+- 本节记录代码和 CI 配置；**运行结果须待本次 Actions 实际完成后再标记通过**，不得从提交成功推断集成测试成功。开发机当前 Offline，不能更新服务器或执行用户账号下的操作。

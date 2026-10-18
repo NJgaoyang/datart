@@ -90,6 +90,35 @@ jobs:
       - name: Security, SQL metrics, join and Excel export regression tests
         run: mvn --batch-mode -pl server -am -Dtest=ColumnPermissionFilterTest,SqlBuilderAggregateTest,PoiConvertUtilsDisplayNameTest,ViewJoinColumnNameTest,DownloadServiceSecurityTest,ShareSupportedFunctionSecurityTest,ViewFieldCommentLifecycleTest,ViewFieldServiceImplTest,SqlQueryScriptProcessorVariableScopeTest,QueryCancellationRegistryTest -Dsurefire.failIfNoSpecifiedTests=false test
 
+  mysql-cancel-integration:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci-only-cancel-test
+          MYSQL_DATABASE: datart_cancel_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pci-only-cancel-test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Verify real JDBC cancellation on disposable MySQL
+        env:
+          DATART_TEST_MYSQL_CANCEL_URL: jdbc:mysql://127.0.0.1:3306/datart_cancel_test?useSSL=false&allowPublicKeyRetrieval=true
+          DATART_TEST_MYSQL_CANCEL_USER: root
+          DATART_TEST_MYSQL_CANCEL_PASSWORD: ci-only-cancel-test
+        run: mvn --batch-mode -pl data-providers/jdbc-data-provider -am -Dtest=LiveMysqlQueryCancellationTest -Dsurefire.failIfNoSpecifiedTests=false test
+
   migration:
     runs-on: ubuntu-latest
     steps:
