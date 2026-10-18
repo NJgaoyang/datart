@@ -21,6 +21,34 @@ describe('dashboard batch query request lifecycle', () => {
     vi.useRealTimers();
   });
 
+  it('does not retry a failed single query and retains its structured permission code', async () => {
+    request.mockResolvedValue({
+      success: false, errCode: 403, message: 'sensitive query details', data: null,
+    } as any);
+    const result = enqueueWidgetFetch('board-one', 'widget-1', { vizId: 'view-A' });
+    const rejected = expect(result).rejects.toMatchObject({
+      name: 'Error', errCode: 403, message: '数据查询失败，请重试',
+    });
+    await vi.advanceTimersByTimeAsync(151);
+    await rejected;
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back from a business-failed multi-widget batch without dropping healthy widgets', async () => {
+    request.mockImplementation((config: any) => {
+      if (config.url === 'data-provider/execute/batch') {
+        return Promise.resolve({ success: false, errCode: 500, data: null }) as any;
+      }
+      return Promise.resolve({ success: true, data: { rows: [['ok']] } }) as any;
+    });
+    const a = enqueueWidgetFetch('board-one', 'widget-1', { vizId: 'view-A' });
+    const b = enqueueWidgetFetch('board-one', 'widget-2', { vizId: 'view-B' });
+    await vi.advanceTimersByTimeAsync(151);
+    expect(await a).toEqual({ rows: [['ok']] });
+    expect(await b).toEqual({ rows: [['ok']] });
+    expect(request).toHaveBeenCalledTimes(3);
+  });
+
   it('deduplicates same widget + identical query parameters while pending', async () => {
     request.mockResolvedValue({ data: { rows: [['ok']] } } as any);
     const first = enqueueWidgetFetch('board-one', 'widget-1', { vizId: 'view-A', filters: [1] });

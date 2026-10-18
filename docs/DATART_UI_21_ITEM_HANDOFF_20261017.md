@@ -274,3 +274,11 @@ npm run build
 - **授权分享端到端（显式 opt-in）**：新增 `shared-mobile.spec.ts`（320、375、430、768、900、960px 单套 `mRect`、页面宽度、分享模式请求不回退登录态、日期弹层/存在滚动表格时检查），`shared-desktop.spec.ts`（375→1200px 验证回到 `pRect`）。必须设置 `DATART_TEST_SHARED_DASHBOARD_PATH` 并在可访问的测试 Datart 运行；无授权路径时 **skip**，不能声称真数据浏览器验证通过。原 `chromium-editor` 仍需专用测试账号与 `DATART_TEST_STORAGE_STATE`。
 - **隐私与范围**：新 `e2e/.gitignore` 排除存储状态、trace 与测试产物；CI 只运行无凭据的生产包入口冒烟，授权分享/登录编辑测试不上传含 token 的轨迹。README 提供分项目命令；增加的浏览器脚手架不改任何 `pRect/mRect`、组件间距或业务接口。
 - **仍未完成的 #21**：完整已登录可变更隔离测试仪表板的拖拽、保存失败/重试、刷新/重开，Firefox/WebKit、真实物理手机触摸、DPR/zoom、100/500/1000 Widget 性能、真实分享 token 运行结果。后续只对发现的确切缺口继续修复。
+
+## 21. #12 业务错误码与分享查询一致性；#21 修复 CI Playwright Registry（2026-10-18）
+
+- **CI 修复（确定性环境问题）**：第 20 节的首轮 Actions `39093376778` 前端步骤安装 Playwright 时 `ENOTFOUND mirrors.tencentyun.com`，在浏览器测试开始前失败；后端、迁移、TypeScript、单测、构建步骤已成功。根因是 `frontend/e2e/package-lock.json` 内 3 个 Playwright 包的 `resolved` 错误指向腾讯云镜像。更新为 `https://registry.npmjs.org/`，CI 的 `npm ci` 指定标准 Registry。开发机按标准 Registry **干净 npm ci 成功**，并确认 Playwright 1.63.0；须查看下一次 GitHub Actions 是否最终运行真实 Chromium 冒烟并成功。
+- **#12 业务响应失败**：新增无 UI 循环依赖的 `src/app/utils/queryResponse.ts`，正确拒绝 `HTTP 200 + { success:false,errCode,... }` 而不是把 `data:null` 当空结果；只携带 `errCode` 不把后端 SQL/敏感调试消息向看板传播。对于已有结构化 HTTP 403、`response.data.errCode===403`、`errCode===403` 等安全可判定字段才显示“无权限”，不根据文本“403”猜测权限。
+- **请求接入**：普通单图表、批量图表、批量失败降级单图表均使用响应包解封装；单图表失败不再重复发起第二次请求；普通/分享 `fetchChartDataSet` 均检查业务失败并保留 Axios HTTP 403 原状，图表错误状态使用既有 `getWidgetQueryErrorMessage` 分类。
+- **定向测试**：`widgetQueryError.test.ts`、`widgetDataBatcher.test.ts`、新增 `fetchChartDataSetResponse.test.ts` 共 **16 项**通过，包含 HTTP 200 业务失败、结构化 403、安全消息、共享 token 请求、单请求失败不重复发送、多组件 Batch 降级；前端 `npm run checkTs` 通过。用户可见的空态、权限态及分享查询实际浏览器效果仍需有权限的真实账号/令牌独立验收。
+- **仍有后端边界**：当前服务端通用异常处理把部分 `PermissionDeniedException` 返回 HTTP 400 且不含结构化 `errCode`；在没有可靠状态码时前端显示普通查询失败，不擅自根据错误文案判为“无权限”。如需所有权限异常精确区分，应进一步约定服务端 API 统一返回 HTTP 403 和业务 403，并单独回归旧客户端。

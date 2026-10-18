@@ -50,7 +50,7 @@ jobs:
       - name: Install locked Playwright and Chromium (entry-point smoke only)
         run: |
           cd e2e
-          npm ci
+          npm ci --registry=https://registry.npmjs.org
           npx playwright install --with-deps chromium
       - name: Check built login and share entries in real Chromium
         env:

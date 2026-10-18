@@ -1,3 +1,4 @@
+import { unwrapWidgetQueryResponse } from 'app/utils/queryResponse';
 /**
  * 仪表板 Widget 数据批量请求调度器
  *
@@ -141,11 +142,12 @@ async function flushBatch(): Promise<void> {
     // 如果队列只有 1 个请求，退化到单请求模式（避免不必要的批量包装开销）
     if (batch.length === 1) {
       const entry = batch[0];
-      const { data } = await request2<any>({
+      const response = await request2<any>({
         method: 'POST',
         url: 'data-provider/execute',
         data: { ...entry.requestParams, queryId: entry.queryId },
       }, undefined, { onRejected: preserveHttpError });
+      const data = unwrapWidgetQueryResponse(response);
       if (!entry.cancelled) {
         if (data?.error) {
           entry.reject(new Error(`Widget query failed: ${data.error}`));
@@ -167,7 +169,7 @@ async function flushBatch(): Promise<void> {
       })),
     }, undefined, { onRejected: preserveHttpError });
 
-    const resultMap: Record<string, any> = response?.data || {};
+    const resultMap: Record<string, any> = unwrapWidgetQueryResponse(response) || {};
 
     batch.forEach(entry => {
       if (entry.cancelled) return;
@@ -202,6 +204,13 @@ async function flushBatch(): Promise<void> {
       }
     });
   } catch (error) {
+    // Single requests must NOT be re-sent after a permission/business error.
+    // Only a multi-widget batch may fall back to separate requests.
+    if (batch.length === 1) {
+      const entry = batch[0];
+      if (!entry.cancelled) entry.reject(error);
+      return;
+    }
     // A batch is rejected as a whole when any query fails. Retry entries
     // separately so one broken widget does not hide successful widget data,
     // while the failed widget still receives the real backend error.
@@ -209,12 +218,13 @@ async function flushBatch(): Promise<void> {
       batch.map(async entry => {
         if (entry.cancelled) return;
         try {
-          const { data } = await request2<any>({
+          const response = await request2<any>({
             method: 'POST',
             url: 'data-provider/execute',
             data: { ...entry.requestParams, queryId: entry.queryId },
           }, undefined, { onRejected: preserveHttpError });
           if (entry.cancelled) return;
+          const data = unwrapWidgetQueryResponse(response);
           if (data?.error) {
             entry.reject(new Error(`Widget query failed: ${data.error}`));
           } else {
