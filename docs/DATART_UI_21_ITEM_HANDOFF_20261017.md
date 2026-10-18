@@ -266,3 +266,11 @@ npm run build
 - **分享令牌安全**：新增 `SharedMobileBoardCore` 只复用移动呈现层，不调用普通 `MobileBoard` 的 `fetchBoardDetail`（需要登录）；分享页继续由 `fetchShareVizInfo` 取得已有看板数据，`BoardInitProvider` 保留 `renderMode='share'`，移动可见 Widget 的异步加载也明确传入分享模式，继续使用令牌授权的 `shares/execute`。公开分享令牌授权不再受内部导航 `mobileVisible` 开关限制。
 - **界面细节**：移动分享页保留精简标题栏，无内部组织返回按钮；分享页原有更多/刷新按钮以及定时导出路径不变。
 - **定向测试**：`shareMobileLayout.test.ts` 测试 280～960px、桌面和定时导出边界；`DashboardForShareResponsive.test.tsx` 用 React 实际挂载切换 375px→1200px，确认注入 `isMobile` 的移动/桌面布局选择，TypeScript 检查通过。真正手机下的有效分享令牌查询和触屏滚动仍需在授权 URL 上验收。
+
+## 20. #21 浏览器验收第一批：生产包冒烟进入 CI，移动分享真机测试可按授权运行（2026-10-18）
+
+- **CI 自动执行（无凭据）**：新增 `frontend/e2e/specs/bundle-entry-smoke.spec.ts`：用 Playwright Chromium 加载本次 `vite build` 的 `/login` 与 `/shareDashboard.html` 多入口，检测跨 chunk 初始化 TDZ / JS 致命异常、旧 `admin-tools` 分包回归和登录白屏。 `.github/workflows/dashboard-grid-v2.yml` 在既有前端构建后启动本地 `vite preview`，安装锁定版本 Playwright + Chromium 并运行 **仅** `chromium-smoke` 项目；失败时上传不含登录凭据的烟测诊断。
+- **开发机实跑证据**：从此前构建的真实 `build/` 产物，使用本地 `vite preview`，Playwright **2/2 通过**，浏览器 1.63.0 对应 Chromium headless-shell 1243。首次未锁定新版 Playwright 所需浏览器版本引发“可执行文件不存在”的环境失败，已固定 Playwright `1.63.0`，补 `e2e/package-lock.json`，之后实跑成功；不得将前一次基础设施失败混为业务页面失败。
+- **授权分享端到端（显式 opt-in）**：新增 `shared-mobile.spec.ts`（320、375、430、768、900、960px 单套 `mRect`、页面宽度、分享模式请求不回退登录态、日期弹层/存在滚动表格时检查），`shared-desktop.spec.ts`（375→1200px 验证回到 `pRect`）。必须设置 `DATART_TEST_SHARED_DASHBOARD_PATH` 并在可访问的测试 Datart 运行；无授权路径时 **skip**，不能声称真数据浏览器验证通过。原 `chromium-editor` 仍需专用测试账号与 `DATART_TEST_STORAGE_STATE`。
+- **隐私与范围**：新 `e2e/.gitignore` 排除存储状态、trace 与测试产物；CI 只运行无凭据的生产包入口冒烟，授权分享/登录编辑测试不上传含 token 的轨迹。README 提供分项目命令；增加的浏览器脚手架不改任何 `pRect/mRect`、组件间距或业务接口。
+- **仍未完成的 #21**：完整已登录可变更隔离测试仪表板的拖拽、保存失败/重试、刷新/重开，Firefox/WebKit、真实物理手机触摸、DPR/zoom、100/500/1000 Widget 性能、真实分享 token 运行结果。后续只对发现的确切缺口继续修复。

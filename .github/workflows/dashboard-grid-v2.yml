@@ -47,6 +47,32 @@ jobs:
         run: npm run build
       - name: Capture per-entry JavaScript bundle baseline
         run: npm run report:bundles
+      - name: Install locked Playwright and Chromium (entry-point smoke only)
+        run: |
+          cd e2e
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Check built login and share entries in real Chromium
+        env:
+          DATART_TEST_BASE_URL: http://127.0.0.1:4173
+        run: |
+          ./node_modules/.bin/vite preview --host 127.0.0.1 --port 4173 > /tmp/datart-preview.log 2>&1 &
+          for attempt in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:4173/login > /dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/shareDashboard.html > /dev/null
+          cd e2e
+          npm test -- --project=chromium-smoke --workers=1
+      - name: Upload Chromium entry smoke diagnostics (no auth state)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-chromium-entry-smoke
+          if-no-files-found: ignore
+          path: |
+            frontend/e2e/test-results/
+            frontend/e2e/playwright-report/
 
   backend:
     runs-on: ubuntu-latest
