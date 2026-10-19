@@ -13,5 +13,5 @@ public class Organization extends BaseEntity {
 
     private String description;
 
-    private MigrationMode migrationMode = MigrationMode.COMPAT;
+    private MigrationMode migrationMode = MigrationMode.STRICT;
 }

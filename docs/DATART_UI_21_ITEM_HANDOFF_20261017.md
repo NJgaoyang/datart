@@ -389,3 +389,13 @@ npm run build
 - **部署**：先完整备份旧静态资源至 **`/opt/datar_dev20261017/static-backup-before-clean-latest-20261019-091304`**；只覆盖静态文件，HTML 原子发布，**保留旧版本化哈希文件**，Java 服务无需重启。当前登录/分享共同载入 **`app.4e40b8ea.js`**、`vendor.32f68095.js`。
 - **真实 HTTP/浏览器验证**：登录与分享接口各 HTTP 200；新的 JS `text/javascript` 返回 gzip，app **3,317,694→1,328,578 bytes**（0.400）；JS/CSS 带内容哈希静态资源 `max-age=31536000, public, immutable`；入口 HTML 保持 `no-cache`。部署后的 Chromium 登录/分享入口 **2/2 通过**；使用开发机既有、合法可公开的只读测试分享，`chromium-share-mobile`、`chromium-share-desktop` 实际 **3 passed / 1 skipped**，跳过原因为测试分享无符合条件的可水平滚动表格。
 - **仍未完成**：#21 专用授权账号下的编辑器拖拽→失败保存→重试→重新打开，物理 iOS/Android 触摸；#18 100/500/1000 **真实**图表 SQL/FPS/内存与受控生产相似环境的 SQL P95；#16 继续安全降低 JS 解析执行负担；#20 桌面图表组件和深色主题完整适配。已验证的 #18 单 SQL 取消无需重复开发；**不得将 4 Widget 的真实分享样本外推为 1000 Widget 的性能合格证据**。
+
+## 31. 迁移就绪度收尾：正式启用 STRICT-only（2026-10-19）
+
+- 用户确认生产已完成历史字段元数据迁移并运行 STRICT；开发机再次只读查询 `organization`，结果为 **STRICT 1 个组织 / COMPAT 0 个**，已不存在先前开发机的 COMPAT 发布阻塞。本次不修改任何现有组织记录。
+- 删除管理端“迁移就绪度”菜单、路由、页面及其专属 UI 单测/中英文文案；后端删除 `ReadinessController` 和 `/admin/readiness/scan`、`strict-status`、`mode` 对外接口，不允许再次切回 COMPAT；删除不再使用的模式切换 DTO 和对应旧单测。
+- `MigrationModeServiceImpl` 对缺失、NULL、COMPAT 的模式显式拒绝，业务 View 详情只输出 STRICT，实际数据查询继续执行 `StrictRuntimeValidator` 的字段 ID/所属 View/active 校验。前端仍只需识别后端返回 STRICT；历史数据解析逻辑仅限归档导入测试夹具，不再暴露给用户。
+- 新建组织 Java 默认 `MigrationMode.STRICT`；新增 **Flyway V7** 仅把 `organization.migration_mode` 的数据库**列 DEFAULT**改为 STRICT，**不会 UPDATE 现有组织**。已经执行的 V1～V6 不可重写或删除。
+- `MigrationModeServiceImplTest` 加入后端 CI，覆盖默认/显式 STRICT 成功和非 STRICT/NULL 必须失败。迁移归档场景测试夹具的运行期严格化，保持已有 View 导入导出安全回归。
+- 保留内部 `ReadinessScanner` 供现有 `MetadataUpgradePreflightService` 与 `MetadataUpgradeService` 等归档迁移代码调用，保留导入导出业务功能、历史 Flyway 记录和数据库审计；其全面清理应另行评估，不能误删在线查询依赖。
+- 说明见 `docs/STRICT_ONLY_RUNTIME_CLEANUP_20261019.md`。实际上线状态以本轮最终 CI 与开发机重启后的 HTTP/浏览器检查为准。

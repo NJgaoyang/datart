@@ -80,6 +80,9 @@ class MigrationRuntimeVerificationTest {
         ResourceModel exported = fixture.currentResourceModel();
         TransferFileUtils.TransferReadResult v2 = readV2(exported);
         assertEquals(2, v2.formatVersion());
+        // This test fixture explicitly exercises historical import only.
+        // The production MigrationModeServiceImpl never permits COMPAT.
+        when(fixture.migrationModeService.getMode(anyString())).thenReturn(MigrationMode.COMPAT);
         fixture.importResource((ResourceModel) v2.model(), ImportStrategy.ROLLBACK);
 
         ReadinessReport second = fixture.scan();
@@ -317,6 +320,8 @@ class MigrationRuntimeVerificationTest {
         }
 
         private void assertRuntimeSmoke() throws Exception {
+            // After historical import/reconciliation, runtime is STRICT-only.
+            when(migrationModeService.getMode(anyString())).thenReturn(MigrationMode.STRICT);
             View view = views.get("view-1");
             ViewDetailDTO detail = viewService.buildViewDetail(view);
             assertNotNull(detail);
@@ -337,13 +342,8 @@ class MigrationRuntimeVerificationTest {
                 assertNotNull(dashboardDetail);
                 assertEquals(1, dashboardDetail.getDatacharts().size());
                 assertEquals(1, dashboardDetail.getViews().size());
-                assertEquals(MigrationMode.COMPAT,
-                        ((ViewDetailDTO) dashboardDetail.getViews().get(0)).getMigrationMode());
-                when(migrationModeService.getMode(anyString())).thenReturn(MigrationMode.STRICT);
-                var strictDashboardDetail = dashboardService.getDashboardDetail("dashboard-1");
                 assertEquals(MigrationMode.STRICT,
-                        ((ViewDetailDTO) strictDashboardDetail.getViews().get(0)).getMigrationMode());
-                when(migrationModeService.getMode(anyString())).thenReturn(MigrationMode.COMPAT);
+                        ((ViewDetailDTO) dashboardDetail.getViews().get(0)).getMigrationMode());
             } finally {
                 contextField.set(null, previousContext);
             }

@@ -72,9 +72,6 @@ const AuditLogPage = React.lazy(() =>
 const MonitorPage = React.lazy(() =>
   import('./pages/MonitorPage').then(mod => ({ default: mod.MonitorPage })),
 );
-const ReadinessPage = React.lazy(() =>
-  import('./pages/ReadinessPage').then(mod => ({ default: mod.ReadinessPage })),
-);
 const ResourceMigrationPage = React.lazy(() =>
   import('./pages/ResourceMigrationPage').then(mod => ({ default: mod.ResourceMigrationPage })),
 );
@@ -298,14 +295,6 @@ export function MainPage() {
             element={
               <AccessRoute module={ResourceTypes.Manager}>
                 <ResourceMigrationPage />
-              </AccessRoute>
-            }
-          />
-          <Route
-            path="/organizations/:orgId/readiness"
-            element={
-              <AccessRoute module={ResourceTypes.Manager}>
-                <ReadinessPage />
               </AccessRoute>
             }
           />

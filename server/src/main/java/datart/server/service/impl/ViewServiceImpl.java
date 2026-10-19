@@ -517,15 +517,19 @@ public class ViewServiceImpl extends BaseService implements ViewService {
 
     @Override
     public ViewDetailDTO buildViewDetail(View view) {
-        MigrationMode mode = migrationModeService == null
-                ? MigrationMode.COMPAT : migrationModeService.getMode(view.getOrgId());
-        return buildViewDetail(view, mode == null ? MigrationMode.COMPAT : mode);
+        if (migrationModeService == null) {
+            throw new IllegalStateException("STRICT_ONLY_MIGRATION_MODE_SERVICE_REQUIRED");
+        }
+        return buildViewDetail(view, migrationModeService.getMode(view.getOrgId()));
     }
 
     @Override
     public ViewDetailDTO buildViewDetail(View view, MigrationMode migrationMode) {
         ViewDetailDTO viewDetailDTO = new ViewDetailDTO(view);
-        viewDetailDTO.setMigrationMode(migrationMode == null ? MigrationMode.COMPAT : migrationMode);
+        if (migrationMode != MigrationMode.STRICT) {
+            throw new IllegalStateException("STRICT_ONLY_VIEW_REQUIRED: " + view.getId());
+        }
+        viewDetailDTO.setMigrationMode(MigrationMode.STRICT);
         List<ViewFieldDTO> fields = viewFieldService.listByViewId(view.getId());
         viewDetailDTO.setFields(fields == null ? new ArrayList<>() : new ArrayList<>(fields));
         return viewDetailDTO;

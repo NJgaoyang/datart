@@ -25,7 +25,6 @@ import {
   GlobalOutlined,
   ProfileOutlined,
   SafetyCertificateFilled,
-  SafetyCertificateOutlined,
   SettingFilled,
   SettingOutlined,
   SkinOutlined,
@@ -176,12 +175,6 @@ export function Navbar() {
         name: 'resourceMigration',
         title: t('subNavs.resourceMigration.title'),
         icon: <ExportOutlined />,
-        module: ResourceTypes.Manager,
-      },
-      {
-        name: 'readiness',
-        title: t('subNavs.readiness.title'),
-        icon: <SafetyCertificateOutlined />,
         module: ResourceTypes.Manager,
       },
       {

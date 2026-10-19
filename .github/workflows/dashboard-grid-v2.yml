@@ -88,7 +88,7 @@ jobs:
       - name: Compile Java server with dependency modules
         run: mvn --batch-mode -pl server -am -DskipTests package
       - name: Security, SQL metrics, join and Excel export regression tests
-        run: mvn --batch-mode -pl server -am -Dtest=ColumnPermissionFilterTest,SqlBuilderAggregateTest,PoiConvertUtilsDisplayNameTest,ViewJoinColumnNameTest,DownloadServiceSecurityTest,ShareSupportedFunctionSecurityTest,ViewFieldCommentLifecycleTest,ViewFieldServiceImplTest,SqlQueryScriptProcessorVariableScopeTest,QueryCancellationRegistryTest -Dsurefire.failIfNoSpecifiedTests=false test
+        run: mvn --batch-mode -pl server -am -Dtest=ColumnPermissionFilterTest,SqlBuilderAggregateTest,PoiConvertUtilsDisplayNameTest,ViewJoinColumnNameTest,DownloadServiceSecurityTest,ShareSupportedFunctionSecurityTest,ViewFieldCommentLifecycleTest,ViewFieldServiceImplTest,SqlQueryScriptProcessorVariableScopeTest,QueryCancellationRegistryTest,MigrationModeServiceImplTest -Dsurefire.failIfNoSpecifiedTests=false test
 
   mysql-cancel-integration:
     runs-on: ubuntu-latest
