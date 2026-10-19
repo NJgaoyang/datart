@@ -93,6 +93,9 @@ export class ChartDataRequestBuilder {
     script?: boolean,
     aggregation?: boolean,
   ) {
+    if ((dataView.migrationMode as string | undefined) === 'COMPAT') {
+      throw new Error('STRICT_ONLY_CHART_VIEW_REQUIRED');
+    }
     this.dataView = dataView;
     this.chartDataConfigs = dataConfigs || [];
     this.chartSettingConfigs = settingConfigs || [];

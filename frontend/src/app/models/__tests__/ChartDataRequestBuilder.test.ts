@@ -177,30 +177,13 @@ describe('ChartDataRequestBuild Test', () => {
     ]);
   });
 
-  test('keeps legacy no-fieldId requests in COMPAT mode', () => {
-    const request = new ChartDataRequestBuilder(
-      {
-        id: 'view-id',
-        migrationMode: 'COMPAT',
-        meta: [{ name: 'city', path: ['city'], type: DataViewFieldType.STRING }],
-        computedFields: [],
-      } as any,
-      [
-        {
-          type: ChartDataSectionType.Group,
-          key: 'group',
-          rows: [
-            {
-              colName: 'city',
-              type: DataViewFieldType.STRING,
-              category: ChartDataViewFieldCategory.Field as any,
-            },
-          ],
-        },
-      ] as any,
-    ).build();
-
-    expect(request.outputProjections?.[0].fieldId).toBeUndefined();
+  test('rejects the retired COMPAT mode at request construction', () => {
+    expect(() => new ChartDataRequestBuilder({
+      id: 'view-id',
+      migrationMode: 'COMPAT',
+      meta: [{ name: 'city', path: ['city'], type: DataViewFieldType.STRING }],
+      computedFields: [],
+    } as any)).toThrow('STRICT_ONLY_CHART_VIEW_REQUIRED');
   });
 
   test('rejects no-fieldId chart requests in STRICT mode', () => {
