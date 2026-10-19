@@ -379,3 +379,13 @@ npm run build
 - 提交 `c915e4671cab7b73c8b45c0a5983e8089cfd96c4` 的 GitHub Actions `39138821507`：**独立 `mysql-cancel-integration` 测试通过**。Runner 一次性 MySQL 8.0 真正执行单条只读 `SELECT SLEEP(8)`，验证 owner 隔离、正确 owner 的 `Statement.cancel()` 及查询线程提前结束。日志明确为 `MYSQL_CANCEL_INTEGRATION_OK latencyMs=27 ownerIsolation=true`，JUnit **1 run / 0 failures / 0 errors / 0 skips**。27ms 仅代表本次 CI 单次样本，不外推生产 SQL。
 - 同次 CI 的前端任务、布局迁移任务也已完成且通过；后端常规编译回归在记录本节时尚未完成，**需要以本次 Actions 最终结论为准**。前端本轮桌面编辑器 Token 仅替换原样式数值，未更改 `pRect/mRect`。
 - **环境限制**：开发机 `VM-0-13-tencentos` 本轮 Offline，无法将两次新提交部署到 `/opt/datar_dev20261017/static` 或重启服务，不能声称开发机已更新。独立授权测试账户下的编辑器保存重开、物理手机触屏、100/500/1000 真正图表 SQL/FPS/内存测试、生产数据库中断指标和全面深色主题仍未完成。
+
+## 31. 2026-10-19 开发机恢复上线：部署先前 CI 已通过但未发布的代码
+
+- **连接状态**：`VM-0-13-tencentos` 已恢复 Online。开发机原有 `/root/datart` Git HEAD 仍为 `8872d144`，含 80 多项累计本地变更，**没有执行 reset、checkout、git add -A 或覆盖原工作区**。
+- **干净源码来源**：因开发机原 `git fetch` 网络长时间卡住，改从 GitHub 官方 codeload 下载 GitHub 最新 `5ffdc926805786a42faaf0e3e6c26db992154689` 的完整代码快照，解压到 **`/root/datart-build-20261019`**，复用已安装的前端依赖但不更改原仓库文件。该快照包含 #16 JS bundle CI 预算守卫、#20 桌面工具栏 Token 和 #18 一次性 MySQL 真实 SQL 取消测试。
+- **CI 证据**：`04f8e98` 对应 GitHub Actions `39138327974` 全部成功；`c915e46` 对应 `39138821507` 全部成功，其中一次性 MySQL `SELECT SLEEP(8)` 真实 JDBC 取消耗时为 **27ms**（单次 CI 环境样本，非生产 P95）。
+- **干净构建及防退化验证**：`npm run checkTs` 通过；`npm run test:bundle-budget` 原生 Node **6/6**；`npm run build` 成功；`npm run check:bundle-budget` 通过，4 个入口初始 JS 各 **12,674,540 bytes**，整个构建 JS **12,674,915 bytes**，最大文件 `vendor.32f68095.js` 为 **9,356,010 bytes**。生产包先在本地 `vite preview:5189` 的 Chromium 无登录/分享入口测试 **2/2** 通过。
+- **部署**：先完整备份旧静态资源至 **`/opt/datar_dev20261017/static-backup-before-clean-latest-20261019-091304`**；只覆盖静态文件，HTML 原子发布，**保留旧版本化哈希文件**，Java 服务无需重启。当前登录/分享共同载入 **`app.4e40b8ea.js`**、`vendor.32f68095.js`。
+- **真实 HTTP/浏览器验证**：登录与分享接口各 HTTP 200；新的 JS `text/javascript` 返回 gzip，app **3,317,694→1,328,578 bytes**（0.400）；JS/CSS 带内容哈希静态资源 `max-age=31536000, public, immutable`；入口 HTML 保持 `no-cache`。部署后的 Chromium 登录/分享入口 **2/2 通过**；使用开发机既有、合法可公开的只读测试分享，`chromium-share-mobile`、`chromium-share-desktop` 实际 **3 passed / 1 skipped**，跳过原因为测试分享无符合条件的可水平滚动表格。
+- **仍未完成**：#21 专用授权账号下的编辑器拖拽→失败保存→重试→重新打开，物理 iOS/Android 触摸；#18 100/500/1000 **真实**图表 SQL/FPS/内存与受控生产相似环境的 SQL P95；#16 继续安全降低 JS 解析执行负担；#20 桌面图表组件和深色主题完整适配。已验证的 #18 单 SQL 取消无需重复开发；**不得将 4 Widget 的真实分享样本外推为 1000 Widget 的性能合格证据**。
