@@ -399,3 +399,10 @@ npm run build
 - `MigrationModeServiceImplTest` 加入后端 CI，覆盖默认/显式 STRICT 成功和非 STRICT/NULL 必须失败。迁移归档场景测试夹具的运行期严格化，保持已有 View 导入导出安全回归。
 - 保留内部 `ReadinessScanner` 供现有 `MetadataUpgradePreflightService` 与 `MetadataUpgradeService` 等归档迁移代码调用，保留导入导出业务功能、历史 Flyway 记录和数据库审计；其全面清理应另行评估，不能误删在线查询依赖。
 - 说明见 `docs/STRICT_ONLY_RUNTIME_CLEANUP_20261019.md`。实际上线状态以本轮最终 CI 与开发机重启后的 HTTP/浏览器检查为准。
+
+## 31. STRICT-only 收尾与迁移就绪度移除后的回归（2026-10-19）
+
+- 已移除“迁移就绪度”导航/页面和模式切换 HTTP API；组织字段默认 STRICT，非 STRICT 组织在运行时拒绝访问。
+- 本轮清理剩余 COMPAT 日常业务分支：查询总是校验 STRICT + fieldId，仪表板详情始终拒绝缺失关联；图表导入只接受已持久化有效 fieldId，不根据旧列名推断。配置不完整或损坏必须显式报错。
+- 修复上次提交意外截断的英语、中文 JSON 翻译文件；仅删除原迁移页面的导航文案，保留其他所有翻译，避免前端编译失败。
+- 不重写历史 Flyway、删除数据或迁移业务表，归档迁移工具保留在内部运维职责边界。专项测试、构建和部署以实际运行结果为准。

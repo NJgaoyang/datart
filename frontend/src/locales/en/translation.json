@@ -1,8 +1,8 @@
 {
   "global": {
+    "401": "Not logged in or token expired, please log in again",
     "copy": "Copy",
     "tokenExpired": "Token expired, please log in",
-    "401": "Not logged in or token expired, please log in again",
     "title": {
       "action": "Action"
     },
@@ -567,10 +567,6 @@
           "sansSerif": "sans-serif"
         },
         "fontWeight": {
-          "normal": "Normal",
-          "bold": "Bold",
-          "bolder": "Bolder",
-          "lighter": "Lighter",
           "100": "100",
           "200": "200",
           "300": "300",
@@ -579,7 +575,11 @@
           "600": "600",
           "700": "700",
           "800": "800",
-          "900": "900"
+          "900": "900",
+          "normal": "Normal",
+          "bold": "Bold",
+          "bolder": "Bolder",
+          "lighter": "Lighter"
         },
         "fontStyle": {
           "normal": "Normal",
@@ -998,3 +998,908 @@
         "widget": "Widget",
         "widgetList": "Widget List",
         "title": "Title",
+        "align": "Align",
+        "showTitle": "Show Title",
+        "position": "Position",
+        "xAxis": "x-Axis",
+        "yAxis": "y-Axis",
+        "size": "Size",
+        "px": "px",
+        "width": "Width",
+        "height": "Height",
+        "font": "Font",
+        "background": "Background",
+        "color": "Color",
+        "image": "Image",
+        "uploadTip": "Click to Upload",
+        "dbClickToUpload": "Double Click To Upload",
+        "padding": "Padding",
+        "paddingTop": "Padding Top",
+        "paddingRight": "Padding Right",
+        "paddingBottom": "Padding Bottom",
+        "paddingLeft": "Padding Left",
+        "border": "Border",
+        "style": "Style",
+        "radius": "Radius",
+        "autoUpdate": "Auto Refresh",
+        "openAutoUpdate": "Enable Auto Refresh",
+        "frequency": "Frequency (s)",
+        "baseProperty": "Base Property",
+        "marginTB": "Margin-TB",
+        "marginLR": "Margin-LR",
+        "paddingTB": "Padding-TB",
+        "paddingLR": "Padding-LR",
+        "rowHeight": "Row Height",
+        "scaleMode": "Scale Mode",
+        "queryMode": "Query Mode",
+        "openInitQuery": "Open Init Query",
+        "cutIn": "Cut In",
+        "cutOut": "Cut Out",
+        "speed": "Speed",
+        "autoPlay": "Auto Play",
+        "duration": "Duration (s) ",
+        "delPagesTip": "Confirm to delete all selected story pages?",
+        "delPageTip": "Confirm to delete this story page?",
+        "enterHere": "Enter here",
+        "storyName": "Name",
+        "storyDescription": "Description",
+        "format": "Format",
+        "interval": "Interval",
+        "requiredWidgetName": "Widget name cannot be empty, please input a name",
+        "duplicateWidgetName": "Widget name is duplicate with others, please change another one."
+      }
+    },
+    "widget": {
+      "widget": "Widget",
+      "associatedWidget": "Associated Widgets",
+      "widgetName": "Widget Name",
+      "widgetType": "Widget Type",
+      "type": {
+        "chart": "Chart",
+        "widgetChart": "Private Chart",
+        "dataChart": "Public Chart",
+        "media": "Media",
+        "container": "Container",
+        "controller": "Controller",
+        "queryBtn": "Query",
+        "resetBtn": "Reset",
+        "image": "Image",
+        "richText": "Rich Text",
+        "timer": "Timer",
+        "iframe": "IFrame",
+        "video": "Video",
+        "tab": "Tab"
+      },
+      "action": {
+        "refresh": "Refresh",
+        "fullScreen": "FullScreen",
+        "exitFullScreen": "Exit FullScreen",
+        "lock": "Lock",
+        "unlock": "Unlock",
+        "edit": "Edit",
+        "delete": "Delete",
+        "confirmDel": "Confirm Delete",
+        "ContainerConfirmDel": "The components within this component will also be deleted, confirm to delete them?",
+        "info": "Info",
+        "makeLinkage": "Set Linkage",
+        "closeLinkage": "Close Linkage",
+        "makeJump": "Set Jump",
+        "closeJump": "Close Jump",
+        "group": "Group",
+        "unGroup": "Ungroup"
+      },
+      "tips": {
+        "unlock": "Locking drag and click to unlock",
+        "waiting": "Waiting for loadData",
+        "cancelLinkage": "Cancel Linkage",
+        "canLinkage": "Click the Widget to link",
+        "dragChartFromLeftPanel": "Please drag one widget from left panel and drop here"
+      }
+    },
+    "linkage": {
+      "title": "Linkage settings",
+      "dataSource": "Data source",
+      "associatedWidgets": "Associated Widgets",
+      "associatedFields": "Associated Fields",
+      "selectTriggers": "Select the trigger field",
+      "selectLinker": "Select linkage field",
+      "linkageError": "The linkage chart has been deleted, please reconfigure"
+    },
+    "jump": {
+      "title": "Jump Settings",
+      "mode": "Jump Mode",
+      "target": "Target",
+      "INTERNAL": "Dashboard/DataChart",
+      "URL": "URL",
+      "parameters": "Parameters",
+      "controller": "Associated Controllers",
+      "associatedFields": "Associated Fields",
+      "jumpError": "The jump target has been invalidated or deleted, please reconfigure"
+    },
+    "associate": {
+      "title": "Please associate fields/variables",
+      "field": "Field",
+      "variable": "Variable",
+      "noValueErr": "Please associate fields or variables",
+      "valueErr": "Please select a field or two variables"
+    },
+    "sidebar": {
+      "folder": "Folder",
+      "presentation": "Presentation",
+      "folders": {
+        "folderTitle": "Dashboards & Datacharts",
+        "dashboard": "Create Dashboard",
+        "dataChart": "Create Datachart",
+        "folder": "Create Folder",
+        "template": "Import Template",
+        "recycle": "Recycle",
+        "open": "Open",
+        "close": "Close",
+        "startAnalysis": "Start Analysis"
+      },
+      "storyboards": {
+        "title": "Storyboards",
+        "add": "Create Storyboard",
+        "addFolder": "Create Folder",
+        "recycle": "Recycle"
+      }
+    },
+    "lineOptions": {
+      "none": "None",
+      "solid": "Solid",
+      "dashed": "Dashed",
+      "dotted": "Dotted",
+      "double": "Double",
+      "hidden": "Hidden",
+      "ridge": "Ridge",
+      "groove": "Groove",
+      "inset": "Inset",
+      "outset": "Outset"
+    },
+    "scaleMode": {
+      "scaleWidth": "Scale Width",
+      "scaleHeight": "Scale Height",
+      "scaleFull": "Scale Full",
+      "noScale": "No Scale"
+    },
+    "tips": {
+      "noStartValue": "Input Start Value",
+      "noEndValue": "Input End Value",
+      "endGTStartErr": "End Value should be greater than Start Value ",
+      "hasChartConfig": "The chart config already exist, it will overwrite after you enable board config."
+    },
+    "control": {
+      "title": "Control Title",
+      "valueConfig": "Value Config",
+      "selectView": "Select View",
+      "selectViewField": "Select View Field",
+      "selectDefaultValue": "Select Default Value",
+      "defaultValue": "Default Value",
+      "visibility": "Visibility",
+      "sqlOperator": "Sql Operator",
+      "dateType": "Date Type",
+      "step": "Step",
+      "showMark": "Show Mark",
+      "common": "General",
+      "custom": "Customize",
+      "optionLabelField": "Option Label Field",
+      "value": "Value",
+      "label": "Label",
+      "action": "Action",
+      "unsetDefault": "Unset Default",
+      "setDefault": "Set Default",
+      "delete": "Delete",
+      "populate": "Populate From Field Values",
+      "parentFields": "Select Parent Field",
+      "parentFieldsHierarchy": "Select Fields by Hierarchy",
+      "treeBuildingMethod": "Building Method",
+      "byParent": "By Parent",
+      "byParentTip": "Automatically build a tree by specifying a value field (ID) and a parent field (Parent ID); for example: folder tree",
+      "byHierarchy": "By Hierarchy",
+      "byHierarchyTip": "Build a tree from multiple dimension fields with natural hierarchical attributes; for example: country, province, city"
+    },
+    "date": {
+      "year": "Year",
+      "quarter": "Quarter",
+      "month": "Month",
+      "week": "Week",
+      "date": "Date",
+      "dateTime": "Date Time"
+    },
+    "saveForm": {
+      "name": "Name",
+      "description": "Description",
+      "boardType": {
+        "label": "Layout",
+        "auto": "Auto",
+        "free": "Free",
+        "autoTips": "Auto: Responsive, fluid layout",
+        "freeTips": "Free: Precise, fixed layout",
+        "requiredMessage": "Select a Layout Type"
+      },
+      "template": {
+        "label": "File",
+        "requiredMessage": "Select a Template file"
+      },
+      "parent": "Parent",
+      "root": "Root",
+      "vizType": {
+        "datachart": "Datachart",
+        "dashboard": "Dashboard",
+        "template": "From Template",
+        "folder": "Folder",
+        "storyboard": "Storyboard"
+      }
+    },
+    "main": {
+      "publishSuccess": "Publish success",
+      "unpublishSuccess": "Unpublish success",
+      "empty": "Select vizs in the sidebar",
+      "closeOther": "Close Other Tabs",
+      "closeAll": "Close All Tabs"
+    }
+  },
+  "view": {
+    "loading": "Loading...",
+    "selectSource": "You must select a source",
+    "empty": "Select views in the sidebar",
+    "resultEmpty1": "Click ",
+    "resultEmpty2": " button to execute, the results will be displayed here",
+    "errorTitle": "Error occurred",
+    "sqlRequired": "SQL statement cannot be empty",
+    "sqlRunWraning": "SQL parsing failed, welcome to submit an issue to help us improve. ",
+    "detail": "Click here for details",
+    "warningDescription": "Datart uses calcite to parse SQL statements by default; calcite has an awesome parser, but it still can't parse all the grammars of all databases. When a parsing exception occurs, datart will still send the SQL statement to the database for execution after necessary processing. If the execution is successful, we will think that the parser needs to be improved for the syntax of the SQL statement. In this case, datart will show this warning message, which is convenient for users to submit the exceptional parsing statements to github or gitee issue, and help us improve the parser.",
+    "close": "Close",
+    "computedFieldNameExistWarning": "Computed field name has already exist. Please choose another one.",
+    "tabs": {
+      "discard": "Discard",
+      "cancel": "Cancel",
+      "execute": "Execute",
+      "warning": "There are unexecuted changes, still execute?",
+      "closeOther": "Close Other Tabs",
+      "closeAll": "Close All Tabs"
+    },
+    "editor": {
+      "startAnalysis": "Start Analysis",
+      "folder": "Folder",
+      "source": "Select Source",
+      "run": "Run",
+      "runSelection": "Run Selection",
+      "runWinTip": "Win: [Ctrl + Enter]",
+      "runMacTip": "Mac: [Command + Enter]",
+      "beautify": "Beautify",
+      "save": "Save",
+      "saveWinTip": "Win: [Ctrl + S]",
+      "saveMacTip": "Mac: [Command + S]",
+      "info": "Info",
+      "saveAs": "Save As",
+      "saveFragment": "Save Fragment",
+      "readonlyTip": "Not editable in recycle"
+    },
+    "properties": {
+      "reference": "Source Reference",
+      "variable": "Variables",
+      "model": "Data Model",
+      "columnPermissions": "Column Permissions"
+    },
+    "resource": {
+      "title": "Source info",
+      "search": "Search database / table / column",
+      "sortType": "Sort",
+      "byName": "By Name",
+      "byField": "By Field"
+    },
+    "variable": {
+      "title": "Variables",
+      "formTitle": "Variable",
+      "add": "Create variable",
+      "prefix": "[Public]",
+      "suffix": "duplicate"
+    },
+    "model": {
+      "type": "Type",
+      "rename": "Rename",
+      "delete": "Delete",
+      "typeAndCategory": "Type & Category",
+      "permission": "Column Permissions",
+      "newHierarchy": "New Hierarchy",
+      "addToHierarchy": "Add To Hierarchy",
+      "hierarchyName": "Hierarchy Name",
+      "createComputedFields": "Create Computed Field",
+      "duplicateName": "Name already exists!",
+      "deleteSure": "You sure you want to delete it?",
+      "edit": "Edit",
+      "setDisplayName": "Set Display Name",
+      "displayName": "Display Name"
+    },
+    "columnPermission": {
+      "title": "Column permissions",
+      "search": "Search role keywords",
+      "partial": "Partial",
+      "none": "None",
+      "all": "All"
+    },
+    "sidebar": {
+      "title": "Views",
+      "addView": "Create View",
+      "addFolder": "Create Folder",
+      "parent": "Parent",
+      "recycle": "Recycle",
+      "open": "Open",
+      "close": "Close"
+    },
+    "saveForm": {
+      "title": "View",
+      "name": "Name",
+      "folder": "Directory",
+      "root": "Root",
+      "advanced": "Advanced",
+      "concurrencyControl": "Concurrency control",
+      "concurrencyControlMode": "Mode",
+      "dirtyread": "Dirty read",
+      "fastfailover": "Fast failover",
+      "cache": "Cache",
+      "cacheExpires": "Expires(s)",
+      "expensiveQuery": "This is an expensive query"
+    },
+    "schemaTable": {
+      "category": "Category",
+      "type": "Type",
+      "typeAndCategory": "Type & Category"
+    },
+    "structView": {
+      "title": "Choose a view type",
+      "STRUCT": "Table View",
+      "SQL": "SQL View",
+      "VIEW_JOIN": "View Join",
+      "STRUCT_DESC": "Create view by configuring table relationships",
+      "SQL_DESC": "Create view by SQL",
+      "VIEW_JOIN_DESC": "Join two existing views and push execution down to the database",
+      "file": "File",
+      "main": "Main: ",
+      "join": "Join: ",
+      "selectJoinColumn": "Relations",
+      "addJoin": "Add join table",
+      "run": "Run",
+      "runStep": "Run step",
+      "searchTable": "Search Tables",
+      "searchSource": "Search Sources",
+      "selectTable": "Select a table",
+      "all": "All",
+      "selectField": "Select a column",
+      "permissionVariable": "Permission Variables",
+      "loginUsername": "Login Username",
+      "RIGHT": "Right Join",
+      "LEFT": "Left Join",
+      "INNER": "Inner Join"
+    },
+    "viewJoin": {
+      "title": "Create Joined View",
+      "description": "Both views must use the same source. StarRocks can execute joins across databases directly.",
+      "leftView": "View A",
+      "rightView": "View B",
+      "joinType": "Join Type",
+      "joinCondition": "Join Condition",
+      "addCondition": "Add Condition",
+      "generate": "Generate and Preview SQL",
+      "previewTitle": "View SQL Preview",
+      "previewHelp": "Review the generated SQL, execute it to preview data, or open it in the SQL editor.",
+      "back": "Back",
+      "openEditor": "Open SQL Editor",
+      "save": "Save View",
+      "folder": "Folder",
+      "execute": "Execute",
+      "INNER": "Inner Join",
+      "LEFT": "Left Join",
+      "RIGHT": "Right Join",
+      "FULL": "Full Join"
+    },
+    "lineage": {
+      "title": "View Lineage",
+      "sources": "Upstream Sources",
+      "views": "Views",
+      "dashboards": "Dashboards",
+      "analyses": "Analyses",
+      "empty": "No upstream or downstream usage"
+    }
+  },
+  "auditLog": {
+    "title": "Audit Log",
+    "user": "User",
+    "resourceType": "Resource Type",
+    "resource": "Resource",
+    "accessType": "Operation",
+    "accessTime": "Time",
+    "duration": "Duration(ms)",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "query": "Search",
+    "total": "Total: {{total}}",
+    "empty": "No audit logs",
+    "accessTypes": {
+      "READ": "Read",
+      "CREATE": "Create",
+      "UPDATE": "Update",
+      "DELETE": "Delete",
+      "ARCHIVE": "Archive",
+      "UNARCHIVE": "Unarchive",
+      "LOGIN": "Login"
+    },
+    "resourceTypes": {
+      "SOURCE": "Source",
+      "VIEW": "View",
+      "VIZ": "Viz",
+      "DASHBOARD": "Dashboard",
+      "DATACHART": "Data Chart",
+      "WIDGET": "Widget",
+      "FOLDER": "Folder",
+      "STORYBOARD": "Storyboard",
+      "SCHEDULE": "Schedule",
+      "ROLE": "Role",
+      "USER": "User"
+    }
+  },
+  "monitor": {
+    "title": "Monitor",
+    "refresh": "Refresh",
+    "poolTitle": "Connection Pool Runtime Status",
+    "queryTitle": "Query Execution Records",
+    "reportName": "Report Name",
+    "status": "Status",
+    "duration": "Duration",
+    "sql": "Executed SQL",
+    "detail": "Details",
+    "startedAt": "Start Time",
+    "endedAt": "End Time",
+    "active": "Active",
+    "idle": "Idle",
+    "maxActive": "Max Active",
+    "waiting": "Waiting Threads",
+    "notInitialized": "The data source has not been connected",
+    "emptyPool": "No manageable data sources",
+    "emptyQuery": "No query records",
+    "sqlDetail": "Full SQL"
+  },
+  "source": {
+    "source": "Source",
+    "testSuccess": "Test connection succeeded",
+    "createSuccess": "Source created successfully",
+    "archived": "Archived ",
+    "noPermission": "You do not have permission to access this page",
+    "creatView": "Create View",
+    "syncDatabase": "Sync Database",
+    "syncDatabaseSchemaSuccess": "Sync database schema successfully",
+    "lastUpdateTime": "Last Update Time",
+    "sidebar": {
+      "title": "Sources",
+      "add": "Create Source",
+      "recycle": "Recycle",
+      "addFolder": "Create Folder",
+      "parent": "Parent",
+      "success": "Success",
+      "delete": "Delete",
+      "moveToTrash": "Move to recycle bin",
+      "restoredSuccess": "Restored successfully",
+      "restore": "Restore",
+      "sureToDelete": "Confirm delete?",
+      "addSuccess": "Add Success",
+      "open": "Open",
+      "close": "Close"
+    },
+    "form": {
+      "name": "Name",
+      "type": "Type",
+      "test": "Test Connection",
+      "file": "File",
+      "selectFile": "Select File",
+      "addProperty": "Add Property",
+      "editProperty": "Edit Property",
+      "addConfig": "Add Configuration",
+      "editConfig": "Edit Configuration",
+      "duplicate": "Duplicate Key",
+      "duplicateName": "Duplicate Name"
+    },
+    "saveForm": {
+      "name": "Name",
+      "folder": "Folder",
+      "root": "Root",
+      "title": "Sources"
+    }
+  },
+  "schedule": {
+    "saveForm": {
+      "name": "Name",
+      "folder": "Folder",
+      "root": "Root",
+      "title": "Schedule"
+    },
+    "constants": {
+      "email": "Email",
+      "weChat": "WeChat",
+      "picture": "Picture",
+      "taskExecution": "Task execution",
+      "configurationAnalysis": "Configure the parsing",
+      "getData": "Data collection",
+      "send": "Send"
+    },
+    "sidebar": {
+      "index": {
+        "addFolder": "Add Folder",
+        "addSuccess": "Add Success",
+        "scheduledTaskList": "Scheduled task list",
+        "newTimedTask": "Create scheduled task",
+        "recycle": "Recycle",
+        "open": "Open",
+        "close": "Close"
+      },
+      "scheduleList": {
+        "parent": "Parent",
+        "success": "Success",
+        "delete": "Delete",
+        "moveToTrash": "Move to recycle bin",
+        "successStarted": "Successfully started",
+        "successStop": "Stopped successfully",
+        "successImmediately": "Executed successfully immediately",
+        "start": "Start",
+        "stop": "Stop",
+        "executeItNow": "Are you sure to execute it now?",
+        "executeImmediately": "Execute immediately"
+      }
+    },
+    "editor": {
+      "index": {
+        "tickToSendContent": "Please tick to send content",
+        "addSuccess": "Added successfully",
+        "saveSuccess": "Saved successfully",
+        "restoredSuccess": "Restored successfully",
+        "success": "Success",
+        "moveToTrash": "Move to recycle bin",
+        "delete": "Delete",
+        "newTimedTask": "New scheduled task",
+        "restore": "Restore",
+        "sureToDelete": "Confirm delete?",
+        "allowModificationAfterStopping": "Allow modification after stopping",
+        "save": "Save",
+        "allowMoveAfterStopping": "Allow moving to the recycle bin after stopping",
+        "sureMoveRecycleBin": "Are you sure to move to the recycle bin?",
+        "basicSettings": "Basic settings",
+        "emailSetting": "Email settings",
+        "enterpriseWeChatSettings": "Enterprise WeChat Settings",
+        "sendContentSettings": "Send content settings",
+        "parent": "Parent"
+      },
+      "weChatSettingForm": {
+        "RobotWebhookAddress": "Robot webhook address",
+        "RobotWebhookAddressIsRequired": "Robot webhook address is required",
+        "fileType": "File type",
+        "picWidth": "Width",
+        "px": "px"
+      },
+      "scheduleErrorLog": {
+        "index": {
+          "startTime": "Start",
+          "endTime": "End",
+          "logPhase": "Log phase",
+          "executionInformation": "Execution information",
+          "success": "Success",
+          "log": "Log"
+        }
+      },
+      "emailSettingForm": {
+        "commonRichText": {
+          "pleaseEnter": "Please enter"
+        },
+        "index": {
+          "CC": "CC",
+          "theme": "Theme",
+          "subjectIsRequired": "Theme is required",
+          "fileType": "File type",
+          "picWidth": "Width",
+          "px": "px",
+          "recipient": "Recipient",
+          "recipientIsRequired": "Recipient is required",
+          "bcc": "BCC",
+          "contentOfEmail": "Content of email"
+        },
+        "mailTagFormItem": {
+          "placeholder": "Enter email address or name keyword search..."
+        }
+      },
+      "basicBaseForm": {
+        "index": {
+          "nameAlreadyExists": "Name already exists",
+          "name": "Name",
+          "nameRequired": "Name is required",
+          "type": "Type",
+          "effectiveTimeRange": "Effective time range"
+        },
+        "executeFormItem": {
+          "per": "Each",
+          "of": "",
+          "executionTimeSetting": "Execution time setting",
+          "expressionIsRequired": "Expression is required",
+          "pleaseEnterCronExpression": "Please enter cron expression",
+          "manualInput": "Manual input"
+        }
+      }
+    }
+  },
+  "member": {
+    "memberDetail": {
+      "titleAdd": "Add Member",
+      "titleDetail": "Member detail",
+      "grantOwner": "Grant as organization owner",
+      "revokeOwner": "Revoke owner",
+      "remove": "Remove",
+      "removeConfirm": "Remove confirm",
+      "removeSuccess": "Remove successful",
+      "delete": "Delete",
+      "deleteConfirm": "Delete confirm",
+      "deleteSuccess": "Delete successful",
+      "grantSuccess": "Grant successful",
+      "revokeSuccess": "Revoke successful",
+      "username": "Username",
+      "email": "Email",
+      "password": "Password",
+      "changePassword": "Click to change password",
+      "name": "Name",
+      "description": "Description",
+      "roles": "Roles",
+      "assignRole": "Assign roles",
+      "createSuccess": "Member created successfully"
+    },
+    "roleDetail": {
+      "role": "Role",
+      "createSuccess": "Role created successfully",
+      "roleName": "Name",
+      "description": "Description",
+      "relatedMember": "Related member",
+      "addMember": "Add member",
+      "deleteAll": "Delete all",
+      "searchMember": "Search member",
+      "username": "Username",
+      "email": "Email",
+      "name": "Name",
+      "remove": "Remove"
+    },
+    "form": {
+      "email": "Email",
+      "search": "Search or paste the emails of invited members",
+      "needConfirm": "Need email confirmation",
+      "password": "Password",
+      "username": "Username",
+      "name": "Name",
+      "description": "Description",
+      "roles": "Roles"
+    },
+    "sidebar": {
+      "member": "Members",
+      "role": "Roles",
+      "memberTitle": "Members",
+      "inviteMember": "Invite member",
+      "inviteSuccess": "The invitation email has been sent successfully",
+      "invalidEmail": "Invalid email addresses",
+      "addMember": "Add Member",
+      "roleTitle": "Roles",
+      "addRole": "Create role"
+    }
+  },
+  "permission": {
+    "empty1": "Select ",
+    "emptyResource": "resources",
+    "emptySubject": "roles or members",
+    "empty2": " in the sidebar",
+    "allResources": "All resources",
+    "folder": "Folder",
+    "presentation": "Presentation",
+    "search": "Search keywords",
+    "searchResources": "Search resource keywords",
+    "member": "Member",
+    "role": "Role",
+    "modulePermission": "Module Permission",
+    "modulePermissionDesc": "You can only access the module after enabling the module permission",
+    "resourceDetail": "Resource detail",
+    "createStoryboard": "Create storyboard",
+    "resourceName": "Resource Name",
+    "subjectName": "Subject Name",
+    "privileges": "Privileges",
+    "add": "Create ",
+    "viewpoint": {
+      "subject": "Subject view",
+      "resource": "Resource view"
+    },
+    "module": {
+      "source": "Source",
+      "view": "View",
+      "viz": "Viz",
+      "schedule": "Schedule"
+    },
+    "modulePermissionLabel": {
+      "Enable": "Enable",
+      "Disable": "Disable"
+    },
+    "createPermissionLabel": {
+      "Create": "Enable",
+      "Disable": "Disable"
+    },
+    "privilegeLabel": {
+      "viz": {
+        "0": "View",
+        "1": "Download",
+        "2": "Share",
+        "3": "Manage",
+        "4": "Create"
+      },
+      "vizfolder": {
+        "0": "View",
+        "1": "Download",
+        "2": "Share",
+        "3": "Manage",
+        "4": "Create"
+      },
+      "vizstoryboard": {
+        "0": "View",
+        "1": "Share",
+        "2": "Manage",
+        "3": "Create"
+      },
+      "view": {
+        "0": "Access",
+        "1": "Manage",
+        "2": "Create"
+      },
+      "source": {
+        "0": "Access",
+        "1": "Manage",
+        "2": "Create"
+      },
+      "schedule": {
+        "0": "Create"
+      }
+    }
+  },
+  "variable": {
+    "title": "Public variables",
+    "public": "Public variables",
+    "name": "Name",
+    "label": "Label",
+    "type": "Type",
+    "valueType": "Value type",
+    "permission": {
+      "label": "Permission",
+      "hidden": "Hidden",
+      "readonly": "Readonly",
+      "editable": "Editable"
+    },
+    "defaultValue": "Default value",
+    "expression": "Use expression default value",
+    "duplicateName": "Duplicate Name",
+    "related": "Related roles & members",
+    "deleteAllConfirm": "Delete confirm",
+    "deleteAll": "Delete all",
+    "enterToAdd": "Enter to add",
+    "enterExpression": "Enter expression",
+    "relatedRole": "Related roles",
+    "relatedMember": "Related members",
+    "useDefaultValue": "Use variable default value",
+    "value": "Value",
+    "variableType": {
+      "query": "Query",
+      "permission": "Permission"
+    },
+    "variableValueType": {
+      "string": "String",
+      "numeric": "Number",
+      "date": "Date",
+      "fragment": "Expression"
+    }
+  },
+  "orgSetting": {
+    "info": "Info",
+    "avatar": "Avatar",
+    "clickToUpload": "Click to upload",
+    "name": "Name",
+    "description": "Description",
+    "deleteOrg": "Delete Organization",
+    "deleteOrgDesc": "When deleting an organization, all resources, members, roles, and other configurations belonging to the organization will be permanently deleted. Please operate with caution.",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "enterOrgName": "Enter organization name to delete",
+    "historyMigration": "Historical Report and SQL Migration",
+    "historyMigrationDesc": "Read-only inspection of historical reports, views, and raw SQL. Nothing is changed or deleted automatically.",
+    "historyMigrationPreview": "View migration preview",
+    "historyMigrationTotal": "Total resources",
+    "historyMigrationReview": "Need manual review",
+    "historyMigrationReadonly": "This action only creates a preview. Migration still requires manual confirmation.",
+    "historyMigrationType": "Resource type",
+    "historyMigrationName": "Resource name",
+    "historyMigrationStatus": "Status",
+    "historyMigrationReason": "Review reason",
+    "historyMigrationError": "Failed to load migration preview"
+  },
+  "readiness": {
+    "title": "Migration Readiness",
+    "refresh": "Refresh scan",
+    "readiness": "Readiness",
+    "strictEligible": "STRICT eligible",
+    "yes": "Eligible",
+    "no": "Not eligible",
+    "blockers": "Blockers",
+    "warnings": "Warnings",
+    "ready": "Ready",
+    "scopes": "Resource scopes",
+    "scope": {
+      "views": "Views",
+      "datacharts": "Datacharts",
+      "dashboards": "Dashboards"
+    },
+    "chartFieldIdCoverage": "Chart fieldId coverage",
+    "resolvedChartFieldIdCoverage": "Resolved Chart fieldId coverage",
+    "issues": "Issues",
+    "filter": {
+      "all": "All",
+      "search": "Search resource, issue code, or message"
+    },
+    "issue": {
+      "severity": "Severity",
+      "resource": "Resource",
+      "name": "Resource name",
+      "code": "Issue code",
+      "message": "Message"
+    },
+    "noIssues": "No matching issues",
+    "loadError": "Readiness scan failed. Please try again.",
+    "empty": "No Readiness data",
+    "strict": {
+      "mode": "Current mode",
+      "enable": "Enable STRICT",
+      "disable": "Back to COMPAT",
+      "confirmTitle": "Enable STRICT?",
+      "confirmContent": "Legacy runtime fallback will be disabled."
+    }
+  },
+  "confirmInvite": {
+    "join": "Join successful",
+    "confirming": "Confirming"
+  },
+  "authorization": {
+    "authenticating": "Authenticating",
+    "authenticatingDesc": "In progress, please wait for the completion of authentication",
+    "activating": "Activating",
+    "activatingDesc": "In progress, please wait for the completion of activation",
+    "activatingError": "Activation Error",
+    "error": "Authentication Error",
+    "errorDesc": "Something went wrong, please check and try again"
+  },
+  "notfound": {
+    "title": "Page not found"
+  },
+  "share": {
+    "common": {
+      "confirm": "Confirm",
+      "ok": "OK",
+      "cancel": "Cancel"
+    },
+    "modal": {
+      "password": "Password",
+      "enterPassword": "Enter password"
+    }
+  },
+  "components": {
+    "colorPicker": {
+      "more": "More",
+      "ok": "OK",
+      "cancel": "Cancel"
+    },
+    "listTitle": {
+      "search": "Search",
+      "searchValue": "Search keywords"
+    },
+    "saveToDashOrStory": {
+      "createDashboard": "Create Dashboard",
+      "searchValue": "Search keywords",
+      "haveCharts": "The chart already exists in the dashboard and cannot be added repeatedly"
+    }
+  }
+}

@@ -17,6 +17,7 @@ import datart.core.mappers.ext.*;
 import datart.security.manager.DatartSecurityManager;
 import datart.server.base.dto.ReadinessReport;
 import datart.server.base.dto.ViewDetailDTO;
+import datart.server.base.dto.ViewFieldDTO;
 import datart.server.base.dto.WidgetDetail;
 import datart.server.base.transfer.ImportStrategy;
 import datart.server.base.transfer.model.*;
@@ -80,9 +81,8 @@ class MigrationRuntimeVerificationTest {
         ResourceModel exported = fixture.currentResourceModel();
         TransferFileUtils.TransferReadResult v2 = readV2(exported);
         assertEquals(2, v2.formatVersion());
-        // This test fixture explicitly exercises historical import only.
-        // The production MigrationModeServiceImpl never permits COMPAT.
-        when(fixture.migrationModeService.getMode(anyString())).thenReturn(MigrationMode.COMPAT);
+        // Archived transfer formats are parsed only as an offline fixture.
+        // Business runtime and re-import remain STRICT-only.
         fixture.importResource((ResourceModel) v2.model(), ImportStrategy.ROLLBACK);
 
         ReadinessReport second = fixture.scan();
@@ -171,7 +171,7 @@ class MigrationRuntimeVerificationTest {
             when(variableService.listOrgQueryVariables(anyString())).thenReturn(List.of());
             when(variableService.listViewQueryVariables(anyString())).thenReturn(List.of());
             when(securityManager.isOrgOwner(anyString())).thenReturn(true);
-            when(migrationModeService.getMode(anyString())).thenReturn(MigrationMode.COMPAT);
+            when(migrationModeService.getMode(anyString())).thenReturn(MigrationMode.STRICT);
 
             doAnswer(invocation -> {
                 View view = invocation.getArgument(0);
@@ -201,6 +201,14 @@ class MigrationRuntimeVerificationTest {
                 fields.put(view.getId(), field);
                 return null;
             }).when(viewFieldService).rebuild(any(View.class));
+            when(viewFieldService.listByViewId(anyString())).thenAnswer(invocation -> {
+                ViewField saved = fields.get(invocation.getArgument(0));
+                if (saved == null) return List.of();
+                ViewFieldDTO dto = new ViewFieldDTO();
+                dto.setFieldId(saved.getId());
+                dto.setActive(saved.getActive());
+                return List.of(dto);
+            });
             doAnswer(invocation -> {
                 Datachart datachart = invocation.getArgument(0);
                 datacharts.put(datachart.getId(), datachart);
@@ -320,8 +328,7 @@ class MigrationRuntimeVerificationTest {
         }
 
         private void assertRuntimeSmoke() throws Exception {
-            // After historical import/reconciliation, runtime is STRICT-only.
-            when(migrationModeService.getMode(anyString())).thenReturn(MigrationMode.STRICT);
+            // Archived transfer fixture has to pass the STRICT runtime checks.
             View view = views.get("view-1");
             ViewDetailDTO detail = viewService.buildViewDetail(view);
             assertNotNull(detail);

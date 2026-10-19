@@ -325,9 +325,10 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
             variables = parseVariables(view, viewExecuteParam);
         }
 
-        if (migrationModeService.isStrict(view.getOrgId())) {
-            strictRuntimeValidator.validate(view, viewExecuteParam);
-        }
+        // Every organization must be STRICT; reject stale/legacy states
+        // before executing SQL, and always enforce stable fieldId references.
+        migrationModeService.getMode(view.getOrgId());
+        strictRuntimeValidator.validate(view, viewExecuteParam);
 
         boolean scriptPermission = true;
         try {
