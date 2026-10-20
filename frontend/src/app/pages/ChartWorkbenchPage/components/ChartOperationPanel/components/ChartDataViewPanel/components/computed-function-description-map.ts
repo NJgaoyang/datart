@@ -1,4 +1,11 @@
-const functions = [
+type ComputedFunctionDescription = {
+  name: string;
+  type: string;
+  description: string;
+  syntax: string;
+};
+
+const functions: ComputedFunctionDescription[] = [
   // aggregators 聚合类
   {
     name: 'SUM',
