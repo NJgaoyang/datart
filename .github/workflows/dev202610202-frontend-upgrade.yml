@@ -58,6 +58,8 @@ jobs:
             HUSKY=0 git commit -m "refactor(frontend): migrate React 19 refs and AntD 6 UI props"
             HUSKY=0 git push origin HEAD:dev202610202
           fi
+      - name: React 19 draggable and resizable mount regression
+        run: npx vitest run src/app/components/Compat/__tests__/ResizableReact19.test.tsx
       - name: React 19 Monaco lifecycle crash regression
         run: npx vitest run src/app/components/Compat/__tests__/MonacoEditor.test.tsx
       - name: Dataset save state regression
@@ -75,21 +77,6 @@ jobs:
         run: |
           npm run test:bundle-budget
           npm run build:all
-      - name: Identify React 19 findDOMNode caller by deployed vendor line
-        if: always()
-        run: |
-          node --input-type=module <<'JS'
-          import { readFileSync, readdirSync } from 'node:fs';
-          const dir = 'build/static/js';
-          const name = readdirSync(dir).find(name => name.startsWith('vendor.') && name.endsWith('.js'));
-          if (!name) throw new Error('Built vendor file not found');
-          console.log('VENDOR FILE', name);
-          const line = readFileSync(dir + '/' + name, 'utf8').split(String.fromCharCode(10))[650];
-          if (!line) throw new Error('vendor line 651 not found');
-          for (const col of [6500, 7089, 7731, 8100]) {
-            console.log('VENDOR TRACE', col, line.slice(Math.max(0, col - 1050), col + 1100));
-          }
-          JS
       - name: Report bundle sizes
         if: success()
         run: npm run report:bundles
