@@ -20,10 +20,27 @@ import BasicTableChart, {
   clampMobileTableColumnWidth,
 } from '../BasicTableChart';
 
+
+// Test-only view of the chart's internal column sizing contract. Keeping
+// production members private avoids exposing implementation as public API.
+type TableWidthTestSurface = {
+  getTextWidth: (...args: unknown[]) => number;
+  calculateFieldsMaxWidth: (
+    fields: unknown,
+    rows: unknown,
+    styles: unknown,
+    context: unknown,
+    settings: unknown,
+    isMobile: boolean,
+  ) => Record<string, { columnWidthValue: number }>;
+};
+
 describe('<BasicTableChart />', () => {
-  let component;
+  let component: BasicTableChart;
+  let internal: TableWidthTestSurface;
   beforeEach(() => {
     component = new BasicTableChart();
+    internal = component as unknown as TableWidthTestSurface;
   });
   test('1000 string-valued metric rows do not make columns thousands of pixels wide', () => {
     const fields = [
@@ -32,16 +49,16 @@ describe('<BasicTableChart />', () => {
     ];
     const rows = Array.from({ length: 1000 }, (_, index) => {
       const data = { city: index % 2 ? '南通市' : '南京市', orders: '98278' };
-      return { getCell: field => data[field.uid] };
+      return { getCell: (field: { uid: 'city' | 'orders' }) => data[field.uid] };
     });
-    rows.getFieldKey = field => field.label;
+    Object.assign(rows, { getFieldKey: (field: { label: string }) => field.label });
     // Deterministic 8px per character; excludes fonts/browser availability.
-    component.getTextWidth = (_, value) => String(value).length * 8;
+    internal.getTextWidth = (_, value) => String(value).length * 8;
     const summarySettings = [{
       key: 'summary',
       rows: [{ key: 'aggregateFields', value: ['orders'] }],
     }];
-    const widths = component.calculateFieldsMaxWidth(
+    const widths = internal.calculateFieldsMaxWidth(
       fields,
       rows,
       [],
@@ -70,14 +87,14 @@ describe('<BasicTableChart />', () => {
     ];
     const rows = Array.from({ length: 1000 }, (_, index) => {
       const data = { city: index % 2 ? '南通市' : '南京市', orders: '98278' };
-      return { getCell: field => data[field.uid] };
+      return { getCell: (field: { uid: 'city' | 'orders' }) => data[field.uid] };
     });
-    rows.getFieldKey = field =>
+    Object.assign(rows, { getFieldKey: (field: { aggregate?: string; colName: string }) =>
       field.aggregate
         ? `SUM(${field.colName})`
-        : field.colName;
-    component.getTextWidth = (_, value) => String(value).length * 8;
-    const widths = component.calculateFieldsMaxWidth(
+        : field.colName });
+    internal.getTextWidth = (_, value) => String(value).length * 8;
+    const widths = internal.calculateFieldsMaxWidth(
       fields, rows, [], { translator: () => '合计' }, [], false,
     );
     expect(widths['s_order_daily_report.city'].columnWidthValue).toBe(88);

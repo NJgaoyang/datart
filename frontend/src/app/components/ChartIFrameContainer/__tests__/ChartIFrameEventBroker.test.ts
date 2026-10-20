@@ -18,52 +18,50 @@
 
 import ChartIFrameEventBroker from '../ChartIFrameEventBroker';
 import { vi } from 'vitest';
+import type { IChart } from 'app/types/Chart';
+import type { BrokerContext, BrokerLifecycleEvent, BrokerOption } from 'app/types/ChartLifecycleBroker';
 
 describe('ChartIFrameEventBroker Tests', () => {
-  let broker = null;
-  let mockOptions, mockContext;
+  let broker: ChartIFrameEventBroker;
+  let mockOptions: BrokerOption;
+  let mockContext: BrokerContext;
   beforeEach(() => {
-    mockOptions = { dataset: [], chartConfig: {} };
+    mockOptions = { dataset: [], chartConfig: {} } as unknown as BrokerOption;
     mockContext = {
       window: {},
       document: {},
       width: 100,
       height: 100,
-    };
+    } as unknown as BrokerContext;
     broker = new ChartIFrameEventBroker();
-  });
-  afterEach(() => {
-    broker = null;
-    mockOptions = null;
-    mockContext = null;
   });
 
   test('should register chart lifecycle event correctly', () => {
     const chart = {
-      onMount: vi.fn().mockImplementation(),
-      onUpdated: vi.fn().mockImplementation(),
-      onResize: vi.fn().mockImplementation(),
-      onUnMount: vi.fn().mockImplementation(),
+      onMount: vi.fn(),
+      onUpdated: vi.fn(),
+      onResize: vi.fn(),
+      onUnMount: vi.fn(),
     };
-    broker.register(chart);
-    expect(broker._chart).toEqual(chart);
-    expect(broker._listeners.get('mounted')).toEqual(chart.onMount);
-    expect(broker._listeners.get('updated')).toEqual(chart.onUpdated);
-    expect(broker._listeners.get('resize')).toEqual(chart.onResize);
-    expect(broker._listeners.get('unmount')).toEqual(chart.onUnMount);
+    broker.register(chart as unknown as IChart);
+    expect(broker['_chart']).toEqual(chart);
+    expect(broker['_listeners'].get('mounted')).toEqual(chart.onMount);
+    expect(broker['_listeners'].get('updated')).toEqual(chart.onUpdated);
+    expect(broker['_listeners'].get('resize')).toEqual(chart.onResize);
+    expect(broker['_listeners'].get('unmount')).toEqual(chart.onUnMount);
   });
 
   test('should subscribe chart lifecycle event standalone', () => {
-    const mountFn = vi.fn().mockImplementation();
+    const mountFn = vi.fn();
     broker.subscribe('mounted', mountFn);
-    expect(broker._listeners.get('mounted')).toEqual(mountFn);
+    expect(broker['_listeners'].get('mounted')).toEqual(mountFn);
   });
 
   test('should call chart onMount lifecycle when mounted', () => {
     const chart = {
-      onMount: vi.fn().mockImplementation(),
+      onMount: vi.fn(),
     };
-    broker.register(chart);
+    broker.register(chart as unknown as IChart);
     broker.publish('mounted', mockOptions, mockContext);
     expect(chart.onMount).toHaveBeenCalledTimes(1);
     expect(chart.onMount).toHaveBeenCalledWith(mockOptions, mockContext);
@@ -72,9 +70,9 @@ describe('ChartIFrameEventBroker Tests', () => {
   test('should call chart onUpdated lifecycle after mounted', async () => {
     const chart = {
       state: 'ready',
-      onUpdated: vi.fn().mockImplementation(),
+      onUpdated: vi.fn(),
     };
-    broker.register(chart);
+    broker.register(chart as unknown as IChart);
     broker.publish('updated', mockOptions, mockContext);
 
     // NOTE: the milliseconds is from EVENT_ACTION_DELAY_MS
@@ -86,9 +84,9 @@ describe('ChartIFrameEventBroker Tests', () => {
   test('should invoke once onUpdated lifecycle with many update events', async () => {
     const chart = {
       state: 'ready',
-      onUpdated: vi.fn().mockImplementation(),
+      onUpdated: vi.fn(),
     };
-    broker.register(chart);
+    broker.register(chart as unknown as IChart);
     broker.publish('updated', mockOptions, mockContext);
     broker.publish('updated', mockOptions, mockContext);
     broker.publish('updated', mockOptions, mockContext);
@@ -101,9 +99,9 @@ describe('ChartIFrameEventBroker Tests', () => {
 
   test('should not call chart onUpdated lifecycle before mounted', () => {
     const chart = {
-      onUpdated: vi.fn().mockImplementation(),
+      onUpdated: vi.fn(),
     };
-    broker.register(chart);
+    broker.register(chart as unknown as IChart);
     broker.publish('updated', mockOptions, mockContext);
     expect(chart.onUpdated).toHaveBeenCalledTimes(0);
   });
@@ -111,9 +109,9 @@ describe('ChartIFrameEventBroker Tests', () => {
   test('should call chart onResize lifecycle after mounted', async () => {
     const chart = {
       state: 'ready',
-      onResize: vi.fn().mockImplementation(),
+      onResize: vi.fn(),
     };
-    broker.register(chart);
+    broker.register(chart as unknown as IChart);
     broker.publish('resize', mockOptions, mockContext);
 
     // NOTE: the milliseconds is from EVENT_ACTION_DELAY_MS
@@ -125,9 +123,9 @@ describe('ChartIFrameEventBroker Tests', () => {
   test('should invoke once onResize lifecycle with many resize events', async () => {
     const chart = {
       state: 'ready',
-      onResize: vi.fn().mockImplementation(),
+      onResize: vi.fn(),
     };
-    broker.register(chart);
+    broker.register(chart as unknown as IChart);
     broker.publish('resize', mockOptions, mockContext);
     broker.publish('resize', mockOptions, mockContext);
     broker.publish('resize', mockOptions, mockContext);
@@ -140,9 +138,9 @@ describe('ChartIFrameEventBroker Tests', () => {
 
   test('should not call chart onResize lifecycle before mounted', () => {
     const chart = {
-      onResize: vi.fn().mockImplementation(),
+      onResize: vi.fn(),
     };
-    broker.register(chart);
+    broker.register(chart as unknown as IChart);
     broker.publish('resize', mockOptions, mockContext);
     expect(chart.onResize).toHaveBeenCalledTimes(0);
   });
@@ -150,9 +148,9 @@ describe('ChartIFrameEventBroker Tests', () => {
   test('should call chart onUnMount lifecycle after mounted', () => {
     const chart = {
       state: 'ready',
-      onUnMount: vi.fn().mockImplementation(),
+      onUnMount: vi.fn(),
     };
-    broker.register(chart);
+    broker.register(chart as unknown as IChart);
     broker.publish('unmount', mockOptions, mockContext);
     expect(chart.onUnMount).toHaveBeenCalledTimes(1);
     expect(chart.onUnMount).toHaveBeenCalledWith(mockOptions, mockContext);
@@ -160,9 +158,9 @@ describe('ChartIFrameEventBroker Tests', () => {
 
   test('should not call chart onUnMount lifecycle before mounted', () => {
     const chart = {
-      onUnMount: vi.fn().mockImplementation(),
+      onUnMount: vi.fn(),
     };
-    broker.register(chart);
+    broker.register(chart as unknown as IChart);
     broker.publish('unmount', mockOptions, mockContext);
     expect(chart.onUnMount).toHaveBeenCalledTimes(0);
   });
@@ -170,30 +168,30 @@ describe('ChartIFrameEventBroker Tests', () => {
   test('should not call event when event name is not correct', () => {
     const chart = {
       state: 'mounting',
-      onUnMount: vi.fn().mockImplementation(),
+      onUnMount: vi.fn(),
     };
-    broker.register(chart);
-    broker.publish('unknown', mockOptions, mockContext);
+    broker.register(chart as unknown as IChart);
+    broker.publish('unknown' as BrokerLifecycleEvent, mockOptions, mockContext);
     expect(chart.onUnMount).toHaveBeenCalledTimes(0);
   });
 
   test('should not call event after disposed', () => {
     const chart = {
       state: 'mounting',
-      onUnMount: vi.fn().mockImplementation(),
+      onUnMount: vi.fn(),
     };
-    broker.register(chart);
+    broker.register(chart as unknown as IChart);
     broker.dispose();
-    broker.publish('unknown', mockOptions, mockContext);
+    broker.publish('unknown' as BrokerLifecycleEvent, mockOptions, mockContext);
     expect(chart.onUnMount).toHaveBeenCalledTimes(0);
   });
 
   test('should set state to ready after mounted', () => {
     const chart = {
       state: '',
-      onMount: vi.fn().mockImplementation(),
+      onMount: vi.fn(),
     };
-    broker.register(chart);
+    broker.register(chart as unknown as IChart);
     broker.publish('mounted', mockOptions, mockContext);
     expect(chart.onMount).toHaveBeenCalledTimes(1);
     expect(chart.state).toEqual('ready');
@@ -202,9 +200,9 @@ describe('ChartIFrameEventBroker Tests', () => {
   test('should set state to ready after updated', async () => {
     const chart = {
       state: 'ready',
-      onUpdated: vi.fn().mockImplementation(),
+      onUpdated: vi.fn(),
     };
-    broker.register(chart);
+    broker.register(chart as unknown as IChart);
     broker.publish('updated', mockOptions, mockContext);
 
     // NOTE: the milliseconds is from EVENT_ACTION_DELAY_MS
