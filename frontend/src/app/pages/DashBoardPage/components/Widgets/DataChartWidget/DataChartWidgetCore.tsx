@@ -15,8 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import useModal from 'antd/lib/modal/useModal';
-import { Button, Empty } from 'antd';
+import { Button, Empty, Modal } from 'antd';
 import { getChartViewState } from './chartViewState';
 import { WIDGET_QUERY_FORBIDDEN } from 'app/pages/DashBoardPage/utils/widgetQueryError';
 import ChartDrillContextMenu from 'app/components/ChartDrill/ChartDrillContextMenu';
@@ -127,7 +126,7 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
     useDisplayViewDetail();
   const [openJumpVizDialogModal, openJumpVizDialogModalContextHolder] =
     useDisplayJumpVizDialog();
-  const [jumpDialogModal, jumpDialogContextHolder] = useModal();
+  const [jumpDialogModal, jumpDialogContextHolder] = Modal.useModal();
   const {
     getDrillThroughSetting,
     getCrossFilteringSetting,

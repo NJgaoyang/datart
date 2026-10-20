@@ -1,0 +1,57 @@
+name: dev202610202 frontend framework upgrade
+
+on:
+  push:
+    branches: [dev202610202]
+    paths:
+      - frontend/package.json
+      - frontend/vite.config.ts
+      - frontend/vitest.config.ts
+      - frontend/scripts/check-framework-upgrade-baseline.mjs
+      - .github/workflows/dev202610202-frontend-upgrade.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: frontend-major-upgrade-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  regenerate-lock-and-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Resolve dependency graph for new major versions
+        run: npm install --package-lock-only --legacy-peer-deps --ignore-scripts --no-audit --no-fund
+      - name: Commit reproducible lockfile
+        run: |
+          if ! git diff --quiet -- package-lock.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add package-lock.json
+            git commit -m "build(frontend): lock migrated React 19 Vite 8 ECharts 6 AntD 6 graph"
+            git push origin HEAD:dev202610202
+          fi
+      - name: Install lock and check version invariants
+        run: |
+          npm ci --legacy-peer-deps
+          npm run check:upgrade-baseline
+      - name: TypeScript and grid-specific regression
+        run: npm run check:grid
+      - name: React and chart compatibility smoke
+        run: |
+          npm run test:bundle-budget
+          npm run build:all
+      - name: Report bundle sizes
+        if: success()
+        run: npm run report:bundles

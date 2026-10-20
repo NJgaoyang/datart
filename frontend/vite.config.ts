@@ -1,4 +1,5 @@
 import react from '@vitejs/plugin-react';
+import babel from '@rolldown/plugin-babel';
 import fs from 'fs';
 import path from 'path';
 import { defineConfig } from 'vite';
@@ -32,10 +33,10 @@ export default defineConfig({
     },
   },
   plugins: [
-    react({
-      // 保留 styled-components 的 css prop 与 displayName
-      babel: { plugins: ['babel-plugin-styled-components'] },
-    }),
+    react(),
+    // @vitejs/plugin-react v6 no longer accepts Babel options.
+    // Keep styled-components css prop and displayName transforms through Rolldown.
+    babel({ plugins: ['babel-plugin-styled-components'] }),
     svgr(),
     tsconfigPaths(),
     {
@@ -82,7 +83,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 4096,
     // 关闭产物 gzip 体积报告（纯 CPU 开销，对产物无影响，可缩短构建时间）
     reportCompressedSize: false,
-    rollupOptions: {
+    rolldownOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
         shareChart: path.resolve(__dirname, 'shareChart.html'),
