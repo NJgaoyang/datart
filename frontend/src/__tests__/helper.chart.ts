@@ -49,3 +49,10 @@ expect.extend({
     }
   },
 });
+
+// Typed declaration for the custom chart-model matcher used by TS tests.
+declare module 'vitest' {
+  interface Assertion<T = any> {
+    toBeDatartChartModel(): void;
+  }
+}

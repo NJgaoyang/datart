@@ -16,14 +16,13 @@
  * limitations under the License.
  */
 
-import BasicLineChart from '../BasicLineChart';
-
-describe('<BasicLineChart />', () => {
-  let component;
+import BasicFunnelChart from '../BasicFunnelChart';
+describe('<BasicFunnelChart />', () => {
+  let component: InstanceType<typeof BasicFunnelChart>;
   beforeEach(() => {
-    component = new BasicLineChart();
+    component = new BasicFunnelChart();
   });
-  test('it should mount', () => {
+  test('It should mount', () => {
     expect(component).toBeDatartChartModel();
   });
 });

@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-import BasicBarChart from '../BasicBarChart';
+import BasicAreaChart from '../BasicAreaChart';
 
-describe('<BasicBarChart />', () => {
-  let component;
+describe('<BasicAreaChart />', () => {
+  let component: InstanceType<typeof BasicAreaChart>;
   beforeEach(() => {
-    component = new BasicBarChart();
+    component = new BasicAreaChart();
   });
   test('It should mount', () => {
     expect(component).toBeDatartChartModel();

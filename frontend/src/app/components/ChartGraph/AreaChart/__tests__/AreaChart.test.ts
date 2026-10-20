@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 
-import BasicDoubleYChart from '../BasicDoubleYChart';
-describe('<BasicDoubleYChart />', () => {
-  let component;
+import AreaChart from '../AreaChart';
+
+describe('<AreaChart />', () => {
+  let component: InstanceType<typeof AreaChart>;
   beforeEach(() => {
-    component = new BasicDoubleYChart();
+    component = new AreaChart();
   });
   test('It should mount', () => {
     expect(component).toBeDatartChartModel();

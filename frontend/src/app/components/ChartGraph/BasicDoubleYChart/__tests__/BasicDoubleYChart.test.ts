@@ -16,12 +16,11 @@
  * limitations under the License.
  */
 
-import BasicGaugeChart from '../BasicGaugeChart';
-
-describe('<BasicGaugeChart />', () => {
-  let component;
+import BasicDoubleYChart from '../BasicDoubleYChart';
+describe('<BasicDoubleYChart />', () => {
+  let component: InstanceType<typeof BasicDoubleYChart>;
   beforeEach(() => {
-    component = new BasicGaugeChart();
+    component = new BasicDoubleYChart();
   });
   test('It should mount', () => {
     expect(component).toBeDatartChartModel();

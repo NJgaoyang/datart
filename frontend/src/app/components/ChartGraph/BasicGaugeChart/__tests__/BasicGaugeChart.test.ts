@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 
-import BasicFunnelChart from '../BasicFunnelChart';
-describe('<BasicFunnelChart />', () => {
-  let component;
+import BasicGaugeChart from '../BasicGaugeChart';
+
+describe('<BasicGaugeChart />', () => {
+  let component: InstanceType<typeof BasicGaugeChart>;
   beforeEach(() => {
-    component = new BasicFunnelChart();
+    component = new BasicGaugeChart();
   });
   test('It should mount', () => {
     expect(component).toBeDatartChartModel();

@@ -16,14 +16,14 @@
  * limitations under the License.
  */
 
-import AreaChart from '../AreaChart';
+import BasicLineChart from '../BasicLineChart';
 
-describe('<AreaChart />', () => {
-  let component;
+describe('<BasicLineChart />', () => {
+  let component: InstanceType<typeof BasicLineChart>;
   beforeEach(() => {
-    component = new AreaChart();
+    component = new BasicLineChart();
   });
-  test('It should mount', () => {
+  test('it should mount', () => {
     expect(component).toBeDatartChartModel();
   });
 });
