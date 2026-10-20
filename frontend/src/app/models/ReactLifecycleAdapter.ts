@@ -17,7 +17,7 @@ export default class ReactLifecycleAdapter {
   }
 
   public registerImportDependencies(dependencies: Record<string, unknown> | string[]) {
-    this.externalLibs = dependencies;
+    this.externalLibs = { ...dependencies };
   }
 
   public mounted(container: Element | null, options?: any, context?: any) {
