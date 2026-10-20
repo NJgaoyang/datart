@@ -36,7 +36,7 @@ export const DeleteConfirm = (props: ModalProps) => {
     <Modal
       {...props}
       footer={[
-        <Button key="cancel" onClick={props.onCancel}>
+        <Button key="cancel" onClick={e => props.onCancel?.(e)}>
           {t('cancel')}
         </Button>,
         <Button

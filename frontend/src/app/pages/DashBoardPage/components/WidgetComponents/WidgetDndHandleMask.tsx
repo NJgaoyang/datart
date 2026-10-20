@@ -46,7 +46,7 @@ export const WidgetDndHandleMask: React.FC<WidgetDndHandleMaskProps> = memo(
     return (
       <>
         <div
-          ref={dragPreview}
+          ref={node => { dragPreview(node); }}
           className="dragRef2"
           onClick={ssp}
           onDragStart={ssp}
@@ -60,7 +60,7 @@ export const WidgetDndHandleMask: React.FC<WidgetDndHandleMaskProps> = memo(
           }}
         ></div>
         <div
-          ref={dragRef}
+          ref={node => { dragRef(node); }}
           // onDragStart={ssp}
           onClick={ssp}
           className="dragRef1"

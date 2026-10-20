@@ -291,7 +291,7 @@ export const ChartDraggableSourceContainer: FC<
           <CollapseWrapper
             defaultActiveKey={[colName]}
             ghost
-            expandIconPosition="right"
+            expandIconPosition="end"
             expandIcon={({ isActive }) => {
               return <DownOutlined rotate={isActive ? -180 : 0} />;
             }}
@@ -438,7 +438,7 @@ export const ChartDraggableSourceContainer: FC<
         }
         onSelectionChange?.(colName, e.metaKey || e.ctrlKey, e.shiftKey);
       }}
-      ref={type === 'DATE' && category === 'field' ? null : drag}
+      ref={node => { if (type !== 'DATE' || category !== 'field') drag(node); }}
       className={
         type === 'DATE' && category === 'field' ? '' : styleClasses.join(' ')
       }
