@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -58,7 +59,7 @@ export const ChartWidgetDropdown: React.FC<{
     </Menu>
   );
   return (
-    <Dropdown
+    <LegacyDropdown
       overlay={chartWidgetItems}
       placement="bottomLeft"
       trigger={['click']}
@@ -66,6 +67,6 @@ export const ChartWidgetDropdown: React.FC<{
       <Tooltip title={t('dataChart')}>
         <ToolbarButton icon={<BarChartOutlined />} />
       </Tooltip>
-    </Dropdown>
+    </LegacyDropdown>
   );
 };

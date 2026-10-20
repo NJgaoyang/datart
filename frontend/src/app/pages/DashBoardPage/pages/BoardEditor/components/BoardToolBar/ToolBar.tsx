@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -104,9 +105,9 @@ export const ToolBar = () => {
           <PasteBtn fn={onEditPasteWidgets} title={t('paste')} />
         </span>
         <span className="toolbar-secondary-compact">
-          <Dropdown overlay={compactActions} placement="bottomRight" trigger={['click']}>
+          <LegacyDropdown overlay={compactActions} placement="bottomRight" trigger={['click']}>
             <ToolbarButton icon={<MoreOutlined />} title="更多编辑操作" aria-label="更多编辑操作" />
-          </Dropdown>
+          </LegacyDropdown>
         </span>
 
         {boardType === 'auto' && (

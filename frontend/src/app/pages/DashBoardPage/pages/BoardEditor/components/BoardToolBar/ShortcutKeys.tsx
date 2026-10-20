@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -52,9 +53,9 @@ export const ShortcutKeys = () => {
   );
 
   return (
-    <Dropdown overlay={menu} placement="bottomRight" trigger={['click']}>
+    <LegacyDropdown overlay={menu} placement="bottomRight" trigger={['click']}>
       <Button type="text">{gt('shortcuts')}</Button>
-    </Dropdown>
+    </LegacyDropdown>
   );
 };
 const StyledWrap = styled.div`

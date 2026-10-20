@@ -24,6 +24,6 @@ describe('<BasicLineChart />', () => {
     component = new BasicLineChart();
   });
   test('it should mount', () => {
-    expect(component).toBeDatartChartModel();
+    (expect(component) as unknown as { toBeDatartChartModel(): void }).toBeDatartChartModel();
   });
 });

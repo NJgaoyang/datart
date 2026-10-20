@@ -24,6 +24,6 @@ describe('<WordCloudChart />', () => {
     component = new WordCloudChart();
   });
   test('it should mount', () => {
-    expect(component).toBeDatartChartModel();
+    (expect(component) as unknown as { toBeDatartChartModel(): void }).toBeDatartChartModel();
   });
 });

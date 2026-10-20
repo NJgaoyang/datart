@@ -35,9 +35,9 @@ function ThemeColorSelection({ children, callbackFn }: themeColorPropTypes) {
 
   return (
     <Popover
-      destroyTooltipOnHide
-      onVisibleChange={setSwitchStatus}
-      visible={switchStatus}
+      destroyOnHidden
+      onOpenChange={setSwitchStatus}
+      open={switchStatus}
       trigger="click"
       placement="bottomRight"
       content={

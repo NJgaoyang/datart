@@ -24,6 +24,6 @@ describe('<BasicOutlineMapChart />', () => {
     component = new BasicOutlineMapChart();
   });
   test('it should mount', () => {
-    expect(component).toBeDatartChartModel();
+    (expect(component) as unknown as { toBeDatartChartModel(): void }).toBeDatartChartModel();
   });
 });

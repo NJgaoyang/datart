@@ -24,6 +24,6 @@ describe('<DoughnutChart />', () => {
     component = new DoughnutChart();
   });
   test('it should mount', () => {
-    expect(component).toBeDatartChartModel();
+    (expect(component) as unknown as { toBeDatartChartModel(): void }).toBeDatartChartModel();
   });
 });

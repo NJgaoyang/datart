@@ -46,7 +46,7 @@ function DateLevelFieldContainer({
   );
 
   return (
-    <ItemWrapper ref={drag}>
+    <ItemWrapper ref={node => { drag(node); }}>
       <Row>
         <IW fontSize={FONT_SIZE_TITLE}>
           {<CalendarOutlined style={{ color: INFO }} />}

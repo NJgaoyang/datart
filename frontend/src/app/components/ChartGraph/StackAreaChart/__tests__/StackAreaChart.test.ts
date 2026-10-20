@@ -24,6 +24,6 @@ describe('<StackAreaChart />', () => {
     component = new StackAreaChart();
   });
   test('It should mount', () => {
-    expect(component).toBeDatartChartModel();
+    (expect(component) as unknown as { toBeDatartChartModel(): void }).toBeDatartChartModel();
   });
 });

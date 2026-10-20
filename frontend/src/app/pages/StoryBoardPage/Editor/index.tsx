@@ -77,7 +77,7 @@ export const StoryEditor: React.FC<{}> = memo(() => {
   const location = useLocation();
   const histState = location.state as any;
   const domId = useMemo(() => uuidv4(), []);
-  const revealRef = useRef<any>();
+  const revealRef = useRef<any>(undefined);
 
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const story = useSelector((state: { storyBoard: StoryBoardState }) =>

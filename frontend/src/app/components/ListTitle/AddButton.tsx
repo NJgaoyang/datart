@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 import { PlusOutlined } from '@ant-design/icons';
 import { Dropdown, Menu, Tooltip } from 'antd';
 import { ToolbarButton } from '../ToolbarButton';
@@ -24,7 +25,7 @@ export function AddButton({
       />
     </Tooltip>
   ) : (
-    <Dropdown
+    <LegacyDropdown
       trigger={['click']}
       overlay={
         <Menu onClick={callback}>
@@ -35,6 +36,6 @@ export function AddButton({
       }
     >
       <ToolbarButton size="small" icon={icon || <PlusOutlined />} />
-    </Dropdown>
+    </LegacyDropdown>
   );
 }

@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -157,7 +158,7 @@ const ChartDraggableElementField: FC<{
     };
 
     return (
-      <Dropdown
+      <LegacyDropdown
         key={columnConfig.uid}
         disabled={!config?.actions}
         destroyPopupOnHide={true}
@@ -172,7 +173,7 @@ const ChartDraggableElementField: FC<{
             {enableActionsIcons(columnConfig)}
           </div>
         </StyledWrapper>
-      </Dropdown>
+      </LegacyDropdown>
     );
   },
 );

@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 import { CloseOutlined } from '@ant-design/icons';
 import { Dropdown, Menu } from 'antd';
 import { EmptyFiller, TabPane, Tabs } from 'app/components';
@@ -196,9 +197,9 @@ export function Main({ sliderVisible }: { sliderVisible: boolean }) {
 
   const Tab = (id: string, name: string) => (
     <span>
-      <Dropdown overlay={menu(id)} trigger={['contextMenu']}>
+      <LegacyDropdown overlay={menu(id)} trigger={['contextMenu']}>
         <span className="ant-dropdown-link">{name}</span>
-      </Dropdown>
+      </LegacyDropdown>
     </span>
   );
 

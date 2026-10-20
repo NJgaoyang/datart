@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -70,7 +71,7 @@ export const AddContainer: React.FC<{}> = () => {
     </Menu>
   );
   return (
-    <Dropdown
+    <LegacyDropdown
       overlay={containerWidgetItems}
       placement="bottomLeft"
       trigger={['click']}
@@ -78,6 +79,6 @@ export const AddContainer: React.FC<{}> = () => {
       <Tooltip title={t('container')}>
         <ToolbarButton icon={<ContainerOutlined />}></ToolbarButton>
       </Tooltip>
-    </Dropdown>
+    </LegacyDropdown>
   );
 };

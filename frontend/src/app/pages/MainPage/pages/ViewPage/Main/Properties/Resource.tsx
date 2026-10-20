@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -209,9 +210,9 @@ export const Resource = memo(() => {
               bordered={false}
               onChange={debouncedSearch}
             />
-            <Dropdown key="more" trigger={['click']} overlay={getOverlays()}>
+            <LegacyDropdown key="more" trigger={['click']} overlay={getOverlays()}>
               <Button type="text" icon={<MoreOutlined />} />
-            </Dropdown>
+            </LegacyDropdown>
           </StyleSpace>
         </Col>
       </SearchBar>

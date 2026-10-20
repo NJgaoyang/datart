@@ -20,7 +20,7 @@ import { useRef, useState } from 'react';
 
 export const useDebouncedLoadingStatus = ({ isLoading }) => {
   const [lazyLoading, setLazyLoading] = useState(false);
-  const timerIdRef = useRef();
+  const timerIdRef = useRef(undefined);
 
   if (isLoading) {
     if (timerIdRef.current) {

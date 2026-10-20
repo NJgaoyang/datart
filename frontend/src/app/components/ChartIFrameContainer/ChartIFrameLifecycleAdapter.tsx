@@ -67,7 +67,7 @@ const ChartIFrameLifecycleAdapter: FC<{
   isLoadingData = false,
 }) => {
   const [chartResourceLoader] = useState(() => new ChartIFrameResourceLoader());
-  const eventBrokerRef = useRef<ChartIFrameEventBroker>();
+  const eventBrokerRef = useRef<ChartIFrameEventBroker>(undefined);
   const [containerStatus, setContainerStatus] = useState(ContainerStatus.INIT);
   const { document, window } = useFrame();
   const [containerId] = useState(() => `datart-${uuidv4()}`);

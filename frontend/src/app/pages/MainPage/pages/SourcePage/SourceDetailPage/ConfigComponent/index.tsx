@@ -29,7 +29,7 @@ import {
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { QueryResult } from 'app/pages/MainPage/pages/ViewPage/slice/types';
 import { DataProviderAttribute } from 'app/pages/MainPage/slice/types';
-import { Rule } from 'rc-field-form/lib/interface';
+type Rule = NonNullable<FormItemProps['rules']>[number];
 import { ReactElement } from 'react';
 import { ArrayConfig } from './ArrayConfig';
 import { FileUpload } from './FileUpload';

@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -81,7 +82,7 @@ export const WidgetDropdownList: React.FC<{
     return null;
   }
   return (
-    <Dropdown
+    <LegacyDropdown
       className="widget-tool-dropdown"
       overlay={dropdownList}
       placement="bottomRight"
@@ -97,6 +98,6 @@ export const WidgetDropdownList: React.FC<{
         type="link"
         {...buttonProps}
       />
-    </Dropdown>
+    </LegacyDropdown>
   );
 });

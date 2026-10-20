@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -83,7 +84,7 @@ export const AddMedia: React.FC<{}> = () => {
     </Menu>
   );
   return (
-    <Dropdown
+    <LegacyDropdown
       overlay={mediaWidgetItems}
       placement="bottomLeft"
       trigger={['click']}
@@ -91,6 +92,6 @@ export const AddMedia: React.FC<{}> = () => {
       <Tooltip title={t('media')}>
         <ToolbarButton icon={<AppstoreAddOutlined />} />
       </Tooltip>
-    </Dropdown>
+    </LegacyDropdown>
   );
 };

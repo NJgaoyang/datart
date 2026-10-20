@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -143,9 +144,9 @@ export const Tabs = memo(() => {
 
   const Tab = (id: string, name: string) => (
     <span>
-      <Dropdown overlay={menu(id)} trigger={['contextMenu']}>
+      <LegacyDropdown overlay={menu(id)} trigger={['contextMenu']}>
         <span className="ant-dropdown-link">{name}</span>
-      </Dropdown>
+      </LegacyDropdown>
     </span>
   );
 

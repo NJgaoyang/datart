@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -102,7 +103,7 @@ const CrossFilteringRuleList: FC<
                   {t('drillThrough.rule.relation.customize')}
                 </Select.Option>
               </Select>
-              <Dropdown
+              <LegacyDropdown
                 destroyPopupOnHide
                 overlayStyle={{ margin: 4 }}
                 disabled={
@@ -137,7 +138,7 @@ const CrossFilteringRuleList: FC<
                 <Button type="link">
                   {t('drillThrough.rule.relation.setting')}
                 </Button>
-              </Dropdown>
+              </LegacyDropdown>
             </Space>
           );
         },

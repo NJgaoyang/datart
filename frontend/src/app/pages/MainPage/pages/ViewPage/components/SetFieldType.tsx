@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -42,7 +43,7 @@ const SetFieldType = memo(
     const t = useI18NPrefix('view.schemaTable');
     const tg = useI18NPrefix('global');
     return (
-      <Dropdown
+      <LegacyDropdown
         trigger={['click']}
         overlay={
           <Menu
@@ -102,7 +103,7 @@ const SetFieldType = memo(
         >
           {icon}
         </Tooltip>
-      </Dropdown>
+      </LegacyDropdown>
     );
   },
 );

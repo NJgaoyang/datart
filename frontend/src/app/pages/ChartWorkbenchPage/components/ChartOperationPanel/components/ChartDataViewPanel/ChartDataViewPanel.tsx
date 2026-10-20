@@ -526,10 +526,10 @@ const ChartDataViewPanel: FC<{
         />
         <Popover
           placement="bottomRight"
-          visible={isDisplayAddNewModal}
-          onVisibleChange={() => setIsDisplayAddNewModal()}
+          open={isDisplayAddNewModal}
+          onOpenChange={() => setIsDisplayAddNewModal()}
           trigger="click"
-          overlayClassName="datart-popup"
+          classNames={{ root: "datart-popup" }}
           content={
             <Menu
               onClick={handleClickMenu}

@@ -283,7 +283,7 @@ interface MobileBoardContentProps {
   boardId: string;
   boardName: string;
   onBack: () => void;
-  wrapperRef: React.RefObject<HTMLDivElement>;
+  wrapperRef: React.RefObject<HTMLDivElement | null>;
   embedded: boolean;
   shareMode?: boolean;
   renderMode?: VizRenderMode;

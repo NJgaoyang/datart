@@ -62,7 +62,7 @@ export const VariableForm = memo(
     );
     const [expression, setExpression] = useState(false);
     const [dateFormat, setDateFormat] = useState<DateFormat | undefined>();
-    const formRef = useRef<FormInstance<VariableFormModel>>();
+    const formRef = useRef<FormInstance<VariableFormModel>>(undefined);
     const t = useI18NPrefix('variable');
     const tg = useI18NPrefix('global');
 

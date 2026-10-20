@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -32,7 +33,7 @@ interface SelectJoinTypeProps {
 const SelectJoinType = memo(({ type, onChange }: SelectJoinTypeProps) => {
   const t = useI18NPrefix(`view.structView`);
   return (
-    <Dropdown
+    <LegacyDropdown
       trigger={['click']}
       placement="bottomLeft"
       overlay={
@@ -56,7 +57,7 @@ const SelectJoinType = memo(({ type, onChange }: SelectJoinTypeProps) => {
           'icon-join_left': type === StructViewJoinType.LeftJoin,
         })}
       ></Icon>
-    </Dropdown>
+    </LegacyDropdown>
   );
 });
 

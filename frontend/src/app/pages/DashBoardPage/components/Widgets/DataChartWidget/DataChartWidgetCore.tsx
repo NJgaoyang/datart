@@ -121,7 +121,7 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
   } = useContext(WidgetActionContext);
   const { cacheWhRef, cacheW, cacheH } = useCacheWidthHeight();
   const widgetRef = useRef<Widget>(widget);
-  const drillOptionRef = useRef<IChartDrillOption>();
+  const drillOptionRef = useRef<IChartDrillOption>(undefined);
   const [openViewDetailPanel, viewDetailPanelContextHolder] =
     useDisplayViewDetail();
   const [openJumpVizDialogModal, openJumpVizDialogModalContextHolder] =

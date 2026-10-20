@@ -41,8 +41,8 @@ const defaultBodyStyle: React.CSSProperties = {
 function useStateModal({ initState }: { initState?: any }) {
   const [form] = Form.useForm();
   const [modal, contextHolder] = Modal.useModal();
-  const okCallbackRef = useRef<Function>();
-  const cancelCallbackRef = useRef<Function>();
+  const okCallbackRef = useRef<Function>(undefined);
+  const cancelCallbackRef = useRef<Function>(undefined);
   const stateRef = useRef<any[]>(initState ? [initState] : []);
 
   const handleSaveCacheValue = (...args: any[]) => {

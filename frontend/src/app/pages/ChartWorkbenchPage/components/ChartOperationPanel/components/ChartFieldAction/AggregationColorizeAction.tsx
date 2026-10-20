@@ -115,12 +115,12 @@ const AggregationColorizeAction: FC<{
           <StyledUL>{renderGroupColors()}</StyledUL>
         </Col>
         <Popover
-          destroyTooltipOnHide
-          onVisibleChange={setSelColorBoxStatus}
-          visible={selColorBoxStatus}
+          destroyOnHidden
+          onOpenChange={setSelColorBoxStatus}
+          open={selColorBoxStatus}
           trigger="click"
           placement="bottomRight"
-          overlayClassName="datart-aggregation-colorpopover"
+          classNames={{ root: "datart-aggregation-colorpopover" }}
           content={
             <SingleColorSelection
               color={selectColor.value}

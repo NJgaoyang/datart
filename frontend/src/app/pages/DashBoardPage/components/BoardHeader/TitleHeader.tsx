@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -112,7 +113,7 @@ export const TitleHeader: FC = memo(() => {
           </>
         )}
         {!isArchived && (
-          <Dropdown
+          <LegacyDropdown
             overlay={
               <BoardDropdownList
                 onOpenShareLink={onOpenShareLink}
@@ -124,7 +125,7 @@ export const TitleHeader: FC = memo(() => {
             arrow
           >
             <Button icon={<MoreOutlined />} />
-          </Dropdown>
+          </LegacyDropdown>
         )}
         {!isArchived && allowManage && (
           <SaveToStoryBoard

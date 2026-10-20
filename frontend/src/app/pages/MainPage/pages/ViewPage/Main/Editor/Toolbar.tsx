@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -247,7 +248,7 @@ export const Toolbar = memo(
                 </Space>
               </>
             )}
-            <Dropdown
+            <LegacyDropdown
               trigger={['click']}
               overlay={
                 <Menu onClick={sizeMenuClick}>
@@ -258,7 +259,7 @@ export const Toolbar = memo(
               }
             >
               <ToolbarButton size="small">{`Limit: ${size}`}</ToolbarButton>
-            </Dropdown>
+            </LegacyDropdown>
             <Chronograph
               running={stage === ViewViewModelStages.Running}
               status={

@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -68,10 +69,10 @@ export const DeviceSwitcher = () => {
   );
 
   return (
-    <Dropdown overlay={deviceItems} placement="bottomLeft" trigger={['click']}>
+    <LegacyDropdown overlay={deviceItems} placement="bottomLeft" trigger={['click']}>
       <Tooltip title={t('deviceSwitch')}>
         <ToolbarButton icon={curIcon} />
       </Tooltip>
-    </Dropdown>
+    </LegacyDropdown>
   );
 };

@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -258,14 +259,14 @@ const ChartDrillContextMenu: FC<{
 
   return (
     <StyledChartDrill className="chart-drill-menu-container">
-      <Dropdown
+      <LegacyDropdown
         disabled={!enableContextMenu}
         overlay={contextMenu}
         destroyPopupOnHide={true}
         trigger={['contextMenu']}
       >
         <div style={{ height: '100%' }}>{children}</div>
-      </Dropdown>
+      </LegacyDropdown>
     </StyledChartDrill>
   );
 });

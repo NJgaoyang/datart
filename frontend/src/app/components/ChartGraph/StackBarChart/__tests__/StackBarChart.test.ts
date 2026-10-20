@@ -24,6 +24,6 @@ describe('<StackBarChart />', () => {
     component = new StackBarChart();
   });
   test('It should mount', () => {
-    expect(component).toBeDatartChartModel();
+    (expect(component) as unknown as { toBeDatartChartModel(): void }).toBeDatartChartModel();
   });
 });

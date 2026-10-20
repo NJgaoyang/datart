@@ -72,7 +72,7 @@ export function ArrayConfig({
   const [formVisible, setFormVisible] = useState(false);
   const [editingRowKey, setEditingRowKey] = useState('');
   const [schemaDataSource, setSchemaDataSource] = useState<object[]>([]);
-  const formRef = useRef<FormInstance<SourceFormModel>>();
+  const formRef = useRef<FormInstance<SourceFormModel>>(undefined);
   const t = useI18NPrefix('source');
   const tg = useI18NPrefix('global');
 

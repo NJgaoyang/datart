@@ -18,7 +18,8 @@
 import { Form, InputNumber, Select } from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { TIME_DIRECTION, TIME_UNIT_OPTIONS } from 'globalConstants';
-import { NamePath } from 'rc-field-form/lib/interface';
+import type { FormItemProps } from 'antd';
+type NamePath = NonNullable<FormItemProps['name']>;
 import React, { memo, useEffect, useState } from 'react';
 import { RelativeDate } from '../../../types';
 export interface RelativeTimeSetProps {

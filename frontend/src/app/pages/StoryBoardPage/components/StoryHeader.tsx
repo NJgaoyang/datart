@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -116,7 +117,7 @@ export const StoryHeader: FC<StoryHeaderProps> = memo(
               {t('play')}
             </Button>
             {(allowManage || allowShare) && (
-              <Dropdown
+              <LegacyDropdown
                 overlay={
                   <StoryOverLay
                     allowShare={allowShare}
@@ -128,7 +129,7 @@ export const StoryHeader: FC<StoryHeaderProps> = memo(
                 arrow
               >
                 <Button icon={<MoreOutlined />} />
-              </Dropdown>
+              </LegacyDropdown>
             )}
 
             {allowShare && (

@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -80,7 +81,7 @@ const JumpToChart: FC<
           {t('drillThrough.rule.relation.customize')}
         </Select.Option>
       </Select>
-      <Dropdown
+      <LegacyDropdown
         destroyPopupOnHide
         overlayStyle={{ margin: 4 }}
         disabled={
@@ -106,7 +107,7 @@ const JumpToChart: FC<
         arrow
       >
         <Button type="link">{t('drillThrough.rule.relation.setting')}</Button>
-      </Dropdown>
+      </LegacyDropdown>
     </Space>
   );
 });

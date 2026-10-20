@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -299,7 +300,7 @@ export const ChartDraggableSourceContainer: FC<
             <Panel
               key={colName}
               header={
-                <DateFieldHeader ref={drag}>
+                <DateFieldHeader ref={node => { drag(node); }}>
                   <IW fontSize={FONT_SIZE_TITLE}>{icon}</IW>
                   <StyledDateFieldContent>
                     {fieldDisplayName}
@@ -334,7 +335,7 @@ export const ChartDraggableSourceContainer: FC<
           <IW fontSize={FONT_SIZE_TITLE}>{icon}</IW>
           <StyledFieldContent>{fieldDisplayName}</StyledFieldContent>
           <div onClick={stopPPG}>
-            <Dropdown
+            <LegacyDropdown
               disabled={_isAllowMoreAction()}
               overlay={_getExtraActionMenus()}
               trigger={['click']}
@@ -345,7 +346,7 @@ export const ChartDraggableSourceContainer: FC<
                 className="setting"
                 onClick={e => e.preventDefault()}
               />
-            </Dropdown>
+            </LegacyDropdown>
           </div>
         </Row>
       );

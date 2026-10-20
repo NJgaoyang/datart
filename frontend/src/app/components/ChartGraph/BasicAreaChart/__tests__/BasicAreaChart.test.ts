@@ -24,6 +24,6 @@ describe('<BasicAreaChart />', () => {
     component = new BasicAreaChart();
   });
   test('It should mount', () => {
-    expect(component).toBeDatartChartModel();
+    (expect(component) as unknown as { toBeDatartChartModel(): void }).toBeDatartChartModel();
   });
 });

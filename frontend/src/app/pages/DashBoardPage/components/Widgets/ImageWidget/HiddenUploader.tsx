@@ -35,7 +35,7 @@ interface HiddenUploaderProps {
 export const HiddenUploader = forwardRef(
   ({ onChange }: HiddenUploaderProps, ref) => {
     const dispatch = useDispatch();
-    const uploadRef = useRef<any>();
+    const uploadRef = useRef<any>(undefined);
     const { boardId } = useContext(BoardContext);
 
     useImperativeHandle(ref, () => uploadRef.current?.upload.uploader);

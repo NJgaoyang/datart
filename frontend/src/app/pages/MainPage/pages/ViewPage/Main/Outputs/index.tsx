@@ -92,7 +92,7 @@ export const Outputs = memo(({ hidden = false }: { hidden?: boolean }) => {
               <Popover
                 trigger={['click']}
                 placement="top"
-                overlayStyle={{ width: SPACE_TIMES(96) }}
+                styles={{ root: { width: SPACE_TIMES(96) } }}
                 content={t('warningDescription')}
               >
                 <Button className="detail" type="link" size="small">

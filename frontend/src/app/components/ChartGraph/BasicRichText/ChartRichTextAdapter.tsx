@@ -1,3 +1,4 @@
+import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -274,7 +275,7 @@ const ChartRichTextAdapter: FC<{
           id: containerId as string,
           extendNodes: {
             4: (
-              <Dropdown
+              <LegacyDropdown
                 overlay={fieldItems}
                 trigger={['click']}
                 key="ql-selectLink"
@@ -286,7 +287,7 @@ const ChartRichTextAdapter: FC<{
                 >
                   <SelectOutlined />
                 </a>
-              </Dropdown>
+              </LegacyDropdown>
             ),
           },
           t,
