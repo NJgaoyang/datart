@@ -17,7 +17,7 @@
  */
 
 import { LoadingOutlined } from '@ant-design/icons';
-import { Spin } from 'antd';
+import { Alert, Spin } from 'antd';
 import { useFrame } from 'app/components/ReactFrameComponent';
 import { ChartLifecycle } from 'app/constants';
 import usePrefixI18N from 'app/hooks/useI18NPrefix';
@@ -69,6 +69,7 @@ const ChartIFrameLifecycleAdapter: FC<{
   const [chartResourceLoader] = useState(() => new ChartIFrameResourceLoader());
   const eventBrokerRef = useRef<ChartIFrameEventBroker>(undefined);
   const [containerStatus, setContainerStatus] = useState(ContainerStatus.INIT);
+  const [loadFailed, setLoadFailed] = useState(false);
   const { document, window } = useFrame();
   const [containerId] = useState(() => `datart-${uuidv4()}`);
   const translator = usePrefixI18N();
@@ -101,54 +102,52 @@ const ChartIFrameLifecycleAdapter: FC<{
     } as BrokerContext;
   }, [document, style?.height, style?.width, translator, window]);
 
-  /**
-   * Chart Mount Event
-   * Dependency: 'chart?.meta?.id', 'isShown'
-   */
+  // An external chart plugin can finish loading after its React 19 mount was
+  // cleaned up; never mount into a stale iframe or dispose a newer broker.
   useEffect(() => {
-    if (
-      !isShown ||
-      !chart ||
-      !document ||
-      !window ||
-      !config ||
-      containerStatus === ContainerStatus.LOADING
-    ) {
-      return;
-    }
-
+    if (!isShown || !chart || !document || !window || !config) return;
+    let cancelled = false;
     setContainerStatus(ContainerStatus.LOADING);
-    (async () => {
-      chartResourceLoader
-        .loadResource(document, chart?.getDependencies?.())
-        .then(_ => {
-          chart.init(config);
-          const newBrokerRef = new ChartIFrameEventBroker();
-          newBrokerRef.register(chart);
-          newBrokerRef.publish(
-            ChartLifecycle.Mounted,
-            buildBrokerOption(),
-            buildBrokerContext(),
-          );
-          eventBrokerRef.current = newBrokerRef;
-          setContainerStatus(ContainerStatus.SUCCESS);
-        })
-        .catch(_ => {
-          setContainerStatus(ContainerStatus.FAILED);
-        });
-    })();
+    setLoadFailed(false);
 
-    return function cleanup() {
-      setContainerStatus(ContainerStatus.INIT);
-      eventBrokerRef?.current?.publish(
-        ChartLifecycle.UnMount,
-        buildBrokerOption(),
-        buildBrokerContext(),
-      );
-      eventBrokerRef?.current?.dispose();
+    chartResourceLoader.loadResource(document, chart.getDependencies?.())
+      .then(() => {
+        if (cancelled) return;
+        chart.init(config);
+        const broker = new ChartIFrameEventBroker();
+        broker.register(chart);
+        broker.publish(
+          ChartLifecycle.Mounted,
+          buildBrokerOption(),
+          buildBrokerContext(),
+        );
+        eventBrokerRef.current = broker;
+        setContainerStatus(ContainerStatus.SUCCESS);
+      })
+      .catch(error => {
+        if (cancelled) return;
+        // Preserve the underlying error for diagnostics, not for end users.
+        console.error('Datart chart initialization failed:', chart.meta?.id, error);
+        setLoadFailed(true);
+        setContainerStatus(ContainerStatus.FAILED);
+      });
+
+    return () => {
+      cancelled = true;
+      const broker = eventBrokerRef.current;
+      eventBrokerRef.current = undefined;
+      if (broker) {
+        broker.publish(
+          ChartLifecycle.UnMount,
+          buildBrokerOption(),
+          buildBrokerContext(),
+        );
+        broker.dispose();
+      }
     };
+    // The separate update effect applies new dataset/config without remounting.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chart?.meta?.id, isShown]);
+  }, [chart?.meta?.id, isShown, document, window]);
 
   /**
    * Chart Resize Event
@@ -225,6 +224,14 @@ const ChartIFrameLifecycleAdapter: FC<{
       indicator={<LoadingOutlined spin />}
       delay={500}
     >
+      {loadFailed && (
+        <Alert
+          type="error"
+          showIcon
+          message="图表组件初始化失败"
+          description="请刷新页面重试；如问题持续，请联系管理员检查浏览器控制台。"
+        />
+      )}
       <StyledChartLifecycleAdapter
         id={containerId}
         style={{ width: style?.width, height: style?.height }}
