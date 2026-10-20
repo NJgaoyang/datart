@@ -114,7 +114,7 @@ function transform(path) {
   // The old global Jest declaration is no longer accepted by installed matcher types.
   // Keep the runtime matcher, and type its usage structurally at each TS test.
   if (text.includes('.toBeDatartChartModel()')) {
-    for (const m of text.matchAll(/expect\\(([^()]+)\\)\\.toBeDatartChartModel\\(\\)/g)) {
+    for (const m of text.matchAll(/expect\(([^()]+)\)\.toBeDatartChartModel\(\)/g)) {
       push(m.index,m.index+m[0].length,
         '(expect(' + m[1] + ') as unknown as { toBeDatartChartModel(): void }).toBeDatartChartModel()');
     }
@@ -136,7 +136,7 @@ function transform(path) {
   for (const match of text.matchAll(legacy)) {
     const name=match[1];
     push(match.index, match.index+match[0].length,
-      (text.includes('FormItemProps') ? '' : "import type { FormItemProps } from 'antd';\\n") + 'type ' + name + ' = ' +
+      (text.includes('FormItemProps') ? '' : "import type { FormItemProps } from 'antd';\n") + 'type ' + name + ' = ' +
       (name==='NamePath' ? 'NonNullable<FormItemProps[\'name\']>' : 'NonNullable<FormItemProps[\'rules\']>[number]') + ';');
   }
   if (text.includes('React.ReactChild')) {
