@@ -1,0 +1,88 @@
+import { defineConfig, devices } from '@playwright/test';
+
+const storageState = process.env.DATART_TEST_STORAGE_STATE;
+
+// Smoke is CI-safe on a local production build: no account or credentials.
+// Editor/shared-business scenarios opt in to a dedicated authorized test
+// instance, and must not expose storageState or share tokens to CI artifacts.
+export default defineConfig({
+  testDir: './specs',
+  timeout: 45_000,
+  expect: { timeout: 12_000 },
+  reporter: [['list'], ['html', { open: 'never' }]],
+  use: {
+    baseURL: process.env.DATART_TEST_BASE_URL || 'http://localhost:3000',
+    ...(storageState ? { storageState } : {}),
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+  },
+  projects: [
+    {
+      name: 'chromium-smoke',
+      testMatch: /bundle-entry-smoke\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    // Public entrypoints need no credentials, so CI can exercise the three
+    // actual browser engines on an Ubuntu runner (not on TencentOS).
+    {
+      name: 'firefox-smoke',
+      testMatch: /bundle-entry-smoke\.spec\.ts/,
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit-smoke',
+      testMatch: /bundle-entry-smoke\.spec\.ts/,
+      use: { ...devices['Desktop Safari'] },
+    },
+    {
+      name: 'webkit-mobile-smoke',
+      testMatch: /bundle-entry-smoke\.spec\.ts/,
+      use: { ...devices['iPhone 13'] },
+    },
+    {
+      name: 'chromium-editor',
+      testMatch: /dashboard-interactions\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'chromium-editor-save',
+      testMatch: /editor-save-reopen\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'chromium-share-mobile',
+      testMatch: /shared-mobile\.spec\.ts/,
+      use: { ...devices['Pixel 5'] },
+    },
+    {
+      name: 'chromium-share-desktop',
+      testMatch: /shared-desktop\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'chromium-share-performance',
+      testMatch: /shared-performance\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox-share-mobile',
+      testMatch: /shared-mobile\.spec\.ts/,
+      use: { ...devices['Desktop Firefox'], viewport: { width: 393, height: 851 } },
+    },
+    {
+      name: 'firefox-share-desktop',
+      testMatch: /shared-desktop\.spec\.ts/,
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit-share-mobile',
+      testMatch: /shared-mobile\.spec\.ts/,
+      use: { ...devices['Desktop Safari'], viewport: { width: 393, height: 852 }, hasTouch: true },
+    },
+    {
+      name: 'webkit-share-desktop',
+      testMatch: /shared-desktop\.spec\.ts/,
+      use: { ...devices['Desktop Safari'] },
+    },
+  ],
+});

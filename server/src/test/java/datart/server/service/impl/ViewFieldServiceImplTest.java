@@ -262,6 +262,40 @@ class ViewFieldServiceImplTest {
     }
 
     @Test
+    void computedFieldClearsStaleCommentWhenExpressionChangesButPhysicalPathsStayEmpty() {
+        FakeViewFieldMapper mapper = new FakeViewFieldMapper();
+        ViewField existing = field("field-1", "view-1", "COMPUTED|amount / count", "avg_price");
+        existing.setSourcePath("[]");
+        existing.setSourceComment("平均价格");
+        mapper.fields.put(existing.getCanonicalKey(), existing);
+        ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, null);
+        View view = view("STRUCT", "{\"computedFields\":[{\"fieldId\":\"field-1\",\"name\":\"avg_price\",\"category\":\"COMPUTED\",\"expression\":\"amount / quantity\"}]}");
+
+        service.reconcile(view);
+
+        ViewField changed = mapper.fields.get("COMPUTED|amount / quantity");
+        assertEquals("field-1", changed.getId());
+        assertNull(changed.getSourceComment());
+    }
+
+    @Test
+    void physicalFieldChangedToComputedClearsPreviousPhysicalComment() {
+        FakeViewFieldMapper mapper = new FakeViewFieldMapper();
+        ViewField existing = field("field-1", "view-1", "FIELD|db.user.id", "id");
+        existing.setSourcePath("[\"db\",\"user\",\"id\"]");
+        existing.setSourceComment("原用户编号");
+        mapper.fields.put(existing.getCanonicalKey(), existing);
+        ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, null);
+        View view = view("STRUCT", "{\"computedFields\":[{\"fieldId\":\"field-1\",\"name\":\"computed_id\",\"category\":\"COMPUTED\",\"expression\":\"amount / count\"}]}");
+
+        service.reconcile(view);
+
+        ViewField changed = mapper.fields.get("COMPUTED|amount / count");
+        assertEquals("field-1", changed.getId());
+        assertNull(changed.getSourceComment());
+    }
+
+    @Test
     void sqlExactSchemaCommentReplacesLegacyModelComment() {
         FakeViewFieldMapper mapper = new FakeViewFieldMapper();
         ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, schemaIndex("Schema Comment"));

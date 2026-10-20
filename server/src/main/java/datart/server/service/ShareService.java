@@ -31,7 +31,7 @@ public interface ShareService extends BaseCRUDService<Share, ShareMapperExt> {
 
     List<Download> listDownloadTask(ShareToken shareToken, String clientId);
 
-    Download download(ShareToken shareToken, String downloadId);
+    Download download(ShareToken shareToken, String downloadId, String clientId);
 
     Set<StdSqlOperator> supportedStdFunctions(ShareToken shareToken, String sourceId);
 

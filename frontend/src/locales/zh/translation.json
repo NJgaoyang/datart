@@ -1,8 +1,8 @@
 {
   "global": {
+    "401": "未登录或会话过期，请重新登录",
     "copy": "副本",
     "tokenExpired": "会话过期，请重新登录",
-    "401": "未登录或会话过期，请重新登录",
     "title": {
       "action": "操作"
     },
@@ -62,7 +62,7 @@
         "edit": "编辑"
       }
     },
-  "columnType": {
+    "columnType": {
       "string": "字符",
       "numeric": "数值",
       "date": "日期"
@@ -203,9 +203,6 @@
       },
       "resourceMigration": {
         "title": "资源迁移管理"
-      },
-      "readiness": {
-        "title": "迁移就绪度"
       },
       "auditLog": {
         "title": "审计日志"
@@ -568,10 +565,6 @@
           "sansSerif": "sans-serif"
         },
         "fontWeight": {
-          "normal": "常规字号",
-          "bold": "粗体",
-          "bolder": "特粗体",
-          "lighter": "细体",
           "100": "100",
           "200": "200",
           "300": "300",
@@ -580,7 +573,11 @@
           "600": "600",
           "700": "700",
           "800": "800",
-          "900": "900"
+          "900": "900",
+          "normal": "常规字号",
+          "bold": "粗体",
+          "bolder": "特粗体",
+          "lighter": "细体"
         },
         "fontStyle": {
           "normal": "常规体",
@@ -987,8 +984,8 @@
       },
       "controlTypes": {
         "common": "常规",
-    "date": "日期",
-    "datetime": "日期时间",
+        "date": "日期",
+        "datetime": "日期时间",
         "numeric": "数值",
         "button": "按钮"
       },
@@ -1184,6 +1181,11 @@
       "common": "常规",
       "custom": "自定义",
       "optionLabelField": "取值文本字段",
+      "optionSort": "选项排序",
+      "optionSortAuto": "自动排序",
+      "optionSortAsc": "升序",
+      "optionSortDesc": "降序",
+      "optionSortOriginal": "保持原顺序",
       "value": "备选项值",
       "label": "备选项标签",
       "action": "操作",
@@ -1819,47 +1821,6 @@
     "historyMigrationStatus": "状态",
     "historyMigrationReason": "复核原因",
     "historyMigrationError": "迁移预览加载失败"
-  },
-  "readiness": {
-    "title": "迁移就绪度",
-    "refresh": "刷新扫描",
-    "readiness": "就绪度",
-    "strictEligible": "STRICT 条件",
-    "yes": "满足",
-    "no": "未满足",
-    "blockers": "阻塞问题",
-    "warnings": "警告",
-    "ready": "就绪",
-    "scopes": "资源维度",
-    "scope": {
-      "views": "数据视图",
-      "datacharts": "图表",
-      "dashboards": "仪表板"
-    },
-    "chartFieldIdCoverage": "Chart fieldId 覆盖率",
-    "resolvedChartFieldIdCoverage": "已解析 Chart fieldId 覆盖率",
-    "issues": "问题明细",
-    "filter": {
-      "all": "全部",
-      "search": "搜索资源、问题编码或说明"
-    },
-    "issue": {
-      "severity": "级别",
-      "resource": "资源类型",
-      "name": "资源名称",
-      "code": "问题编码",
-      "message": "说明"
-    },
-    "noIssues": "没有匹配的问题",
-    "loadError": "Readiness 扫描失败，请稍后重试",
-    "empty": "暂无 Readiness 数据",
-    "strict": {
-      "mode": "当前模式",
-      "enable": "启用 STRICT",
-      "disable": "回退 COMPAT",
-      "confirmTitle": "确认启用 STRICT？",
-      "confirmContent": "启用后将禁止 legacy runtime fallback。"
-    }
   },
   "confirmInvite": {
     "join": "成功加入组织",

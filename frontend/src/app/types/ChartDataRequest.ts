@@ -48,7 +48,7 @@ export type QueryOutputProjection = {
 
 export type ChartDataRequest = {
   viewId: string;
-  aggregators: Array<{ column: string[]; sqlOperator: string }>;
+  aggregators: Array<{ column: string[]; sqlOperator: string; ratioOfSums?: boolean }>;
   expired?: number;
   filters: ChartDataRequestFilter[];
   flush?: boolean;

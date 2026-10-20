@@ -50,6 +50,67 @@ class SqlPreviewFieldMetadataResolverTest {
         assertEquals("在租用户数", fields.get(1).getDisplayName());
     }
 
+    @Test
+    void keepsChineseLabelsThroughASimpleSelectStarSubquery() {
+        SqlPreviewFieldMetadataResolver resolver =
+                new SqlPreviewFieldMetadataResolver(new SqlFieldLineageResolver());
+
+        List<PreviewFieldMeta> fields = resolver.resolve("""
+                SELECT t1.city,
+                       t1.renting_users,
+                       t1.renting_users - LAG(t1.renting_users) OVER (ORDER BY t1.city) AS month_increase_users
+                FROM (SELECT * FROM ads.daily) t1
+                """, List.of(
+                Column.of(ValueType.STRING, "city"),
+                Column.of(ValueType.NUMERIC, "renting_users"),
+                Column.of(ValueType.NUMERIC, "month_increase_users")), schema());
+
+        assertEquals("城市", fields.get(0).getDisplayName());
+        assertEquals("在租用户数", fields.get(1).getDisplayName());
+        assertEquals("month_increase_users", fields.get(2).getDisplayName());
+    }
+
+    @Test
+    void keepsChineseLabelsThroughSimpleStarCtes() {
+        SqlPreviewFieldMetadataResolver resolver =
+                new SqlPreviewFieldMetadataResolver(new SqlFieldLineageResolver());
+
+        List<PreviewFieldMeta> fields = resolver.resolve("""
+                WITH monthly AS (SELECT * FROM ads.daily),
+                     scoped_monthly AS (SELECT * FROM monthly)
+                SELECT t.city, t.renting_users,
+                       t.renting_users - LAG(t.renting_users) OVER (ORDER BY t.city) AS month_increase_users
+                FROM scoped_monthly t
+                """, List.of(
+                Column.of(ValueType.STRING, "city"),
+                Column.of(ValueType.NUMERIC, "renting_users"),
+                Column.of(ValueType.NUMERIC, "month_increase_users")), schema());
+
+        assertEquals("城市", fields.get(0).getDisplayName());
+        assertEquals("在租用户数", fields.get(1).getDisplayName());
+        assertEquals("month_increase_users", fields.get(2).getDisplayName());
+    }
+
+    @Test
+    void keepsChineseLabelsWhenSqlContainsADatartPermissionVariable() {
+        SqlPreviewFieldMetadataResolver resolver =
+                new SqlPreviewFieldMetadataResolver(new SqlFieldLineageResolver());
+
+        List<PreviewFieldMeta> fields = resolver.resolve("""
+                SELECT t1.city, t1.renting_users
+                FROM (SELECT * FROM ads.daily WHERE month_label >= '2026-06' ORDER BY month_label DESC) t1
+                WHERE t1.city IN (
+                    SELECT city_name FROM ads.user_city_permission
+                    WHERE username_en = $DATART_USER_USERNAME$
+                )
+                """, List.of(
+                Column.of(ValueType.STRING, "city"),
+                Column.of(ValueType.NUMERIC, "renting_users")), schema());
+
+        assertEquals("城市", fields.get(0).getDisplayName());
+        assertEquals("在租用户数", fields.get(1).getDisplayName());
+    }
+
     private SourceSchemaIndex.Index schema() {
         SourceSchemasMapperExt mapper = Mockito.mock(SourceSchemasMapperExt.class);
         SourceSchemas schemas = new SourceSchemas();

@@ -25,7 +25,6 @@ import {
   GlobalOutlined,
   ProfileOutlined,
   SafetyCertificateFilled,
-  SafetyCertificateOutlined,
   SettingFilled,
   SettingOutlined,
   SkinOutlined,
@@ -179,12 +178,6 @@ export function Navbar() {
         module: ResourceTypes.Manager,
       },
       {
-        name: 'readiness',
-        title: t('subNavs.readiness.title'),
-        icon: <SafetyCertificateOutlined />,
-        module: ResourceTypes.Manager,
-      },
-      {
         name: 'auditLog',
         title: t('subNavs.auditLog.title'),
         icon: <AuditOutlined />,
@@ -284,7 +277,7 @@ export function Navbar() {
         case 'logout':
           dispatch(
             logout(() => {
-              navigate('/', { replace: true });
+              navigate('/login', { replace: true });
             }),
           );
           break;

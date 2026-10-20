@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import datart.core.base.consts.Const;
 import datart.core.base.consts.FileOwner;
-import datart.core.base.consts.MigrationMode;
 import datart.core.base.exception.Exceptions;
 import datart.core.base.exception.NotFoundException;
 import datart.core.base.exception.ParamException;
@@ -232,16 +231,17 @@ public class DatachartServiceImpl extends BaseService implements DatachartServic
         if (model == null) {
             return true;
         }
-        MigrationMode migrationMode = migrationModeService.getMode(orgId);
+        // Import never enables COMPAT normalization or silent error recovery.
+        migrationModeService.getMode(orgId);
         switch (strategy) {
             case OVERWRITE:
-                importDatachart(model, orgId, true, migrationMode);
+                importDatachart(model, orgId, true);
                 break;
             case ROLLBACK:
-                importDatachart(model, orgId, false, migrationMode);
+                importDatachart(model, orgId, false);
                 break;
             default:
-                importDatachart(model, orgId, false, migrationMode);
+                importDatachart(model, orgId, false);
         }
         return true;
     }
@@ -281,8 +281,7 @@ public class DatachartServiceImpl extends BaseService implements DatachartServic
 
     private void importDatachart(DatachartResourceModel model,
                                  String orgId,
-                                 boolean deleteFirst,
-                                 MigrationMode migrationMode) {
+                                 boolean deleteFirst) {
         if (model == null || CollectionUtils.isEmpty(model.getMainModels())) {
             return;
         }
@@ -315,17 +314,17 @@ public class DatachartServiceImpl extends BaseService implements DatachartServic
             datachart.setOrgId(orgId);
             datachart.setUpdateBy(getCurrentUser().getId());
             datachart.setUpdateTime(new Date());
-            normalizeImportedConfig(datachart, migrationMode);
+            normalizeImportedConfig(datachart);
             datachartMapper.insert(datachart);
         }
     }
 
-    private void normalizeImportedConfig(Datachart datachart, MigrationMode migrationMode) {
+    void normalizeImportedConfig(Datachart datachart) {
         try {
             ObjectNode root = (ObjectNode) objectMapper.readTree(datachart.getConfig());
             List<ViewFieldDTO> fields = viewFieldService.listByViewId(datachart.getViewId());
-            ChartConfigReconciler.Result result = new ChartConfigReconciler().reconcile(root, fields);
-            if (migrationMode == MigrationMode.STRICT && !result.issues().isEmpty()) {
+            ChartConfigReconciler.Result result = new ChartConfigReconciler().validateStrict(root, fields);
+            if (!result.issues().isEmpty()) {
                 throw new StrictFieldReferenceException("STRICT_IMPORT_FIELD_NOT_RESOLVED",
                         result.issues().get(0).detail());
             }
@@ -333,9 +332,7 @@ public class DatachartServiceImpl extends BaseService implements DatachartServic
         } catch (StrictFieldReferenceException e) {
             throw e;
         } catch (Exception e) {
-            if (migrationMode == MigrationMode.STRICT) {
-                throw new StrictFieldReferenceException("STRICT_IMPORT_CONFIG_INVALID", datachart.getId());
-            }
+            throw new StrictFieldReferenceException("STRICT_IMPORT_CONFIG_INVALID", datachart.getId());
         }
     }
 

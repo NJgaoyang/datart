@@ -1,12 +1,19 @@
+import { DASHBOARD_DESIGN_TOKENS as T, getDashboardDesignPalette } from '../../styles/dashboardDesignTokens';
+
+const light = getDashboardDesignPalette('light');
+// Same existing look. No change to user-selected margins, pRect or mRect.
 export const MOBILE_BOARD_THEME = {
-  pageBackground: '#f5f6f8',
-  cardBackground: '#fff',
-  cardRadius: 12,
-  pagePadding: 8,
-  gridGap: 4,
-  cardBorder: 'rgba(0, 0, 0, 0.04)',
-  cardShadow: '0 1px 2px rgba(0, 0, 0, 0.02), 0 4px 12px rgba(0, 0, 0, 0.03)',
-  titleColor: '#1f2329',
-  secondaryTextColor: '#8f959e',
-  primaryTextColor: '#1f2329',
+  pageBackground: light.page,
+  cardBackground: light.card,
+  cardRadius: T.radius.card,
+  pagePadding: T.spacing.page,
+  gridGap: T.spacing.grid,
+  cardBorder: light.subtleBorder,
+  cardShadow: light.shadow,
+  titleColor: light.text,
+  secondaryTextColor: light.secondaryText,
+  primaryTextColor: light.text,
+  navTextColor: light.navText,
+  navDividerColor: light.divider,
+  iconColor: light.icon,
 } as const;

@@ -42,6 +42,42 @@ interface TableStyleConfigProps {
   };
 }
 
+/**
+ * Compute the real table width from leaf columns. rc-table expands
+ * scrollable fixed-layout tables to their host width by default, which
+ * stretches even short numeric fields into hundreds of pixels.
+ *
+ * Only force content sizing when every leaf has an explicit pixel width:
+ * unknown/flexible widths continue to use Ant Design's normal layout.
+ */
+export const getExplicitTableWidth = (
+  columns: Array<{ width?: string | number; children?: any[] }>,
+): number | undefined => {
+  if (!columns?.length) return undefined;
+  let total = 0;
+  let leaves = 0;
+  const addWidths = (items: typeof columns): boolean => {
+    for (const column of items) {
+      if (column.children?.length) {
+        if (!addWidths(column.children)) return false;
+        continue;
+      }
+      const input = column.width;
+      const width =
+        typeof input === 'number'
+          ? input
+          : typeof input === 'string' && /^\d+(?:\.\d+)?(?:px)?$/.test(input.trim())
+          ? Number.parseFloat(input)
+          : NaN;
+      if (!Number.isFinite(width) || width <= 0) return false;
+      total += width;
+      leaves++;
+    }
+    return true;
+  };
+  return addWidths(columns) && leaves ? Math.ceil(total) : undefined;
+};
+
 const AntdTableWrapper: FC<{
   dataSource: [];
   columns: [];
@@ -60,6 +96,7 @@ const AntdTableWrapper: FC<{
     ...rest
   }) => {
     const { i18n } = useTranslation();
+    const explicitTableWidth = getExplicitTableWidth(columns);
 
     const getTableSummaryRow = pageData => {
       if (!summaryFn) {
@@ -87,6 +124,7 @@ const AntdTableWrapper: FC<{
           <StyledTable
             {...rest}
             tableStyleConfig={tableStyleConfig}
+            $explicitTableWidth={explicitTableWidth}
             dataSource={dataSource}
             columns={columns}
             summary={getTableSummaryRow}
@@ -105,13 +143,28 @@ const TableHost = styled.div`
   overflow: hidden;
 `;
 
-const StyledTable = styled(Table)<{ tableStyleConfig?: TableStyleConfigProps }>`
+const StyledTable = styled(Table)<{
+  tableStyleConfig?: TableStyleConfigProps;
+  $explicitTableWidth?: number;
+}>`
   min-width: 0;
   height: 100%;
   overflow: hidden;
 
   .ant-table {
     background: transparent;
+  }
+
+  /* Keep measured widths as the minimum, but fill a wide widget when it has
+     only a few fields; wider tables still keep their horizontal scroll. */
+  .ant-table-content > table,
+  .ant-table-header > table,
+  .ant-table-body > table,
+  .ant-table-summary > table {
+    ${p =>
+      p.$explicitTableWidth
+        ? `width: max(${p.$explicitTableWidth}px, 100%) !important; min-width: 0 !important;`
+        : ''}
   }
 
   .ant-table-default .ant-table-thead > tr > th {

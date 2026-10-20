@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 import { vi } from 'vitest';
-import AntdTableWrapper from '../AntdTableWrapper';
+import AntdTableWrapper, { getExplicitTableWidth } from '../AntdTableWrapper';
 
 describe('AntdTableWrapper', () => {
   it('renders a stable widget id marker outside the Ant table DOM', () => {
@@ -15,6 +15,55 @@ describe('AntdTableWrapper', () => {
     expect(
       container.querySelector('[data-datart-widget-id="table-widget"]'),
     ).not.toBeNull();
+  });
+
+  it('sums content width for normal, grouped, and manually resized columns', () => {
+    expect(
+      getExplicitTableWidth([
+        { key: 'city', width: 88 },
+        { key: 'group', children: [{ width: 110 }, { width: '124px' }] },
+      ] as any),
+    ).toBe(322);
+    expect(getExplicitTableWidth([{ width: 88 }, { width: '' }])).toBeUndefined();
+    expect(getExplicitTableWidth([{ width: 88 }, { width: '25%' }])).toBeUndefined();
+    expect(getExplicitTableWidth([{ width: 88 }, { width: 0 }])).toBeUndefined();
+    expect(getExplicitTableWidth([])).toBeUndefined();
+  });
+
+  it('uses content width as a minimum and fills a wider widget', () => {
+    const tableProps = {
+      dataSource: [{ key: '1', city: '南京市', orders: 2043 }],
+      columns: [
+        { key: 'city', dataIndex: 'city', title: '城市', width: 88 },
+        { key: 'orders', dataIndex: 'orders', title: '48V订单数', width: 110 },
+      ],
+      scroll: { x: 198, y: 180 },
+    } as any;
+    const { container } = render(<AntdTableWrapper {...tableProps} />);
+    const headerTable = container.querySelector<HTMLElement>('.ant-table-header > table');
+    const bodyTable = container.querySelector<HTMLElement>('.ant-table-body > table');
+
+    expect(headerTable).not.toBeNull();
+    expect(bodyTable).not.toBeNull();
+    // JSDOM reports an inline min-width even if !important stylesheet
+    // declarations override it in browsers. Verify the actual CSS rule.
+    const tableRules = Array.from(document.styleSheets).flatMap(sheet =>
+      Array.from(sheet.cssRules || []),
+    );
+    expect(
+      tableRules.some(rule =>
+        rule.cssText.includes('.ant-table-header>table') &&
+        rule.cssText.includes('min-width: 0 !important'),
+      ),
+    ).toBe(true);
+    expect(headerTable!.style.width).toBe('198px');
+    expect(bodyTable!.style.width).toBe('198px');
+    expect(
+      tableRules.some(rule =>
+        rule.cssText.includes('.ant-table-body>table') &&
+        rule.cssText.includes('width: max(198px, 100%) !important'),
+      ),
+    ).toBe(true);
   });
 
   it('does not shrink a fixed header in the mobile flex layout', () => {

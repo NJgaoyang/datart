@@ -29,6 +29,7 @@ import { FC, memo, useState } from 'react';
 import { Draggable, Droppable } from '@hello-pangea/dnd';
 import styled from 'styled-components';
 import { getFieldDisplayName } from 'utils/utils';
+import { DatasetCommentLabel } from '../../../components/DatasetCommentLabel';
 import {
   BLUE,
   FONT_SIZE_BASE,
@@ -85,7 +86,11 @@ const DataModelBranch: FC<{
             }}
           >
             <IW fontSize={FONT_SIZE_HEADING}>{icon}</IW>
-            <span>{getFieldDisplayName(node)}</span>
+            <DatasetCommentLabel
+              label={getFieldDisplayName(node)}
+              comment={node.sourceComment || node.comment}
+              hasCustomName={Boolean(node.customName || node.isDisplayNameCustom)}
+            />
             {node.role === ColumnRole.Hierarchy && (
               <div className="action">
                 {isHover && !isDragging && (
@@ -182,6 +187,8 @@ const StyledDataModelBranch = styled.div<{}>`
 
   & .content {
     display: flex;
+    align-items: center;
+    min-width: 0;
   }
 
   & .children {

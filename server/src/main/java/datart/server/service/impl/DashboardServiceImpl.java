@@ -183,8 +183,7 @@ public class DashboardServiceImpl extends BaseService implements DashboardServic
             dashboardDetail.setDatacharts(Collections.emptyList());
         }
         MigrationMode migrationMode = migrationModeService.getMode(dashboard.getOrgId());
-        if (migrationMode == MigrationMode.STRICT
-                && dashboardDetail.getDatacharts().size() != datachartIds.size()) {
+        if (dashboardDetail.getDatacharts().size() != datachartIds.size()) {
             throw new StrictFieldReferenceException("STRICT_DASHBOARD_DATACHART_NOT_FOUND", dashboardId);
         }
         //views
@@ -197,8 +196,7 @@ public class DashboardServiceImpl extends BaseService implements DashboardServic
         } else {
             dashboardDetail.setViews(Collections.emptyList());
         }
-        if (migrationMode == MigrationMode.STRICT
-                && dashboardDetail.getViews().size() != viewIds.size()) {
+        if (dashboardDetail.getViews().size() != viewIds.size()) {
             throw new StrictFieldReferenceException("STRICT_DASHBOARD_VIEW_NOT_FOUND", dashboardId);
         }
 

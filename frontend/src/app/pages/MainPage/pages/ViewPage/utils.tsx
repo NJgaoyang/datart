@@ -166,6 +166,34 @@ export function findViewFieldMeta(
   return byOriginName.length === 1 ? byOriginName[0] : undefined;
 }
 
+/** Adds persisted dataset labels to an editor column without changing its identity. */
+export function hydrateViewColumnDisplayMeta(
+  column: Column,
+  fields?: ViewFieldMeta[],
+): Column {
+  const children = column.children?.map(child =>
+    hydrateViewColumnDisplayMeta(child, fields),
+  );
+  if (children?.length) {
+    return { ...column, children };
+  }
+  const field = findViewFieldMeta(column, fields);
+  if (!field) return column;
+
+  return {
+    ...column,
+    sourceComment: field.sourceComment ?? column.sourceComment,
+    customName: field.customName ?? column.customName,
+    comment: field.sourceComment ?? column.comment,
+    displayName:
+      column.isDisplayNameCustom === true
+        ? column.displayName
+        : field.displayName ?? column.displayName,
+    isDisplayNameCustom:
+      column.isDisplayNameCustom === true || Boolean(field.customName),
+  };
+}
+
 export function getHierarchyColumnByField(
   hierarchy: Model | undefined,
   field: { name?: string; path?: string[] },
@@ -335,18 +363,23 @@ export function getColumnWidthMap(
 
   return Object.keys(model).reduce((map, name) => {
     if (!map[name]) {
-      // header width
+      // Measure the displayed column label, not its internal database key.
+      // SchemaTable renders these labels and must not expand short headers
+      // such as 城市 because their SQL identifiers are long.
+      const field = model[name];
+      const displayName = getFieldDisplayName({ ...field, name });
       map[name] =
-        getTextWidth(name, `${FONT_WEIGHT_MEDIUM}`) +
+        getTextWidth(displayName, `${FONT_WEIGHT_MEDIUM}`) +
         HEADER_PADDING +
         ICON_WIDTH * 2 +
         ICON_MARGIN;
     }
+    map[name] = Math.min(360, Math.max(88, map[name]));
     if (dataSource.length > 0) {
       map[name] = dataSource.reduce((width, o) => {
         // column width
         return Math.min(
-          // MAX_RESULT_TABLE_COLUMN_WIDTH,
+          360,
           Math.max(
             width,
             map[name],

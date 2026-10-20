@@ -22,7 +22,11 @@ public class MigrationModeServiceImpl implements MigrationModeService {
         if (organization == null) {
             Exceptions.notFound("organization");
         }
-        return organization.getMigrationMode() == null
-                ? MigrationMode.COMPAT : organization.getMigrationMode();
+        // STRICT-only installations must fail closed. Never silently serve
+        // old metadata by reverting a missing/legacy organization to COMPAT.
+        if (organization.getMigrationMode() != MigrationMode.STRICT) {
+            throw new IllegalStateException("STRICT_ONLY_ORGANIZATION_REQUIRED: " + orgId);
+        }
+        return MigrationMode.STRICT;
     }
 }

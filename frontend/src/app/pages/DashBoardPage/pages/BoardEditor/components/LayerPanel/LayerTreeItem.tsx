@@ -15,7 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { MoreOutlined } from '@ant-design/icons';
+import { AimOutlined, MoreOutlined } from '@ant-design/icons';
+import { Button, Tooltip } from 'antd';
+import { BoardContext } from 'app/pages/DashBoardPage/components/BoardProvider/BoardProvider';
+import { locateAutoWidget } from 'app/pages/DashBoardPage/utils/locateWidget';
 import { TreeDataNode } from 'antd';
 import { WidgetDndHandleMask } from 'app/pages/DashBoardPage/components/WidgetComponents/WidgetDndHandleMask';
 import { WidgetDropdownList } from 'app/pages/DashBoardPage/components/WidgetComponents/WidgetDropdownList';
@@ -58,6 +61,7 @@ export const LayerTreeItem: FC<{ node: LayerNode }> = memo(({ node }) => {
 export const TreeItem: FC<{ node: LayerNode }> = memo(({ node }) => {
   const { title } = node;
   const widget = useContext(WidgetContext);
+  const { boardType } = useContext(BoardContext);
   const canWrapped = widgetManagerInstance.meta(
     widget.config.originalType,
   ).canWrapped;
@@ -68,6 +72,22 @@ export const TreeItem: FC<{ node: LayerNode }> = memo(({ node }) => {
         <h4 title={title as string}>{String(title) || 'untitled-widget'}</h4>
         <WidgetDndHandleMask widgetId={widget?.id} canWrapped={canWrapped} />
       </TitleBlock>
+      {boardType === 'auto' && (
+        <Tooltip title="定位到画布中的组件">
+          <Button
+            className="layer-locate-widget"
+            type="text"
+            size="small"
+            aria-label={`定位组件：${String(title)}`}
+            icon={<AimOutlined />}
+            onMouseDown={event => event.stopPropagation()}
+            onClick={event => {
+              event.stopPropagation();
+              locateAutoWidget(node.key, document.querySelector('.datart-board-editor'));
+            }}
+          />
+        </Tooltip>
+      )}
       <WidgetDropdownList
         widget={widget}
         buttonProps={{
@@ -92,18 +112,30 @@ const Item = styled.div`
     white-space: nowrap;
   }
 
+  .layer-locate-widget {
+    flex: 0 0 auto;
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
+  }
   .widget-tool-dropdown {
     display: none;
   }
 
-  &:hover {
+  &:hover,
+  &:focus-within {
     .widget-tool-dropdown {
       display: block;
     }
+  }
+
+  @media (pointer: coarse) {
+    .widget-tool-dropdown { display: inline-flex; }
   }
 `;
 
 const TitleBlock = styled.div`
   position: relative;
-  width: calc(100% - 24px);
+  flex: 1 1 0;
+  min-width: 0;
 `;

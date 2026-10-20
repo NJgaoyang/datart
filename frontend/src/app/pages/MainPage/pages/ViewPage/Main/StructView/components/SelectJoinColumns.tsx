@@ -22,7 +22,6 @@ import { DatabaseSchema } from 'app/pages/MainPage/pages/ViewPage/slice/types';
 import { memo, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import styled from 'styled-components';
-import { SPACE_SM } from 'styles/StyleConstants';
 import { selectAllSourceDatabaseSchemas } from '../../../slice/selectors';
 import { StructViewQueryProps } from '../../../slice/types';
 import { getTableAllColumns } from '../../../utils';
@@ -51,6 +50,7 @@ interface SelectJoinColumnsProps {
   sourceId: string;
   allowManage: boolean;
   onChange: (field, type, index) => void;
+  columnWidths: { left: number; right: number };
 }
 
 const SelectJoinColumns = memo(
@@ -61,6 +61,7 @@ const SelectJoinColumns = memo(
     sourceId,
     allowManage,
     onChange,
+    columnWidths,
   }: SelectJoinColumnsProps) => {
     const t = useI18NPrefix(`view.structView`);
     const allDatabaseSchemas = useSelector(selectAllSourceDatabaseSchemas);
@@ -114,6 +115,7 @@ const SelectJoinColumns = memo(
           rules={[{ required: true, message: t('selectField') }]}
         >
           <ColumnSelect
+            $contentWidth={columnWidths.left}
             dropdownMatchSelectWidth={false}
             allowClear
             placeholder={t('selectField')}
@@ -135,6 +137,7 @@ const SelectJoinColumns = memo(
           rules={[{ required: true, message: t('selectField') }]}
         >
           <ColumnSelect
+            $contentWidth={columnWidths.right}
             dropdownMatchSelectWidth={false}
             allowClear
             placeholder={t('selectField')}
@@ -155,18 +158,31 @@ const SelectJoinColumns = memo(
   },
 );
 
-const Line = styled.div``;
+const Line = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
 
-const FormItem = styled(Form.Item)`
-  display: inline-block;
+  .ant-form-item {
+    flex: 0 0 auto;
+    margin-bottom: 0;
+  }
 `;
 
-const ColumnSelect = styled(TreeSelect)`
-  min-width: 120px;
+const FormItem = styled(Form.Item)`
+  flex: 0 0 auto;
+  margin-bottom: 0;
+`;
+
+const ColumnSelect = styled(TreeSelect)<{ $contentWidth: number }>`
+  width: ${p => p.$contentWidth}px;
+  min-width: 0;
+  max-width: min(300px, 100%);
 `;
 
 const Equal = styled.span`
-  margin: 0 ${SPACE_SM};
+  flex: 0 0 auto;
 `;
 
 export default SelectJoinColumns;

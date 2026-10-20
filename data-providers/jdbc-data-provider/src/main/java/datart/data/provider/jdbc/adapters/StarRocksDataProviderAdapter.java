@@ -109,6 +109,10 @@ public class StarRocksDataProviderAdapter extends JdbcDataProviderAdapter {
         if (SqlStringUtils.hasTopLevelPagination(sql)) {
             return sql;
         }
+        if (sql.contains("/*+")) {
+            // Keep StarRocks optimizer hints verbatim: Calcite does not retain comments during SQL rendering.
+            return appendLimit(sql, pageInfo);
+        }
         try {
             SqlNode parsed = SqlParserUtils.createParser(sql, dialect).parseQuery();
             SqlSelect select = parsed instanceof SqlSelect
@@ -135,7 +139,7 @@ public class StarRocksDataProviderAdapter extends JdbcDataProviderAdapter {
                 SqlNodeList.SINGLETON_STAR,
                 from,
                 null,
-                new SqlNodeList(pos),
+                null,
                 null,
                 new SqlNodeList(pos),
                 null,

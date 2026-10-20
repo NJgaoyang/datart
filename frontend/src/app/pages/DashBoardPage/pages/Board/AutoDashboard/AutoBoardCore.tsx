@@ -26,21 +26,19 @@ import useBoardScroll from 'app/pages/DashBoardPage/hooks/useBoardScroll';
 import useGridLayoutMap from 'app/pages/DashBoardPage/hooks/useGridLayoutMap';
 import useLayoutMap from 'app/pages/DashBoardPage/hooks/useLayoutMap';
 import { getBoardMarginPadding } from 'app/pages/DashBoardPage/utils/board';
+import { isMobileWidgetVisible } from 'app/pages/DashBoardPage/utils/autoLayout';
 import { memo, useCallback, useContext, useMemo } from 'react';
-import RGL, { Layout, WidthProvider } from 'react-grid-layout';
-import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
+import { DashboardGridLayout } from 'app/pages/DashBoardPage/components/GridLayout/DashboardGridLayout';
 import styled from 'styled-components';
 import StyledBackground from '../../../components/WidgetComponents/StyledBackground';
 import { WidgetOfAuto } from './WidgetOfAuto';
 
-const ReactGridLayout = WidthProvider(RGL);
 export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
   ({ boardId }) => {
-    const { ref, widgetRowHeight, colsKey } = useGridWidgetHeight();
+    const { ref, widgetRowHeight, colsKey, canvasWidth } = useGridWidgetHeight(false);
     const { editing } = useContext(BoardContext);
     const boardConfig = useContext(BoardConfigValContext);
-    const { background, allowOverlap } = boardConfig;
+    const { background, allowOverlap, compactType } = boardConfig;
 
     const { curMargin, curPadding } = useMemo(() => {
       return getBoardMarginPadding(boardConfig, colsKey);
@@ -49,55 +47,59 @@ export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
     const { gridWrapRef, thEmitScroll } = useBoardScroll(boardId);
 
     const sortedLayoutWidgets = useLayoutMap(boardId);
-    const layoutMap = useGridLayoutMap(sortedLayoutWidgets);
-
-    const onLayoutChange = useCallback(
-      (layouts: Layout[]) => {
-        thEmitScroll();
-      },
-      [thEmitScroll],
+    const visibleLayoutWidgets = useMemo(
+      () => colsKey === 'sm'
+        ? sortedLayoutWidgets.filter(isMobileWidgetVisible)
+        : sortedLayoutWidgets,
+      [colsKey, sortedLayoutWidgets],
     );
+    const layoutMap = useGridLayoutMap(visibleLayoutWidgets, canvasWidth, colsKey);
 
-    const boardChildren = useMemo(() => {
-      return sortedLayoutWidgets.map(item => {
-        return (
-          <div key={item.id}>
-            <WidgetWrapProvider
-              id={item.id}
-              boardEditing={editing}
-              boardId={boardId}
-            >
-              <WidgetOfAuto />
-            </WidgetWrapProvider>
-          </div>
-        );
-      });
-    }, [boardId, editing, sortedLayoutWidgets]);
+    const onLayoutChange = useCallback(() => {
+      thEmitScroll();
+    }, [thEmitScroll]);
+
+    // RGL v2 clones each direct child to inject its DOM ref, className and
+    // positioning styles. The direct child MUST be a DOM node; only the
+    // expensive widget contents are memoized.
+    const boardChildren = useMemo(
+      () => visibleLayoutWidgets.map(item => (
+        <div key={item.id}>
+          <ReadWidgetContent
+            id={item.id}
+            boardId={boardId}
+            editing={editing}
+          />
+        </div>
+      )),
+      [boardId, editing, visibleLayoutWidgets],
+    );
     return (
       <Wrapper>
         <StyledContainer bg={background}>
           <div className="grid-wrap" ref={gridWrapRef}>
             <div className="widget-row-height" ref={ref}>
-              <ReactGridLayout
-                layout={layoutMap[colsKey]}
-                margin={curMargin}
-                containerPadding={curPadding}
+              <DashboardGridLayout
+                boardId={boardId}
+                deviceKey={colsKey}
+                measuredWidth={canvasWidth}
+                layout={layoutMap[colsKey] || []}
                 cols={LAYOUT_COLS_MAP[colsKey]}
                 rowHeight={widgetRowHeight}
-                onLayoutChange={onLayoutChange}
-                isDraggable={false}
-                isResizable={false}
+                margin={curMargin}
+                containerPadding={curPadding}
+                editable={false}
                 allowOverlap={allowOverlap}
-                measureBeforeMount={false}
-                useCSSTransforms={true}
+                compactType={compactType}
+                onLayoutChange={onLayoutChange}
               >
                 {boardChildren}
-              </ReactGridLayout>
+              </DashboardGridLayout>
             </div>
           </div>
-          {!sortedLayoutWidgets.length && (
+          {!visibleLayoutWidgets.length && (
             <div className="empty">
-              <Empty description="" />
+              <Empty description="当前仪表板还没有可展示的组件" />
             </div>
           )}
         </StyledContainer>
@@ -111,6 +113,7 @@ const Wrapper = styled.div`
   flex: 1;
   flex-direction: column;
   width: 100%;
+  min-width: 0;
   min-height: 0;
 `;
 const StyledContainer = styled(StyledBackground)`
@@ -120,11 +123,14 @@ const StyledContainer = styled(StyledBackground)`
   min-height: 0;
   .grid-wrap {
     flex: 1;
+    min-width: 0;
     overflow-y: auto;
-    -ms-overflow-style: none;
+    overflow-x: auto;
+    scrollbar-width: thin;
   }
   .grid-wrap::-webkit-scrollbar {
-    width: 0 !important;
+    width: 8px;
+    height: 8px;
   }
 
   .empty {
@@ -134,3 +140,12 @@ const StyledContainer = styled(StyledBackground)`
     justify-content: center;
   }
 `;
+
+/** Memoize chart contents, never the native DOM element RGL needs to control. */
+const ReadWidgetContent = memo(
+  ({ id, boardId, editing }: { id: string; boardId: string; editing: boolean }) => (
+    <WidgetWrapProvider id={id} boardEditing={editing} boardId={boardId}>
+      <WidgetOfAuto />
+    </WidgetWrapProvider>
+  ),
+);

@@ -66,7 +66,16 @@ public class SqlQueryScriptProcessor implements QueryScriptProcessor {
                             } else if (variable.getValues().size() == 1) {
                                 return variable.getValues().iterator().next();
                             } else return variable.getValues();
-                        }));
+                        },
+                        (left, right) -> {
+                            if (java.util.Objects.equals(left, right)) return left;
+                            // Different values under the same name cannot be
+                            // safely attributed to either upstream data set.
+                            // Refuse rather than weakening permission filters.
+                            throw new IllegalArgumentException(
+                                    "Conflicting JOIN variable values: rename variables by source");
+                        },
+                        java.util.LinkedHashMap::new));
 
         script = FreemarkerContext.process(queryScript.getScript(), dataMap);
 

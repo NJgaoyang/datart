@@ -19,7 +19,8 @@ import { DatePicker, Form, FormItemProps } from 'antd';
 import { PickerType } from 'app/pages/DashBoardPage/pages/BoardEditor/components/ControllerWidgetPanel/types';
 import { formatDateByPickType } from 'app/pages/DashBoardPage/pages/BoardEditor/components/ControllerWidgetPanel/utils';
 import dayjs from 'dayjs';
-import React, { memo, useMemo } from 'react';
+import { BoardContext } from 'app/pages/DashBoardPage/components/BoardProvider/BoardProvider';
+import React, { memo, useContext, useMemo } from 'react';
 import styled from 'styled-components';
 const { RangePicker } = DatePicker;
 
@@ -39,6 +40,7 @@ export const RangeTimeControllerForm: React.FC<TimeControllerProps> = memo(
       <Form.Item
         name={name}
         label={label}
+        className="mobile-range-time-form"
         validateTrigger={['onChange', 'onBlur']}
         rules={[{ required: false }]}
       >
@@ -55,6 +57,7 @@ export interface TimeSetProps extends FormItemProps<any> {
 }
 export const RangeTimeController: React.FC<TimeSetProps> = memo(
   ({ pickerType, value, onChange }) => {
+    const { isMobile } = useContext(BoardContext);
     const _onChange = times => {
       if (!times) {
         onChange?.(null);
@@ -85,6 +88,7 @@ export const RangeTimeController: React.FC<TimeSetProps> = memo(
             value={_values as any}
             onChange={_onChange}
             className="control-datePicker"
+            classNames={{ popup: { root: isMobile ? 'datart-mobile-date-popup' : undefined } }}
             bordered={false}
           />
         ) : (
@@ -95,6 +99,7 @@ export const RangeTimeController: React.FC<TimeSetProps> = memo(
             value={_values as any}
             picker={pickerType as any}
             className="control-datePicker"
+            classNames={{ popup: { root: isMobile ? 'datart-mobile-date-popup' : undefined } }}
             bordered={false}
           />
         )}

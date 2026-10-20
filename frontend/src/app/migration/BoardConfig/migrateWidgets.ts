@@ -17,7 +17,6 @@
  */
 
 import { FONT_DEFAULT } from 'app/constants';
-import { migrateAutoWidgetsLayout } from 'app/pages/DashBoardPage/utils/autoLayout';
 import { initInteractionTpl } from 'app/pages/DashBoardPage/components/WidgetManager/utils/init';
 import { ORIGINAL_TYPE_MAP } from 'app/pages/DashBoardPage/constants';
 import { PRIMARY } from 'styles/StyleConstants';
@@ -307,9 +306,9 @@ export const parseServerWidget = (sWidget: ServerWidget) => {
 export const migrateWidgets = (
   widgets: ServerWidget[],
   boardType: BoardType,
-  layoutVersion?: number,
-  mobileLayoutVersion?: number,
-  pcRowLayoutVersion?: number,
+  _layoutVersion?: number,
+  _mobileLayoutVersion?: number,
+  _pcRowLayoutVersion?: number,
 ) => {
   if (!Array.isArray(widgets)) {
     return [];
@@ -338,13 +337,8 @@ export const migrateWidgets = (
       return finaleWidget(beta4Widget as Widget);
     })
     .filter(widget => !!widget);
-  const result = targetWidgets as Widget[];
-  return boardType === 'auto'
-    ? migrateAutoWidgetsLayout(
-        result,
-        layoutVersion,
-        mobileLayoutVersion,
-        pcRowLayoutVersion,
-      )
-    : result;
+  // Native automatic dashboards use the v3 layout schema directly.
+  // Old desktop/mobile coordinate conversion is deferred to an explicit
+  // migration system; loading a dashboard must not silently alter positions.
+  return targetWidgets as Widget[];
 };

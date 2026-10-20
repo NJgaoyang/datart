@@ -138,12 +138,19 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         String joinType = normalizeJoinType(param.getJoinType());
         DataProviderService dataProviderService = Application.getBean(DataProviderService.class);
         DataProviderSource providerSource = dataProviderService.parseDataProviderConfig(source);
-        String leftSql = renderViewSql(providerSource, left);
-        String rightSql = renderViewSql(providerSource, right);
+        // SQL source scripts must stay as templates until the real viewer
+        // executes the composed view; rendering with an empty variable map
+        // here would silently erase view-specific security predicates.
+        String leftPrefix = "__join0__";
+        String rightPrefix = "__join1__";
+        String leftSql = namespaceSqlVariables(renderViewSql(providerSource, left),
+                leftPrefix, runtimeViewVariableNames(left, new HashSet<>()));
+        String rightSql = namespaceSqlVariables(renderViewSql(providerSource, right),
+                rightPrefix, runtimeViewVariableNames(right, new HashSet<>()));
         String selectList = buildSelectList(left, right);
         String conditions = param.getConditions().stream()
-                .map(condition -> quote("v0") + "." + quote(extractActualColumn(condition.getLeftColumn()))
-                        + " = " + quote("v1") + "." + quote(extractActualColumn(condition.getRightColumn())))
+                .map(condition -> quote("v0") + "." + quote(resolveInputColumnName(left, condition.getLeftColumn()))
+                        + " = " + quote("v1") + "." + quote(resolveInputColumnName(right, condition.getRightColumn())))
                 .collect(Collectors.joining(" AND "));
         String script = "SELECT " + selectList + "\n"
                 + "FROM (\n" + indent(leftSql) + "\n) " + quote("v0") + "\n"
@@ -153,6 +160,13 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         JSONObject config = new JSONObject();
         JSONObject lineage = new JSONObject();
         lineage.put("upstreamViewIds", Arrays.asList(left.getId(), right.getId()));
+        Map<String, String> variableScopes = new LinkedHashMap<>();
+        variableScopes.put(left.getId(), leftPrefix);
+        variableScopes.put(right.getId(), rightPrefix);
+        lineage.put("variableScopes", variableScopes);
+        // Stable source identity: SQL subquery aliases alone cannot recover
+        // physical lineage, comments or distinct same-name JOIN fields.
+        lineage.put("outputFieldSources", outputFieldSources(left, right));
         config.put("lineage", lineage);
         JSONObject viewJoin = new JSONObject();
         viewJoin.put("leftViewId", left.getId());
@@ -234,7 +248,56 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         }
     }
 
+
+    /** Exact FreeMarker and SQL fragment placeholders; never replace raw
+     * identifier substrings (e.g. city in city_code). */
+    static String namespaceSqlVariables(String sql, String prefix, Set<String> names) {
+        if (sql == null || names.isEmpty()) return sql;
+        String result = sql;
+        for (String name : names) {
+            result = result.replace("${" + name + "}", "${" + prefix + name + "}");
+            result = result.replace("$" + name + "$", "$" + prefix + name + "$");
+        }
+        return result;
+    }
+
+    /** These names are what a composed upstream view actually exposes,
+     * including earlier JOIN namespaces. Organization variables stay global. */
+    private Set<String> runtimeViewVariableNames(View view, Set<String> visiting) {
+        Set<String> names = new LinkedHashSet<>();
+        if (view == null || !visiting.add(view.getId())) return names;
+        try {
+            for (Variable item : variableMapper.selectViewVariables(view.getId())) {
+                if (item.getName() != null) names.add(item.getName());
+            }
+            if (view.getConfig() != null) {
+                JSONObject cfg = JSON.parseObject(view.getConfig());
+                JSONObject lineage = cfg == null ? null : cfg.getJSONObject("lineage");
+                JSONArray ids = lineage == null ? null : lineage.getJSONArray("upstreamViewIds");
+                JSONObject scopes = lineage == null ? null : lineage.getJSONObject("variableScopes");
+                if (ids != null) {
+                    for (String id : ids.toJavaList(String.class)) {
+                        View upstream = viewMapper.selectActiveByPrimaryKey(id);
+                        String prefix = scopes == null ? "" : scopes.getString(id);
+                        if (prefix == null) prefix = "";
+                        for (String name : runtimeViewVariableNames(upstream, visiting)) {
+                            names.add(prefix + name);
+                        }
+                    }
+                }
+            }
+            return names;
+        } finally {
+            visiting.remove(view.getId());
+        }
+    }
+
     private String renderViewSql(DataProviderSource providerSource, View view) throws Exception {
+        // Do not resolve source SQL variables at JOIN design time.
+        // The composed SQL must evaluate them under the eventual viewer.
+        if ("SQL".equalsIgnoreCase(view.getType())) {
+            return view.getScript().trim().replaceFirst(";\\s*$", "");
+        }
         QueryScript queryScript = QueryScript.builder()
                 .test(true)
                 .sourceId(view.getSourceId())
@@ -259,6 +322,49 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         }
     }
 
+
+    private JSONObject outputFieldSources(View left, View right) {
+        JSONObject result = new JSONObject();
+        Set<String> used = new HashSet<>();
+        for (String column : modelColumns(left)) {
+            result.put(column, fieldSource(left.getId(), column));
+            used.add(column);
+        }
+        for (String column : modelColumns(right)) {
+            String alias = column;
+            int suffix = 1;
+            while (used.contains(alias)) {
+                alias = "right_" + column + (suffix == 1 ? "" : "_" + suffix);
+                suffix++;
+            }
+            used.add(alias);
+            result.put(alias, fieldSource(right.getId(), column));
+        }
+        return result;
+    }
+
+    private JSONObject fieldSource(String viewId, String sourceColumnKey) {
+        JSONObject source = new JSONObject();
+        source.put("viewId", viewId);
+        source.put("columnKey", sourceColumnKey);
+        return source;
+    }
+
+    /**
+     * A STRUCT table field is a physical path, but a SQL/composed View
+     * already exposes an output column name (possibly containing dots).
+     */
+    static String resolveInputColumnName(View view, String column) {
+        return "STRUCT".equalsIgnoreCase(view.getType())
+                ? extractPhysicalColumnName(column)
+                : column;
+    }
+
+    private static String extractPhysicalColumnName(String column) {
+        int lastDot = column.lastIndexOf('.');
+        return lastDot < 0 ? column : column.substring(lastDot + 1);
+    }
+
     private String buildSelectList(View left, View right) {
         Set<String> leftColumns = modelColumns(left);
         Set<String> rightColumns = modelColumns(right);
@@ -267,7 +373,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         }
         List<String> selections = new ArrayList<>();
         leftColumns.forEach(column -> selections.add(
-                quote("v0") + "." + quote(extractActualColumn(column)) + " AS " + quote(column)));
+                quote("v0") + "." + quote(resolveInputColumnName(left, column)) + " AS " + quote(column)));
         Set<String> usedAliases = new HashSet<>(leftColumns);
         for (String column : rightColumns) {
             String alias = column;
@@ -277,7 +383,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
                 suffix++;
             }
             usedAliases.add(alias);
-            selections.add(quote("v1") + "." + quote(extractActualColumn(column)) + " AS " + quote(alias));
+            selections.add(quote("v1") + "." + quote(resolveInputColumnName(right, column)) + " AS " + quote(alias));
         }
         return selections.stream().collect(Collectors.joining(",\n       "));
     }
@@ -345,8 +451,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
      * Simple column names like "renting_48v" are returned as-is.
      */
     private String extractActualColumn(String modelColumnKey) {
-        int lastDot = modelColumnKey.lastIndexOf('.');
-        return lastDot >= 0 ? modelColumnKey.substring(lastDot + 1) : modelColumnKey;
+        return extractPhysicalColumnName(modelColumnKey);
     }
 
     private String indent(String sql) {
@@ -412,15 +517,19 @@ public class ViewServiceImpl extends BaseService implements ViewService {
 
     @Override
     public ViewDetailDTO buildViewDetail(View view) {
-        MigrationMode mode = migrationModeService == null
-                ? MigrationMode.COMPAT : migrationModeService.getMode(view.getOrgId());
-        return buildViewDetail(view, mode == null ? MigrationMode.COMPAT : mode);
+        if (migrationModeService == null) {
+            throw new IllegalStateException("STRICT_ONLY_MIGRATION_MODE_SERVICE_REQUIRED");
+        }
+        return buildViewDetail(view, migrationModeService.getMode(view.getOrgId()));
     }
 
     @Override
     public ViewDetailDTO buildViewDetail(View view, MigrationMode migrationMode) {
         ViewDetailDTO viewDetailDTO = new ViewDetailDTO(view);
-        viewDetailDTO.setMigrationMode(migrationMode == null ? MigrationMode.COMPAT : migrationMode);
+        if (migrationMode != MigrationMode.STRICT) {
+            throw new IllegalStateException("STRICT_ONLY_VIEW_REQUIRED: " + view.getId());
+        }
+        viewDetailDTO.setMigrationMode(MigrationMode.STRICT);
         List<ViewFieldDTO> fields = viewFieldService.listByViewId(view.getId());
         viewDetailDTO.setFields(fields == null ? new ArrayList<>() : new ArrayList<>(fields));
         return viewDetailDTO;
@@ -756,6 +865,14 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         } else {
             return securityManager.hasPermission(PermissionHelper.viewPermission(view.getOrgId(), role.getId(), view.getId(), permission));
         }
+    }
+
+    @Override
+    public List<String> getReadableRoleIds(View view) {
+        return roleService.listUserRoles(view.getOrgId(), getCurrentUser().getId()).stream()
+                .filter(role -> hasPermission(role, view, Const.READ))
+                .map(Role::getId)
+                .toList();
     }
 
     public boolean safeDelete(String id) {

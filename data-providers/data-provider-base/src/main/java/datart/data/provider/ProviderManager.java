@@ -132,8 +132,10 @@ public class ProviderManager extends DataProviderExecuteOptimizer implements Dat
         if (param.isCacheEnable()) {
             dataframe = getFromCache(queryKey);
             if (dataframe != null) {
-                normalizeResultFields(dataframe, param);
-                return dataframe;
+                Dataframe result = copyForResponse(dataframe);
+                normalizeResultFields(result, param);
+                ColumnPermissionFilter.mask(result, param);
+                return result;
             }
         }
         if (param.isConcurrencyOptimize()) {
@@ -141,7 +143,6 @@ public class ProviderManager extends DataProviderExecuteOptimizer implements Dat
         } else {
             dataframe = run(source, queryScript, param);
         }
-        normalizeResultFields(dataframe, param);
         if (param.isCacheEnable()) {
             setCache(queryKey, dataframe, param.getCacheExpires());
         }
@@ -151,8 +152,40 @@ public class ProviderManager extends DataProviderExecuteOptimizer implements Dat
             return Dataframe.empty();
         }
 
-        return dataframe;
+        Dataframe result = copyForResponse(dataframe);
+        normalizeResultFields(result, param);
+        ColumnPermissionFilter.mask(result, param);
+        return result;
 
+    }
+
+    /** Cached frames are shared; column redaction and alias restoration must
+     * never mutate the cached master or another user's result. */
+    private Dataframe copyForResponse(Dataframe source) {
+        Dataframe copy = new Dataframe(source.getId());
+        copy.setName(source.getName());
+        copy.setVizType(source.getVizType());
+        copy.setVizId(source.getVizId());
+        copy.setPageInfo(source.getPageInfo());
+        copy.setScript(source.getScript());
+        copy.setPreviewFields(source.getPreviewFields());
+        if (source.getColumns() != null) {
+            List<Column> columns = new ArrayList<>();
+            for (Column column : source.getColumns()) {
+                Column clone = Column.of(column.getType(), column.getName().clone());
+                clone.setComment(column.getComment());
+                clone.setFmt(column.getFmt());
+                clone.setForeignKeys(column.getForeignKeys());
+                columns.add(clone);
+            }
+            copy.setColumns(columns);
+        }
+        if (source.getRows() != null) {
+            List<List<Object>> rows = new ArrayList<>();
+            for (List<Object> row : source.getRows()) rows.add(new ArrayList<>(row));
+            copy.setRows(rows);
+        }
+        return copy;
     }
 
     @Override
@@ -215,35 +248,7 @@ public class ProviderManager extends DataProviderExecuteOptimizer implements Dat
         return getDataProviderService(source.getType()).getQueryTraces(source);
     }
 
-    private void excludeColumns(Dataframe data, Set<SelectColumn> include) {
-        if (data == null
-                || CollectionUtils.isEmpty(data.getColumns())
-                || include == null
-                || include.size() == 0
-                || include.stream().anyMatch(selectColumn -> selectColumn.getColumnKey().contains("*"))) {
-            return;
-        }
 
-        List<Integer> excludeIndex = new LinkedList<>();
-        for (int i = 0; i < data.getColumns().size(); i++) {
-            Column column = data.getColumns().get(i);
-            if (include
-                    .stream()
-                    .noneMatch(selectColumn ->
-                            column.columnKey().equals(selectColumn.getColumnKey())
-                                    || column.columnKey().equals(selectColumn.getAlias())
-                                    || column.columnKey().contains(selectColumn.getColumnKey()))) {
-                excludeIndex.add(i);
-            }
-        }
-        if (excludeIndex.size() > 0) {
-            data.getRows().parallelStream().forEach(row -> {
-                for (Integer index : excludeIndex) {
-                    row.set(index, null);
-                }
-            });
-        }
-    }
 
 
     private DataProvider getDataProviderService(String type) {
@@ -257,9 +262,7 @@ public class ProviderManager extends DataProviderExecuteOptimizer implements Dat
 
     @Override
     public Dataframe run(DataProviderSource source, QueryScript queryScript, ExecuteParam param) throws Exception {
-        Dataframe dataframe = getDataProviderService(source.getType()).execute(source, queryScript, param);
-        excludeColumns(dataframe, param.getIncludeColumns());
-        return dataframe;
+        return getDataProviderService(source.getType()).execute(source, queryScript, param);
     }
 
     private void normalizeResultFields(Dataframe dataframe, ExecuteParam param) {

@@ -48,6 +48,7 @@ import {
   resolveSchemaColumnComment,
   findViewFieldMeta,
 } from '../utils';
+import { DatasetCommentLabel } from './DatasetCommentLabel';
 import SetFieldType from './SetFieldType';
 
 const ROW_KEY = 'DATART_ROW_KEY';
@@ -177,7 +178,22 @@ export const SchemaTable = memo(
 
         const title = (
           <>
-            <span className="content">{displayText}</span>
+            <span className="content">
+              <DatasetCommentLabel
+                label={displayText}
+                comment={
+                  viewField?.sourceComment ||
+                  previewField?.sourceComment ||
+                  hierarchyColumn.comment ||
+                  column.comment
+                }
+                hasCustomName={Boolean(
+                  customDisplayName ||
+                  viewField?.customName ||
+                  previewField?.customName
+                )}
+              />
+            </span>
             <SetFieldType
               field={hierarchyColumn as Column}
               hasCategory={hasCategory}

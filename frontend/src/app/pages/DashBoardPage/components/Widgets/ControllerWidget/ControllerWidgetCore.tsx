@@ -26,6 +26,7 @@ import {
 } from 'app/pages/DashBoardPage/pages/BoardEditor/components/ControllerWidgetPanel/types';
 import { Widget } from 'app/pages/DashBoardPage/types/widgetTypes';
 import { getControllerDateValues } from 'app/pages/DashBoardPage/utils';
+import { sortControllerOptions } from 'app/pages/DashBoardPage/utils/sortControllerOptions';
 import { RelationFilterValue } from 'app/types/ChartConfig';
 import { produce } from 'immer';
 import React, {
@@ -34,10 +35,8 @@ import React, {
   useContext,
   useEffect,
   useMemo,
-  useRef,
 } from 'react';
 import styled from 'styled-components';
-import { LEVEL_1000 } from 'styles/StyleConstants';
 import { isEmpty } from 'utils/object';
 import { convertToTree } from '../../../utils/widget';
 import { WidgetActionContext } from '../../ActionProvider/WidgetActionProvider';
@@ -65,25 +64,12 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
   // TODO 由控制器自己控制 要不要触发查询
   // const emitQuery = getControlQueryEnable(widget.config.customConfig.props!);
   const [form] = Form.useForm();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const popupMountRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    const div = document.createElement('div');
-    div.style.cssText =
-      'position:fixed;top:0;left:0;z-index:' + LEVEL_1000 + ';';
-    document.body.appendChild(div);
-    popupMountRef.current = div;
-    return () => {
-      document.body.removeChild(div);
-      popupMountRef.current = null;
-    };
-  }, []);
-
-  const popupContainer = useMemo(
-    () => () =>
-      (document.fullscreenElement || popupMountRef.current ||
-        document.body) as HTMLElement,
+  // One native body/fullscreen portal is enough for all controls.
+  // Per-widget position:fixed hosts drifted under zoom/scroll and created
+  // hundreds of temporary DOM nodes on large dashboards.
+  const popupContainer = useCallback(
+    () => (document.fullscreenElement || document.body) as HTMLElement,
     [],
   );
 
@@ -138,16 +124,16 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
       if (parentFields?.length) {
         return convertToTree(dataRows, buildingMethod);
       }
-      return dataRows.map(ele => {
+      return sortControllerOptions(dataRows.map(ele => {
         const item: RelationFilterValue = {
           key: ele?.[0],
           label: ele?.[1] ?? ele?.[0],
           // children?
         };
         return item;
-      });
+      }), config.optionSort);
     } else if (valueOptionType === 'custom') {
-      return valueOptions;
+      return sortControllerOptions(valueOptions || [], config.optionSort, true);
     } else {
       return [];
     }
@@ -157,6 +143,7 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
     valueOptions,
     parentFields,
     buildingMethod,
+    config.optionSort,
   ]);
 
   const onControllerChange = useCallback(() => {
@@ -259,13 +246,38 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
     ],
   );
 
+  // Synchronize persisted filter values after render. Calling setFieldsValue
+  // inside useMemo mutates the AntD form during React's render phase.
+  useEffect(() => {
+    const isRangeTime = facadeType === ControllerFacadeTypes.RangeTime;
+    const isTime = facadeType === ControllerFacadeTypes.Time;
+    const isArrayControl = [
+      ControllerFacadeTypes.MultiDropdownList,
+      ControllerFacadeTypes.CheckboxGroup,
+      ControllerFacadeTypes.RangeValue,
+      ControllerFacadeTypes.DropDownTree,
+    ].includes(facadeType);
+    const value = isTime || isRangeTime
+      ? getControllerDateValues({
+          controlType: facadeType,
+          filterDate: config!.controllerDate!,
+        })
+      : controllerValues;
+    form.setFieldsValue({
+      value: isTime
+        ? value?.[0]
+        : isRangeTime || isArrayControl
+          ? value
+          : value?.[0],
+    });
+  }, [facadeType, controllerValues, config, form]);
+
   const control = useMemo(() => {
     let selectOptions = optionRows?.map(ele => {
       return { value: ele.key, label: ele.label } as ControlOption;
     });
     switch (facadeType) {
       case ControllerFacadeTypes.DropdownList:
-        form.setFieldsValue({ value: controllerValues?.[0] });
         return (
           <SelectControllerForm
             onChange={onControllerChange}
@@ -276,7 +288,6 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
         );
 
       case ControllerFacadeTypes.MultiDropdownList:
-        form.setFieldsValue({ value: controllerValues });
         return (
           <MultiSelectControllerForm
             onChange={onControllerChange}
@@ -286,7 +297,6 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
           />
         );
       case ControllerFacadeTypes.CheckboxGroup:
-        form.setFieldsValue({ value: controllerValues });
         return (
           <CheckboxGroupControllerForm
             onChange={onControllerChange}
@@ -296,7 +306,6 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
           />
         );
       case ControllerFacadeTypes.Slider:
-        form.setFieldsValue({ value: controllerValues?.[0] });
         const step = config.sliderConfig?.step || 1;
         const showMarks = config.sliderConfig?.showMarks || false;
         let minValue = config.minValue === 0 ? 0 : config.minValue || 1;
@@ -314,7 +323,6 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
         );
 
       case ControllerFacadeTypes.Value:
-        form.setFieldsValue({ value: controllerValues?.[0] });
         return (
           <NumberControllerForm
             onChange={onControllerChange}
@@ -324,7 +332,6 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
         );
 
       case ControllerFacadeTypes.RangeValue:
-        form.setFieldsValue({ value: controllerValues });
         return (
           <RangeNumberControllerForm
             onChange={onControllerChange}
@@ -334,7 +341,6 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
         );
 
       case ControllerFacadeTypes.Text:
-        form.setFieldsValue({ value: controllerValues?.[0] });
         return (
           <TextControllerForm
             onChange={onControllerChange}
@@ -344,7 +350,6 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
         );
 
       case ControllerFacadeTypes.RadioGroup:
-        form.setFieldsValue({ value: controllerValues?.[0] });
         let RadioOptions = optionRows?.map(ele => {
           return { value: ele.key, label: ele.label } as ControlOption;
         });
@@ -360,12 +365,6 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
         );
 
       case ControllerFacadeTypes.RangeTime:
-        const rangeTimeValues = getControllerDateValues({
-          controlType: facadeType,
-          filterDate: config!.controllerDate!,
-        });
-
-        form.setFieldsValue({ value: rangeTimeValues });
         let rangePickerType = controllerDate!.pickerType;
         return (
           <RangeTimeControllerForm
@@ -377,12 +376,7 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
         );
 
       case ControllerFacadeTypes.Time:
-        const timeValues = getControllerDateValues({
-          controlType: facadeType,
-          filterDate: config!.controllerDate!,
-        });
         let pickerType = controllerDate!.pickerType;
-        form.setFieldsValue({ value: timeValues[0] });
         return (
           <TimeControllerForm
             label={leftControlLabel}
@@ -393,7 +387,6 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
         );
 
       case ControllerFacadeTypes.DropDownTree:
-        form.setFieldsValue({ value: controllerValues });
         return (
           <TreeControllerForm
             parentFields={parentFields}
@@ -410,8 +403,6 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
   }, [
     optionRows,
     facadeType,
-    form,
-    controllerValues,
     onControllerChange,
     leftControlLabel,
     config,
@@ -422,7 +413,7 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
   ]);
 
   return (
-    <Wrapper ref={containerRef} formFrontColor={title?.font?.color}>
+    <Wrapper formFrontColor={title?.font?.color}>
       <ConfigProvider getPopupContainer={popupContainer}>
         <Form form={form} className="control-form" onFinish={onFinish}>
           {centerControlLabel}
@@ -437,9 +428,41 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
   flex: 1;
   align-items: center;
   min-width: 0;
+  width: 100%;
+  container-type: inline-size;
+
   .control-form {
     flex: 1;
+    width: 100%;
     min-width: 0;
+
+    .ant-form-item-row {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .ant-form-item-label {
+      flex: 0 1 auto;
+      min-width: 0;
+      max-width: 40%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ant-form-item-control {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .ant-picker,
+    .ant-picker-input,
+    .ant-select,
+    .ant-select-selector {
+      min-width: 0;
+      max-width: 100%;
+    }
 
     .ant-select,
     .ant-checkbox-wrapper,
@@ -456,5 +479,136 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
   }
   .ant-input-number-handler {
     border-left: 0;
+  }
+
+  /* Long custom labels must not consume the entire picker/selection area.
+     Full text remains available through the widget title, when present. */
+  .control-form .ant-form-item-label label {
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Narrow widgets keep the label and control on one line. The label may
+     shrink with ellipsis while the control takes the remaining width. */
+  @container (max-width: 300px) {
+    .control-form .ant-form-item-row {
+      flex-direction: row;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .control-form .ant-form-item-label {
+      flex: 0 1 38%;
+      max-width: 38%;
+      padding: 0;
+      line-height: 18px;
+      text-align: left;
+    }
+
+    .control-form .ant-form-item-control {
+      flex: 1 1 0;
+      width: 0;
+      min-width: 0;
+    }
+
+    /* Fit the stacked label + picker in a compact 6-row legacy widget. */
+    .control-form .ant-picker {
+      height: 28px;
+      min-height: 28px;
+    }
+  }
+
+
+  /*
+   * Mobile range dates follow the CONTROL's measured width, not the
+   * device viewport or a per-phone breakpoint. Keep "日期" and both dates
+   * on one row even in legacy half-width filter widgets. Text inputs
+   * shrink continuously with container units, retaining the calendar
+   * trigger and editable date fields.
+   */
+  .datart-mobile-board & {
+    .control-form .ant-form-item.mobile-range-time-form .ant-form-item-row {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .control-form .ant-form-item.mobile-range-time-form .ant-form-item-label {
+      flex: 0 0 auto !important;
+      width: auto;
+      max-width: 28%;
+      min-width: 0;
+      padding: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-align: left;
+    }
+
+    .control-form .ant-form-item.mobile-range-time-form .ant-form-item-label > label {
+      height: 32px;
+      white-space: nowrap;
+    }
+
+    .control-form .ant-form-item.mobile-range-time-form .widget-name {
+      display: inline-block;
+      padding: 0;
+      font-size: clamp(11px, 3.7cqi, 14px) !important;
+      line-height: 20px;
+      white-space: nowrap;
+    }
+
+    .control-form .ant-form-item.mobile-range-time-form .ant-form-item-control {
+      flex: 1 1 0 !important;
+      width: 0;
+      min-width: 0;
+    }
+
+    .control-form .ant-form-item.mobile-range-time-form .ant-form-item-control-input,
+    .control-form .ant-form-item.mobile-range-time-form .ant-form-item-control-input-content,
+    .control-form .ant-form-item.mobile-range-time-form .control-datePicker {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .control-form .ant-form-item.mobile-range-time-form .ant-picker-range {
+      display: flex;
+      align-items: center;
+      height: 36px;
+      min-height: 36px;
+      padding: 0 4px;
+      white-space: nowrap;
+    }
+
+    .control-form .ant-form-item.mobile-range-time-form .ant-picker-input {
+      flex: 1 1 0;
+      width: 0;
+      min-width: 0;
+    }
+
+    .control-form .ant-form-item.mobile-range-time-form .ant-picker-input > input {
+      width: 100%;
+      min-width: 0;
+      height: 30px;
+      min-height: 0;
+      font-size: clamp(10px, 3.4cqi, 13px) !important;
+      letter-spacing: -0.2px;
+    }
+
+    .control-form .ant-form-item.mobile-range-time-form .ant-picker-range-separator {
+      flex: 0 0 auto;
+      min-width: 0;
+      padding: 0 2px;
+    }
+
+    .control-form .ant-form-item.mobile-range-time-form .ant-picker-suffix {
+      flex: 0 0 auto;
+      margin-left: 2px;
+    }
   }
 `;

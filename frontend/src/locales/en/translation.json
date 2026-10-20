@@ -1,8 +1,8 @@
 {
   "global": {
+    "401": "Not logged in or token expired, please log in again",
     "copy": "Copy",
     "tokenExpired": "Token expired, please log in",
-    "401": "Not logged in or token expired, please log in again",
     "title": {
       "action": "Action"
     },
@@ -62,7 +62,7 @@
         "edit": "Edit "
       }
     },
-  "columnType": {
+    "columnType": {
       "string": "String",
       "numeric": "Number",
       "date": "Date"
@@ -203,9 +203,6 @@
       },
       "resourceMigration": {
         "title": "Resource Migration"
-      },
-      "readiness": {
-        "title": "Migration Readiness"
       },
       "auditLog": {
         "title": "Audit Log"
@@ -570,10 +567,6 @@
           "sansSerif": "sans-serif"
         },
         "fontWeight": {
-          "normal": "Normal",
-          "bold": "Bold",
-          "bolder": "Bolder",
-          "lighter": "Lighter",
           "100": "100",
           "200": "200",
           "300": "300",
@@ -582,7 +575,11 @@
           "600": "600",
           "700": "700",
           "800": "800",
-          "900": "900"
+          "900": "900",
+          "normal": "Normal",
+          "bold": "Bold",
+          "bolder": "Bolder",
+          "lighter": "Lighter"
         },
         "fontStyle": {
           "normal": "Normal",
@@ -989,8 +986,8 @@
       },
       "controlTypes": {
         "common": "Common",
-    "date": "Date",
-    "datetime": "Date time",
+        "date": "Date",
+        "datetime": "Date time",
         "numeric": "Numeric",
         "button": "Button"
       },
@@ -1186,6 +1183,11 @@
       "common": "General",
       "custom": "Customize",
       "optionLabelField": "Option Label Field",
+      "optionSort": "Option order",
+      "optionSortAuto": "Automatic",
+      "optionSortAsc": "Ascending",
+      "optionSortDesc": "Descending",
+      "optionSortOriginal": "Original order",
       "value": "Value",
       "label": "Label",
       "action": "Action",
@@ -1820,47 +1822,6 @@
     "historyMigrationStatus": "Status",
     "historyMigrationReason": "Review reason",
     "historyMigrationError": "Failed to load migration preview"
-  },
-  "readiness": {
-    "title": "Migration Readiness",
-    "refresh": "Refresh scan",
-    "readiness": "Readiness",
-    "strictEligible": "STRICT eligible",
-    "yes": "Eligible",
-    "no": "Not eligible",
-    "blockers": "Blockers",
-    "warnings": "Warnings",
-    "ready": "Ready",
-    "scopes": "Resource scopes",
-    "scope": {
-      "views": "Views",
-      "datacharts": "Datacharts",
-      "dashboards": "Dashboards"
-    },
-    "chartFieldIdCoverage": "Chart fieldId coverage",
-    "resolvedChartFieldIdCoverage": "Resolved Chart fieldId coverage",
-    "issues": "Issues",
-    "filter": {
-      "all": "All",
-      "search": "Search resource, issue code, or message"
-    },
-    "issue": {
-      "severity": "Severity",
-      "resource": "Resource",
-      "name": "Resource name",
-      "code": "Issue code",
-      "message": "Message"
-    },
-    "noIssues": "No matching issues",
-    "loadError": "Readiness scan failed. Please try again.",
-    "empty": "No Readiness data",
-    "strict": {
-      "mode": "Current mode",
-      "enable": "Enable STRICT",
-      "disable": "Back to COMPAT",
-      "confirmTitle": "Enable STRICT?",
-      "confirmContent": "Legacy runtime fallback will be disabled."
-    }
   },
   "confirmInvite": {
     "join": "Join successful",

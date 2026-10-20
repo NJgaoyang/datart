@@ -45,8 +45,18 @@ export const ControllerWidget: React.FC<{}> = memo(() => {
     widget.config.customConfig.props,
   );
   return (
-    <WidgetWrapper background={background} border={border} padding={padding}>
-      <div ref={cacheWhRef} style={ZIndexStyle}>
+    <WidgetWrapper className="controller-widget" background={background} border={border} padding={padding}>
+      <div
+        ref={cacheWhRef}
+        className="controller-widget-content"
+        style={{
+          ...ZIndexStyle,
+          // The sibling action toolbar occupies its own flex width.
+          width: 'auto',
+          minWidth: 0,
+          flex: '1 1 auto',
+        }}
+      >
         <div style={FlexStyle}>
           <ControllerWidgetCore />
         </div>

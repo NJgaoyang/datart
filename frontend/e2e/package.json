@@ -1,0 +1,12 @@
+{
+  "name": "datart-dashboard-browser-acceptance",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "testui": "playwright test --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

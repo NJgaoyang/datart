@@ -6,6 +6,7 @@ import com.google.common.collect.Lists;
 import datart.core.base.consts.ValueType;
 import datart.core.data.provider.Column;
 import datart.core.data.provider.Dataframe;
+import datart.core.data.provider.ResultFieldMeta;
 import datart.core.entity.poi.ColumnSetting;
 import datart.core.entity.poi.POISettings;
 import datart.server.base.dto.chart.ChartColumn;
@@ -61,7 +62,8 @@ public class PoiConvertUtils {
             poiSettings.getMergeCells().clear();
             poiSettings.getColumnSetting().clear();
         }
-        poiSettings.setHeaderRows(replaceColumnAlias(chartColumns, poiSettings.getHeaderRows())); //替换别名
+        poiSettings.setHeaderRows(replaceColumnAlias(chartColumns, poiSettings.getHeaderRows(),
+                dataframe, poiSettings.getColumnSetting())); // Use result-field identity for display names
         return poiSettings;
     }
 
@@ -114,19 +116,37 @@ public class PoiConvertUtils {
     /**
      * 替换列别名
      */
-    private static Map<Integer, List<Column>> replaceColumnAlias(List<ChartColumn> dataColumns, Map<Integer, List<Column>> tableHeaders) {
-        Map<String, String> aliasMap = new HashMap<>();
-        dataColumns.forEach(item -> {
-            if (StringUtils.isNotBlank(item.getAlias().getName())) {
-                aliasMap.put(item.getDisplayName(), item.getAlias().getName());
+    static Map<Integer, List<Column>> replaceColumnAlias(
+            List<ChartColumn> dataColumns,
+            Map<Integer, List<Column>> tableHeaders,
+            Dataframe dataframe,
+            Map<Integer, ColumnSetting> settings) {
+        Map<Integer, ResultFieldMeta> resultByOrdinal = new HashMap<>();
+        if (dataframe.getResultFields() != null) {
+            for (ResultFieldMeta meta : dataframe.getResultFields()) {
+                if (meta.getOrdinal() != null) resultByOrdinal.put(meta.getOrdinal(), meta);
             }
-        });
-
-        for (int i = 0; i < dataColumns.size(); i++) {
-            for (int j = tableHeaders.size() - 1; j >= 0; j--) {
-                Column column = tableHeaders.get(j).get(i);
-                if (StringUtils.isNotBlank(column.columnName())) {
-                    column.setName(aliasMap.getOrDefault(column.columnKey(), column.columnName()));
+        }
+        for (int actual = 0; actual < dataframe.getColumns().size(); actual++) {
+            ColumnSetting columnSetting = settings.get(actual);
+            int headerIndex = columnSetting == null ? actual : columnSetting.getIndex();
+            ChartColumn configured = headerIndex < dataColumns.size() ? dataColumns.get(headerIndex) : null;
+            String explicitAlias = configured != null && configured.getAlias() != null
+                    ? StringUtils.trimToNull(configured.getAlias().getName()) : null;
+            ResultFieldMeta metadata = resultByOrdinal.get(actual);
+            Column column = dataframe.getColumns().get(actual);
+            // Explicit chart alias > query/view field display name > comment >
+            // technical name. Neither identity nor column order is rewritten.
+            String title = StringUtils.firstNonBlank(explicitAlias,
+                    metadata == null ? null : metadata.getDisplayName(),
+                    column.getComment(), column.columnName());
+            if (StringUtils.isBlank(title)) continue;
+            for (int row = tableHeaders.size() - 1; row >= 0; row--) {
+                List<Column> headers = tableHeaders.get(row);
+                if (headers == null || headerIndex >= headers.size()) continue;
+                Column header = headers.get(headerIndex);
+                if (header != null && StringUtils.isNotBlank(header.columnName())) {
+                    header.setName(title);
                     break;
                 }
             }

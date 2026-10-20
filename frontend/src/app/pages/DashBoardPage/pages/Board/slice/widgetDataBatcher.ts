@@ -1,3 +1,4 @@
+import { unwrapWidgetQueryResponse } from 'app/utils/queryResponse';
 /**
  * 仪表板 Widget 数据批量请求调度器
  *
@@ -6,6 +7,8 @@
  */
 import { request2 } from 'utils/request';
 
+const preserveHttpError = (error: unknown): never => { throw error; };
+
 interface BatchEntry {
   boardId: string;
   widgetId: string;
@@ -13,11 +16,59 @@ interface BatchEntry {
   requestParams: any;
   resolve: (value: any) => void;
   reject: (reason?: any) => void;
+  cacheKey?: string;
+  promise?: Promise<any>;
+  widgetKey?: string;
+  cancelled?: boolean;
 }
 
 let pendingQueue: BatchEntry[] = [];
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 const inFlight = new Map<string, BatchEntry>();
+// Never send all 500/1000 widgets in one HTTP request or start an unbounded
+// number of batch requests together. Keep admission queue separate from the
+// actively executing chunks, so an old slow query cannot stall all pending
+// widgets forever.
+const MAX_BATCH_ENTRIES = 40;
+const MAX_CONCURRENT_BATCHES = 2;
+let activeBatchCount = 0;
+
+// Exact same widget + serialized query (including filters, sort, paging and
+// source) shares one promise. Different widgets/sources NEVER share results.
+const activeQueries = new Map<string, Promise<any>>();
+const activeByWidget = new Map<string, BatchEntry>();
+
+export class WidgetFetchCancelledError extends Error {
+  constructor() {
+    super('Widget fetch cancelled');
+    this.name = 'WidgetFetchCancelledError';
+  }
+}
+
+const forgetActiveQuery = (entry: BatchEntry) => {
+  if (entry.cacheKey && activeQueries.get(entry.cacheKey) === entry.promise) {
+    activeQueries.delete(entry.cacheKey);
+  }
+  if (entry.widgetKey && activeByWidget.get(entry.widgetKey) === entry) {
+    activeByWidget.delete(entry.widgetKey);
+  }
+};
+
+/** Do not allow an older query to overwrite the result after filters change. */
+const cancelEntry = (entry: BatchEntry) => {
+  if (entry.cancelled) return;
+  entry.cancelled = true;
+  pendingQueue = pendingQueue.filter(item => item !== entry);
+  forgetActiveQuery(entry);
+  entry.reject(new WidgetFetchCancelledError());
+  if (inFlight.has(entry.queryId)) {
+    void request2({
+      method: 'POST',
+      url: `data-provider/execute/cancel/${entry.queryId}`,
+    }).catch(() => undefined);
+  }
+};
+
 
 /** 防抖延迟(ms): 在此窗口内到达的请求会合并为一个批次 */
 const BATCH_DEBOUNCE_MS = 150;
@@ -34,44 +85,98 @@ export function enqueueWidgetFetch(
   widgetId: string,
   requestParams: any,
 ): Promise<any> {
-  return new Promise((resolve, reject) => {
-    pendingQueue.push({
-      boardId,
-      widgetId,
-      queryId: createQueryId(),
-      requestParams,
-      resolve,
-      reject,
-    });
-    scheduleFlush();
+  let key: string | undefined;
+  try {
+    key = JSON.stringify([boardId, widgetId, requestParams]);
+  } catch {
+    // A non-serializable query cannot be safely compared: send it normally.
+  }
+  const existing = key === undefined ? undefined : activeQueries.get(key);
+  if (existing) return existing;
+
+  // A widget can only have ONE effective query in flight. If a date/filter
+  // changes during a slow query, discard the older response and stop it
+  // server-side when possible, instead of confusing the batch response map
+  // which indexes results by widgetId.
+  const widgetKey = JSON.stringify([boardId, widgetId]);
+  const previous = activeByWidget.get(widgetKey);
+  if (previous) cancelEntry(previous);
+
+  const entry: BatchEntry = {
+    boardId,
+    widgetId,
+    queryId: createQueryId(),
+    requestParams,
+    cacheKey: key,
+    widgetKey,
+    resolve: () => undefined,
+    reject: () => undefined,
+  };
+  const promise = new Promise<any>((resolve, reject) => {
+    entry.resolve = resolve;
+    entry.reject = reject;
   });
+  entry.promise = promise;
+  if (key !== undefined) activeQueries.set(key, promise);
+  activeByWidget.set(widgetKey, entry);
+  pendingQueue.push(entry);
+  scheduleFlush();
+  // Fulfillment or failure permits a new fetch next time. Do not delete a
+  // newer replacement when an older cancelled request finishes late.
+  void promise.then(
+    () => forgetActiveQuery(entry),
+    () => forgetActiveQuery(entry),
+  );
+  return promise;
 }
 
 function scheduleFlush(): void {
-  if (flushTimer !== null) {
-    clearTimeout(flushTimer);
-  }
-  flushTimer = setTimeout(flushBatch, BATCH_DEBOUNCE_MS);
+  // Do not reset this timer on each arrival: otherwise a steady stream
+  // of filters (<150ms between events) can postpone *all* queries forever.
+  if (flushTimer !== null || pendingQueue.length === 0 ||
+      activeBatchCount >= MAX_CONCURRENT_BATCHES) return;
+  flushTimer = setTimeout(() => {
+    flushTimer = null;
+    drainPendingBatches();
+  }, BATCH_DEBOUNCE_MS);
 }
 
-async function flushBatch(): Promise<void> {
-  const batch = pendingQueue;
-  pendingQueue = [];
-  flushTimer = null;
+function drainPendingBatches(): void {
+  while (
+    activeBatchCount < MAX_CONCURRENT_BATCHES &&
+    pendingQueue.length > 0
+  ) {
+    const batch = pendingQueue.splice(0, MAX_BATCH_ENTRIES);
+    activeBatchCount++;
+    void flushBatch(batch).finally(() => {
+      activeBatchCount--;
+      // Run queued chunks as a previous one finishes; no timer reset here.
+      drainPendingBatches();
+    });
+  }
+}
 
-  if (batch.length === 0) return;
+async function flushBatch(batch: BatchEntry[]): Promise<void> {
+  if (!batch.length) return;
 
   batch.forEach(entry => inFlight.set(entry.queryId, entry));
   try {
     // 如果队列只有 1 个请求，退化到单请求模式（避免不必要的批量包装开销）
     if (batch.length === 1) {
       const entry = batch[0];
-      const { data } = await request2<any>({
+      const response = await request2<any>({
         method: 'POST',
         url: 'data-provider/execute',
         data: { ...entry.requestParams, queryId: entry.queryId },
-      });
-      entry.resolve(data);
+      }, undefined, { onRejected: preserveHttpError });
+      const data = unwrapWidgetQueryResponse(response);
+      if (!entry.cancelled) {
+        if (data?.error) {
+          entry.reject(new Error(`Widget query failed: ${data.error}`));
+        } else {
+          entry.resolve(data);
+        }
+      }
       return;
     }
 
@@ -84,14 +189,19 @@ async function flushBatch(): Promise<void> {
         queryId: entry.queryId,
         ...entry.requestParams,
       })),
-    });
+    }, undefined, { onRejected: preserveHttpError });
 
-    const resultMap: Record<string, any> = response?.data || {};
+    const resultMap: Record<string, any> = unwrapWidgetQueryResponse(response) || {};
 
     batch.forEach(entry => {
+      if (entry.cancelled) return;
       const result = resultMap[entry.widgetId];
       if (result !== undefined) {
-        entry.resolve(result);
+        if (result?.error) {
+          entry.reject(new Error(`Widget query failed: ${result.error}`));
+        } else {
+          entry.resolve(result);
+        }
       } else {
         // 尝试无 requestId 的降级查找
         const fallback =
@@ -101,7 +211,11 @@ async function flushBatch(): Promise<void> {
             ) || ''
           ];
         if (fallback !== undefined) {
-          entry.resolve(fallback);
+          if (fallback?.error) {
+            entry.reject(new Error(`Widget query failed: ${fallback.error}`));
+          } else {
+            entry.resolve(fallback);
+          }
         } else {
           entry.reject(
             new Error(
@@ -112,20 +226,34 @@ async function flushBatch(): Promise<void> {
       }
     });
   } catch (error) {
+    // Single requests must NOT be re-sent after a permission/business error.
+    // Only a multi-widget batch may fall back to separate requests.
+    if (batch.length === 1) {
+      const entry = batch[0];
+      if (!entry.cancelled) entry.reject(error);
+      return;
+    }
     // A batch is rejected as a whole when any query fails. Retry entries
     // separately so one broken widget does not hide successful widget data,
     // while the failed widget still receives the real backend error.
     await Promise.all(
       batch.map(async entry => {
+        if (entry.cancelled) return;
         try {
-          const { data } = await request2<any>({
+          const response = await request2<any>({
             method: 'POST',
             url: 'data-provider/execute',
             data: { ...entry.requestParams, queryId: entry.queryId },
-          });
-          entry.resolve(data);
+          }, undefined, { onRejected: preserveHttpError });
+          if (entry.cancelled) return;
+          const data = unwrapWidgetQueryResponse(response);
+          if (data?.error) {
+            entry.reject(new Error(`Widget query failed: ${data.error}`));
+          } else {
+            entry.resolve(data);
+          }
         } catch (singleError) {
-          entry.reject(singleError);
+          if (!entry.cancelled) entry.reject(singleError);
         }
       }),
     );
@@ -139,19 +267,10 @@ export function cancelPendingWidgetFetches(boardId: string): void {
   const cancelled = pendingQueue.filter(entry => entry.boardId === boardId);
   pendingQueue = pendingQueue.filter(entry => entry.boardId !== boardId);
 
-  cancelled.forEach(entry => {
-    entry.reject(new Error('Widget fetch cancelled'));
-  });
-
+  cancelled.forEach(cancelEntry);
   Array.from(inFlight.values())
     .filter(entry => entry.boardId === boardId)
-    .forEach(entry => {
-      entry.reject(new Error('Widget fetch cancelled'));
-      void request2({
-        method: 'POST',
-        url: `data-provider/execute/cancel/${entry.queryId}`,
-      }).catch(() => undefined);
-    });
+    .forEach(cancelEntry);
 
   if (pendingQueue.length === 0 && flushTimer !== null) {
     clearTimeout(flushTimer);

@@ -18,11 +18,10 @@
 
 import { Empty, Table, TableProps } from 'antd';
 import classNames from 'classnames';
-import { TABLE_DATA_INDEX } from 'globalConstants';
 import React, {
   memo,
   useCallback,
-  useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -37,6 +36,31 @@ interface VirtualTableProps extends TableProps<object> {
   columns: any;
 }
 
+type VirtualGridRef = {
+  state?: { scrollLeft?: number };
+  resetAfterIndices: (options: {
+    columnIndex: number;
+    shouldForceUpdate: boolean;
+  }) => void;
+  scrollToItem: (options: { columnIndex: number; align: 'start' }) => void;
+  scrollTo: (options: { scrollLeft: number }) => void;
+};
+
+export function stabilizeVirtualGridWidth(
+  grid: VirtualGridRef | undefined,
+  columnCount: number,
+) {
+  if (!grid) return;
+  const scrollLeft = grid.state?.scrollLeft || 0;
+  grid.resetAfterIndices({
+    columnIndex: 0,
+    shouldForceUpdate: false,
+  });
+  // VariableSizeGrid otherwise estimates unvisited columns at 50px, changing the scrollbar while users drag.
+  grid.scrollToItem({ columnIndex: Math.max(0, columnCount - 1), align: 'start' });
+  grid.scrollTo({ scrollLeft });
+}
+
 /**
  * Table组件中使用了虚拟滚动条 渲染的速度变快 基于（react-windows）
  * 使用方法：import { VirtualTable } from 'app/components/VirtualTable';
@@ -49,14 +73,7 @@ interface VirtualTableProps extends TableProps<object> {
  */
 export const VirtualTable = memo((props: VirtualTableProps) => {
   const { columns, scroll, width: boxWidth, dataSource } = props;
-  const widthColumns = columns.map(v => {
-    return { width: v.width, dataIndex: v.dataIndex };
-  });
   const gridRef: any = useRef();
-  const isFull = useRef<boolean>(false);
-  const widthColumnCount = widthColumns.filter(
-    ({ width, dataIndex }) => !width || dataIndex !== TABLE_DATA_INDEX,
-  ).length;
   const [connectObject] = useState(() => {
     const obj = {};
     Object.defineProperty(obj, 'scrollLeft', {
@@ -71,36 +88,29 @@ export const VirtualTable = memo((props: VirtualTableProps) => {
     });
     return obj;
   });
-  isFull.current = boxWidth > scroll.x;
-
-  if (isFull.current === true) {
-    widthColumns.forEach((v, i) => {
-      return (widthColumns[i].width =
-        widthColumns[i].dataIndex === TABLE_DATA_INDEX
-          ? widthColumns[i].width
-          : widthColumns[i].width + (boxWidth - scroll.x) / widthColumnCount);
-    });
-  }
-
-  const mergedColumns = useMemo(() => {
-    return columns.map((column, i) => {
-      return {
+  // A wider preview pane should reveal blank space, not stretch every
+  // measured data column. The same widths drive AntD's header and the grid.
+  const mergedColumns = useMemo(
+    () =>
+      columns.map(column => ({
         ...column,
-        width: column.width
-          ? widthColumns[i].width
-          : Math.floor(boxWidth / widthColumnCount),
-      };
-    });
-  }, [boxWidth, columns, widthColumnCount, widthColumns]);
+        width: Number(column.width) > 0 ? Number(column.width) : 120,
+      })),
+    [columns],
+  );
+  const contentWidth = mergedColumns.reduce(
+    (total, column) => total + column.width,
+    0,
+  );
+  const columnWidthSignature = mergedColumns.map(column => column.width).join(',');
 
   const resetVirtualGrid = useCallback(() => {
-    gridRef.current?.resetAfterIndices({
-      columnIndex: 0,
-      shouldForceUpdate: true,
-    });
-  }, [gridRef]);
+    stabilizeVirtualGridWidth(gridRef.current, mergedColumns.length);
+  }, [mergedColumns.length]);
 
-  useEffect(() => resetVirtualGrid, [boxWidth, dataSource, resetVirtualGrid]);
+  useLayoutEffect(() => {
+    resetVirtualGrid();
+  }, [boxWidth, columnWidthSignature, resetVirtualGrid]);
 
   const renderVirtualList = useCallback(
     (rawData, { scrollbarSize, ref, onScroll }) => {
@@ -122,7 +132,7 @@ export const VirtualTable = memo((props: VirtualTableProps) => {
             const { width } = mergedColumns[index];
             return totalHeight > safeHeight &&
               index === mergedColumns.length - 1
-              ? width - scrollbarSize - 16
+              ? Math.max(48, width - scrollbarSize - 16)
               : width;
           }}
           height={safeHeight}
@@ -161,14 +171,17 @@ export const VirtualTable = memo((props: VirtualTableProps) => {
   );
 
   return (
-    <Table
-      {...props}
-      columns={mergedColumns}
-      components={{
-        body: renderVirtualList,
-        ...props.components,
-      }}
-    />
+    <VirtualTableShell $contentWidth={contentWidth}>
+      <Table
+        {...props}
+        scroll={{ ...scroll, x: contentWidth }}
+        columns={mergedColumns}
+        components={{
+          body: renderVirtualList,
+          ...props.components,
+        }}
+      />
+    </VirtualTableShell>
   );
 });
 
@@ -182,4 +195,16 @@ const TableCell = styled.div`
   white-space: nowrap;
   text-overflow: ellipsis;
   border-bottom: 1px solid ${p => p.theme.borderColorSplit};
+`;
+
+// rc-table defaults to min-width:100% on horizontally scrollable tables;
+ // keep the header at the same measured pixel width as react-window cells.
+const VirtualTableShell = styled.div<{ $contentWidth: number }>`
+  min-width: 0;
+  .ant-table-content > table,
+  .ant-table-header > table,
+  .ant-table-body > table {
+    width: ${p => p.$contentWidth}px !important;
+    min-width: 0 !important;
+  }
 `;

@@ -8,6 +8,9 @@ import org.apache.calcite.sql.SqlJoin;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.SqlWith;
+import org.apache.calcite.sql.SqlWithItem;
+import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.impl.SqlParserImpl;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
@@ -19,20 +22,30 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 @Component
 public class SqlFieldLineageResolver {
+
+    private static final Pattern DATART_VARIABLE = Pattern.compile("\\$[A-Za-z_][A-Za-z0-9_]*\\$");
 
     public Map<String, SqlFieldLineage> resolve(String sql, SourceSchemaIndex.Index schema) {
         if (sql == null || sql.isBlank() || schema == null) {
             return Map.of();
         }
         try {
-            SqlNode query = SqlParser.create(sql.replaceFirst(";\\s*$", ""), parserConfig()).parseQuery();
-            if (!(query instanceof SqlSelect select)) {
+            // Lineage only needs SQL structure; execution replaces Datart variables later with the real value.
+            String parseableSql = DATART_VARIABLE.matcher(sql.replaceFirst(";\\s*$", "")).replaceAll("0");
+            SqlNode query = SqlParser.create(parseableSql, parserConfig()).parseQuery();
+            SqlSelect select;
+            List<TableReference> tables;
+            if (query instanceof SqlWith with && (select = extractSelect(with.body)) != null) {
+                tables = tables(select.getFrom(), cteTables(with));
+            } else if ((select = extractSelect(query)) != null) {
+                tables = tables(select.getFrom());
+            } else {
                 return Map.of();
             }
-            List<TableReference> tables = tables(select.getFrom());
             if (tables.isEmpty()) {
                 return Map.of();
             }
@@ -121,19 +134,71 @@ public class SqlFieldLineageResolver {
     }
 
     private static List<TableReference> tables(SqlNode from) {
+        return tables(from, Map.of());
+    }
+
+    private static List<TableReference> tables(SqlNode from, Map<String, TableReference> ctes) {
         if (from instanceof SqlJoin join) {
-            List<TableReference> result = new ArrayList<>(tables(join.getLeft()));
-            result.addAll(tables(join.getRight()));
+            List<TableReference> result = new ArrayList<>(tables(join.getLeft(), ctes));
+            result.addAll(tables(join.getRight(), ctes));
             return result;
         }
         if (from instanceof SqlIdentifier identifier && !identifier.isStar()) {
+            TableReference cte = identifier.names.size() == 1 ? ctes.get(key(last(identifier.names))) : null;
+            if (cte != null) {
+                return List.of(new TableReference(last(identifier.names), cte.path));
+            }
             return List.of(new TableReference(last(identifier.names), identifier.names));
         }
         if (from instanceof SqlBasicCall call && call.getKind() == SqlKind.AS
                 && call.operand(0) instanceof SqlIdentifier table) {
+            TableReference cte = table.names.size() == 1 ? ctes.get(key(last(table.names))) : null;
+            if (cte != null) {
+                return List.of(new TableReference(lastName(call.operand(1)), cte.path));
+            }
             return List.of(new TableReference(lastName(call.operand(1)), table.names));
         }
+        if (from instanceof SqlBasicCall call && call.getKind() == SqlKind.AS
+                && isSingleSourceSelectStar(extractSelect(call.operand(0)))) {
+            SqlSelect select = extractSelect(call.operand(0));
+            List<TableReference> nested = tables(select.getFrom(), ctes);
+            return nested.size() == 1
+                    ? List.of(new TableReference(lastName(call.operand(1)), nested.get(0).path))
+                    : List.of();
+        }
         return List.of();
+    }
+
+    private static Map<String, TableReference> cteTables(SqlWith with) {
+        Map<String, TableReference> result = new LinkedHashMap<>();
+        for (SqlNode node : with.withList) {
+            SqlSelect select = node instanceof SqlWithItem cteItem ? extractSelect(cteItem.query) : null;
+            if (!(node instanceof SqlWithItem item)
+                    || (item.columnList != null && item.columnList.size() > 0)
+                    || !isSingleSourceSelectStar(select)) {
+                continue;
+            }
+            List<TableReference> sources = tables(select.getFrom(), result);
+            if (sources.size() == 1) {
+                result.put(key(last(item.name.names)),
+                        new TableReference(last(item.name.names), sources.get(0).path));
+            }
+        }
+        return result;
+    }
+
+    private static SqlSelect extractSelect(SqlNode node) {
+        if (node instanceof SqlSelect select) {
+            return select;
+        }
+        return node instanceof SqlOrderBy orderBy && orderBy.query instanceof SqlSelect select ? select : null;
+    }
+
+    private static boolean isSingleSourceSelectStar(SqlSelect select) {
+        return select != null
+                && select.getSelectList().size() == 1
+                && select.getSelectList().get(0) instanceof SqlIdentifier star
+                && star.isStar();
     }
 
     private static TableReference tableFor(List<TableReference> tables, List<String> qualifier) {
@@ -189,5 +254,9 @@ public class SqlFieldLineageResolver {
 
     private static boolean equalsIgnoreCase(String left, String right) {
         return left != null && right != null && left.toLowerCase(Locale.ROOT).equals(right.toLowerCase(Locale.ROOT));
+    }
+
+    private static String key(String value) {
+        return value.toLowerCase(Locale.ROOT);
     }
 }

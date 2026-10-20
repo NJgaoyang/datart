@@ -42,7 +42,6 @@ import { IChartDrillOption } from 'app/types/ChartDrillOption';
 import {
   createDateLevelComputedFieldForConfigComputedFields,
   findFieldByIdInMeta,
-  findPathByNameInMeta,
   getAllColumnInMeta,
   getRuntimeDateLevelFields,
   getValue,
@@ -93,6 +92,12 @@ export class ChartDataRequestBuilder {
     script?: boolean,
     aggregation?: boolean,
   ) {
+    if (
+      dataView.migrationMode !== undefined &&
+      dataView.migrationMode !== 'STRICT'
+    ) {
+      throw new Error('STRICT_ONLY_CHART_VIEW_REQUIRED');
+    }
     this.dataView = dataView;
     this.chartDataConfigs = dataConfigs || [];
     this.chartSettingConfigs = settingConfigs || [];
@@ -167,9 +172,11 @@ export class ChartDataRequestBuilder {
         alias: this.buildAliasName(aggCol),
         column: this.buildColumnName(aggCol),
         sqlOperator: aggCol.aggregate!,
+        ratioOfSums: aggCol.ratioOfSums === true,
       })),
       (a, b) =>
-        isEqualObject(a.column, b.column) && a.sqlOperator === b.sqlOperator,
+        isEqualObject(a.column, b.column) && a.sqlOperator === b.sqlOperator
+          && a.ratioOfSums === b.ratioOfSums,
     );
   }
 
@@ -282,20 +289,43 @@ export class ChartDataRequestBuilder {
       return [col.colName];
     }
 
-    if (col.fieldId) {
-      const field = findFieldByIdInMeta(this.dataView.meta, col.fieldId);
-      if (field) {
-        return field.path || [field.originName || field.name];
+    if (
+      col.category === ChartDataViewFieldCategory.ComputedField ||
+      col.category === ChartDataViewFieldCategory.AggregateComputedField
+    ) {
+      if (
+        this.dataView.migrationMode !== 'STRICT' ||
+        this.isValidStrictComputedField(col)
+      ) {
+        return [col.colName];
       }
+      throw new Error(`STRICT_FIELD_ID_REQUIRED: ${col.colName}`);
     }
 
-    // LEGACY COMPATIBILITY ONLY: old charts do not have fieldId yet.
-    const row = findPathByNameInMeta(this.dataView.meta, col.colName);
-    if (row) {
-      return row?.path || [];
-    } else {
+    if (col.fieldId) {
+      const field = findFieldByIdInMeta(this.dataView.meta, col.fieldId);
+      if (!field) {
+        if (this.dataView.migrationMode === 'STRICT') {
+          throw new Error(`STRICT_FIELD_ID_NOT_FOUND: ${col.fieldId}`);
+        }
+        return [col.colName];
+      }
+      return field.path || [field.originName || field.name];
+    }
+
+    if (col.category) {
+      if (this.dataView.migrationMode === 'STRICT') {
+        throw new Error(`STRICT_FIELD_ID_REQUIRED: ${col.colName}`);
+      }
       return [col.colName];
     }
+
+    // Runtime interaction filters are transient and are not persisted chart
+    // fields. Resolve them only against the current View metadata.
+    const runtimeField = getAllColumnInMeta(this.dataView.meta)?.find(
+      field => field.name === col.colName,
+    );
+    return runtimeField?.path || [col.colName];
   }
 
   private buildGroups() {
@@ -495,7 +525,7 @@ export class ChartDataRequestBuilder {
       .map(f => {
         return {
           aggOperator: null,
-          column: this.buildColumnName({ colName: f.condition?.name! }),
+          column: this.buildColumnName(f.field),
           sqlOperator: f.condition?.operator! as FilterSqlOperator,
           values: [
             { value: f.condition?.value as string, valueType: 'STRING' },

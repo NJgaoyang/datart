@@ -19,7 +19,8 @@ import { Form, Select } from 'antd';
 import { SelectValue } from 'antd/lib/select';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { ControlOption } from 'app/pages/DashBoardPage/pages/BoardEditor/components/ControllerWidgetPanel/types';
-import React, { memo } from 'react';
+import { BoardContext } from 'app/pages/DashBoardPage/components/BoardProvider/BoardProvider';
+import React, { memo, useContext } from 'react';
 import styled from 'styled-components';
 
 export interface SelectControllerProps {
@@ -49,9 +50,12 @@ export const MultiSelectControllerForm: React.FC<SelectControllerProps> = memo(
 export const SelectController: React.FC<SelectControllerProps> = memo(
   ({ options, onChange, value }) => {
     const t = useI18NPrefix(`viz.common.enum.controllerPlaceHolders`);
+    const { isMobile } = useContext(BoardContext);
     return (
       <StyledSelect
         showSearch
+        classNames={{ popup: { root: isMobile ? 'datart-mobile-filter-popup' : undefined } }}
+        popupMatchSelectWidth={!isMobile}
         allowClear
         value={value}
         style={{ width: '100%' }}
@@ -77,7 +81,7 @@ export const SelectController: React.FC<SelectControllerProps> = memo(
               label={item.label ?? item.value ?? 'none'}
               value={item.value}
             >
-              <span>{item.label ?? item.value}</span>
+              <span title={String(item.label ?? item.value ?? '')}>{item.label ?? item.value}</span>
             </Option>
           );
         })}

@@ -27,7 +27,7 @@ import {
   ViewType,
 } from '../pages/MainPage/pages/ViewPage/slice/types';
 
-export type MigrationMode = 'COMPAT' | 'STRICT';
+export type MigrationMode = 'STRICT';
 
 export type ViewFieldMeta = {
   fieldId: string;

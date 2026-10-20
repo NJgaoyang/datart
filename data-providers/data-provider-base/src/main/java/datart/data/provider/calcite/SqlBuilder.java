@@ -205,7 +205,9 @@ public class SqlBuilder {
                     sqlNode = createColumnIdentifier(group.getColumnNames(withNamePrefix, namePrefix));
                     selectList.add(SqlNodeUtils.createAliasNode(sqlNode, outputTechnicalAlias(group.getAlias())));
                 }
-                groupBy.add(sqlNode);
+                if (!containsAggregate(sqlNode)) {
+                    groupBy.add(sqlNode);
+                }
             }
         }
 
@@ -227,7 +229,9 @@ public class SqlBuilder {
                 && !CollectionUtils.isEmpty(executeParam.getAggregators())) {
             boolean hasRealAggregate = false;
             for (AggregateOperator agg : executeParam.getAggregators()) {
-                if (agg.getSqlOperator() != null) {
+                if (agg.getSqlOperator() != null
+                        || (functionColumnMap.containsKey(agg.getColumnKey())
+                            && containsAggregate(functionColumnMap.get(agg.getColumnKey())))) {
                     hasRealAggregate = true;
                     break;
                 }
@@ -236,7 +240,10 @@ public class SqlBuilder {
                 for (AggregateOperator agg : executeParam.getAggregators()) {
                     if (agg.getSqlOperator() == null) {
                         if (functionColumnMap.containsKey(agg.getColumnKey())) {
-                            groupBy.add(functionColumnMap.get(agg.getColumnKey()));
+                            SqlNode expr = functionColumnMap.get(agg.getColumnKey());
+                            if (!containsAggregate(expr)) {
+                                groupBy.add(expr);
+                            }
                         } else {
                             // Date-level aggregator (AGG_DATE_YEAR, AGG_DATE_MONTH, etc.)
                             // rendered as scalar expression → add its column to GROUP BY
@@ -288,6 +295,29 @@ public class SqlBuilder {
         return SqlNodeUtils.toSql(sqlSelect, this.dialect, quoteIdentifiers);
     }
 
+
+    private static boolean containsAggregate(SqlNode node) {
+        if (node == null) return false;
+        if (node instanceof SqlCall call) {
+            // SQL snippets contain SqlUnresolvedFunction nodes before validation,
+            // so relying only on SqlAggFunction misses SUM(a)/SUM(b).
+            if (call.getOperator() instanceof SqlAggFunction
+                    || Set.of("SUM", "AVG", "MIN", "MAX", "COUNT",
+                            "STDDEV", "STDDEV_POP", "STDDEV_SAMP",
+                            "VARIANCE", "VAR_POP", "VAR_SAMP",
+                            "APPROX_COUNT_DISTINCT", "GROUP_CONCAT")
+                        .contains(call.getOperator().getName().toUpperCase(Locale.ROOT))) return true;
+            for (SqlNode operand : call.getOperandList()) {
+                if (containsAggregate(operand)) return true;
+            }
+        } else if (node instanceof SqlNodeList nodes) {
+            for (SqlNode child : nodes) {
+                if (containsAggregate(child)) return true;
+            }
+        }
+        return false;
+    }
+
     private SqlNode createAggNode(AggregateOperator operator) {
         SqlNode sqlNode;
         String columnKey = operator.getColumnKey();
@@ -298,7 +328,29 @@ public class SqlBuilder {
         }
         SqlOperator sqlOp = mappingSqlAggFunction(operator.getSqlOperator());
         SqlNode aggCall;
-        if (operator.getSqlOperator() == null) {
+        if (operator.isRatioOfSums()) {
+            if (operator.getSqlOperator() != AggregateOperator.SqlOperator.SUM
+                    || !(sqlNode instanceof SqlBasicCall division)
+                    || division.getKind() != SqlKind.DIVIDE
+                    || containsAggregate(sqlNode)) {
+                throw new IllegalArgumentException(
+                        "ratioOfSums requires a scalar numerator / denominator and SUM aggregation");
+            }
+            SqlNode numerator = SqlNodeUtils.createSqlBasicCall(
+                    SqlStdOperatorTable.SUM, Collections.singletonList(division.operand(0)));
+            SqlNode denominator = SqlNodeUtils.createSqlBasicCall(
+                    SqlStdOperatorTable.SUM, Collections.singletonList(division.operand(1)));
+            SqlNode zeroGuard = SqlNodeUtils.createSqlBasicCall(
+                    SqlStdOperatorTable.NULLIF,
+                    Arrays.asList(denominator, SqlLiteral.createExactNumeric("0", SqlParserPos.ZERO)));
+            aggCall = SqlNodeUtils.createSqlBasicCall(
+                    SqlStdOperatorTable.DIVIDE, Arrays.asList(numerator, zeroGuard));
+        } else if (operator.getSqlOperator() == null) {
+            aggCall = sqlNode;
+        } else if (containsAggregate(sqlNode)) {
+            // Explicit aggregate formula such as SUM(a)/NULLIF(SUM(b),0)
+            // already defines its aggregation. Do not turn it into SUM(formula).
+            // Plain a/b remains row-wise and is NOT implicitly rewritten.
             aggCall = sqlNode;
         } else if (operator.getSqlOperator() == AggregateOperator.SqlOperator.COUNT_DISTINCT) {
             aggCall = SqlNodeUtils

@@ -137,8 +137,9 @@ public class ShareController extends BaseController {
     @SkipLogin
     public void downloadFile(@RequestParam String shareToken,
                              @RequestParam String downloadId,
+                             @RequestParam String clientId,
                              HttpServletResponse response) throws IOException {
-        Download download = shareService.download(ShareToken.create(shareToken), downloadId);
+        Download download = shareService.download(ShareToken.create(shareToken), downloadId, clientId);
 
         response.setHeader("Content-Type", "application/octet-stream");
         File file = new File(FileUtils.withBasePath(download.getPath()));

@@ -136,6 +136,8 @@ export enum ColumnRole {
 
 export interface Column extends Schema {
   fieldId?: string;
+  sourceComment?: string;
+  customName?: string;
   category?: ColumnCategories;
   index?: number;
   dateFormat?: DateFormat;

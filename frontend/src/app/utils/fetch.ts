@@ -34,6 +34,7 @@ import { BASE_RESOURCE_URL } from 'globalConstants';
 import i18next from 'i18next';
 import qs from 'qs';
 import { request2, requestWithHeader } from 'utils/request';
+import { unwrapWidgetQueryResponse } from './queryResponse';
 import { convertToChartDto } from './ChartDtoHelper';
 import { getAllColumnInMeta } from './chartHelper';
 
@@ -159,6 +160,7 @@ export const makeShareDownloadDataTask =
         fileName: fileName,
         executeToken,
         shareToken,
+        downloadToken: Object.values(executeToken || {})[0]?.authorizedToken,
       },
       params: {
         password,
@@ -297,6 +299,7 @@ export async function loadShareTask(params) {
 interface DownloadShareDashChartFileParams {
   downloadId: string;
   shareToken: string;
+  clientId: string;
   password?: string | null;
 }
 export async function downloadShareDataChartFile(
@@ -328,24 +331,24 @@ export async function fetchChartDataSet(
   requestParams,
   authorizedToken?: ExecuteToken,
 ) {
-  if (authorizedToken) {
-    const { data } = await request2<ChartDataSetDTO>({
-      method: 'POST',
-      url: `shares/execute`,
-      params: {
-        executeToken: authorizedToken,
-      },
-      data: requestParams,
-    });
-    return data;
-  }
-
-  const { data } = await request2<ChartDataSetDTO>({
-    method: 'POST',
-    url: `data-provider/execute`,
-    data: requestParams,
+  const query = authorizedToken
+    ? {
+        method: 'POST',
+        url: 'shares/execute',
+        params: { executeToken: authorizedToken },
+        data: requestParams,
+      }
+    : {
+        method: 'POST',
+        url: 'data-provider/execute',
+        data: requestParams,
+      };
+  // Preserve HTTP 403 instead of converting Axios errors into a message.
+  // Also detect HTTP 200 with the Datart business `success:false` envelope.
+  const response = await request2<ChartDataSetDTO>(query, undefined, {
+    onRejected: error => { throw error; },
   });
-  return data;
+  return unwrapWidgetQueryResponse(response);
 }
 
 export async function fetchDashboardDetail(boardId: string) {

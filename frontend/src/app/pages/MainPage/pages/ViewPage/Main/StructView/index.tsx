@@ -63,6 +63,7 @@ import { Toolbar } from '../Editor/Toolbar';
 import SelectDataSource from './components/SelectDataSource';
 import SelectJoinColumns from './components/SelectJoinColumns';
 import SelectJoinType from './components/SelectJoinType';
+import { getJoinConditionWidths } from './joinLayout';
 
 interface StructViewProps {
   allowManage: boolean;
@@ -457,7 +458,7 @@ export const StructView = memo(
                             />
                           </TableRelation>
                           {join.table && (
-                            <>
+                            <JoinConditionArea>
                               <SelectJoinColumnLabel>
                                 {t('selectJoinColumn')}
                               </SelectJoinColumnLabel>
@@ -467,6 +468,7 @@ export const StructView = memo(
                                     return (
                                       <JoinConditionLine>
                                         <SelectJoinColumns
+                                          columnWidths={getJoinConditionWidths(join.conditions || [])}
                                           structure={structure}
                                           onChange={(
                                             columnName,
@@ -485,44 +487,37 @@ export const StructView = memo(
                                           sourceId={sourceId}
                                           allowManage={allowManage}
                                         />
-                                        <Space className="action">
-                                          {!!left?.length &&
-                                            !!right?.length &&
-                                            ind ===
-                                              (join.conditions?.length || 0) -
-                                                1 && (
+                                        <JoinActionRail>
+                                          {ind === (join.conditions?.length || 0) - 1 && (
+                                            <>
                                               <Button
-                                                type="link"
+                                                aria-label="添加关联字段"
+                                                type="text"
                                                 size="small"
                                                 icon={<PlusOutlined />}
-                                                onClick={() =>
-                                                  allowManage &&
-                                                  handleTableJoinAddColumns(i)
-                                                }
+                                                disabled={!allowManage || !left?.length || !right?.length}
+                                                onClick={() => handleTableJoinAddColumns(i)}
                                               />
-                                            )}
-                                          {ind ===
-                                            (join.conditions?.length || 0) -
-                                              1 &&
-                                            ind > 0 && (
-                                              <Button
-                                                danger
-                                                type="link"
-                                                size="small"
-                                                icon={<CloseOutlined />}
-                                                onClick={() =>
-                                                  allowManage &&
-                                                  handleDeleteConditions(i, ind)
-                                                }
-                                              />
-                                            )}
-                                        </Space>
+                                              {ind > 0 && (
+                                                <Button
+                                                  aria-label="删除关联字段"
+                                                  danger
+                                                  type="text"
+                                                  size="small"
+                                                  icon={<CloseOutlined />}
+                                                  disabled={!allowManage}
+                                                  onClick={() => handleDeleteConditions(i, ind)}
+                                                />
+                                              )}
+                                            </>
+                                          )}
+                                        </JoinActionRail>
                                       </JoinConditionLine>
                                     );
                                   },
                                 )}
                               </JoinConditionWrapper>
-                            </>
+                            </JoinConditionArea>
                           )}
                         </ProcessItemContent>
                         <ProcessItemAction>
@@ -601,45 +596,66 @@ const ConfigPanel = styled.div`
 `;
 
 const TableRelation = styled.div`
-  display: flex;
-  flex-shrink: 0;
+  display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   align-self: flex-start;
-  padding: ${SPACE_SM} 0;
+  gap: 2px;
+  width: max-content;
+  max-width: 100%;
+  padding: 4px 0 8px;
+`;
+
+const JoinConditionArea = styled.div`
+  display: flex;
+  flex: 0 0 auto;
+  align-items: flex-start;
+  width: max-content;
+  max-width: 100%;
+  gap: 8px;
+  margin: 0 0 6px;
 `;
 
 const JoinConditionWrapper = styled.div`
-  padding: ${SPACE_SM} 0;
-  margin-right: ${SPACE_XL};
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  min-width: 0;
+`;
+
+const JoinActionRail = styled.div`
+  flex: 0 0 64px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  height: 32px;
+
+  .ant-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+  }
 `;
 
 const JoinConditionLine = styled.div`
   display: flex;
   align-items: center;
-  margin-top: ${SPACE_XS};
+  gap: 8px;
+  min-height: 36px;
+  margin-top: 2px;
 
   &:first-of-type {
     margin-top: 0;
-  }
-
-  .action {
-    margin-left: ${SPACE_XS};
-    visibility: hidden;
-  }
-
-  &:hover {
-    .action {
-      visibility: visible;
-    }
   }
 `;
 
 const SelectJoinColumnLabel = styled.span`
   display: flex;
   align-self: flex-start;
-  justify-content: center;
-  width: ${SPACE_TIMES(30)};
-  padding: ${SPACE_SM} 0;
+  justify-content: flex-start;
+  flex: 0 0 80px;
+  width: 80px;
+  padding: 2px 0 0;
   line-height: 32px;
   color: ${p => p.theme.textColorLight};
 `;
@@ -675,23 +691,11 @@ const ProcessItem = styled.div`
     position: absolute;
     top: ${SPACE_SM};
     left: ${SPACE_MD};
-    display: none;
+    opacity: 0.9;
   }
 
   .delete-item {
-    display: none;
     font-size: ${FONT_SIZE_ICON_MD};
-  }
-
-  &:hover {
-    background-color: ${p => p.theme.bodyBackground};
-
-    .run-fragment {
-      display: inline-block;
-    }
-    .delete-item {
-      display: inline-block;
-    }
   }
 
   &:before {
@@ -731,14 +735,19 @@ const ProcessItemLabel = styled.p`
 
 const ProcessItemContent = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  padding-left: ${SPACE_XL};
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 0 48px 0 12px;
 `;
 
 const ProcessItemAction = styled.div`
+  position: absolute;
+  top: 8px;
+  right: 8px;
   display: flex;
-  flex-shrink: 0;
+  width: 36px;
+  justify-content: center;
   align-items: center;
-  margin: 0 ${SPACE_XL};
 `;

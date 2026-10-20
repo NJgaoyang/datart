@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import datart.server.service.BaseService;
 import datart.server.service.ViewFieldService;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ import java.util.HashSet;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class ViewFieldServiceImpl extends BaseService implements ViewFieldService {
 
     private final ViewFieldMapperExt mapper;
@@ -106,6 +108,11 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
             SourceSchemaIndex.Index source = schemaIndex == null ? null : schemaIndex.forSource(view.getSourceId());
             Map<String, SqlFieldLineageResolver.SqlFieldLineage> sqlLineages = "SQL".equalsIgnoreCase(view.getType())
                     ? sqlFieldLineageResolver.resolve(view.getScript(), source) : Map.of();
+            Map<String, UpstreamIdentity> joinSources = readJoinSources(view);
+            Map<String, List<ViewField>> upstreamFields = new LinkedHashMap<>();
+            for (UpstreamIdentity identity : joinSources.values()) {
+                upstreamFields.computeIfAbsent(identity.viewId(), mapper::listByViewId);
+            }
             int ordinal = 0;
             for (Map.Entry<String, FieldReferences> entry : references.entrySet()) {
                 FieldReferences refs = entry.getValue();
@@ -137,21 +144,52 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
                         field.setCreateBy(currentUserId());
                         field.setCreateTime(new Date());
                     }
-                    field.setCanonicalKey(data.canonicalKey());
                 }
-                List<String> physicalSourcePath = physicalSourcePath(view.getType(), data, sqlLineages);
+                // Keep the previous identity until we have compared source
+                // changes; existing-by-ID fields can change canonical key.
+                String previousCanonicalKey = field.getCanonicalKey();
+                UpstreamIdentity joinSource = joinSources.get(data.originName());
+                ViewField upstream = joinSource == null ? null
+                        : matchUpstreamField(upstreamFields.get(joinSource.viewId()), joinSource.columnKey());
+                List<String> physicalSourcePath = upstream != null
+                        ? fromJson(upstream.getSourcePath())
+                        : physicalSourcePath(view.getType(), data, sqlLineages);
                 field.setViewId(view.getId());
                 field.setCanonicalKey(data.canonicalKey());
                 field.setOriginName(data.originName());
-                field.setSourcePath(toJson(physicalSourcePath));
+                // A legacy record may have a null sourcePath. For an
+                // unchanged computed field, null and [] represent the same
+                // lack of physical lineage, not a source transition.
+                String formerSourcePath = toJson(fromJson(field.getSourcePath()));
+                String nextSourcePath = toJson(physicalSourcePath);
+                field.setSourcePath(nextSourcePath);
                 field.setFieldType(data.type());
                 field.setFieldCategory(data.category());
                 field.setExpression(data.expression());
                 field.setOrdinal(ordinal++);
                 field.setActive(true);
-                String sourceComment = sourceComment(view.getType(), data, refs, source, physicalSourcePath);
+                String sourceComment = upstream != null
+                        ? trimToNull(upstream.getSourceComment())
+                        : sourceComment(view.getType(), data, refs, source, physicalSourcePath);
+                if (!persisted && upstream != null && trimToNull(upstream.getCustomName()) != null) {
+                    field.setCustomName(trimToNull(upstream.getCustomName()));
+                }
                 if (sourceComment != null) {
                     field.setSourceComment(sourceComment);
+                } else if (shouldClearMissingComment(formerSourcePath, nextSourcePath,
+                        persisted && !Objects.equals(previousCanonicalKey, data.canonicalKey()),
+                        upstream != null || (source != null && !physicalSourcePath.isEmpty()
+                                && source.exact(physicalSourcePath) != null))) {
+                    // Clear only when the physical path or stable field
+                    // identity changed, or the source is verified to lack a
+                    // comment. An unchanged computed field has no physical
+                    // path but can still retain its existing annotation.
+                    field.setSourceComment(null);
+                } else {
+                    // Same known source but comment lookup unavailable:
+                    // do not erase the previously verified metadata.
+                    log.warn("Source comment unavailable for view {} field {} with unchanged physical lineage",
+                            view.getId(), field.getCanonicalKey());
                 }
                 if (migrateLegacyMetadata && trimToNull(field.getCustomName()) == null) {
                     String customName = legacyCustomName(view.getType(), data.canonicalKey(), refs, source);
@@ -267,17 +305,62 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
         return resolved.displayNameCustom() ? trimToNull(resolved.customDisplayName()) : null;
     }
 
+
+    private record UpstreamIdentity(String viewId, String columnKey) { }
+
+    private Map<String, UpstreamIdentity> readJoinSources(View view) {
+        Map<String, UpstreamIdentity> result = new LinkedHashMap<>();
+        if (view.getConfig() == null) return result;
+        try {
+            JsonNode root = OBJECT_MAPPER.readTree(view.getConfig());
+            JsonNode mapping = root.path("lineage").path("outputFieldSources");
+            if (mapping.isObject()) {
+                mapping.fields().forEachRemaining(entry -> {
+                    String viewId = trimToNull(entry.getValue().path("viewId").asText(null));
+                    String columnKey = trimToNull(entry.getValue().path("columnKey").asText(null));
+                    if (viewId != null && columnKey != null) {
+                        result.put(entry.getKey(), new UpstreamIdentity(viewId, columnKey));
+                    }
+                });
+            }
+        } catch (Exception ignored) {
+            // Corrupt lineage should never trigger guessed annotations.
+        }
+        return result;
+    }
+
+    private ViewField matchUpstreamField(List<ViewField> fields, String columnKey) {
+        if (fields == null) return null;
+        List<ViewField> matches = fields.stream()
+                .filter(field -> Boolean.TRUE.equals(field.getActive()))
+                .filter(field -> Objects.equals(columnKey, field.getCanonicalKey())
+                        || Objects.equals(columnKey, field.getOriginName())
+                        || Objects.equals(columnKey, String.join(".", fromJson(field.getSourcePath()))))
+                .toList();
+        return matches.size() == 1 ? matches.get(0) : null;
+    }
+
+    /** A confirmed comment removal must not leave stale Chinese labels;
+     * an unavailable schema lookup must not erase valid previous labels. */
+    static boolean shouldClearMissingComment(String oldPath, String nextPath,
+                                             boolean sourceLost, boolean sourceVerified) {
+        return sourceLost || !Objects.equals(oldPath, nextPath) || sourceVerified;
+    }
+
     private String sourceComment(String viewType, FieldData data, FieldReferences refs,
                                  SourceSchemaIndex.Index source, List<String> physicalSourcePath) {
         if ("COMPUTED".equalsIgnoreCase(data.category())) {
             return null;
         }
         SourceSchemaIndex.ColumnMeta schema = source == null ? null : source.exact(physicalSourcePath);
-        String schemaComment = schema == null ? null : trimToNull(schema.comment());
+        if (schema != null) {
+            // A known column with an empty physical comment is a verified
+            // deletion. Do not resurrect stale annotations from the model.
+            return trimToNull(schema.comment());
+        }
         ResolvedFieldMeta resolved = legacyResolver.resolve(data.canonicalKey(), refs.resolverColumn(), refs.hierarchy(),
                 source, viewType);
-        String modelComment = trimToNull(resolved.comment());
-        return schemaComment == null ? modelComment : schemaComment;
+        return trimToNull(resolved.comment());
     }
 
     private List<String> physicalSourcePath(String viewType, FieldData data,

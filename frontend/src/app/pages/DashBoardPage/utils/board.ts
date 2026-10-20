@@ -57,6 +57,7 @@ import { Widget } from '../types/widgetTypes';
 import { initAutoBoardConfig } from './autoBoard';
 import { initFreeBoardConfig } from './freeBoard';
 import { ensureMobileBoardSettings } from './mobileBoardSettings';
+import { ensureGridEngineSettings } from './gridEngineSettings';
 
 export const getDashBoardByResBoard = (data: ServerDashboard): Dashboard => {
   return {
@@ -74,6 +75,7 @@ export const getDashBoardByResBoard = (data: ServerDashboard): Dashboard => {
 };
 export const preprocessBoardConfig = (config: BoardConfig, boardId: string) => {
   ensureMobileBoardSettings(config);
+  ensureGridEngineSettings(config);
   config.jsonConfig.props.forEach(item => {
     if (item.key === 'background') {
       const rowsValue = item?.rows?.[0]?.value;
@@ -154,8 +156,8 @@ export const getInitBoardConfigBeta3 = (boardType?: BoardType) => {
 
     // auto
     allowOverlap: false,
-    margin: [16, 16], //0-100
-    containerPadding: [16, 16], //0-100
+    margin: [1, 1], //0-100
+    containerPadding: [1, 1], //0-100
     layoutVersion: AUTO_LAYOUT_VERSION,
     mobileLayoutVersion: MOBILE_LAYOUT_VERSION,
     pcRowLayoutVersion: PC_ROW_LAYOUT_VERSION,
@@ -204,9 +206,17 @@ export const getDataChartsByServer = (
   return dataCharts;
 };
 
-export const getChartDataView = (views: View[], dataCharts: DataChart[]) => {
+export const getChartDataView = (
+  views: View[],
+  dataCharts: DataChart[],
+  additionalViewIds: string[] = [],
+) => {
   const viewViews: ChartDataView[] = [];
-  views.forEach(view => {
+  const usedViewIds = new Set([
+    ...dataCharts.map(dataChart => dataChart.viewId).filter(Boolean),
+    ...additionalViewIds.filter(Boolean),
+  ]);
+  views.filter(view => usedViewIds.has(view.id)).forEach(view => {
     const dataChart = dataCharts.find(dc => dc.viewId === view.id);
 
     if (view) {
@@ -239,7 +249,7 @@ export const getChartDataView = (views: View[], dataCharts: DataChart[]) => {
 export const getBoardMarginPadding = (
   boardConfig: BoardConfigValue,
   colsKey: ColsKeyType,
-) => {
+): { curMargin: [number, number]; curPadding: [number, number] } => {
   const { margin, padding, mMargin, mPadding } = boardConfig;
   const isMobile = colsKey === 'sm';
   return isMobile

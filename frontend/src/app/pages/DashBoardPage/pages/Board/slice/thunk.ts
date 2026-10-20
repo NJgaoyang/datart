@@ -34,7 +34,7 @@ import {
 import { filterSqlOperatorName } from 'app/utils/internalChartHelper';
 import { RootState } from 'types';
 import { request2 } from 'utils/request';
-import { getErrorMessage } from 'utils/utils';
+import { getWidgetQueryErrorMessage } from 'app/pages/DashBoardPage/utils/widgetQueryError';
 import { boardActions } from '.';
 import { getChartWidgetRequestParams } from '../../../utils';
 import { handleServerBoardAction } from './asyncActions';
@@ -48,7 +48,7 @@ import {
   VizRenderMode,
   WidgetData,
 } from './types';
-import { enqueueWidgetFetch } from './widgetDataBatcher';
+import { enqueueWidgetFetch, WidgetFetchCancelledError } from './widgetDataBatcher';
 
 /**
  * @param ''
@@ -321,11 +321,12 @@ export const syncBoardWidgetChartDataAsync = createAsyncThunk<
         }),
       );
     } catch (error) {
+      if (error instanceof WidgetFetchCancelledError) return null;
       await dispatch(
         boardActions.setWidgetErrInfo({
           boardId,
           widgetId,
-          errInfo: getErrorMessage(error),
+          errInfo: getWidgetQueryErrorMessage(error),
           errorType: 'request',
         }),
       );
@@ -410,7 +411,7 @@ export const getChartWidgetDataAsync = createAsyncThunk<
             executeToken: executeToken?.authorizedToken,
           },
           data: requestParams,
-        });
+        }, undefined, { onRejected: error => { throw error; } });
         widgetData = data;
       }
       dispatch(
@@ -435,11 +436,12 @@ export const getChartWidgetDataAsync = createAsyncThunk<
         }),
       );
     } catch (error) {
+      if (error instanceof WidgetFetchCancelledError) return null;
       dispatch(
         boardActions.setWidgetErrInfo({
           boardId,
           widgetId,
-          errInfo: getErrorMessage(error),
+          errInfo: getWidgetQueryErrorMessage(error),
           errorType: 'request',
         }),
       );
@@ -526,7 +528,7 @@ export const getControllerOptions = createAsyncThunk<
             executeToken: executeToken?.authorizedToken,
           },
           data: requestParams,
-        });
+        }, undefined, { onRejected: error => { throw error; } });
         widgetData = data;
       } else {
         // 使用批量请求调度器
@@ -547,11 +549,12 @@ export const getControllerOptions = createAsyncThunk<
         }),
       );
     } catch (error) {
+      if (error instanceof WidgetFetchCancelledError) return null;
       dispatch(
         boardActions.setWidgetErrInfo({
           boardId,
           widgetId,
-          errInfo: getErrorMessage(error),
+          errInfo: getWidgetQueryErrorMessage(error),
           errorType: 'request',
         }),
       );

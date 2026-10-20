@@ -38,6 +38,8 @@ import { OnLoadTasksType } from '../../MainPage/Navbar/DownloadListPopup';
 import { DownloadTask } from '../../MainPage/slice/types';
 import { DownloadTaskContainer } from '../components/DownloadTaskContainer';
 import { HeadlessBrowserIdentifier } from '../components/HeadlessBrowserIdentifier';
+import { SharedMobileBoardCore } from '../../DashBoardPage/pages/Board/MobileBoard';
+import { shouldUseMobileShareLayout } from './shareMobileLayout';
 import TitleForShare from '../components/TitleForShare';
 const TitleHeight = 60;
 
@@ -72,6 +74,22 @@ export const DashboardForShare: React.FC<ShareBoardProps> = memo(
     const { needFetchItems, hasFetchItems, boardWidthHeight } = shareBoardInfo;
 
     const [allItemFetched, setAllItemFetched] = useState(false);
+    // Match the single mobile mRect layout automatically on narrow
+    // share viewers; keep the scheduled/headless desktop layout unchanged.
+    const [viewportWidth, setViewportWidth] = useState(() =>
+      typeof window === 'undefined' ? 0 : window.innerWidth,
+    );
+    useEffect(() => {
+      const updateWidth = () => setViewportWidth(window.innerWidth);
+      window.addEventListener('resize', updateWidth);
+      return () => window.removeEventListener('resize', updateWidth);
+    }, []);
+    const mobileShare = shouldUseMobileShareLayout(
+      viewportWidth,
+      dashboard?.config?.type,
+      renderMode,
+    );
+
 
     useEffect(() => {
       if (needFetchItems.length === hasFetchItems.length) {
@@ -123,9 +141,10 @@ export const DashboardForShare: React.FC<ShareBoardProps> = memo(
         <BoardInitProvider
           board={dashboard}
           editing={false}
-          autoFit={false}
+          autoFit={mobileShare}
           renderMode={renderMode}
           allowDownload={allowDownload}
+          isMobile={mobileShare}
         >
           <Wrapper>
             <TitleForShare
@@ -137,7 +156,11 @@ export const DashboardForShare: React.FC<ShareBoardProps> = memo(
                 onDownloadFile={onDownloadFile}
               ></DownloadTaskContainer>
             </TitleForShare>
-            {boardType === 'auto' && <AutoBoardCore boardId={dashboard.id} />}
+            {boardType === 'auto' && (
+              mobileShare
+                ? <SharedMobileBoardCore dashboard={dashboard} renderMode={renderMode} />
+                : <AutoBoardCore boardId={dashboard.id} />
+            )}
             {boardType === 'free' && <FreeBoardCore boardId={dashboard.id} />}
             <FullScreenPanel />
           </Wrapper>
@@ -151,6 +174,7 @@ export const DashboardForShare: React.FC<ShareBoardProps> = memo(
       onLoadShareTask,
       onShareDownloadData,
       renderMode,
+      mobileShare,
     ]);
 
     return (

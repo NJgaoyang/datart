@@ -92,7 +92,8 @@ const MaskLayer = styled.div<{ front: boolean; hideBorder: boolean }>`
   z-index: ${p => (p.front ? LEVEL_20 : LEVEL_5)};
   width: 100%;
   height: 100%;
-  cursor: move;
+  cursor: ${p => (p.front ? 'move' : 'default')};
+  pointer-events: ${p => (p.front ? 'auto' : 'none')};
 
   &:hover:not(.selected):not(.editing),
   &:active:not(.selected):not(.editing) {

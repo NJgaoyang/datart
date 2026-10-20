@@ -19,35 +19,25 @@
 import { BoardContext } from 'app/pages/DashBoardPage/components/BoardProvider/BoardProvider';
 import {
   BASE_ROW_HEIGHT,
-  BASE_VIEW_WIDTH,
-  BREAK_POINT_MAP,
-  LAYOUT_COLS_KEYS,
   MOBILE_ROW_HEIGHT,
-  MIN_ROW_HEIGHT,
 } from 'app/pages/DashBoardPage/constants';
 import { boardActions } from 'app/pages/DashBoardPage/pages/Board/slice';
-import { ColsKeyType } from 'app/pages/DashBoardPage/pages/Board/slice/types';
-import { useContext, useLayoutEffect, useMemo, useState } from 'react';
+import { useContext, useLayoutEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import useResizeObserver from './useResizeObserver';
+import { getAdaptiveGridColsKey, getGridCanvasWidth } from 'app/pages/DashBoardPage/utils/gridViewport';
 
-export const useGridWidgetHeight = () => {
-  const { boardId, renderMode } = useContext(BoardContext);
+export const useGridWidgetHeight = (mobilePreview?: boolean) => {
+  const { boardId, renderMode, isMobile } = useContext(BoardContext);
+  const mobileMode = mobilePreview ?? isMobile ?? false;
   const dispatch = useDispatch();
-  const [colsKey, setColsKey] = useState<ColsKeyType>(LAYOUT_COLS_KEYS[0]);
   const [cacheW, setCacheW] = useState(0);
   const { ref, width = 0, height = 0 } = useResizeObserver<HTMLDivElement>();
 
   useLayoutEffect(() => {
-    if (width > 0 && height > 0) {
+    if (width > 0) {
       setCacheW(width);
-      //  BREAK_POINT_MAP['sm']=768px
-      if (width <= BREAK_POINT_MAP['sm']) {
-        setColsKey('sm');
-      } else {
-        setColsKey('lg');
-      }
-      if (renderMode !== 'edit') {
+      if (height > 0 && renderMode !== 'edit') {
         dispatch(
           boardActions.setBoardWidthHeight({ boardId, wh: [width, height] }),
         );
@@ -55,15 +45,9 @@ export const useGridWidgetHeight = () => {
     }
   }, [width, height, dispatch, boardId, renderMode]);
 
-  const widgetRowHeight = useMemo(() => {
-    if (colsKey === 'sm') return MOBILE_ROW_HEIGHT;
-    let dynamicHeight = (cacheW * BASE_ROW_HEIGHT) / BASE_VIEW_WIDTH;
-    return Math.max(dynamicHeight, MIN_ROW_HEIGHT);
-  }, [cacheW, colsKey]);
+  const colsKey = getAdaptiveGridColsKey(cacheW, mobileMode);
+  const canvasWidth = getGridCanvasWidth(cacheW, mobileMode);
+  const widgetRowHeight = mobileMode ? MOBILE_ROW_HEIGHT : BASE_ROW_HEIGHT;
 
-  return {
-    ref,
-    widgetRowHeight,
-    colsKey,
-  };
+  return { ref, widgetRowHeight, colsKey, canvasWidth, containerWidth: cacheW };
 };

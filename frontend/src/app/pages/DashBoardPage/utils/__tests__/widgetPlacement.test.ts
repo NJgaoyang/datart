@@ -1,0 +1,95 @@
+import { updateAutoWidgetsRect } from '../widget';
+import type { Widget } from '../../types/widgetTypes';
+
+const makeWidget = (id: string, width: number, height: number) =>
+  ({ id, config: { pRect: { x: 8, y: 8, width, height } } } as Widget);
+
+describe('new dashboard widget placement', () => {
+  it('places a new widget below the existing bottom edge', () => {
+    const input = [makeWidget('new', 20, 6)];
+    const result = updateAutoWidgetsRect(input, [
+      { i: 'existing', x: 4, y: 15, w: 18, h: 7 },
+    ]);
+    expect(result[0].config.pRect).toEqual({
+      x: 0, y: 22, width: 20, height: 6,
+    });
+    expect(input[0].config.pRect.x).toBe(8);
+    expect(result[0].config.mRect).toEqual({
+      x: 0, y: 0, width: 7, height: 6,
+    });
+  });
+
+  it('packs batches left to right and wraps after the widest row', () => {
+    const result = updateAutoWidgetsRect([
+      makeWidget('a', 40, 10),
+      makeWidget('b', 32, 6),
+      makeWidget('c', 30, 5),
+    ], []);
+    expect(result.map(widget => widget.config.pRect)).toEqual([
+      { x: 0, y: 0, width: 40, height: 10 },
+      { x: 40, y: 0, width: 32, height: 6 },
+      { x: 0, y: 10, width: 30, height: 5 },
+    ]);
+  });
+
+  it('keeps oversized widgets within the 72-column grid', () => {
+    const result = updateAutoWidgetsRect([makeWidget('wide', 200, 3)], []);
+    expect(result[0].config.pRect).toEqual({
+      x: 0, y: 0, width: 72, height: 3,
+    });
+  });
+  it('places mobile widgets after existing mobile content, not desktop rows', () => {
+    const result = updateAutoWidgetsRect(
+      [makeWidget('new', 36, 7)],
+      [{ i: 'desktop-existing', x: 0, y: 1, w: 36, h: 6 }],
+      [{ i: 'mobile-existing', x: 0, y: 22, w: 24, h: 10 }],
+    );
+    expect(result[0].config.pRect).toEqual({
+      x: 0, y: 7, width: 36, height: 7,
+    });
+    expect(result[0].config.mRect).toEqual({
+      x: 0, y: 32, width: 12, height: 7,
+    });
+  });
+
+  it('uses a compact default for new filter fields without affecting charts', () => {
+    const controller = {
+      ...makeWidget('filter', 36, 24),
+      config: {
+        ...makeWidget('filter', 36, 24).config,
+        type: 'controller',
+        originalType: 'dropdownList',
+      },
+    } as Widget;
+    const chart = makeWidget('chart', 36, 24);
+    const result = updateAutoWidgetsRect([controller, chart], []);
+
+    expect(result[0].config.pRect).toEqual({
+      x: 0, y: 0, width: 24, height: 8,
+    });
+    expect(result[0].config.mRect).toEqual({
+      x: 0, y: 0, width: 12, height: 3,
+    });
+    expect(result[1].config.pRect).toEqual({
+      x: 24, y: 0, width: 36, height: 24,
+    });
+    expect(result[1].config.mRect).toEqual({
+      x: 12, y: 0, width: 12, height: 24,
+    });
+  });
+
+  it('preserves explicit controller rectangles instead of forcing defaults', () => {
+    const controller = {
+      ...makeWidget('custom-filter', 24, 8),
+      config: {
+        ...makeWidget('custom-filter', 24, 8).config,
+        type: 'controller',
+        originalType: 'dropdownList',
+      },
+    } as Widget;
+    const [result] = updateAutoWidgetsRect([controller], []);
+    expect(result.config.pRect.width).toBe(24);
+    expect(result.config.pRect.height).toBe(8);
+  });
+
+});

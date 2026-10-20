@@ -32,6 +32,7 @@ export interface VisibilityCondition {
 }
 
 export interface ControllerConfig {
+  optionSort?: 'auto' | 'asc' | 'desc' | 'original';
   valueOptionType: ValueOptionType; //
   visibility: ControllerVisibility;
   sqlOperator: FilterSqlOperator;

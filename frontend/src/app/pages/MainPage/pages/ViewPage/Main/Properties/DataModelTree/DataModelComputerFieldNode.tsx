@@ -33,6 +33,7 @@ import { ChartDataViewMeta } from 'app/types/ChartDataViewMeta';
 import { FC, memo } from 'react';
 import styled from 'styled-components';
 import { getFieldDisplayName } from 'utils/utils';
+import { DatasetCommentLabel } from '../../../components/DatasetCommentLabel';
 import {
   FONT_SIZE_BASE,
   FONT_SIZE_TITLE,
@@ -85,7 +86,11 @@ const DataModelComputerFieldNode: FC<{
           <Tooltip title={t('createComputedFields')} placement="left">
             <StyledIW fontSize={FONT_SIZE_TITLE}>{icon}</StyledIW>
           </Tooltip>
-          <span>{getFieldDisplayName(node)}</span>
+          <DatasetCommentLabel
+              label={getFieldDisplayName(node)}
+              comment={node.sourceComment || node.comment}
+              hasCustomName={Boolean(node.customName || node.isDisplayNameCustom)}
+            />
         </div>
         <div className="action">
           <Popup

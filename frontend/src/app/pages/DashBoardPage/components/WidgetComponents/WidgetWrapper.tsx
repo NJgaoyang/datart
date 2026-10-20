@@ -28,13 +28,16 @@ export const WidgetWrapper: React.FC<{
   background: BackgroundConfig;
   padding: WidgetPadding;
   border: BorderConfig;
+  className?: string;
   children?: ReactNode;
 }> = memo(props => {
-  const { children, ...rest } = props;
+  const { children, className, ...rest } = props;
   const style = getWidgetSomeStyle(rest);
-  return <Wrapper style={style}>{children}</Wrapper>;
+  return <Wrapper className={className} style={style}>{children}</Wrapper>;
 });
 const Wrapper = styled.div`
+  /* Give absolute toolbar its own stable local positioning context. */
+  position: relative;
   box-sizing: border-box;
   display: flex;
   flex: 1;
@@ -42,7 +45,46 @@ const Wrapper = styled.div`
   min-height: 0;
   overflow: hidden;
 
-  &:hover .widget-tool-dropdown {
-    visibility: visible;
+  /* Controller toolbar belongs in a true flex column, not painted over the
+     DatePicker suffix. Its width automatically includes status/lock icons. */
+  &.controller-widget {
+    align-items: center;
+
+    .controller-widget-content {
+      flex: 1 1 auto;
+      min-width: 0;
+      max-width: 100%;
+      width: auto;
+      height: 100%;
+    }
+
+    .widget-action-toolbar {
+      position: relative;
+      top: auto;
+      right: auto;
+      flex: 0 0 auto;
+      align-self: center;
+      overflow: visible;
+    }
+
+    /* Unlike a floating overlay, this action has a predictable visible
+       target on touchscreens and narrow desktop inputs. */
+    .widget-tool-dropdown {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  &:hover .widget-tool-dropdown,
+  &:focus-within .widget-tool-dropdown {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  @media (pointer: coarse) {
+    .widget-tool-dropdown {
+      opacity: 1;
+      pointer-events: auto;
+    }
   }
 `;

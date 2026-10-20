@@ -1,5 +1,6 @@
 import { Split } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
+import useResizeObserver from 'app/hooks/useResizeObserver';
 import { useSplitSizes } from 'app/hooks/useSplitSizes';
 import { useBoardSlice } from 'app/pages/DashBoardPage/pages/Board/slice';
 import { useEditBoardSlice } from 'app/pages/DashBoardPage/pages/BoardEditor/slice';
@@ -23,18 +24,20 @@ export function VizPage() {
   useStoryBoardSlice();
   const saveFormContextValue = useSaveFormContext();
   const [sliderVisible, setSliderVisible] = useState<boolean>(false);
+  const { ref: splitContainerRef, width: splitWidth = 0 } = useResizeObserver<HTMLDivElement>();
 
   const { sizes, setSizes } = useSplitSizes({
     limitedSide: 0,
     range: [256, 768],
+    containerWidth: splitWidth,
   });
   const tg = useI18NPrefix('global');
   const [isDragging, setIsDragging] = useState(false);
 
   // 折叠状态下 sidebar 占固定像素宽度的百分比
   const collapsedPct = useMemo(
-    () => (COLLAPSED_SIDEBAR_PX / document.documentElement.clientWidth) * 100,
-    [document.documentElement.clientWidth],
+    () => (COLLAPSED_SIDEBAR_PX / Math.max(1, splitWidth || window.innerWidth)) * 100,
+    [splitWidth],
   );
 
   const displaySizes = useMemo(() => {
@@ -69,6 +72,7 @@ export function VizPage() {
 
   return (
     <SaveFormContext.Provider value={saveFormContextValue}>
+      <SplitMeasure ref={splitContainerRef}>
       <Container
         sizes={displaySizes}
         minSize={sliderVisible ? [0, 0] : [256, 0]}
@@ -97,6 +101,7 @@ export function VizPage() {
           okText={tg('button.save')}
         />
       </Container>
+      </SplitMeasure>
     </SaveFormContext.Provider>
   );
 }
@@ -109,4 +114,12 @@ const Container = styled(Split)<{ sliderVisible: boolean }>`
   .gutter-horizontal {
     display: ${p => (p.sliderVisible ? 'none' : 'block')};
   }
+`;
+
+const SplitMeasure = styled.div`
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
 `;

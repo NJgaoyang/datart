@@ -1603,6 +1603,19 @@ describe('Internal Chart Helper ', () => {
       ).toEqual('城市');
     });
 
+    test('keeps a chart-specific custom display name ahead of dataset metadata', () => {
+      expect(
+        getColumnRenderName({
+          colName: 'city',
+          fieldId: 'field-city',
+          originName: 'city',
+          displayName: '看板城市',
+          isDisplayNameCustom: true,
+          sourceComment: '数据集城市注释',
+        } as ChartDataSectionField),
+      ).toEqual('看板城市');
+    });
+
     test.each(['COMPAT', 'STRICT'])(
       'uses the same canonical display name in %s mode',
       mode => {
@@ -1776,6 +1789,7 @@ describe('Internal Chart Helper ', () => {
           columns: {
             city: {
               name: ['city'],
+              fieldId: 'field-city',
               displayName: 'city',
               isDisplayNameCustom: false,
             },
@@ -2099,7 +2113,7 @@ describe('Internal Chart Helper ', () => {
     expect(result.datas?.[0].rows?.[0]).toEqual(config.datas[0].rows[0]);
   });
 
-  test('synchronizes cached chart displayName from the latest ViewField metadata', () => {
+  test('does not backfill a missing fieldId from an old field name', () => {
     const config = {
       datas: [
         {
@@ -2125,10 +2139,32 @@ describe('Internal Chart Helper ', () => {
 
     const result = reconcileChartConfigFieldMeta(config, fields);
 
-    expect(result.datas?.[0].rows?.[0]).toMatchObject({
-      fieldId: 'current',
-      displayName: 'net_increase_users',
+    expect(result.datas?.[0].rows?.[0]).toEqual(config.datas[0].rows[0]);
+  });
+
+  test('hydrates display metadata without changing a legacy field identity', () => {
+    const config = {
+      datas: [{ rows: [{ category: 'field', colName: 'city' }] }],
+    } as any;
+    const fields = [
+      {
+        name: 'city',
+        originName: 'city',
+        fieldId: 'current-city',
+        customName: '城市',
+        sourceComment: '城市注释',
+      },
+    ] as any;
+
+    const result = reconcileChartConfigFieldMeta(config, fields);
+    const row = result.datas?.[0].rows?.[0] as any;
+
+    expect(row).toMatchObject({
+      colName: 'city',
+      customName: '城市',
+      sourceComment: '城市注释',
     });
+    expect(row.fieldId).toBeUndefined();
   });
 
   test('keeps chart alias while synchronizing field identity', () => {
@@ -2139,6 +2175,7 @@ describe('Internal Chart Helper ', () => {
             {
               category: 'field',
               colName: 'net_increase_users',
+              fieldId: 'current',
               alias: { name: '净增' },
               displayName: '历史字段名',
               isDisplayNameCustom: true,
@@ -2161,7 +2198,7 @@ describe('Internal Chart Helper ', () => {
     expect(result.datas?.[0].rows?.[0]).toMatchObject({
       fieldId: 'current',
       alias: { name: '净增' },
-      displayName: '在租用户较昨日净增人数',
+      displayName: '历史字段名',
     });
   });
 

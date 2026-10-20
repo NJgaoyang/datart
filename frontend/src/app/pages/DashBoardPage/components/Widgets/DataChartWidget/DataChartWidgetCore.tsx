@@ -16,6 +16,9 @@
  * limitations under the License.
  */
 import useModal from 'antd/lib/modal/useModal';
+import { Button, Empty } from 'antd';
+import { getChartViewState } from './chartViewState';
+import { WIDGET_QUERY_FORBIDDEN } from 'app/pages/DashBoardPage/utils/widgetQueryError';
 import ChartDrillContextMenu from 'app/components/ChartDrill/ChartDrillContextMenu';
 import ChartDrillPaths from 'app/components/ChartDrill/ChartDrillPaths';
 import { ChartIFrameContainer } from 'app/components/ChartIFrameContainer';
@@ -77,6 +80,7 @@ import { BoardContext } from '../../BoardProvider/BoardProvider';
 import { BoardScaleContext } from '../../FreeBoardBackground';
 import { WidgetChartContext } from '../../WidgetProvider/WidgetChartProvider';
 import { WidgetDataContext } from '../../WidgetProvider/WidgetDataProvider';
+import { WidgetInfoContext } from '../../WidgetProvider/WidgetInfoProvider';
 import { WidgetContext } from '../../WidgetProvider/WidgetProvider';
 import { WidgetSelectionContext } from '../../WidgetProvider/WidgetSelectionProvider';
 
@@ -86,6 +90,14 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
   const dispatch = useDispatch();
   const scale = useContext(BoardScaleContext);
   const { data: dataset } = useContext(WidgetDataContext);
+  const { loading, rendered, errInfo } = useContext(WidgetInfoContext);
+  const dataState = getChartViewState({
+    loading,
+    rendered,
+    rows: dataset?.rows,
+    failed: Boolean(dataset?.error || Object.values(errInfo || {}).some(Boolean)),
+    forbidden: errInfo?.request === WIDGET_QUERY_FORBIDDEN,
+  });
   const { boardId, renderMode, orgId, queryVariables, isMobile, isEmbedded } =
     useContext(BoardContext);
   const selectedItems = useContext(WidgetSelectionContext);
@@ -579,7 +591,20 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
   const chartFrame = useMemo(() => {
     if (!config) return null;
     if (cacheH <= 1 || cacheW <= 1) return null;
-    if (errText) return errText;
+    if (errText) return <Empty description="图表配置不可用，请联系管理员检查" />;
+    if (dataState === 'forbidden') {
+      return <Empty description="无权访问该图表的数据，请联系管理员申请权限" />;
+    }
+    if (dataState === 'error') {
+      return (
+        <Empty description="图表查询失败，请稍后重试或检查数据源">
+          <Button loading={loading} disabled={loading} onClick={() => onWidgetGetData(widgetRef.current)}>
+            重新查询
+          </Button>
+        </Empty>
+      );
+    }
+    if (dataState === 'empty') return <Empty description="当前筛选条件下暂无数据" />;
     const drillOption = drillOptionRef.current;
 
     return (
@@ -601,7 +626,10 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
     cacheH,
     cacheW,
     errText,
+    dataState,
     chart,
+    loading,
+    onWidgetGetData,
     dataset,
     selectedItems,
     containerId,

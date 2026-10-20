@@ -1,0 +1,130 @@
+name: Dashboard grid v2 checks
+
+on:
+  push:
+    branches: [dev20261017]
+    paths:
+      - 'frontend/**'
+      - 'core/**'
+      - 'server/**'
+      - 'data-providers/**'
+      - 'tools/grid-layout-migration*'
+      - '.github/workflows/dashboard-grid-v2.yml'
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - 'core/**'
+      - 'server/**'
+      - 'data-providers/**'
+      - 'tools/grid-layout-migration*'
+      - '.github/workflows/dashboard-grid-v2.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: dashboard-grid-v2-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci --legacy-peer-deps
+      - name: TypeScript and targeted native RGL v2 tests
+        run: npm run check:grid
+      - name: Native v2 compaction performance baseline (100/500/1000 widgets)
+        run: npm run bench:grid
+      - name: Production frontend build
+        run: npm run build
+      - name: Capture per-entry JavaScript bundle baseline
+        run: npm run report:bundles
+      - name: Check JS size budget rules and built chunk size
+        run: npm run test:bundle-budget && npm run check:bundle-budget
+      - name: Install locked Playwright and browser engines (public entry smoke)
+        run: |
+          cd e2e
+          npm ci --registry=https://registry.npmjs.org
+          npx playwright install --with-deps chromium firefox webkit
+      - name: Check built public entries across Chromium, Firefox and WebKit
+        env:
+          DATART_TEST_BASE_URL: http://127.0.0.1:4173
+        run: |
+          ./node_modules/.bin/vite preview --host 127.0.0.1 --port 4173 > /tmp/datart-preview.log 2>&1 &
+          for attempt in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:4173/login > /dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/shareDashboard.html > /dev/null
+          cd e2e
+          npm test -- --project=chromium-smoke --project=firefox-smoke --project=webkit-smoke --project=webkit-mobile-smoke --workers=1
+      - name: Upload public entry smoke diagnostics (no auth state)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-crossbrowser-entry-smoke
+          if-no-files-found: ignore
+          path: |
+            frontend/e2e/test-results/
+            frontend/e2e/playwright-report/
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Compile Java server with dependency modules
+        run: mvn --batch-mode -pl server -am -DskipTests package
+      - name: Security, SQL metrics, join and Excel export regression tests
+        run: mvn --batch-mode -pl server -am -Dtest=ColumnPermissionFilterTest,SqlBuilderAggregateTest,PoiConvertUtilsDisplayNameTest,ViewJoinColumnNameTest,DownloadServiceSecurityTest,ShareSupportedFunctionSecurityTest,ViewFieldCommentLifecycleTest,ViewFieldServiceImplTest,SqlQueryScriptProcessorVariableScopeTest,QueryCancellationRegistryTest,MigrationModeServiceImplTest,DatachartStrictOnlyImportTest,MigrationRuntimeVerificationTest,DashboardServiceImplTest -Dsurefire.failIfNoSpecifiedTests=false test
+
+  mysql-cancel-integration:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci-only-cancel-test
+          MYSQL_DATABASE: datart_cancel_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pci-only-cancel-test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Verify real JDBC cancellation on disposable MySQL
+        env:
+          DATART_TEST_MYSQL_CANCEL_URL: jdbc:mysql://127.0.0.1:3306/datart_cancel_test?useSSL=false&allowPublicKeyRetrieval=true
+          DATART_TEST_MYSQL_CANCEL_USER: root
+          DATART_TEST_MYSQL_CANCEL_PASSWORD: ci-only-cancel-test
+        run: mvn --batch-mode -pl data-providers/jdbc-data-provider -am -Dtest=LiveMysqlQueryCancellationTest -Dsurefire.failIfNoSpecifiedTests=false test
+
+  migration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Test the standalone offline layout migration and rollback
+        run: node --test tools/grid-layout-migration.test.mjs

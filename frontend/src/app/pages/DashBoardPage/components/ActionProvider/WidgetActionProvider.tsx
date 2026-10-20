@@ -164,12 +164,14 @@ export const WidgetActionProvider: FC<{
           );
         },
         onUpdateWidgetConfigByKey: ops => {
+          // Exactly one store owns the Widget in each mode. The old extra
+          // dispatch duplicated undo snapshots in edit mode and wrote into
+          // the editor stack from read/share mode.
           if (boardEditing) {
             dispatch(editBoardStackActions.updateWidgetConfigByKey(ops));
           } else {
             dispatch(boardActions.updateWidgetConfigByKey({ ...ops, boardId }));
           }
-          dispatch(editBoardStackActions.updateWidgetConfigByKey(ops));
         },
         onWidgetUpdate: (widget: Widget) => {
           if (boardEditing) {

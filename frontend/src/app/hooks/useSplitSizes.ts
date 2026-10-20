@@ -21,21 +21,24 @@ import { useCallback, useEffect, useState } from 'react';
 interface UseSplitSizesProps {
   limitedSide: 0 | 1;
   range: [number, number];
+  containerWidth?: number;
 }
 
-export function useSplitSizes({ limitedSide, range }: UseSplitSizesProps) {
+export function useSplitSizes({ limitedSide, range, containerWidth }: UseSplitSizesProps) {
   const [sizes, setSizes] = useState([0, 0]);
   const [minSize] = range;
 
   const onResize = useCallback(() => {
-    const minPct = Math.floor(
-      (minSize / document.documentElement.clientWidth) * 100,
-    );
+    const availableWidth = containerWidth || document.documentElement.clientWidth;
+    if (availableWidth <= 0) return;
+    const minPct = Math.min(100, Math.floor(
+      (minSize / availableWidth) * 100,
+    ));
     const pct = Math.max(minPct, sizes[0]);
     if (pct !== sizes[0]) {
       setSizes([pct, 100 - pct]);
     }
-  }, [sizes, minSize]);
+  }, [sizes, minSize, containerWidth]);
 
   useEffect(() => {
     onResize();

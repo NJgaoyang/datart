@@ -80,6 +80,7 @@ export const LayerTree: FC<{}> = memo(() => {
   );
 
   return (
+    <div className="layer-tree-list" style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
     <Tree
       className="medium"
       draggable={!editingWidgetIds ? { icon: false } : false}
@@ -96,5 +97,6 @@ export const LayerTree: FC<{}> = memo(() => {
       wrapperRef={ref}
       defaultExpandAll
     />
+    </div>
   );
 });

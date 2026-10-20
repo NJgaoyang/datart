@@ -8,10 +8,14 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 // 兼容 CRA 的 PUBLIC_URL（默认空，资源从站点根提供）
 const publicUrl = process.env.PUBLIC_URL || '';
 
-// 由 craco splitChunks cacheGroups 转换而来的 manualChunks（仅拆分 node_modules 大型库，
-// 避免拆分应用代码导致 barrel 导出循环依赖）
+// Conservative split: one app chunk and one vendor chunk. Forced source-level
+// admin-tools splitting caused a browser TDZ before the login page rendered.
 const manualChunks = (id: string): string | undefined => {
   if (!id.includes('node_modules/')) {
+    // Do not force admin-only pages into a separate shared chunk:
+    // admin-tools <-> app circular imports caused a startup TDZ
+    // ("Cannot access 'v' before initialization") and a blank login page.
+    // Prefer reliable startup to this speculative first-screen split.
     if (id.includes('/src/')) {
       // 入口模块（含 React 挂载副作用）保持独立 chunk，避免多入口副作用相互污染。
       if (id.endsWith('/src/index.tsx') || id.includes('.entry.ts')) return undefined;
@@ -87,6 +91,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'build',
+    manifest: true,
     chunkSizeWarningLimit: 4096,
     // 关闭产物 gzip 体积报告（纯 CPU 开销，对产物无影响，可缩短构建时间）
     reportCompressedSize: false,

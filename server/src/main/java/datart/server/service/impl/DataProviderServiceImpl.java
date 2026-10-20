@@ -58,6 +58,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import java.util.concurrent.*;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
@@ -79,6 +81,16 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
     private static final String SERVER_AGGREGATE = "serverAggregate";
 
     private ObjectMapper objectMapper;
+
+    // Global per-service bound: never create one unbounded worker per widget.
+    private final ThreadPoolExecutor batchWorkers = new ThreadPoolExecutor(
+            4, 4, 0, TimeUnit.MILLISECONDS,
+            new ArrayBlockingQueue<>(128), new ThreadPoolExecutor.AbortPolicy());
+
+    @PreDestroy
+    public void shutdownBatchWorkers() {
+        batchWorkers.shutdownNow();
+    }
 
     private final DataProviderManager dataProviderManager;
 
@@ -313,9 +325,10 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
             variables = parseVariables(view, viewExecuteParam);
         }
 
-        if (migrationModeService.isStrict(view.getOrgId())) {
-            strictRuntimeValidator.validate(view, viewExecuteParam);
-        }
+        // Every organization must be STRICT; reject stale/legacy states
+        // before executing SQL, and always enforce stable fieldId references.
+        migrationModeService.getMode(view.getOrgId());
+        strictRuntimeValidator.validate(view, viewExecuteParam);
 
         boolean scriptPermission = true;
         try {
@@ -375,17 +388,60 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
 
     @Override
     public Map<String, Dataframe> executeBatch(List<ViewExecuteParam> params) throws Exception {
-        Map<String, Dataframe> results = new HashMap<>();
-        if (CollectionUtils.isEmpty(params)) {
-            return results;
-        }
-        BatchContext batchContext = new BatchContext();
+        Map<String, Dataframe> results = new LinkedHashMap<>();
+        if (CollectionUtils.isEmpty(params)) return results;
+
+        // The subject is thread-local; workers must explicitly impersonate
+        // the authenticated request user and always release their context.
+        final String username = getCurrentUser().getUsername();
+        final BatchContext batchContext = new BatchContext();
+        List<CompletableFuture<Dataframe>> jobs = new ArrayList<>();
         for (ViewExecuteParam param : params) {
+            try {
+                jobs.add(CompletableFuture.supplyAsync(() -> {
+                    try {
+                        securityManager.runAs(username);
+                        // Concurrent maps safely reuse metadata within the batch.
+                        return execute(param, true, batchContext);
+                    } catch (Exception e) {
+                        log.error("Batch query failed for view {}", param.getViewId(), e);
+                        Dataframe failed = Dataframe.empty();
+                        failed.setError("QUERY_FAILED");
+                        return failed;
+                    } finally {
+                        RequestContext.clean();
+                        securityManager.logoutCurrent();
+                    }
+                }, batchWorkers));
+            } catch (RejectedExecutionException saturated) {
+                // Honor backpressure instead of spawning unbounded threads.
+                try {
+                    jobs.add(CompletableFuture.completedFuture(
+                            execute(param, true, batchContext)));
+                } catch (Exception e) {
+                    log.error("Batch query failed for view {}", param.getViewId(), e);
+                    Dataframe failed = Dataframe.empty();
+                    failed.setError("QUERY_FAILED");
+                    jobs.add(CompletableFuture.completedFuture(failed));
+                }
+            }
+        }
+        for (int index = 0; index < params.size(); index++) {
+            ViewExecuteParam param = params.get(index);
             String resultKey = StringUtils.isNotBlank(param.getRequestId())
-                    ? param.getRequestId()
-                    : param.getVizId();
-            Dataframe df = execute(param, true, batchContext);
-            results.put(resultKey, df);
+                    ? param.getRequestId() : param.getVizId();
+            try {
+                results.put(resultKey, jobs.get(index).get());
+            } catch (InterruptedException e) {
+                jobs.forEach(job -> job.cancel(true));
+                Thread.currentThread().interrupt();
+                throw e;
+            } catch (ExecutionException e) {
+                log.error("Unexpected batch query error for view {}", param.getViewId(), e);
+                Dataframe failed = Dataframe.empty();
+                failed.setError("QUERY_FAILED");
+                results.put(resultKey, failed);
+            }
         }
         return results;
     }
@@ -395,11 +451,11 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
      * 避免同一批次内对相同 View 的重复数据库查询。
      */
     private class BatchContext {
-        private final Map<String, View> viewCache = new HashMap<>();
-        private final Map<String, Source> sourceCache = new HashMap<>();
-        private final Map<String, DataProviderSource> providerSourceCache = new HashMap<>();
-        private final Map<String, Set<SelectColumn>> columnPermCache = new HashMap<>();
-        private final Map<String, List<ScriptVariable>> baseVariableCache = new HashMap<>();
+        private final Map<String, View> viewCache = new ConcurrentHashMap<>();
+        private final Map<String, Source> sourceCache = new ConcurrentHashMap<>();
+        private final Map<String, DataProviderSource> providerSourceCache = new ConcurrentHashMap<>();
+        private final Map<String, Set<SelectColumn>> columnPermCache = new ConcurrentHashMap<>();
+        private final Map<String, List<ScriptVariable>> baseVariableCache = new ConcurrentHashMap<>();
 
         View getView(String viewId, boolean checkViewPermission) {
             return viewCache.computeIfAbsent(viewId,
@@ -625,29 +681,40 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
 
     private List<ScriptVariable> getViewVariables(View view) {
         List<ScriptVariable> variables = new LinkedList<>();
-        collectViewVariables(view, variables, new HashSet<>());
+        collectViewVariables(view, variables, new HashSet<>(), "");
         return variables;
     }
 
-    private void collectViewVariables(View view, List<ScriptVariable> variables, Set<String> visited) {
-        if (view == null || !visited.add(view.getId())) {
-            return;
-        }
-        variables.addAll(getViewVariables(view.getId()));
-        if (StringUtils.isBlank(view.getConfig())) {
-            return;
-        }
+    private void collectViewVariables(View view, List<ScriptVariable> variables,
+                                      Set<String> visiting, String prefix) {
+        if (view == null || !visiting.add(view.getId())) return;
         try {
+            for (ScriptVariable variable : getViewVariables(view.getId())) {
+                // Scope belongs to the *upstream view*, not the variable name.
+                // Never mutate shared org variables or another branch's values.
+                variable.setName(prefix + variable.getName());
+                variable.setNameWithQuote(null);
+                variables.add(variable);
+            }
+            if (StringUtils.isBlank(view.getConfig())) return;
             JSONObject config = JSON.parseObject(view.getConfig());
-            JSONObject lineage = config.getJSONObject("lineage");
+            JSONObject lineage = config == null ? null : config.getJSONObject("lineage");
             JSONArray upstreamIds = lineage == null ? null : lineage.getJSONArray("upstreamViewIds");
+            JSONObject scopes = lineage == null ? null : lineage.getJSONObject("variableScopes");
             if (upstreamIds != null) {
                 for (String upstreamId : upstreamIds.toJavaList(String.class)) {
-                    collectViewVariables(retrieve(upstreamId, View.class, false), variables, visited);
+                    String childScope = scopes == null ? null : scopes.getString(upstreamId);
+                    collectViewVariables(retrieve(upstreamId, View.class, false),
+                            variables, visiting, prefix + StringUtils.defaultString(childScope));
                 }
             }
         } catch (JSONException e) {
             log.warn("Failed to parse view lineage config for view {}", view.getId(), e);
+            throw new IllegalStateException("Unable to resolve JOIN variable ownership", e);
+        } finally {
+            // This is a cycle guard, not a global deduplication: a view may
+            // legitimately participate in multiple independently scoped arms.
+            visiting.remove(view.getId());
         }
     }
 
@@ -670,14 +737,23 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
                 var.isExpression());
     }
 
-    private Set<SelectColumn> parseColumnPermission(View view) {
+    Set<SelectColumn> parseColumnPermission(View view) {
         if (securityManager.isOrgOwner(view.getOrgId())) {
             return Collections.singleton(SelectColumn.of(null, "*"));
         }
         try {
             Set<SelectColumn> columns = new HashSet<>();
+            Set<String> readableRoles = new HashSet<>(viewService.getReadableRoleIds(view));
+            if (readableRoles.isEmpty()) {
+                return columns;
+            }
             List<RelSubjectColumns> relSubjectColumns = rscMapper.listByUser(view.getId(), getCurrentUser().getId());
+            Set<String> restrictedRoles = new HashSet<>();
             for (RelSubjectColumns relSubjectColumn : relSubjectColumns) {
+                if (!readableRoles.contains(relSubjectColumn.getSubjectId())) {
+                    continue;
+                }
+                restrictedRoles.add(relSubjectColumn.getSubjectId());
                 List<String> cols = (List<String>) objectMapper.readValue(relSubjectColumn.getColumnPermission(), ArrayList.class);
                 if (!CollectionUtils.isEmpty(cols)) {
                     for (String col : cols) {
@@ -687,11 +763,15 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
                     }
                 }
             }
+            if (!restrictedRoles.containsAll(readableRoles)) {
+                return Collections.singleton(SelectColumn.of(null, "*"));
+            }
             return columns;
         } catch (Exception e) {
-            Exceptions.e(e);
+            // A broken permission lookup must fail closed, not become the
+            // null "unrestricted" case in the data-provider layer.
+            throw new IllegalStateException("Unable to resolve view column permissions", e);
         }
-        return null;
     }
 
     /**

@@ -18,7 +18,8 @@
 
 import { BoardConfigValue } from '../../components/BoardProvider/BoardConfigProvider';
 import { MOBILE_MIN_MARGIN, MOBILE_MIN_PADDING } from '../../constants';
-import { getBoardMarginPadding } from '../board';
+import { getBoardMarginPadding, getInitBoardConfigBeta3 } from '../board';
+import { initAutoBoardConfig } from '../autoBoard';
 
 describe('test getBoardMarginPadding', () => {
   const boardConfig = {
@@ -53,5 +54,36 @@ describe('test getBoardMarginPadding', () => {
       curMargin: [MOBILE_MIN_MARGIN, MOBILE_MIN_MARGIN],
       curPadding: [MOBILE_MIN_PADDING, MOBILE_MIN_PADDING],
     });
+  });
+});
+
+describe('one-pixel default spacing for newly created dashboards', () => {
+  it('initializes all auto-dashboard desktop and mobile spacing to one', () => {
+    const config = initAutoBoardConfig();
+    for (const key of ['space', 'mSpace']) {
+      const group = config.jsonConfig.props.find(item => item.key === key);
+      expect(group?.rows).toHaveLength(4);
+      for (const item of group?.rows || []) {
+        expect(item.value).toBe(1);
+        expect(item.default).toBe(1);
+      }
+    }
+  });
+
+  it('uses one-pixel legacy defaults, without overriding existing custom spacing', () => {
+    const config = getInitBoardConfigBeta3('auto');
+    expect(config.margin).toEqual([1, 1]);
+    expect(config.containerPadding).toEqual([1, 1]);
+    expect(config.mobileMargin).toEqual([1, 1]);
+    expect(config.mobileContainerPadding).toEqual([1, 1]);
+  });
+
+  it('preserves explicit existing spacing and supports zeros', () => {
+    const custom = { margin: [9, 5], padding: [6, 8], mMargin: [3, 1], mPadding: [4, 2] } as BoardConfigValue;
+    expect(getBoardMarginPadding(custom, 'lg').curMargin).toEqual([9, 5]);
+    expect(getBoardMarginPadding(custom, 'sm').curPadding).toEqual([4, 2]);
+    const zero = { ...custom, margin: [0, 0], padding: [0, 0], mMargin: [0, 0], mPadding: [0, 0] } as BoardConfigValue;
+    expect(getBoardMarginPadding(zero, 'lg').curMargin).toEqual([0, 0]);
+    expect(getBoardMarginPadding(zero, 'sm').curPadding).toEqual([0, 0]);
   });
 });

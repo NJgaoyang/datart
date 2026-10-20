@@ -22,6 +22,7 @@ import { getLoopFetch } from '../components/WidgetManager/utils/utils';
 import { VizRenderMode } from '../pages/Board/slice/types';
 import { Widget } from '../types/widgetTypes';
 import { isElView } from '../utils/board';
+import { scheduleWidgetRefresh } from '../utils/widgetRefreshScheduler';
 
 export default function useWidgetAutoFetch(
   widget: Widget,
@@ -34,24 +35,11 @@ export default function useWidgetAutoFetch(
 
   useEffect(() => {
     const loopFetch = getLoopFetch(widget.config.customConfig.props);
-    let timer: NodeJS.Timeout | undefined = undefined;
-    if (
-      rendered &&
-      boardVisible &&
-      loopFetch.interval > 0 &&
-      loopFetch.enable
-    ) {
-      timer = setInterval(() => {
-        const elShow = isElView(rectRef.current, true);
-        if (elShow) {
-          onWidgetGetData(widget);
-        }
-      }, +loopFetch.interval * 1000);
+    if (!rendered || !boardVisible || !loopFetch.enable || !(loopFetch.interval > 0)) {
+      return;
     }
-    return () => {
-      if (timer) {
-        clearInterval(timer);
-      }
-    };
+    return scheduleWidgetRefresh(+loopFetch.interval, () => {
+      if (isElView(rectRef.current, true)) onWidgetGetData(widget);
+    });
   }, [boardVisible, widget, onWidgetGetData, renderMode, rendered, rectRef]);
 }

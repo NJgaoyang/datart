@@ -38,7 +38,9 @@ import {
   createToSaveWidgetGroup,
   createWidgetInfo,
   getWidgetMap,
+  getLayoutWidgets,
 } from 'app/pages/DashBoardPage/utils/widget';
+import { getDesktopGridLayout, getMobileGridLayout } from 'app/pages/DashBoardPage/utils/gridLayout';
 import { Variable } from 'app/pages/MainPage/pages/VariablePage/slice/types';
 import { PendingChartDataRequestFilter } from 'app/types/ChartDataRequest';
 import ChartDataView from 'app/types/ChartDataView';
@@ -46,7 +48,8 @@ import { View } from 'app/types/View';
 import { filterSqlOperatorName } from 'app/utils/internalChartHelper';
 import { RootState } from 'types';
 import { request2 } from 'utils/request';
-import { getErrorMessage, uuidv4 } from 'utils/utils';
+import { uuidv4 } from 'utils/utils';
+import { getWidgetQueryErrorMessage } from 'app/pages/DashBoardPage/utils/widgetQueryError';
 import {
   editBoardStackActions,
   editDashBoardInfoActions,
@@ -154,7 +157,11 @@ export const fetchEditBoardDetail = createAsyncThunk<
         dataCharts: allDataCharts,
       }),
     );
-    const viewViews = getChartDataView(serverViews, allDataCharts);
+    const viewViews = getChartDataView(
+      serverViews,
+      allDataCharts,
+      Object.values(widgetMap).flatMap(widget => widget.viewIds || []),
+    );
 
     dispatch(boardActions.updateViewMap(viewViews));
     // BoardInfo
@@ -236,20 +243,21 @@ export const addWidgetsToEditBoard = createAsyncThunk<
   Widget[],
   { state: RootState }
 >('editBoard/addWidgetsToEditBoard', (widgets, { getState, dispatch }) => {
-  const { dashBoard } = editBoardStackState(
+  const { dashBoard, widgetRecord } = editBoardStackState(
     getState() as unknown as {
       editBoard: HistoryEditBoard;
     },
   );
-  const { layouts } = boardInfoState(
-    getState() as { editBoard: EditBoardState },
-  );
+  const existingWidgets = getLayoutWidgets(widgetRecord);
+  const layouts = getDesktopGridLayout(existingWidgets);
+  const mobileLayouts = getMobileGridLayout(existingWidgets);
   const widgetInfos = widgets.map(item => createWidgetInfo(item.id));
   const updatedWidgets = adjustWidgetsToBoard({
     widgets,
     boardType: dashBoard.config.type,
     boardId: dashBoard.id,
     layouts,
+    mobileLayouts,
   });
   // widgetInfoRecord
   dispatch(editWidgetInfoActions.addWidgetInfos(widgetInfos));
@@ -263,20 +271,21 @@ export const addGroupWidgetToEditBoard = createAsyncThunk<
   Widget[],
   { state: RootState }
 >('editBoard/addGroupWidgetToEditBoard', (widgets, { getState, dispatch }) => {
-  const { dashBoard } = editBoardStackState(
+  const { dashBoard, widgetRecord } = editBoardStackState(
     getState() as unknown as {
       editBoard: HistoryEditBoard;
     },
   );
-  const { layouts } = boardInfoState(
-    getState() as { editBoard: EditBoardState },
-  );
+  const existingWidgets = getLayoutWidgets(widgetRecord);
+  const layouts = getDesktopGridLayout(existingWidgets);
+  const mobileLayouts = getMobileGridLayout(existingWidgets);
   const widgetInfos = widgets.map(t => createWidgetInfo(t.id));
   const updatedWidgets = adjustWidgetsToBoard({
     widgets,
     boardType: dashBoard.config.type,
     boardId: dashBoard.id,
     layouts,
+    mobileLayouts,
   });
   // widgetInfoRecord
   dispatch(editWidgetInfoActions.addWidgetInfos(widgetInfos));
@@ -561,7 +570,7 @@ export const syncEditBoardWidgetChartDataAsync = createAsyncThunk<
             editWidgetInfoActions.setWidgetErrInfo({
               boardId,
               widgetId,
-              errInfo: getErrorMessage(error),
+              errInfo: getWidgetQueryErrorMessage(error),
               errorType: 'request',
             }),
           );
@@ -666,7 +675,7 @@ export const getEditChartWidgetDataAsync = createAsyncThunk<
           await dispatch(
             editWidgetInfoActions.setWidgetErrInfo({
               widgetId,
-              errInfo: (error as any)?.message as any,
+              errInfo: getWidgetQueryErrorMessage(error),
               errorType: 'request',
             }),
           );

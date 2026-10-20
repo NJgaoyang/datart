@@ -1,9 +1,11 @@
 import { InteractionMouseEvent } from 'app/components/FormGenerator/constants';
+import { DASHBOARD_DESIGN_TOKENS as T } from 'app/pages/DashBoardPage/styles/dashboardDesignTokens';
 import useChartInteractions from 'app/hooks/useChartInteractions';
 import useDisplayJumpVizDialog from 'app/pages/MainPage/pages/VizPage/hooks/useDisplayJumpVizDialog';
 import useDisplayViewDetail from 'app/pages/MainPage/pages/VizPage/hooks/useDisplayViewDetail';
 import { ChartMouseEventParams } from 'app/types/Chart';
 import { ChartDataSectionField } from 'app/types/ChartConfig';
+import { isFullTableResult } from 'app/components/ChartGraph/BasicTableChart/tableSummarySemantics';
 import {
   getColumnRenderName,
   toFormattedValue,
@@ -28,6 +30,7 @@ import {
   isMobileRankField,
   resolveMobilePresentation,
 } from '../../../mobile/MobilePresentationResolver';
+import { mobileMetricTotal } from '../../../mobile/mobileMetricTotals';
 
 const formatValue = (value: any, field: ChartDataSectionField) => {
   const formatted = toFormattedValue(value, field.format);
@@ -78,7 +81,7 @@ export const MobileTablePresentation: React.FC = () => {
     () => getMobileTableFields(chartConfig),
     [chartConfig],
   );
-  const mode = useMemo(
+  const resolvedMode = useMemo(
     () => resolveMobilePresentation(data, chartConfig),
     [chartConfig, data],
   );
@@ -88,6 +91,17 @@ export const MobileTablePresentation: React.FC = () => {
   );
   const dimensions = fields.filter(isMobileDimension);
   const measures = fields.filter(isMobileMeasure);
+  const complete = isFullTableResult(data?.pageInfo, dataSet.length);
+  const totals = measures.map(field => mobileMetricTotal(
+    field, fields, [
+      ...(dataChart?.config?.computedFields || []),
+      ...(chartDataView?.computedFields || []),
+      ...(chartDataView?.meta || []),
+    ], dataSet,
+  ));
+  const mode = resolvedMode === 'kpi-grid' && dataSet.length > 1
+    ? !complete ? 'table' : totals.some(value => value === undefined) ? 'card-list' : resolvedMode
+    : resolvedMode;
   const isAggregateKpi = mode === 'kpi-grid' && dataSet.length > 1;
   const kpiScope = isAggregateKpi
     ? `全部${dimensions[0] ? fieldLabel(dimensions[0]) : '城市'}合计`
@@ -97,12 +111,9 @@ export const MobileTablePresentation: React.FC = () => {
   const getKpiValue = useCallback(
     (field: ChartDataSectionField) => {
       if (!isAggregateKpi) return dataSet[0]?.getCell(field);
-      return dataSet.reduce((total, row) => {
-        const value = Number(row.getCell(field));
-        return Number.isFinite(value) ? total + value : total;
-      }, 0);
+      return totals[measures.indexOf(field)];
     },
-    [dataSet, isAggregateKpi],
+    [dataSet, isAggregateKpi, measures, totals],
   );
 
   const handleRowClick = useCallback(
@@ -301,7 +312,7 @@ const PresentationState = styled.div`
   width: 100%;
   height: 72px;
   padding: 8px;
-  color: #8f959e;
+  color: ${T.color.light.secondaryText};
 `;
 
 const PresentationList = styled.div`
@@ -318,7 +329,7 @@ const PresentationList = styled.div`
 
 const KpiGrid = styled(PresentationList)<{ $columns: number }>`
   grid-template-columns: repeat(${p => p.$columns}, minmax(0, 1fr));
-  gap: 4px;
+  gap: ${T.spacing.grid}px;
   align-content: start;
   align-items: start;
   max-height: none;
@@ -330,9 +341,9 @@ const KpiScope = styled.div`
   grid-column: 1 / -1;
   padding: 0 2px;
   overflow: hidden;
-  font-size: 11px;
-  line-height: 16px;
-  color: #8f959e;
+  font-size: ${T.typography.label}px;
+  line-height: ${T.lineHeight.label}px;
+  color: ${T.color.light.secondaryText};
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
@@ -340,35 +351,35 @@ const KpiScope = styled.div`
 const MetricGrid = styled.div<{ $columns: number }>`
   display: grid;
   grid-template-columns: repeat(${p => p.$columns}, minmax(0, 1fr));
-  gap: 4px;
+  gap: ${T.spacing.grid}px;
   width: 100%;
 `;
 
 const MetricCard = styled.div`
   min-width: 0;
   min-height: 62px;
-  padding: 6px;
-  background: #fff;
-  border: 1px solid #edf0f3;
-  border-radius: 10px;
+  padding: ${T.spacing.card}px;
+  background: ${T.color.light.card};
+  border: 1px solid ${T.color.light.border};
+  border-radius: ${T.radius.metric}px;
 `;
 
 const MetricLabel = styled.div`
   margin-top: 2px;
   min-height: 32px;
   overflow: hidden;
-  font-size: 11px;
-  line-height: 16px;
-  color: #8f959e;
+  font-size: ${T.typography.label}px;
+  line-height: ${T.lineHeight.label}px;
+  color: ${T.color.light.secondaryText};
   word-break: break-all;
 `;
 
 const MetricValue = styled.div`
   overflow: hidden;
-  font-size: 18px;
+  font-size: ${T.typography.metric}px;
   font-weight: 600;
-  line-height: 24px;
-  color: #1f2329;
+  line-height: ${T.lineHeight.metric}px;
+  color: ${T.color.light.text};
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
@@ -376,7 +387,7 @@ const MetricValue = styled.div`
 const EntityCard = styled.div`
   padding: 0 0 12px;
   cursor: pointer;
-  border-bottom: 1px solid #edf0f3;
+  border-bottom: 1px solid ${T.color.light.border};
 `;
 
 const EntityHeader = styled.div`
@@ -392,7 +403,7 @@ const EntityTitle = styled.div`
   font-size: 15px;
   font-weight: 600;
   line-height: 22px;
-  color: #1f2329;
+  color: ${T.color.light.text};
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
@@ -401,14 +412,14 @@ const EntitySubtitle = styled.div`
   flex-shrink: 0;
   overflow: hidden;
   font-size: 12px;
-  color: #8f959e;
+  color: ${T.color.light.secondaryText};
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
 
 const RankingCard = styled(EntityCard)`
   padding: 10px 12px;
-  background: #fff;
+  background: ${T.color.light.card};
   border: 1px solid rgba(0, 0, 0, 0.04);
   border-radius: 12px;
 `;
@@ -422,7 +433,7 @@ const RankingTopLine = styled.div`
 const RankingIndex = styled.div`
   flex: 0 0 24px;
   font-size: 13px;
-  color: #8f959e;
+  color: ${T.color.light.secondaryText};
   text-align: center;
 `;
 
@@ -433,7 +444,7 @@ const RankingTitle = styled(EntityTitle)`
 const RankingValue = styled.div`
   flex-shrink: 0;
   font-size: 14px;
-  color: #1f2329;
+  color: ${T.color.light.text};
 `;
 
 const RankingBar = styled.div`

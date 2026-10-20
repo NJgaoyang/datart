@@ -29,25 +29,25 @@ import { ITimeDefault } from './types/widgetTypes';
 export const WIDGET_DRAG_HANDLE = 'widget-draggableHandle';
 export const BOARD_FILE_IMG_PREFIX = 'resources/image/dashboard/';
 export const BASE_VIEW_WIDTH = 1024;
-/** Auto-board layout versions are independent from the application config version. */
-export const AUTO_LAYOUT_VERSION = 2;
+/** Native RGL v2 dashboard schema. Version 3 is intentionally distinct from older persisted layouts. */
+export const AUTO_LAYOUT_VERSION = 3;
 export const LEGACY_AUTO_LAYOUT_VERSION = 1;
 export const LEGACY_AUTO_GRID_COLS = 12;
 export const AUTO_GRID_COLS = 72;
 export const LEGACY_BASE_ROW_HEIGHT = 32;
-export const PC_ROW_LAYOUT_VERSION = 2;
+export const PC_ROW_LAYOUT_VERSION = 3;
 export const LEGACY_PC_ROW_LAYOUT_VERSION = 1;
 export const LEGACY_MOBILE_GRID_COLS = 6;
 export const MOBILE_GRID_COLS = 24;
 export const LEGACY_MOBILE_LAYOUT_VERSION = 1;
-export const MOBILE_LAYOUT_VERSION = 2;
+export const MOBILE_LAYOUT_VERSION = 3;
 export const BASE_ROW_HEIGHT = 8;
 export const MIN_ROW_HEIGHT = 6;
 export const MOBILE_ROW_HEIGHT = 24;
 export const MIN_MARGIN = 8;
 export const MIN_PADDING = 8;
-export const MOBILE_MIN_MARGIN = 2;
-export const MOBILE_MIN_PADDING = 4;
+export const MOBILE_MIN_MARGIN = 1;
+export const MOBILE_MIN_PADDING = 1;
 export const LAYOUT_COLS_KEYS = ['lg', 'md', 'sm', 'xs', 'xxs'] as const;
 export const LAYOUT_COLS_MAP = {
   lg: AUTO_GRID_COLS,

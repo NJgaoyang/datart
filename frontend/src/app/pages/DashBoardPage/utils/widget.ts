@@ -41,10 +41,12 @@ import {
 } from 'globalConstants';
 import { produce } from 'immer';
 import { CSSProperties } from 'react';
+import type { Layout } from 'react-grid-layout';
 import { CloneValueDeep } from 'utils/object';
 import { adaptBoardImageUrl, fillPx, getBackgroundImage } from '.';
 import { initClientId } from '../components/WidgetManager/utils/init';
 import { LAYOUT_COLS_MAP, ORIGINAL_TYPE_MAP } from '../constants';
+import { normalizeAutoRectForCols } from './autoLayout';
 import {
   BackgroundConfig,
   BoardType,
@@ -182,43 +184,96 @@ export const adjustWidgetsToBoard = (args: {
   widgets: Widget[];
   boardType: BoardType;
   boardId: string;
-  layouts?: ReactGridLayout.Layout[];
+  layouts?: Layout;
+  mobileLayouts?: Layout;
 }) => {
-  const { widgets, boardType, layouts } = args;
+  const { widgets, boardType, layouts, mobileLayouts } = args;
 
   if (boardType === 'auto') {
-    return updateAutoWidgetsRect(widgets, layouts || []);
+    return updateAutoWidgetsRect(widgets, layouts || [], mobileLayouts || []);
   } else if (boardType === 'free') {
     return updateFreeWidgetsRect(widgets);
   }
   return widgets;
 };
 
+/**
+ * Place added widgets beneath the occupied grid area, packing each new row
+ * left to right. Avoids collisions with existing widgets and between a batch
+ * of newly-added widgets even when they have different heights.
+ */
 export const updateAutoWidgetsRect = (
   widgets: Widget[],
-  layouts: ReactGridLayout.Layout[],
+  layouts: Layout,
+  mobileLayouts: Layout = [],
 ): Widget[] => {
-  const upDatedWidgets: Widget[] = [];
-  const dashWidgetRectYs = layouts.map(ele => ele.y);
-  let widgetsCount = dashWidgetRectYs.length;
-  let itemYs = [...dashWidgetRectYs];
-  widgets.forEach(widget => {
-    const itemX =
-      (widgetsCount * widget.config.pRect.width) % LAYOUT_COLS_MAP.lg;
-    const itemY = Math.max(...itemYs, 0);
-    const nextRect = {
-      ...widget.config.pRect,
-      x: itemX,
-      y: itemY,
-    };
-    widget = produce(widget, draft => {
-      draft.config.pRect = nextRect;
+  // The two device layouts are independent. New widgets receive explicit
+  // rectangles in both instead of being placed from the active editor viewport.
+  const desktopCols = LAYOUT_COLS_MAP.lg;
+  const mobileCols = LAYOUT_COLS_MAP.sm;
+  let desktopY = layouts.reduce((bottom, item) => Math.max(bottom, item.y + item.h), 0);
+  let mobileY = mobileLayouts.reduce((bottom, item) => Math.max(bottom, item.y + item.h), 0);
+  let desktopX = 0;
+  let mobileX = 0;
+  let desktopRowHeight = 0;
+  let mobileRowHeight = 0;
+
+  return widgets.map(widget => {
+    const desktopRect = widget.config.pRect;
+    // A newly created controller uses the generic 36x24 chart template.
+    // That would create excessively tall filter fields (especially on mobile).
+    // Only replace the untouched template; keep explicitly sized widgets intact.
+    const isDefaultController =
+      widget.config.type === 'controller' &&
+      desktopRect.width === desktopCols / 2 &&
+      desktopRect.height === 24 &&
+      !widget.config.mRect;
+    const mobileRect = isDefaultController
+      ? { x: 0, y: 0, width: 12, height: 3 }
+      : widget.config.mRect || normalizeAutoRectForCols(desktopRect, mobileCols);
+    const desktopW = isDefaultController
+      ? 24
+      : Math.max(1, Math.min(desktopCols, Math.round(Number(desktopRect.width) || 1)));
+    const desktopH = isDefaultController
+      ? 8
+      : Math.max(1, Math.round(Number(desktopRect.height) || 1));
+    const mobileW = Math.max(1, Math.min(mobileCols, Math.round(Number(mobileRect.width) || 1)));
+    const mobileH = Math.max(1, Math.round(Number(mobileRect.height) || 1));
+
+    if (desktopX && desktopX + desktopW > desktopCols) {
+      desktopY += desktopRowHeight;
+      desktopX = 0;
+      desktopRowHeight = 0;
+    }
+    if (mobileX && mobileX + mobileW > mobileCols) {
+      mobileY += mobileRowHeight;
+      mobileX = 0;
+      mobileRowHeight = 0;
+    }
+
+    const placedWidget = produce(widget, draft => {
+      draft.config.pRect = {
+        ...desktopRect,
+        x: desktopX,
+        y: desktopY,
+        width: desktopW,
+        height: desktopH,
+      };
+      draft.config.mRect = {
+        ...mobileRect,
+        x: mobileX,
+        y: mobileY,
+        width: mobileW,
+        height: mobileH,
+      };
     });
-    upDatedWidgets.push(widget);
-    widgetsCount++;
-    itemYs.push(itemY);
+
+    desktopX += desktopW;
+    desktopRowHeight = Math.max(desktopRowHeight, desktopH);
+    mobileX += mobileW;
+    mobileRowHeight = Math.max(mobileRowHeight, mobileH);
+    return placedWidget;
   });
-  return upDatedWidgets;
 };
 
 export const updateFreeWidgetsRect = (widgets: Widget[]) => {

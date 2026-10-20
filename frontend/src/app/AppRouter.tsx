@@ -25,7 +25,8 @@ import { useEffect, useLayoutEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { unstable_HistoryRouter as HistoryRouter, Route, Routes } from 'react-router-dom';
+import { appHistory } from './appHistory';
 import { GlobalStyles } from 'styles/globalStyles';
 import { getToken } from 'utils/auth';
 import useI18NPrefix from './hooks/useI18NPrefix';
@@ -69,7 +70,7 @@ export function AppRouter() {
 
   return (
     <ConfigProvider locale={antdLocales[i18n.language]}>
-      <BrowserRouter basename={PUBLIC_URL}>
+      <HistoryRouter history={appHistory} basename={PUBLIC_URL}>
         <Helmet
           titleTemplate="%s - 宜租乐BI"
           defaultTitle="宜租乐BI"
@@ -87,7 +88,7 @@ export function AppRouter() {
           <Route path="/*" element={<LoginAuthRoute />} />
         </Routes>
         <GlobalStyles />
-      </BrowserRouter>
+      </HistoryRouter>
     </ConfigProvider>
   );
 }

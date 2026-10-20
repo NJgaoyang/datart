@@ -124,6 +124,8 @@ export type ChartDataSectionField = {
   isDisplayNameCustom?: boolean;
   format?: FormatFieldAction;
   aggregate?: AggregateFieldActionType;
+  /** Opt-in, mathematically correct ratio of SUM operands (zero denominator => null). */
+  ratioOfSums?: boolean;
   filter?: FilterFieldAction;
   color?: ColorFieldAction;
   size?: number;

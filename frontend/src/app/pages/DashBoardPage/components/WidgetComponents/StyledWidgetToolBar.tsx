@@ -18,9 +18,10 @@
 import { memo, ReactNode } from 'react';
 import styled from 'styled-components';
 import { LEVEL_50 } from 'styles/StyleConstants';
+import { DASHBOARD_UI_TOKENS as T } from '../../styles/dashboardUiTokens';
 export const StyledWidgetToolBar: React.FC<{ children?: ReactNode }> = memo(
   props => {
-    return <StyleWrap>{props.children} </StyleWrap>;
+    return <StyleWrap className="widget-action-toolbar">{props.children}</StyleWrap>;
   },
 );
 const StyleWrap = styled.div`
@@ -31,6 +32,33 @@ const StyleWrap = styled.div`
   overflow: hidden;
   text-align: right;
   .widget-tool-dropdown {
-    visibility: hidden;
+    /* Opacity keeps this action in keyboard tab order without allowing
+       invisible mouse targets to intercept the chart. */
+    visibility: visible;
+    opacity: 0;
+    pointer-events: none;
+    display: inline-flex;
+    width: ${T.actionButtonWidth}px;
+    min-width: ${T.actionButtonWidth}px;
+    height: ${T.actionButtonHeight}px;
+    padding: 0;
+    cursor: pointer;
+    touch-action: manipulation;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+  @media (pointer: coarse) {
+    .widget-tool-dropdown {
+      width: ${T.touchActionSize}px;
+      min-width: ${T.touchActionSize}px;
+      height: ${T.touchActionSize}px;
+    }
+  }
+
+  .widget-tool-dropdown:focus,
+  .widget-tool-dropdown:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
   }
 `;
