@@ -16,14 +16,14 @@
  * limitations under the License.
  */
 
-import LineChart from '../LineChart';
+import MingXiTableChart from '../MingXiTableChart';
 
-describe('<LineChart />', () => {
-  let component;
+describe('<MingXiTableChart />', () => {
+  let component: InstanceType<typeof MingXiTableChart>;
   beforeEach(() => {
-    component = new LineChart();
+    component = new MingXiTableChart();
   });
-  test('It should mount', () => {
+  test('it should mount', () => {
     expect(component).toBeDatartChartModel();
   });
 });

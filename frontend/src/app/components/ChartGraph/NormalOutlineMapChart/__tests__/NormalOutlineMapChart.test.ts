@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-import PercentageStackBarChart from '../PercentageStackBarChart';
+import NormalOutlineMapChart from '../NormalOutlineMapChart';
 
-describe('<PercentageStackColumnChart />', () => {
-  let component;
+describe('<NormalOutlineMapChart />', () => {
+  let component: InstanceType<typeof NormalOutlineMapChart>;
   beforeEach(() => {
-    component = new PercentageStackBarChart();
+    component = new NormalOutlineMapChart();
   });
   test('It should mount', () => {
     expect(component).toBeDatartChartModel();

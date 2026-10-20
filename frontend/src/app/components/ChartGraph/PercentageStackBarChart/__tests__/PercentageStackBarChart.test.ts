@@ -16,14 +16,14 @@
  * limitations under the License.
  */
 
-import PieChart from '../PieChart';
+import PercentageStackBarChart from '../PercentageStackBarChart';
 
-describe('<PieChart />', () => {
-  let component;
+describe('<PercentageStackColumnChart />', () => {
+  let component: InstanceType<typeof PercentageStackBarChart>;
   beforeEach(() => {
-    component = new PieChart();
+    component = new PercentageStackBarChart();
   });
-  test('it should mount', () => {
+  test('It should mount', () => {
     expect(component).toBeDatartChartModel();
   });
 });

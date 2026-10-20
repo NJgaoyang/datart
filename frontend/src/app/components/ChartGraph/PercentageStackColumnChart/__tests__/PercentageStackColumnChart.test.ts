@@ -16,14 +16,14 @@
  * limitations under the License.
  */
 
-import MingXiTableChart from '../MingXiTableChart';
+import PercentageStackColumnChart from '../PercentageStackColumnChart';
 
-describe('<MingXiTableChart />', () => {
-  let component;
+describe('<PercentageStackColumnChart />', () => {
+  let component: InstanceType<typeof PercentageStackColumnChart>;
   beforeEach(() => {
-    component = new MingXiTableChart();
+    component = new PercentageStackColumnChart();
   });
-  test('it should mount', () => {
+  test('It should mount', () => {
     expect(component).toBeDatartChartModel();
   });
 });

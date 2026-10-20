@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-import PercentageStackColumnChart from '../PercentageStackColumnChart';
+import PivotSheetChart from '../PivotSheetChart';
 
-describe('<PercentageStackColumnChart />', () => {
-  let component;
+describe('<PivotSheetChart />', () => {
+  let component: InstanceType<typeof PivotSheetChart>;
   beforeEach(() => {
-    component = new PercentageStackColumnChart();
+    component = new PivotSheetChart();
   });
   test('It should mount', () => {
     expect(component).toBeDatartChartModel();

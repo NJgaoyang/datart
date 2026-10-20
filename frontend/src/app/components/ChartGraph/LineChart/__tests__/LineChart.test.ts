@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-import PivotSheetChart from '../PivotSheetChart';
+import LineChart from '../LineChart';
 
-describe('<PivotSheetChart />', () => {
-  let component;
+describe('<LineChart />', () => {
+  let component: InstanceType<typeof LineChart>;
   beforeEach(() => {
-    component = new PivotSheetChart();
+    component = new LineChart();
   });
   test('It should mount', () => {
     expect(component).toBeDatartChartModel();

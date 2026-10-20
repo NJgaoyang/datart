@@ -16,14 +16,14 @@
  * limitations under the License.
  */
 
-import NormalOutlineMapChart from '../NormalOutlineMapChart';
+import PieChart from '../PieChart';
 
-describe('<NormalOutlineMapChart />', () => {
-  let component;
+describe('<PieChart />', () => {
+  let component: InstanceType<typeof PieChart>;
   beforeEach(() => {
-    component = new NormalOutlineMapChart();
+    component = new PieChart();
   });
-  test('It should mount', () => {
+  test('it should mount', () => {
     expect(component).toBeDatartChartModel();
   });
 });
