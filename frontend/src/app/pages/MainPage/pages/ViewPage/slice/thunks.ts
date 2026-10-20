@@ -266,7 +266,7 @@ export const runSql = createAsyncThunk<
 });
 
 export const saveView = createAsyncThunk<
-  ViewViewModel,
+  ViewViewModel & { savedFromViewId?: string },
   SaveViewParams,
   { state: RootState }
 >('view/saveView', async ({ resolve, isSaveAs, currentView }, { getState }) => {
@@ -288,6 +288,8 @@ export const saveView = createAsyncThunk<
       })),
       previewFields: undefined,
       isSaveAs,
+      // Capture the initial ID before an async save; the active tab may change.
+      savedFromViewId: currentView.id,
     };
   };
 

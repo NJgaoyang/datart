@@ -82,7 +82,9 @@ export const Workbench = memo(() => {
     path,
     level: PermissionLevels.Manage,
   });
-  const unpersistedNewView = id.includes(UNPERSISTED_ID_PREFIX);
+  // Saving a newly-created view can briefly leave no active editor while
+  // the server ID replaces the local temporary ID.
+  const unpersistedNewView = Boolean(id?.includes(UNPERSISTED_ID_PREFIX));
   const allowManage = managePermission(true) || unpersistedNewView;
   const allowEnableViz = useAccess({
     type: 'module',

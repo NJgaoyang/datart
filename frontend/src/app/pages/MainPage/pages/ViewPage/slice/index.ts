@@ -240,7 +240,11 @@ const slice = createSlice({
             ? ViewViewModelStages.Fresh
             : action.payload.stage,
       };
-      state.editingViews.splice(index, 1, loadedEditingView);
+      // A network result may arrive after the tab was closed or replaced by
+      // a freshly saved view. splice(-1, 1) corrupts the last open tab.
+      if (index >= 0) {
+        state.editingViews.splice(index, 1, loadedEditingView);
+      }
     });
     builder.addCase(getViewDetail.rejected, (state, action) => {
       const view = state.editingViews.find(
@@ -325,17 +329,25 @@ const slice = createSlice({
     });
     builder.addCase(saveView.fulfilled, (state, action) => {
       if (!action.payload.isSaveAs) {
+        // Match the view that was actually saved, not whatever tab the user
+        // happened to select while the async save request was in flight.
+        const savedFromId = action.payload.savedFromViewId || action.payload.id;
         const editingIndex = state.editingViews.findIndex(
-          v => v.id === state.currentEditingView,
+          v => v.id === savedFromId,
         );
-        state.editingViews.splice(editingIndex, 1, {
-          ...action.payload,
-          touched: false,
-          stage: ViewViewModelStages.Saved,
-          originVariables: [...action.payload.variables],
-          originColumnPermissions: [...action.payload.columnPermissions],
-        });
-        state.currentEditingView = action.payload.id;
+        if (editingIndex >= 0) {
+          const { savedFromViewId, ...savedView } = action.payload;
+          state.editingViews.splice(editingIndex, 1, {
+            ...savedView,
+            touched: false,
+            stage: ViewViewModelStages.Saved,
+            originVariables: [...(savedView.variables || [])],
+            originColumnPermissions: [...(savedView.columnPermissions || [])],
+          });
+          if (state.currentEditingView === savedFromId) {
+            state.currentEditingView = savedView.id;
+          }
+        }
       }
 
       if (state.views) {
