@@ -18,6 +18,7 @@
 
 import ChartIFrameEventBroker from '../ChartIFrameEventBroker';
 import { vi } from 'vitest';
+import { ChartLifecycle } from 'app/constants';
 import type { IChart } from 'app/types/Chart';
 import type { BrokerContext, BrokerLifecycleEvent, BrokerOption } from 'app/types/ChartLifecycleBroker';
 
@@ -45,16 +46,16 @@ describe('ChartIFrameEventBroker Tests', () => {
     };
     broker.register(chart as unknown as IChart);
     expect(broker['_chart']).toEqual(chart);
-    expect(broker['_listeners'].get('mounted')).toEqual(chart.onMount);
-    expect(broker['_listeners'].get('updated')).toEqual(chart.onUpdated);
-    expect(broker['_listeners'].get('resize')).toEqual(chart.onResize);
-    expect(broker['_listeners'].get('unmount')).toEqual(chart.onUnMount);
+    expect(broker['_listeners'].get(ChartLifecycle.Mounted)).toEqual(chart.onMount);
+    expect(broker['_listeners'].get(ChartLifecycle.Updated)).toEqual(chart.onUpdated);
+    expect(broker['_listeners'].get(ChartLifecycle.Resize)).toEqual(chart.onResize);
+    expect(broker['_listeners'].get(ChartLifecycle.UnMount)).toEqual(chart.onUnMount);
   });
 
   test('should subscribe chart lifecycle event standalone', () => {
     const mountFn = vi.fn();
-    broker.subscribe('mounted', mountFn);
-    expect(broker['_listeners'].get('mounted')).toEqual(mountFn);
+    broker.subscribe(ChartLifecycle.Mounted, mountFn);
+    expect(broker['_listeners'].get(ChartLifecycle.Mounted)).toEqual(mountFn);
   });
 
   test('should call chart onMount lifecycle when mounted', () => {
@@ -62,7 +63,7 @@ describe('ChartIFrameEventBroker Tests', () => {
       onMount: vi.fn(),
     };
     broker.register(chart as unknown as IChart);
-    broker.publish('mounted', mockOptions, mockContext);
+    broker.publish(ChartLifecycle.Mounted, mockOptions, mockContext);
     expect(chart.onMount).toHaveBeenCalledTimes(1);
     expect(chart.onMount).toHaveBeenCalledWith(mockOptions, mockContext);
   });
@@ -73,7 +74,7 @@ describe('ChartIFrameEventBroker Tests', () => {
       onUpdated: vi.fn(),
     };
     broker.register(chart as unknown as IChart);
-    broker.publish('updated', mockOptions, mockContext);
+    broker.publish(ChartLifecycle.Updated, mockOptions, mockContext);
 
     // NOTE: the milliseconds is from EVENT_ACTION_DELAY_MS
     await new Promise(r => setTimeout(r, 300));
@@ -87,9 +88,9 @@ describe('ChartIFrameEventBroker Tests', () => {
       onUpdated: vi.fn(),
     };
     broker.register(chart as unknown as IChart);
-    broker.publish('updated', mockOptions, mockContext);
-    broker.publish('updated', mockOptions, mockContext);
-    broker.publish('updated', mockOptions, mockContext);
+    broker.publish(ChartLifecycle.Updated, mockOptions, mockContext);
+    broker.publish(ChartLifecycle.Updated, mockOptions, mockContext);
+    broker.publish(ChartLifecycle.Updated, mockOptions, mockContext);
 
     // NOTE: the milliseconds is from EVENT_ACTION_DELAY_MS
     await new Promise(r => setTimeout(r, 300));
@@ -102,7 +103,7 @@ describe('ChartIFrameEventBroker Tests', () => {
       onUpdated: vi.fn(),
     };
     broker.register(chart as unknown as IChart);
-    broker.publish('updated', mockOptions, mockContext);
+    broker.publish(ChartLifecycle.Updated, mockOptions, mockContext);
     expect(chart.onUpdated).toHaveBeenCalledTimes(0);
   });
 
@@ -112,7 +113,7 @@ describe('ChartIFrameEventBroker Tests', () => {
       onResize: vi.fn(),
     };
     broker.register(chart as unknown as IChart);
-    broker.publish('resize', mockOptions, mockContext);
+    broker.publish(ChartLifecycle.Resize, mockOptions, mockContext);
 
     // NOTE: the milliseconds is from EVENT_ACTION_DELAY_MS
     await new Promise(r => setTimeout(r, 300));
@@ -126,9 +127,9 @@ describe('ChartIFrameEventBroker Tests', () => {
       onResize: vi.fn(),
     };
     broker.register(chart as unknown as IChart);
-    broker.publish('resize', mockOptions, mockContext);
-    broker.publish('resize', mockOptions, mockContext);
-    broker.publish('resize', mockOptions, mockContext);
+    broker.publish(ChartLifecycle.Resize, mockOptions, mockContext);
+    broker.publish(ChartLifecycle.Resize, mockOptions, mockContext);
+    broker.publish(ChartLifecycle.Resize, mockOptions, mockContext);
 
     // NOTE: the milliseconds is from EVENT_ACTION_DELAY_MS
     await new Promise(r => setTimeout(r, 300));
@@ -141,7 +142,7 @@ describe('ChartIFrameEventBroker Tests', () => {
       onResize: vi.fn(),
     };
     broker.register(chart as unknown as IChart);
-    broker.publish('resize', mockOptions, mockContext);
+    broker.publish(ChartLifecycle.Resize, mockOptions, mockContext);
     expect(chart.onResize).toHaveBeenCalledTimes(0);
   });
 
@@ -151,7 +152,7 @@ describe('ChartIFrameEventBroker Tests', () => {
       onUnMount: vi.fn(),
     };
     broker.register(chart as unknown as IChart);
-    broker.publish('unmount', mockOptions, mockContext);
+    broker.publish(ChartLifecycle.UnMount, mockOptions, mockContext);
     expect(chart.onUnMount).toHaveBeenCalledTimes(1);
     expect(chart.onUnMount).toHaveBeenCalledWith(mockOptions, mockContext);
   });
@@ -161,7 +162,7 @@ describe('ChartIFrameEventBroker Tests', () => {
       onUnMount: vi.fn(),
     };
     broker.register(chart as unknown as IChart);
-    broker.publish('unmount', mockOptions, mockContext);
+    broker.publish(ChartLifecycle.UnMount, mockOptions, mockContext);
     expect(chart.onUnMount).toHaveBeenCalledTimes(0);
   });
 
@@ -192,7 +193,7 @@ describe('ChartIFrameEventBroker Tests', () => {
       onMount: vi.fn(),
     };
     broker.register(chart as unknown as IChart);
-    broker.publish('mounted', mockOptions, mockContext);
+    broker.publish(ChartLifecycle.Mounted, mockOptions, mockContext);
     expect(chart.onMount).toHaveBeenCalledTimes(1);
     expect(chart.state).toEqual('ready');
   });
@@ -203,7 +204,7 @@ describe('ChartIFrameEventBroker Tests', () => {
       onUpdated: vi.fn(),
     };
     broker.register(chart as unknown as IChart);
-    broker.publish('updated', mockOptions, mockContext);
+    broker.publish(ChartLifecycle.Updated, mockOptions, mockContext);
 
     // NOTE: the milliseconds is from EVENT_ACTION_DELAY_MS
     await new Promise(r => setTimeout(r, 300));

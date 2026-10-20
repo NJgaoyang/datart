@@ -13,7 +13,7 @@ export function Popup({
   overlayClassName,
   onVisibleChange,
   ...rest
-}: PopoverProps) {
+}: PopoverProps & { overlayClassName?: string; onVisibleChange?: (open: boolean) => void }) {
   const [visible, setVisible] = useState(false);
 
   const visibleChange = useCallback(
@@ -40,10 +40,10 @@ export function Popup({
   return (
     <Popover
       {...rest}
-      overlayClassName={className}
+      classNames={{ root: className }}
       content={injectedContent}
-      visible={visible}
-      onVisibleChange={visibleChange}
+      open={visible}
+      onOpenChange={visibleChange}
     />
   );
 }

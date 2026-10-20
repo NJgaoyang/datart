@@ -50,9 +50,11 @@ expect.extend({
   },
 });
 
-// Typed declaration for the custom chart-model matcher used by TS tests.
-declare module 'vitest' {
-  interface Assertion<T = any> {
-    toBeDatartChartModel(): void;
+// Jest's global matcher types are also used by this repository's TS tests.
+declare global {
+  namespace jest {
+    interface Matchers<R, T = any> {
+      toBeDatartChartModel(): R;
+    }
   }
 }

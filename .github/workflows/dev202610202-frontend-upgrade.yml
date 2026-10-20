@@ -4,6 +4,7 @@ on:
   push:
     branches: [dev202610202]
     paths:
+      - 'frontend/**'
       - frontend/package.json
       - frontend/vite.config.ts
       - frontend/vitest.config.ts
@@ -46,9 +47,21 @@ jobs:
         run: |
           npm ci --legacy-peer-deps
           npm run check:upgrade-baseline
+      - name: Rewrite removed React and AntD legacy APIs
+        run: node scripts/migrate-react19-antd6.mjs
+      - name: Commit mechanical React and AntD compatibility changes
+        run: |
+          if ! git diff --quiet -- frontend/src; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add frontend/src
+            git commit -m "refactor(frontend): migrate React 19 refs and AntD 6 UI props"
+            git push origin HEAD:dev202610202
+          fi
       - name: TypeScript and grid-specific regression
         run: npm run check:grid
       - name: React and chart compatibility smoke
+        if: always()
         run: |
           npm run test:bundle-budget
           npm run build:all
