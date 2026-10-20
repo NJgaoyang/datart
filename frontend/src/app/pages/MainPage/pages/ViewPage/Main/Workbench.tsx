@@ -146,6 +146,8 @@ export const Workbench = memo(() => {
     <Wrapper>
       <Development
         direction="vertical"
+        sizes={[55, 45]}
+        minSize={[160, 120]}
         gutterSize={0}
         className="datart-split"
         onDrag={editorResize}
@@ -186,17 +188,26 @@ export const Workbench = memo(() => {
 const Wrapper = styled.div`
   display: flex;
   flex: 1;
+  min-width: 0;
   min-height: 0;
+  overflow: hidden;
 `;
 const EditorWrap = styled.div`
   display: flex;
-  flex: 1;
+  /* split.js sets the pane height: flex-grow would override it. */
+  flex: none;
+  min-width: 0;
+  min-height: 0;
   flex-direction: column;
+  overflow: hidden;
 `;
 const Development = styled(Split)`
   display: flex;
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   flex-direction: column;
+  overflow: hidden;
 `;
 
 const LoadingWrap = styled.div`

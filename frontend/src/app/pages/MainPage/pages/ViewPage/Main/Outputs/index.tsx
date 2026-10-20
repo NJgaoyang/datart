@@ -135,7 +135,12 @@ export const Outputs = memo(({ hidden = false }: { hidden?: boolean }) => {
 const Wrapper = styled.div`
   position: relative;
   display: flex;
+  /* The height is controlled by the vertical split, not flex expansion. */
+  flex: none;
+  min-width: 0;
+  min-height: 0;
   flex-direction: column;
+  overflow: hidden;
   border-top: 1px solid ${p => p.theme.borderColorSplit};
 
   .warningBox {

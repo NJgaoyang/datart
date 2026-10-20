@@ -177,12 +177,16 @@ export const SQLEditor = memo(() => {
   );
 
   useEffect(() => {
+    // react-monaco-editor owns disposal. Disposing on every context update
+    // can destroy the live editor during React 19 StrictMode effects.
     editorInstance?.layout();
+  }, [editorInstance]);
+
+  useEffect(() => {
     return () => {
-      editorInstance?.dispose();
       editorCompletionItemProviderRef?.current?.dispose();
     };
-  }, [editorInstance, editorCompletionItemProviderRef]);
+  }, [editorCompletionItemProviderRef]);
 
   useEffect(() => {
     return () => {
@@ -236,12 +240,16 @@ export const SQLEditor = memo(() => {
       })}
     >
       <MonacoEditor
+        width="100%"
+        height="100%"
         value={script}
         language="sql"
         theme={`vs-${theme}`}
         options={{
           fontSize: FONT_SIZE_BASE * 0.875,
           minimap: { enabled: false },
+          // Pane sizes are assigned asynchronously by split.js.
+          automaticLayout: true,
           readOnly: status === ViewStatus.Archived,
         }}
         onChange={debouncedEditorChange}
@@ -255,7 +263,9 @@ export const SQLEditor = memo(() => {
 const EditorWrapper = styled.div`
   position: relative;
   flex: 1;
+  min-width: 0;
   min-height: 0;
+  overflow: hidden;
 
   &.archived {
     .view-lines {

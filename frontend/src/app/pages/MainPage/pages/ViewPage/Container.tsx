@@ -100,6 +100,7 @@ const StyledContainer = styled(Split)<{ sliderVisible: boolean }>`
   flex: 1;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
   .gutter-horizontal {
     display: ${p => (p.sliderVisible ? 'none' : 'block')};
   }
