@@ -22,7 +22,7 @@ import { vi } from 'vitest';
 import BasicCheckbox from '../Basic/BasicCheckbox';
 import type { ChartStyleConfig } from 'app/types/ChartConfig';
 
-describe('<BasicCheckbox />', () => {
+describe('<BasicCheckbox ancestors={[]} />', () => {
   let translator: (label: string) => string;
   beforeAll(() => {
     translator = (label: string) => `This is a ${label}`;
@@ -30,7 +30,7 @@ describe('<BasicCheckbox />', () => {
 
   test('should render component correct', () => {
     const { getByText, getByRole } = render(
-      <BasicCheckbox
+      <BasicCheckbox ancestors={[]}
         translate={translator}
         data={{ label: 'Component Label', value: true } as ChartStyleConfig}
       />,
@@ -66,7 +66,7 @@ describe('<BasicCheckbox />', () => {
 
   test('should hide label when options hide label', () => {
     const { container } = render(
-      <BasicCheckbox
+      <BasicCheckbox ancestors={[]}
         translate={translator}
         data={{
           label: 'Component Label',

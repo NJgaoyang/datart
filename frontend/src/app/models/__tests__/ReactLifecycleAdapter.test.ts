@@ -27,6 +27,14 @@ vi.mock('react-dom', () => {
   return { ...reactDom, default: reactDom };
 });
 
+// React 19 renderer lives in react-dom/client. Keep lifecycle tests isolated.
+vi.mock('react-dom/client', () => ({
+  createRoot: vi.fn(() => ({
+    render: vi.fn(),
+    unmount: vi.fn(),
+  })),
+}));
+
 vi.mock('react', () => {
   const react = { createElement: (...args) => args };
   return { ...react, default: react };
@@ -50,7 +58,7 @@ describe('ReactLifecycleAdapter Tests', () => {
     const dependencies = ['echarts'];
     const adapter = new ReactLifecycleAdapter(mockRealComponent);
     adapter.registerImportDependencies(dependencies);
-    adapter.mounted(null, null, null);
+    adapter.mounted(document.createElement('div'), null, null);
     adapter.updated(null, null);
     adapter.resize(null, null);
     adapter.unmount();
@@ -62,7 +70,7 @@ describe('ReactLifecycleAdapter Tests', () => {
     const dependencies = ['echarts'];
     const adapter = new ReactLifecycleAdapter(mockRealComponent);
     adapter.registerImportDependencies(dependencies);
-    adapter.mounted(null, null, null);
+    adapter.mounted(document.createElement('div'), null, null);
     expect(adapter).not.toBeNull();
   });
 });

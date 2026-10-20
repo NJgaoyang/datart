@@ -21,7 +21,7 @@ import { render } from '@testing-library/react';
 import BasicColorSelector from '../Basic/BasicColorSelector';
 import type { ChartStyleConfig } from 'app/types/ChartConfig';
 
-describe('<BasicColorSelector />', () => {
+describe('<BasicColorSelector ancestors={[]} />', () => {
   let translator: (label: string) => string;
   beforeAll(() => {
     translator = (label: string) => `This is a ${label}`;
@@ -29,7 +29,7 @@ describe('<BasicColorSelector />', () => {
 
   test('should render component correct', () => {
     const { container, getByText } = render(
-      <BasicColorSelector
+      <BasicColorSelector ancestors={[]}
         translate={translator}
         data={{ label: 'Component Label', value: '#fafafa' } as ChartStyleConfig}
       />,
@@ -41,7 +41,7 @@ describe('<BasicColorSelector />', () => {
 
   test('should hide label when options hide label', () => {
     const { container } = render(
-      <BasicColorSelector
+      <BasicColorSelector ancestors={[]}
         data={{
           label: 'Component Label',
           options: { hideLabel: true },
