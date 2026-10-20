@@ -158,6 +158,8 @@ class BasicTableChart extends ReactChart {
     this.cachedDatartConfig = {};
     this.cacheContext = null;
     this.selectionManager?.removeWindowListeners(context.window);
+    // React 19 roots must be torn down when switching/reopening table charts.
+    this.adapter?.unmount();
   }
 
   public onResize(options: BrokerOption, context: BrokerContext) {
