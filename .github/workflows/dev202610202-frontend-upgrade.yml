@@ -75,6 +75,21 @@ jobs:
         run: |
           npm run test:bundle-budget
           npm run build:all
+      - name: Identify React 19 findDOMNode caller by deployed vendor line
+        if: always()
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync, readdirSync } from 'node:fs';
+          const dir = 'build/static/js';
+          const name = readdirSync(dir).find(name => name.startsWith('vendor.') && name.endsWith('.js'));
+          if (!name) throw new Error('Built vendor file not found');
+          console.log('VENDOR FILE', name);
+          const line = readFileSync(dir + '/' + name, 'utf8').split(String.fromCharCode(10))[650];
+          if (!line) throw new Error('vendor line 651 not found');
+          for (const col of [6500, 7089, 7731, 8100]) {
+            console.log('VENDOR TRACE', col, line.slice(Math.max(0, col - 1050), col + 1100));
+          }
+          JS
       - name: Report bundle sizes
         if: success()
         run: npm run report:bundles
