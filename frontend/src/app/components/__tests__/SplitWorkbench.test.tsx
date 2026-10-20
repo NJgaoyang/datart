@@ -14,8 +14,8 @@ describe('SQL workbench split geometry', () => {
     );
     const editor = screen.getByTestId('sql-pane');
     const results = screen.getByTestId('result-pane');
-    expect(editor).toBeInTheDocument();
-    expect(results).toBeInTheDocument();
+    expect(editor).not.toBeNull();
+    expect(results).not.toBeNull();
     expect(container.querySelectorAll('.gutter-vertical')).toHaveLength(1);
     // split.js must set the sizes on BOTH panes. Flex rules must not override
     // this explicit geometry in the SQL Workbench and Outputs wrappers.
