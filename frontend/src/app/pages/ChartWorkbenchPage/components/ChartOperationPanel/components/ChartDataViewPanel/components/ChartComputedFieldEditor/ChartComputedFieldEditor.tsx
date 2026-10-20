@@ -30,7 +30,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import MonacoEditor from 'react-monaco-editor';
+import MonacoEditor from 'app/components/Compat/MonacoEditor';
 import styled from 'styled-components';
 import ChartComputedFieldEditorDarkTheme from './ChartComputedFieldEditorDarkTheme';
 import DatartQueryLanguageSpecification from './DatartQueryLanguageSpecification';
