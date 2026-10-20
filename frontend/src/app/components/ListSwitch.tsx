@@ -53,7 +53,7 @@ export const ListSwitch = memo(
             className={classnames({ selected: key === selectedKey })}
             onClick={itemSelect(key)}
           >
-            {icon && cloneElement(icon, { className: 'icon' })}
+            {icon && cloneElement(icon as ReactElement<{ className?: string }>, { className: 'icon' })}
             {text}
           </li>
         ))}

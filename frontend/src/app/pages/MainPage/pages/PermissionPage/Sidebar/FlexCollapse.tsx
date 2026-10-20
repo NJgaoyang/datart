@@ -49,7 +49,7 @@ const Collapse = memo(
       let panels: ReactElement[] = [];
       Children.forEach(children, c => {
         if (c.type === Panel) {
-          panels.push(cloneElement(c, { defaultActiveKeys, activeKeys }));
+          panels.push(cloneElement(c as ReactElement<PanelProps>, { defaultActiveKeys, activeKeys }));
         }
       });
       return panels;

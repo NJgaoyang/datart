@@ -56,7 +56,7 @@ function usePrefixI18N(prefix?: string) {
       const contextTranslation = get(langTrans, translationKey);
       return (
         contextTranslation ||
-        (t.call(Object.create(null), translationKey, options) as string)
+        (t(translationKey, options) as string)
       );
     },
     [i18n.language, prefix, t, vizI18NConfigs],

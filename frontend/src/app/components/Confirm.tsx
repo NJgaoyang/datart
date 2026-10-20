@@ -9,7 +9,7 @@ import {
 import { mergeClassNames } from 'utils/utils';
 
 export interface ConfirmProps extends ModalProps {
-  icon?: ReactElement;
+  icon?: ReactElement<{ className?: string }>;
   title?: ReactNode;
   content?: ReactNode;
   footer?: ReactNode;

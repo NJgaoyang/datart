@@ -60,13 +60,13 @@ function ListItem({ prefix, suffix, children }: ListItemProps) {
   return (
     <StyledListItem>
       {prefix &&
-        cloneElement(prefix, {
-          className: mergeClassNames(prefix.props.className, 'prefix'),
+        cloneElement(prefix as ReactElement<{ className?: string }>, {
+          className: mergeClassNames((prefix.props as { className?: string }).className, 'prefix'),
         })}
       {children}
       {suffix &&
-        cloneElement(suffix, {
-          className: mergeClassNames(suffix.props.className, 'suffix'),
+        cloneElement(suffix as ReactElement<{ className?: string }>, {
+          className: mergeClassNames((suffix.props as { className?: string }).className, 'suffix'),
         })}
     </StyledListItem>
   );
