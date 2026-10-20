@@ -111,6 +111,15 @@ function transform(path) {
   if (dropdownConverted && !text.includes("import LegacyDropdown from")) {
     push(0,0,"import LegacyDropdown from 'app/components/Compat/LegacyDropdown';\n");
   }
+  // The old global Jest declaration is no longer accepted by installed matcher types.
+  // Keep the runtime matcher, and type its usage structurally at each TS test.
+  if (text.includes('.toBeDatartChartModel()')) {
+    for (const m of text.matchAll(/expect\\(([^()]+)\\)\\.toBeDatartChartModel\\(\\)/g)) {
+      push(m.index,m.index+m[0].length,
+        '(expect(' + m[1] + ') as unknown as { toBeDatartChartModel(): void }).toBeDatartChartModel()');
+    }
+  }
+
   // Use the supported public ProComponents v3 monolithic entry.
   if (text.includes("'@ant-design/pro-table'")) {
     const needle="'@ant-design/pro-table'";
@@ -127,7 +136,7 @@ function transform(path) {
   for (const match of text.matchAll(legacy)) {
     const name=match[1];
     push(match.index, match.index+match[0].length,
-      'import type { FormItemProps } from \'antd\';\ntype ' + name + ' = ' +
+      (text.includes('FormItemProps') ? '' : "import type { FormItemProps } from 'antd';\\n") + 'type ' + name + ' = ' +
       (name==='NamePath' ? 'NonNullable<FormItemProps[\'name\']>' : 'NonNullable<FormItemProps[\'rules\']>[number]') + ';');
   }
   if (text.includes('React.ReactChild')) {

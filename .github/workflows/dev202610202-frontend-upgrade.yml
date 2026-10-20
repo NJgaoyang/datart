@@ -17,7 +17,7 @@ permissions:
 
 concurrency:
   group: frontend-major-upgrade-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   regenerate-lock-and-check:
@@ -51,10 +51,10 @@ jobs:
         run: node scripts/migrate-react19-antd6.mjs
       - name: Commit mechanical React and AntD compatibility changes
         run: |
-          if ! git diff --quiet -- frontend/src; then
+          if ! git diff --quiet -- src; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add frontend/src
+            git add src
             git commit -m "refactor(frontend): migrate React 19 refs and AntD 6 UI props"
             git push origin HEAD:dev202610202
           fi

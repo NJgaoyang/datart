@@ -50,11 +50,4 @@ expect.extend({
   },
 });
 
-// Jest's global matcher types are also used by this repository's TS tests.
-declare global {
-  namespace jest {
-    interface Matchers<R, T = any> {
-      toBeDatartChartModel(): R;
-    }
-  }
-}
+// Registered at runtime; TypeScript callsites use structural matcher assertions.\n

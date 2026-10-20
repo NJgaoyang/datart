@@ -16,11 +16,12 @@ export default class ReactLifecycleAdapter {
     this.reactComponent = componentWrapper;
   }
 
-  public registerImportDependencies(dependencies: Record<string, unknown>) {
+  public registerImportDependencies(dependencies: Record<string, unknown> | string[]) {
     this.externalLibs = dependencies;
   }
 
-  public mounted(container: Element, options?: any, context?: any) {
+  public mounted(container: Element | null, options?: any, context?: any) {
+    if (!container) return;
     // A chart instance may be remounted into a fresh frame container.
     if (this.domContainer !== container) {
       this.root?.unmount();
