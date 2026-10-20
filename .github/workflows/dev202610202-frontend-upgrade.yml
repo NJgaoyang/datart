@@ -60,6 +60,8 @@ jobs:
           fi
       - name: Dataset save state regression
         run: npx vitest run src/app/pages/MainPage/pages/ViewPage/slice/__tests__/saveViewState.test.ts
+      - name: BI report query and render regression
+        run: npx vitest run src/app/pages/DashBoardPage/pages/Board/slice/__tests__/widgetDataBatcher.test.ts src/app/components/ChartIFrameContainer/__tests__/ChartIFrameEventBroker.test.ts
       - name: BI chart resource loading regression
         run: npx vitest run src/app/components/ChartIFrameContainer/__tests__/ChartIFrameResourceLoader.test.ts
       - name: SQL workbench split regression

@@ -390,6 +390,16 @@ export const getChartWidgetDataAsync = createAsyncThunk<
     });
 
     if (!requestParams) {
+      dispatch(
+        boardActions.setWidgetErrInfo({
+          boardId,
+          widgetId,
+          errInfo: '图表查询配置不可用，请检查图表引用的数据集及字段配置',
+          errorType: 'request',
+        }),
+      );
+      dispatch(boardActions.setWidgetData({ wid: widgetId, data: undefined }));
+      dispatch(boardActions.addFetchedItem({ boardId, widgetId }));
       return null;
     }
     let widgetData;

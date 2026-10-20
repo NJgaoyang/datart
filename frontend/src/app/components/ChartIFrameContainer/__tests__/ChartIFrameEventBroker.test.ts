@@ -211,4 +211,16 @@ describe('ChartIFrameEventBroker Tests', () => {
     expect(chart.onUpdated).toHaveBeenCalledTimes(1);
     expect(chart.state).toEqual('ready');
   });
+  test('surfaces chart mount errors instead of silently marking the view successful', () => {
+    const chart = { onMount: vi.fn(() => { throw new Error('renderer init failed'); }) };
+    broker.register(chart as unknown as IChart);
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      expect(() => broker.publish(ChartLifecycle.Mounted, mockOptions, mockContext))
+        .toThrow('renderer init failed');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
 });

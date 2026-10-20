@@ -140,6 +140,10 @@ class ChartIFrameEventBroker {
       );
     } catch (e) {
       console.error(`ChartEventBroker | ${event} exception ----> `, e);
+      // Mount is synchronous and the lifecycle adapter has an error fallback.
+      // Propagate initialization errors so a BI widget is not left blank while
+      // incorrectly being marked as "SUCCESS".
+      if (event === ChartLifecycle.Mounted) throw e;
     } finally {
       if (this._chart) {
         this._chart.state = 'ready';

@@ -588,9 +588,11 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
   }, [chart, dataChart]);
 
   const chartFrame = useMemo(() => {
-    if (!config) return null;
-    if (cacheH <= 1 || cacheW <= 1) return null;
-    if (errText) return <Empty description="图表配置不可用，请联系管理员检查" />;
+    // Show meaningful diagnostics even before resize observers determine
+    // the chart dimensions; otherwise a zero-size container hides errors.
+    if (errText || !config) {
+      return <Empty description="图表配置不可用，请检查图表类型和字段配置" />;
+    }
     if (dataState === 'forbidden') {
       return <Empty description="无权访问该图表的数据，请联系管理员申请权限" />;
     }
@@ -604,6 +606,9 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
       );
     }
     if (dataState === 'empty') return <Empty description="当前筛选条件下暂无数据" />;
+    if (cacheH <= 1 || cacheW <= 1) {
+      return <Empty description="图表容器尚未完成布局，请检查仪表板图表尺寸" />;
+    }
     const drillOption = drillOptionRef.current;
 
     return (
