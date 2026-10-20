@@ -19,7 +19,7 @@
 import ClusterBarChart from '../ClusterBarChart';
 
 describe('<ClusterBarChart />', () => {
-  let component;
+  let component: InstanceType<typeof ClusterBarChart>;
   beforeEach(() => {
     component = new ClusterBarChart();
   });

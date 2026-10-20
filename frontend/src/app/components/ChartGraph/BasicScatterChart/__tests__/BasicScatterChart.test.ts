@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-import BasicPieChart from '../BasicPieChart';
+import BasicScatterChart from '../BasicScatterChart';
 
-describe('<BasicPieChart />', () => {
-  let component;
+describe('<BasicScatterChart />', () => {
+  let component: InstanceType<typeof BasicScatterChart>;
   beforeEach(() => {
-    component = new BasicPieChart();
+    component = new BasicScatterChart();
   });
   test('It should mount', () => {
     expect(component).toBeDatartChartModel();

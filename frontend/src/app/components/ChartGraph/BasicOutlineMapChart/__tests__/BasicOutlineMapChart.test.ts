@@ -16,14 +16,14 @@
  * limitations under the License.
  */
 
-import BasicRadarChart from '../BasicRadarChart';
+import BasicOutlineMapChart from '../BasicOutlineMapChart';
 
-describe('<BasicRadarChart />', () => {
-  let component;
+describe('<BasicOutlineMapChart />', () => {
+  let component: InstanceType<typeof BasicOutlineMapChart>;
   beforeEach(() => {
-    component = new BasicRadarChart();
+    component = new BasicOutlineMapChart();
   });
-  test('It should mount', () => {
+  test('it should mount', () => {
     expect(component).toBeDatartChartModel();
   });
 });

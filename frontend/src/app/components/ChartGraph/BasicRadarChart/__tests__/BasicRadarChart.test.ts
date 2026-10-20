@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-import BasicScatterChart from '../BasicScatterChart';
+import BasicRadarChart from '../BasicRadarChart';
 
-describe('<BasicScatterChart />', () => {
-  let component;
+describe('<BasicRadarChart />', () => {
+  let component: InstanceType<typeof BasicRadarChart>;
   beforeEach(() => {
-    component = new BasicScatterChart();
+    component = new BasicRadarChart();
   });
   test('It should mount', () => {
     expect(component).toBeDatartChartModel();

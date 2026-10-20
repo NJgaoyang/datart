@@ -16,14 +16,14 @@
  * limitations under the License.
  */
 
-import ClusterColumnChart from '../ClusterColumnChart';
+import DoughnutChart from '../DoughnutChart';
 
-describe('<ClusterColumnChart />', () => {
-  let component;
+describe('<DoughnutChart />', () => {
+  let component: InstanceType<typeof DoughnutChart>;
   beforeEach(() => {
-    component = new ClusterColumnChart();
+    component = new DoughnutChart();
   });
-  test('It should mount', () => {
+  test('it should mount', () => {
     expect(component).toBeDatartChartModel();
   });
 });
