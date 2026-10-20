@@ -73,6 +73,19 @@ jobs:
         run: |
           npm run test:bundle-budget
           npm run build:all
+      - name: Diagnose deployed vendor error at 1476:20189
+        if: always()
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync, existsSync } from 'node:fs';
+          const p = 'build/static/js/vendor.CBSezPAV.js';
+          if (!existsSync(p)) { console.log('Deployed vendor hash not found in this build'); process.exit(0); }
+          const line = readFileSync(p, 'utf8').split('\\n')[1475];
+          if (!line) { console.log('Deployed vendor line unavailable'); process.exit(0); }
+          for (const col of [19662, 20189, 21180]) {
+            console.log('VENDOR STACK', 1476, col, '=>', line.slice(Math.max(0,col-850), col+700));
+          }
+          JS
       - name: Report bundle sizes
         if: success()
         run: npm run report:bundles
