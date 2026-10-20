@@ -19,12 +19,10 @@
 import { BoardContext } from 'app/pages/DashBoardPage/components/BoardProvider/BoardProvider';
 import {
   BASE_ROW_HEIGHT,
-  BASE_VIEW_WIDTH,
   MOBILE_ROW_HEIGHT,
-  MIN_ROW_HEIGHT,
 } from 'app/pages/DashBoardPage/constants';
 import { boardActions } from 'app/pages/DashBoardPage/pages/Board/slice';
-import { useContext, useLayoutEffect, useMemo, useState } from 'react';
+import { useContext, useLayoutEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import useResizeObserver from './useResizeObserver';
 import { getAdaptiveGridColsKey, getGridCanvasWidth } from 'app/pages/DashBoardPage/utils/gridViewport';
@@ -49,10 +47,7 @@ export const useGridWidgetHeight = (mobilePreview?: boolean) => {
 
   const colsKey = getAdaptiveGridColsKey(cacheW, mobileMode);
   const canvasWidth = getGridCanvasWidth(cacheW, mobileMode);
-  const widgetRowHeight = useMemo(() => {
-    if (mobileMode) return MOBILE_ROW_HEIGHT;
-    return Math.max((canvasWidth * BASE_ROW_HEIGHT) / BASE_VIEW_WIDTH, MIN_ROW_HEIGHT);
-  }, [canvasWidth, mobileMode]);
+  const widgetRowHeight = mobileMode ? MOBILE_ROW_HEIGHT : BASE_ROW_HEIGHT;
 
   return { ref, widgetRowHeight, colsKey, canvasWidth, containerWidth: cacheW };
 };

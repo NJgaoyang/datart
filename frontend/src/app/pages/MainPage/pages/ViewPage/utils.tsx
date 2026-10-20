@@ -166,6 +166,34 @@ export function findViewFieldMeta(
   return byOriginName.length === 1 ? byOriginName[0] : undefined;
 }
 
+/** Adds persisted dataset labels to an editor column without changing its identity. */
+export function hydrateViewColumnDisplayMeta(
+  column: Column,
+  fields?: ViewFieldMeta[],
+): Column {
+  const children = column.children?.map(child =>
+    hydrateViewColumnDisplayMeta(child, fields),
+  );
+  if (children?.length) {
+    return { ...column, children };
+  }
+  const field = findViewFieldMeta(column, fields);
+  if (!field) return column;
+
+  return {
+    ...column,
+    sourceComment: field.sourceComment ?? column.sourceComment,
+    customName: field.customName ?? column.customName,
+    comment: field.sourceComment ?? column.comment,
+    displayName:
+      column.isDisplayNameCustom === true
+        ? column.displayName
+        : field.displayName ?? column.displayName,
+    isDisplayNameCustom:
+      column.isDisplayNameCustom === true || Boolean(field.customName),
+  };
+}
+
 export function getHierarchyColumnByField(
   hierarchy: Model | undefined,
   field: { name?: string; path?: string[] },

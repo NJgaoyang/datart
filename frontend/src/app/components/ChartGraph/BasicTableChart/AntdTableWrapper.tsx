@@ -155,16 +155,15 @@ const StyledTable = styled(Table)<{
     background: transparent;
   }
 
-  /* A min-width override alone is insufficient: rc-table may still size
-     the fixed-layout grid against the full widget. Set the actual measured
-     width on header/body/summary tables so colgroup widths remain stable. */
+  /* Keep measured widths as the minimum, but fill a wide widget when it has
+     only a few fields; wider tables still keep their horizontal scroll. */
   .ant-table-content > table,
   .ant-table-header > table,
   .ant-table-body > table,
   .ant-table-summary > table {
     ${p =>
       p.$explicitTableWidth
-        ? `width: ${p.$explicitTableWidth}px !important; min-width: 0 !important;`
+        ? `width: max(${p.$explicitTableWidth}px, 100%) !important; min-width: 0 !important;`
         : ''}
   }
 

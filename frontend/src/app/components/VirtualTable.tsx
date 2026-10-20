@@ -21,7 +21,7 @@ import classNames from 'classnames';
 import React, {
   memo,
   useCallback,
-  useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -34,6 +34,31 @@ interface VirtualTableProps extends TableProps<object> {
   width: number;
   scroll: { x: number; y: number };
   columns: any;
+}
+
+type VirtualGridRef = {
+  state?: { scrollLeft?: number };
+  resetAfterIndices: (options: {
+    columnIndex: number;
+    shouldForceUpdate: boolean;
+  }) => void;
+  scrollToItem: (options: { columnIndex: number; align: 'start' }) => void;
+  scrollTo: (options: { scrollLeft: number }) => void;
+};
+
+export function stabilizeVirtualGridWidth(
+  grid: VirtualGridRef | undefined,
+  columnCount: number,
+) {
+  if (!grid) return;
+  const scrollLeft = grid.state?.scrollLeft || 0;
+  grid.resetAfterIndices({
+    columnIndex: 0,
+    shouldForceUpdate: false,
+  });
+  // VariableSizeGrid otherwise estimates unvisited columns at 50px, changing the scrollbar while users drag.
+  grid.scrollToItem({ columnIndex: Math.max(0, columnCount - 1), align: 'start' });
+  grid.scrollTo({ scrollLeft });
 }
 
 /**
@@ -77,15 +102,15 @@ export const VirtualTable = memo((props: VirtualTableProps) => {
     (total, column) => total + column.width,
     0,
   );
+  const columnWidthSignature = mergedColumns.map(column => column.width).join(',');
 
   const resetVirtualGrid = useCallback(() => {
-    gridRef.current?.resetAfterIndices({
-      columnIndex: 0,
-      shouldForceUpdate: true,
-    });
-  }, [gridRef]);
+    stabilizeVirtualGridWidth(gridRef.current, mergedColumns.length);
+  }, [mergedColumns.length]);
 
-  useEffect(() => resetVirtualGrid, [boxWidth, dataSource, resetVirtualGrid]);
+  useLayoutEffect(() => {
+    resetVirtualGrid();
+  }, [boxWidth, columnWidthSignature, resetVirtualGrid]);
 
   const renderVirtualList = useCallback(
     (rawData, { scrollbarSize, ref, onScroll }) => {

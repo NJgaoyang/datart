@@ -21,7 +21,7 @@ export const getResponsiveGridSpacing = ({
       : 1;
   const scaled = (values: readonly [number, number]): [number, number] => [
     Math.max(0, Math.round((Number(values[0]) || 0) * scale)),
-    Math.max(0, Math.round((Number(values[1]) || 0) * scale)),
+    Math.max(0, Math.round(Number(values[1]) || 0)),
   ];
 
   const gridMargin = scaled(margin);

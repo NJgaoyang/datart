@@ -25,6 +25,7 @@ import {
   findViewFieldMeta,
   getColumnWidthMap,
   getPreviewFieldDisplayName,
+  hydrateViewColumnDisplayMeta,
   normalizeModelDisplayNames,
   resolveSchemaColumnComment,
 } from '../utils';
@@ -122,6 +123,35 @@ describe('field display metadata', () => {
         comment: '分类标签：new_production=生产',
       }),
     ).toBe('分类标签');
+  });
+
+  test('hydrates saved dataset labels in the editor without changing field identity', () => {
+    const column = hydrateViewColumnDisplayMeta(
+      {
+        fieldId: 'city-field',
+        name: 'city',
+        path: ['analytics', 'users', 'city'],
+        type: DataViewFieldType.STRING,
+      },
+      [
+        {
+          fieldId: 'city-field',
+          originName: 'city',
+          sourceComment: '城市名称',
+          customName: '用户所在城市',
+          displayName: '用户所在城市',
+        },
+      ],
+    );
+
+    expect(column).toMatchObject({
+      fieldId: 'city-field',
+      name: 'city',
+      path: ['analytics', 'users', 'city'],
+      sourceComment: '城市名称',
+      customName: '用户所在城市',
+    });
+    expect(getFieldDisplayName(column)).toBe('用户所在城市');
   });
 
   test('resolves same-name join fields only with an exact path', () => {

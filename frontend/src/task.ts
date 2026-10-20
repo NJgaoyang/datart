@@ -68,7 +68,11 @@ const getBoardQueryData = (dataStr: string) => {
   );
 
   const allDataCharts: DataChart[] = dataCharts.concat(wrappedDataCharts);
-  const viewViews = getChartDataView(serverViews, allDataCharts);
+  const viewViews = getChartDataView(
+    serverViews,
+    allDataCharts,
+    Object.values(widgetMap).flatMap(widget => widget.viewIds || []),
+  );
 
   const viewMap = viewViews.reduce((obj, view) => {
     obj[view.id] = view;

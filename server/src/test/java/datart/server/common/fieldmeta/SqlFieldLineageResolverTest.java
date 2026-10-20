@@ -57,6 +57,75 @@ class SqlFieldLineageResolverTest {
     }
 
     @Test
+    void resolvesColumnsThroughASimpleSelectStarSubquery() throws Exception {
+        SourceSchemaIndex.Index schema = schema("""
+                [{"dbName":"ads","tables":[{"tableName":"user_monthly_report","columns":[
+                  {"name":["ads","user_monthly_report","city"],"comment":"城市"},
+                  {"name":["ads","user_monthly_report","renting_users"],"comment":"在租用户数"}
+                ]}]}]
+                """);
+
+        Map<String, SqlFieldLineageResolver.SqlFieldLineage> lineages = resolver.resolve("""
+                SELECT t1.city,
+                       t1.renting_users,
+                       t1.renting_users - LAG(t1.renting_users) OVER (ORDER BY t1.city) AS month_increase_users
+                FROM (SELECT * FROM ads.user_monthly_report) t1
+                """, schema);
+
+        assertEquals(List.of("ads", "user_monthly_report", "city"), lineages.get("city").sourcePath());
+        assertEquals(List.of("ads", "user_monthly_report", "renting_users"), lineages.get("renting_users").sourcePath());
+        assertEquals(SqlFieldLineageResolver.Status.EXPRESSION,
+                lineages.get("month_increase_users").status());
+    }
+
+    @Test
+    void resolvesColumnsThroughSimpleStarCtes() throws Exception {
+        SourceSchemaIndex.Index schema = schema("""
+                [{"dbName":"ads","tables":[{"tableName":"user_monthly_report","columns":[
+                  {"name":["ads","user_monthly_report","city"],"comment":"城市"},
+                  {"name":["ads","user_monthly_report","renting_users"],"comment":"在租用户数"}
+                ]}]}]
+                """);
+
+        Map<String, SqlFieldLineageResolver.SqlFieldLineage> lineages = resolver.resolve("""
+                WITH monthly AS (SELECT * FROM ads.user_monthly_report),
+                     scoped_monthly AS (SELECT * FROM monthly)
+                SELECT t.city, t.renting_users,
+                       t.renting_users - LAG(t.renting_users) OVER (ORDER BY t.city) AS month_increase_users
+                FROM scoped_monthly t
+                """, schema);
+
+        assertEquals(List.of("ads", "user_monthly_report", "city"), lineages.get("city").sourcePath());
+        assertEquals(List.of("ads", "user_monthly_report", "renting_users"),
+                lineages.get("renting_users").sourcePath());
+        assertEquals(SqlFieldLineageResolver.Status.EXPRESSION,
+                lineages.get("month_increase_users").status());
+    }
+
+    @Test
+    void resolvesColumnsWhenSqlContainsADatartPermissionVariable() throws Exception {
+        SourceSchemaIndex.Index schema = schema("""
+                [{"dbName":"ads","tables":[{"tableName":"user_monthly_report","columns":[
+                  {"name":["ads","user_monthly_report","city"],"comment":"城市"},
+                  {"name":["ads","user_monthly_report","renting_users"],"comment":"在租用户数"}
+                ]}]}]
+                """);
+
+        Map<String, SqlFieldLineageResolver.SqlFieldLineage> lineages = resolver.resolve("""
+                SELECT t1.city, t1.renting_users
+                FROM (SELECT * FROM ads.user_monthly_report WHERE month_label >= '2026-06' ORDER BY month_label DESC) t1
+                WHERE t1.city IN (
+                    SELECT city_name FROM ads.user_city_permission
+                    WHERE username_en = $DATART_USER_USERNAME$
+                )
+                """, schema);
+
+        assertEquals(List.of("ads", "user_monthly_report", "city"), lineages.get("city").sourcePath());
+        assertEquals(List.of("ads", "user_monthly_report", "renting_users"),
+                lineages.get("renting_users").sourcePath());
+    }
+
+    @Test
     void resolvesOnlyAUniqueUnqualifiedColumn() throws Exception {
         SourceSchemaIndex.Index schema = schema("""
                 [{"dbName":"ads","tables":[

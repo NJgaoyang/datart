@@ -43,6 +43,8 @@ public interface ViewService extends VizCRUDService<View, ViewMapperExt>, Resour
 
     List<View> getViews(String orgId);
 
+    List<String> getReadableRoleIds(View view);
+
     View updateView(BaseUpdateParam updateParam);
 
     boolean unarchive(String id, String newName, String parentId, double index);

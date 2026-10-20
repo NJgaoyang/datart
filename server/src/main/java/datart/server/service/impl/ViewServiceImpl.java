@@ -867,6 +867,14 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         }
     }
 
+    @Override
+    public List<String> getReadableRoleIds(View view) {
+        return roleService.listUserRoles(view.getOrgId(), getCurrentUser().getId()).stream()
+                .filter(role -> hasPermission(role, view, Const.READ))
+                .map(Role::getId)
+                .toList();
+    }
+
     public boolean safeDelete(String id) {
         // check children
         if (viewMapper.checkReference(id) != 0) {

@@ -206,9 +206,17 @@ export const getDataChartsByServer = (
   return dataCharts;
 };
 
-export const getChartDataView = (views: View[], dataCharts: DataChart[]) => {
+export const getChartDataView = (
+  views: View[],
+  dataCharts: DataChart[],
+  additionalViewIds: string[] = [],
+) => {
   const viewViews: ChartDataView[] = [];
-  views.forEach(view => {
+  const usedViewIds = new Set([
+    ...dataCharts.map(dataChart => dataChart.viewId).filter(Boolean),
+    ...additionalViewIds.filter(Boolean),
+  ]);
+  views.filter(view => usedViewIds.has(view.id)).forEach(view => {
     const dataChart = dataCharts.find(dc => dc.viewId === view.id);
 
     if (view) {

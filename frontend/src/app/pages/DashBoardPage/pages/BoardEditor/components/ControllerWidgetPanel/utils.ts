@@ -192,6 +192,7 @@ export const getInitWidgetController = (
 };
 export const getInitControllerConfig = () => {
   const config: ControllerConfig = {
+    optionSort: 'auto',
     valueOptionType: ValueOptionTypes.Common, //
     assistViewFields: [],
     visibility: {

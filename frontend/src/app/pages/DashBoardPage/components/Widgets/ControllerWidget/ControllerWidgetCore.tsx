@@ -26,6 +26,7 @@ import {
 } from 'app/pages/DashBoardPage/pages/BoardEditor/components/ControllerWidgetPanel/types';
 import { Widget } from 'app/pages/DashBoardPage/types/widgetTypes';
 import { getControllerDateValues } from 'app/pages/DashBoardPage/utils';
+import { sortControllerOptions } from 'app/pages/DashBoardPage/utils/sortControllerOptions';
 import { RelationFilterValue } from 'app/types/ChartConfig';
 import { produce } from 'immer';
 import React, {
@@ -123,16 +124,16 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
       if (parentFields?.length) {
         return convertToTree(dataRows, buildingMethod);
       }
-      return dataRows.map(ele => {
+      return sortControllerOptions(dataRows.map(ele => {
         const item: RelationFilterValue = {
           key: ele?.[0],
           label: ele?.[1] ?? ele?.[0],
           // children?
         };
         return item;
-      });
+      }), config.optionSort);
     } else if (valueOptionType === 'custom') {
-      return valueOptions;
+      return sortControllerOptions(valueOptions || [], config.optionSort, true);
     } else {
       return [];
     }
@@ -142,6 +143,7 @@ export const ControllerWidgetCore: React.FC<{}> = memo(() => {
     valueOptions,
     parentFields,
     buildingMethod,
+    config.optionSort,
   ]);
 
   const onControllerChange = useCallback(() => {
@@ -489,26 +491,26 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
     white-space: nowrap;
   }
 
-  /* Narrow half-width widgets stack the label rather than shrink
-     a datetime picker beneath its calendar trigger. Saved grid geometry
-     remains unchanged. */
+  /* Narrow widgets keep the label and control on one line. The label may
+     shrink with ellipsis while the control takes the remaining width. */
   @container (max-width: 300px) {
     .control-form .ant-form-item-row {
-      flex-direction: column;
-      align-items: stretch;
+      flex-direction: row;
+      align-items: center;
+      gap: 4px;
     }
 
     .control-form .ant-form-item-label {
-      flex: none;
-      max-width: 100%;
+      flex: 0 1 38%;
+      max-width: 38%;
       padding: 0;
       line-height: 18px;
       text-align: left;
     }
 
     .control-form .ant-form-item-control {
-      flex: 1;
-      width: 100%;
+      flex: 1 1 0;
+      width: 0;
       min-width: 0;
     }
 

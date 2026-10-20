@@ -5,6 +5,7 @@ import datart.data.provider.calcite.dialect.StarRocksSqlStdOperatorSupport;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StarRocksDataProviderAdapterTest {
@@ -55,6 +56,14 @@ class StarRocksDataProviderAdapterTest {
     }
 
     @Test
+    void shouldPreserveStarRocksOptimizerHintsWhenAddingPagination() {
+        String sql = "SELECT /*+ SET_VAR(query_timeout = 1) */ city FROM daily_report";
+
+        assertEquals(sql + " LIMIT 10 OFFSET 10", StarRocksDataProviderAdapter.appendLimitWithAst(
+                sql, PageInfo.builder().pageNo(2).pageSize(10).build(), new StarRocksSqlStdOperatorSupport()));
+    }
+
+    @Test
     void shouldPaginateCteAndUnionWithAnOuterAstSelect() {
         PageInfo pageInfo = PageInfo.builder().pageNo(2).pageSize(10).build();
         String cte = StarRocksDataProviderAdapter.appendLimitWithAst(
@@ -68,6 +77,8 @@ class StarRocksDataProviderAdapterTest {
         assertTrue(union.toUpperCase().contains("DATART_PAGE"));
         assertTrue(cte.toUpperCase().contains("LIMIT 10"));
         assertTrue(union.toUpperCase().contains("OFFSET 10"));
+        assertFalse(cte.toUpperCase().contains("GROUP BY ()"));
+        assertFalse(union.toUpperCase().contains("GROUP BY ()"));
     }
 
     @Test

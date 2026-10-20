@@ -737,14 +737,23 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
                 var.isExpression());
     }
 
-    private Set<SelectColumn> parseColumnPermission(View view) {
+    Set<SelectColumn> parseColumnPermission(View view) {
         if (securityManager.isOrgOwner(view.getOrgId())) {
             return Collections.singleton(SelectColumn.of(null, "*"));
         }
         try {
             Set<SelectColumn> columns = new HashSet<>();
+            Set<String> readableRoles = new HashSet<>(viewService.getReadableRoleIds(view));
+            if (readableRoles.isEmpty()) {
+                return columns;
+            }
             List<RelSubjectColumns> relSubjectColumns = rscMapper.listByUser(view.getId(), getCurrentUser().getId());
+            Set<String> restrictedRoles = new HashSet<>();
             for (RelSubjectColumns relSubjectColumn : relSubjectColumns) {
+                if (!readableRoles.contains(relSubjectColumn.getSubjectId())) {
+                    continue;
+                }
+                restrictedRoles.add(relSubjectColumn.getSubjectId());
                 List<String> cols = (List<String>) objectMapper.readValue(relSubjectColumn.getColumnPermission(), ArrayList.class);
                 if (!CollectionUtils.isEmpty(cols)) {
                     for (String col : cols) {
@@ -753,6 +762,9 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
                         }
                     }
                 }
+            }
+            if (!restrictedRoles.containsAll(readableRoles)) {
+                return Collections.singleton(SelectColumn.of(null, "*"));
             }
             return columns;
         } catch (Exception e) {

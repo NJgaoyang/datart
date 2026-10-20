@@ -30,7 +30,7 @@ describe('AntdTableWrapper', () => {
     expect(getExplicitTableWidth([])).toBeUndefined();
   });
 
-  it('preserves content-sized columns instead of stretching to the widget width', () => {
+  it('uses content width as a minimum and fills a wider widget', () => {
     const tableProps = {
       dataSource: [{ key: '1', city: '南京市', orders: 2043 }],
       columns: [
@@ -58,13 +58,10 @@ describe('AntdTableWrapper', () => {
     ).toBe(true);
     expect(headerTable!.style.width).toBe('198px');
     expect(bodyTable!.style.width).toBe('198px');
-    // This is the regression assertion missing from the earlier CSS-only fix:
-    // measured width is now actively enforced, rather than relying on the
-    // rc-table 100% min-width override to shrink the table.
     expect(
       tableRules.some(rule =>
         rule.cssText.includes('.ant-table-body>table') &&
-        rule.cssText.includes('width: 198px !important'),
+        rule.cssText.includes('width: max(198px, 100%) !important'),
       ),
     ).toBe(true);
   });

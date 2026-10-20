@@ -54,6 +54,7 @@ import {
 } from '../../../slice/types';
 import {
   dataModelColumnSorter,
+  hydrateViewColumnDisplayMeta,
   getHierarchyColumnByField,
   resolveSchemaColumnComment,
 } from '../../../utils';
@@ -201,14 +202,14 @@ const DataModelTree: FC = memo(() => {
             name: colName,
             path: column.path,
           }) || column.comment;
-        return Object.assign({ index }, column, {
-          name: colName,
-          comment,
-        });
+        return hydrateViewColumnDisplayMeta(
+          Object.assign({ index }, column, { name: colName, comment }),
+          currentEditingView?.fields,
+        );
       })
       .sort(dataModelColumnSorter);
     return columns as Column[];
-  }, [hierarchy, allDatabaseSchemas, sourceId]);
+  }, [hierarchy, allDatabaseSchemas, sourceId, currentEditingView?.fields]);
 
   const handleDeleteBranch = (node: Column) => {
     const newHierarchy = deleteBranch(tableColumns, node);

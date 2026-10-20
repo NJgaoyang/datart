@@ -14,10 +14,10 @@ describe('automatic grid spacing by container width', () => {
     });
   });
 
-  it('reduces widget gaps and canvas padding on narrow displays', () => {
+  it('only reduces horizontal gaps and padding on narrow displays', () => {
     expect(getResponsiveGridSpacing({ ...base, width: 720 })).toEqual({
-      margin: [4, 4],
-      containerPadding: [8, 8],
+      margin: [4, 8],
+      containerPadding: [8, 16],
     });
   });
 

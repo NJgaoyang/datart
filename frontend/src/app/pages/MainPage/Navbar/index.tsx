@@ -277,7 +277,7 @@ export function Navbar() {
         case 'logout':
           dispatch(
             logout(() => {
-              navigate('/', { replace: true });
+              navigate('/login', { replace: true });
             }),
           );
           break;

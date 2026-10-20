@@ -5,6 +5,7 @@ import useDisplayJumpVizDialog from 'app/pages/MainPage/pages/VizPage/hooks/useD
 import useDisplayViewDetail from 'app/pages/MainPage/pages/VizPage/hooks/useDisplayViewDetail';
 import { ChartMouseEventParams } from 'app/types/Chart';
 import { ChartDataSectionField } from 'app/types/ChartConfig';
+import { isFullTableResult } from 'app/components/ChartGraph/BasicTableChart/tableSummarySemantics';
 import {
   getColumnRenderName,
   toFormattedValue,
@@ -29,6 +30,7 @@ import {
   isMobileRankField,
   resolveMobilePresentation,
 } from '../../../mobile/MobilePresentationResolver';
+import { mobileMetricTotal } from '../../../mobile/mobileMetricTotals';
 
 const formatValue = (value: any, field: ChartDataSectionField) => {
   const formatted = toFormattedValue(value, field.format);
@@ -79,7 +81,7 @@ export const MobileTablePresentation: React.FC = () => {
     () => getMobileTableFields(chartConfig),
     [chartConfig],
   );
-  const mode = useMemo(
+  const resolvedMode = useMemo(
     () => resolveMobilePresentation(data, chartConfig),
     [chartConfig, data],
   );
@@ -89,6 +91,17 @@ export const MobileTablePresentation: React.FC = () => {
   );
   const dimensions = fields.filter(isMobileDimension);
   const measures = fields.filter(isMobileMeasure);
+  const complete = isFullTableResult(data?.pageInfo, dataSet.length);
+  const totals = measures.map(field => mobileMetricTotal(
+    field, fields, [
+      ...(dataChart?.config?.computedFields || []),
+      ...(chartDataView?.computedFields || []),
+      ...(chartDataView?.meta || []),
+    ], dataSet,
+  ));
+  const mode = resolvedMode === 'kpi-grid' && dataSet.length > 1
+    ? !complete ? 'table' : totals.some(value => value === undefined) ? 'card-list' : resolvedMode
+    : resolvedMode;
   const isAggregateKpi = mode === 'kpi-grid' && dataSet.length > 1;
   const kpiScope = isAggregateKpi
     ? `全部${dimensions[0] ? fieldLabel(dimensions[0]) : '城市'}合计`
@@ -98,12 +111,9 @@ export const MobileTablePresentation: React.FC = () => {
   const getKpiValue = useCallback(
     (field: ChartDataSectionField) => {
       if (!isAggregateKpi) return dataSet[0]?.getCell(field);
-      return dataSet.reduce((total, row) => {
-        const value = Number(row.getCell(field));
-        return Number.isFinite(value) ? total + value : total;
-      }, 0);
+      return totals[measures.indexOf(field)];
     },
-    [dataSet, isAggregateKpi],
+    [dataSet, isAggregateKpi, measures, totals],
   );
 
   const handleRowClick = useCallback(

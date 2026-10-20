@@ -157,7 +157,11 @@ export const fetchEditBoardDetail = createAsyncThunk<
         dataCharts: allDataCharts,
       }),
     );
-    const viewViews = getChartDataView(serverViews, allDataCharts);
+    const viewViews = getChartDataView(
+      serverViews,
+      allDataCharts,
+      Object.values(widgetMap).flatMap(widget => widget.viewIds || []),
+    );
 
     dispatch(boardActions.updateViewMap(viewViews));
     // BoardInfo

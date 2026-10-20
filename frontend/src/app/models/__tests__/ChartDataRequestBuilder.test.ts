@@ -159,6 +159,7 @@ describe('ChartDataRequestBuild Test', () => {
         alias: 'SUM(user_count)',
         column: ['DATART_VTABLE', 'user_count'],
         sqlOperator: AggregateFieldActionType.Sum,
+        ratioOfSums: false,
       },
     ]);
     expect(request.outputProjections).toEqual([
@@ -186,7 +187,7 @@ describe('ChartDataRequestBuild Test', () => {
     } as any)).toThrow('STRICT_ONLY_CHART_VIEW_REQUIRED');
   });
 
-  test('rejects no-fieldId chart requests in STRICT mode', () => {
+  test('rejects no-fieldId persisted chart fields in STRICT mode', () => {
     expect(() =>
       new ChartDataRequestBuilder(
         {
@@ -212,6 +213,40 @@ describe('ChartDataRequestBuild Test', () => {
     ).toThrow('STRICT_FIELD_ID_REQUIRED');
   });
 
+  test('does not rebind a stale fieldId by the old field name', () => {
+    expect(() =>
+      new ChartDataRequestBuilder(
+        {
+          id: 'view-id',
+          migrationMode: 'STRICT',
+          meta: [
+            {
+              name: 'city',
+              fieldId: 'current-field',
+              path: ['city'],
+              type: DataViewFieldType.STRING,
+            },
+          ],
+          computedFields: [],
+        } as any,
+        [
+          {
+            type: ChartDataSectionType.Group,
+            key: 'group',
+            rows: [
+              {
+                fieldId: 'stale-field',
+                colName: 'city',
+                type: DataViewFieldType.STRING,
+                category: ChartDataViewFieldCategory.Field as any,
+              },
+            ],
+          },
+        ] as any,
+      ).build(),
+    ).toThrow('STRICT_FIELD_ID_NOT_FOUND: stale-field');
+  });
+
   test('allows a valid STRICT computed field without fieldId', () => {
     const request = new ChartDataRequestBuilder(
       strictComputedView(),
@@ -223,6 +258,7 @@ describe('ChartDataRequestBuild Test', () => {
         alias: 'SUM(直营总订单数)',
         column: ['直营总订单数'],
         sqlOperator: AggregateFieldActionType.Sum,
+        ratioOfSums: false,
       },
     ]);
     expect(request.functionColumns).toEqual([
@@ -262,6 +298,7 @@ describe('ChartDataRequestBuild Test', () => {
         alias: '汇总离线率',
         column: ['汇总离线率'],
         sqlOperator: undefined,
+        ratioOfSums: false,
       },
     ]);
     expect(request.columns).toEqual([]);
@@ -401,31 +438,33 @@ describe('ChartDataRequestBuild Test', () => {
     ).toThrow('STRICT_FIELD_ID_REQUIRED');
   });
 
-  test('keeps invalid fieldId for backend STRICT validation', () => {
-    const request = new ChartDataRequestBuilder(
-      {
-        id: 'view-id',
-        migrationMode: 'STRICT',
-        meta: [{ name: 'city', path: ['city'], type: DataViewFieldType.STRING }],
-        computedFields: [],
-      } as any,
-      [
+  test('rejects an invalid fieldId before sending a STRICT request', () => {
+    expect(() =>
+      new ChartDataRequestBuilder(
         {
-          type: ChartDataSectionType.Group,
-          key: 'group',
-          rows: [
-            {
-              fieldId: 'stale-field',
-              colName: 'city',
-              type: DataViewFieldType.STRING,
-              category: ChartDataViewFieldCategory.Field as any,
-            },
+          id: 'view-id',
+          migrationMode: 'STRICT',
+          meta: [
+            { name: 'city', path: ['city'], type: DataViewFieldType.STRING },
           ],
-        },
-      ] as any,
-    ).build();
-
-    expect(request.outputProjections?.[0].fieldId).toBe('stale-field');
+          computedFields: [],
+        } as any,
+        [
+          {
+            type: ChartDataSectionType.Group,
+            key: 'group',
+            rows: [
+              {
+                fieldId: 'stale-field',
+                colName: 'city',
+                type: DataViewFieldType.STRING,
+                category: ChartDataViewFieldCategory.Field as any,
+              },
+            ],
+          },
+        ] as any,
+      ).build(),
+    ).toThrow('STRICT_FIELD_ID_NOT_FOUND: stale-field');
   });
 
   test('should use runtime date level for a drillable group order', () => {
@@ -904,11 +943,36 @@ describe('ChartDataRequestBuild Test', () => {
     const requestParams = builder.build();
 
     expect(requestParams.aggregators).toEqual([
-      { alias: 'AVG(amount)', column: ['amount'], sqlOperator: 'AVG' },
-      { alias: 'SUM(sub-amount)', column: ['sub-amount'], sqlOperator: 'SUM' },
-      { alias: 'COUNT(total)', column: ['total'], sqlOperator: 'COUNT' },
-      { alias: 'sex', column: ['sex'], sqlOperator: undefined },
-      { alias: 'age', column: ['age'], sqlOperator: undefined },
+      {
+        alias: 'AVG(amount)',
+        column: ['amount'],
+        sqlOperator: 'AVG',
+        ratioOfSums: false,
+      },
+      {
+        alias: 'SUM(sub-amount)',
+        column: ['sub-amount'],
+        sqlOperator: 'SUM',
+        ratioOfSums: false,
+      },
+      {
+        alias: 'COUNT(total)',
+        column: ['total'],
+        sqlOperator: 'COUNT',
+        ratioOfSums: false,
+      },
+      {
+        alias: 'sex',
+        column: ['sex'],
+        sqlOperator: undefined,
+        ratioOfSums: false,
+      },
+      {
+        alias: 'age',
+        column: ['age'],
+        sqlOperator: undefined,
+        ratioOfSums: false,
+      },
     ]);
   });
 
@@ -1010,21 +1074,34 @@ describe('ChartDataRequestBuild Test', () => {
     expect(requestParams.aggregators).toEqual([
       {
         alias: 'AVG(dad.amount)',
-        column: ['dad', 'amount'],
+        column: ['dad.amount'],
         sqlOperator: 'AVG',
+        ratioOfSums: false,
       },
       {
         alias: 'SUM(sub-amount)',
         column: ['sub-amount'],
         sqlOperator: 'SUM',
+        ratioOfSums: false,
       },
       {
         alias: 'COUNT(total)',
         column: ['total'],
         sqlOperator: 'COUNT',
+        ratioOfSums: false,
       },
-      { alias: 'sex', column: ['sex'], sqlOperator: undefined },
-      { alias: 'age', column: ['age'], sqlOperator: undefined },
+      {
+        alias: 'sex',
+        column: ['sex'],
+        sqlOperator: undefined,
+        ratioOfSums: false,
+      },
+      {
+        alias: 'age',
+        column: ['age'],
+        sqlOperator: undefined,
+        ratioOfSums: false,
+      },
     ]);
   });
 
@@ -1106,7 +1183,12 @@ describe('ChartDataRequestBuild Test', () => {
     const requestParams = builder.build();
 
     expect(requestParams.aggregators).toEqual([
-      { alias: 'AVG(amount)', column: ['amount'], sqlOperator: 'AVG' },
+      {
+        alias: 'AVG(amount)',
+        column: ['amount'],
+        sqlOperator: 'AVG',
+        ratioOfSums: false,
+      },
     ]);
   });
 
@@ -1160,8 +1242,9 @@ describe('ChartDataRequestBuild Test', () => {
     expect(requestParams.aggregators).toEqual([
       {
         alias: 'AVG(dad.amount)',
-        column: ['dad', 'amount'],
+        column: ['dad.amount'],
         sqlOperator: 'AVG',
+        ratioOfSums: false,
       },
     ]);
   });
@@ -1318,9 +1401,9 @@ describe('ChartDataRequestBuild Test', () => {
     const requestParams = builder.build();
 
     expect(requestParams.groups).toEqual([
-      { column: ['dad', 'name'], alias: 'dad.name' },
-      { column: ['dad', 'age'], alias: 'dad.age' },
-      { column: ['dad', 'address'], alias: 'dad.address' },
+      { column: ['dad.name'], alias: 'dad.name' },
+      { column: ['dad.age'], alias: 'dad.age' },
+      { column: ['dad.address'], alias: 'dad.address' },
     ]);
 
     const enableAggregation2 = false;
@@ -1858,7 +1941,7 @@ describe('ChartDataRequestBuild Test', () => {
     expect(requestParams.filters).toEqual([
       {
         aggOperator: null,
-        column: ['dad', 'name'],
+        column: ['dad.name'],
         sqlOperator: 'IN',
         values: [
           { value: 'a', valueType: 'STRING' },
@@ -1867,7 +1950,7 @@ describe('ChartDataRequestBuild Test', () => {
       },
       {
         aggOperator: 'AVG',
-        column: ['dad', 'name'],
+        column: ['dad.name'],
         sqlOperator: 'IN',
         values: [
           { value: 'a', valueType: 'STRING' },
@@ -1876,19 +1959,19 @@ describe('ChartDataRequestBuild Test', () => {
       },
       {
         aggOperator: undefined,
-        column: ['dad', 'name'],
+        column: ['dad.name'],
         sqlOperator: 'NOT_NULL',
         values: [],
       },
       {
         aggOperator: undefined,
-        column: ['dad', 'name'],
+        column: ['dad.name'],
         sqlOperator: 'IS_NULL',
         values: [],
       },
       {
         aggOperator: undefined,
-        column: ['dad', 'address'],
+        column: ['dad.address'],
         sqlOperator: 'NOT_IN',
         values: [
           { value: 'a', valueType: 'STRING' },
@@ -1897,25 +1980,25 @@ describe('ChartDataRequestBuild Test', () => {
       },
       {
         aggOperator: undefined,
-        column: ['dad', 'family'],
+        column: ['dad.family'],
         sqlOperator: 'IN',
         values: [{ value: 'a', valueType: 'STRING' }],
       },
       {
         aggOperator: undefined,
-        column: ['dad', 'born'],
+        column: ['dad.born'],
         sqlOperator: 'IN',
         values: [{ value: '2022-03-16 00:00:00', valueType: 'DATE' }],
       },
       {
         aggOperator: undefined,
-        column: ['dad', 'born'],
+        column: ['dad.born'],
         sqlOperator: 'IN',
         values: [{ value: `${today} 00:00:00`, valueType: 'DATE' }],
       },
       {
         aggOperator: undefined,
-        column: ['dad', 'born'],
+        column: ['dad.born'],
         sqlOperator: 'IN',
         values: [
           { value: `${today} 00:00:00`, valueType: 'DATE' },
@@ -1924,13 +2007,13 @@ describe('ChartDataRequestBuild Test', () => {
       },
       {
         aggOperator: undefined,
-        column: ['dad', 'birthday'],
+        column: ['dad.birthday'],
         sqlOperator: 'IN',
         values: [{ value: 'Invalid Date', valueType: 'DATE' }],
       },
       {
         aggOperator: undefined,
-        column: ['dad', 'born'],
+        column: ['dad.born'],
         sqlOperator: 'IN',
         values: [
           { value: `${today} 00:00:00`, valueType: 'DATE' },
@@ -2127,12 +2210,12 @@ describe('ChartDataRequestBuild Test', () => {
 
     expect(requestParams.orders).toEqual([
       {
-        column: ['dad', 'age'],
+        column: ['dad.age'],
         aggOperator: 'AVG',
         operator: 'ASC',
       },
       {
-        column: ['dad', 'first-name'],
+        column: ['dad.first-name'],
         operator: 'ASC',
         aggOperator: undefined,
       },
@@ -2659,12 +2742,12 @@ describe('ChartDataRequestBuild Test', () => {
     const requestParams = builder.build();
 
     expect(requestParams.columns).toEqual([
-      { alias: 'dad.amount', column: ['dad', 'amount'] },
-      { alias: 'dad.total', column: ['dad', 'total'] },
-      { alias: 'dad.sex', column: ['dad', 'sex'] },
-      { alias: 'dad.sex', column: ['dad', 'sex'] },
-      { alias: 'dad.name', column: ['dad', 'name'] },
-      { alias: 'dad.name', column: ['dad', 'name'] },
+      { alias: 'dad.amount', column: ['dad.amount'] },
+      { alias: 'dad.total', column: ['dad.total'] },
+      { alias: 'dad.sex', column: ['dad.sex'] },
+      { alias: 'dad.sex', column: ['dad.sex'] },
+      { alias: 'dad.name', column: ['dad.name'] },
+      { alias: 'dad.name', column: ['dad.name'] },
     ]);
   });
 

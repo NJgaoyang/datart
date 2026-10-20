@@ -353,6 +353,8 @@ export function getColumnRenderOriginName(c?: ChartDataSectionField) {
           displayName: c.displayName,
           customName: c.customName,
           sourceComment: c.sourceComment,
+          comment: c.comment,
+          isDisplayNameCustom: c.isDisplayNameCustom,
         })
       : getFieldDisplayName({
           name: c.colName,
@@ -476,25 +478,12 @@ export function transformHierarchyMeta(
   const fieldsById = new Map(
     normalizedViewFields.map(field => [field.fieldId, field]),
   );
-  const fieldsByPath = new Map(
-    normalizedViewFields
-      .filter(field => field.sourcePath?.length)
-      .map(field => [field.sourcePath!.join('.'), field]),
-  );
-  const fieldsByName = new Map<string, ViewFieldMeta | undefined>();
-  normalizedViewFields.forEach(field => {
-    if (!fieldsByName.has(field.originName)) {
-      fieldsByName.set(field.originName, field);
-    } else {
-      fieldsByName.set(field.originName, undefined);
-    }
-  });
   return Object.keys(hierarchyMeta || {}).map(key => {
     return getMeta(
       key,
       hierarchyMeta?.[key],
       columnMetadata,
-      { fieldsById, fieldsByPath, fieldsByName },
+      fieldsById,
       viewType,
     );
   });
@@ -504,11 +493,7 @@ function getMeta(
   key,
   column,
   columnMetadata = new Map<string, any>(),
-  fieldMaps?: {
-    fieldsById: Map<string, ViewFieldMeta>;
-    fieldsByPath: Map<string, ViewFieldMeta>;
-    fieldsByName: Map<string, ViewFieldMeta | undefined>;
-  },
+  fieldsById?: Map<string, ViewFieldMeta>,
   viewType?: string,
 ) {
   let children;
@@ -527,18 +512,15 @@ function getMeta(
   if (!isEmptyArray(column?.children)) {
     isHierarchy = true;
     children = column?.children.map(child =>
-      getMeta(child?.name, child, columnMetadata, fieldMaps, viewType),
+      getMeta(child?.name, child, columnMetadata, fieldsById, viewType),
     );
   }
   const fieldName = Array.isArray(column?.name)
     ? column.name[column.name.length - 1]
     : column?.name || key;
-  const sourcePath = column?.path || column?.name;
-  const serverField =
-    (column?.fieldId && fieldMaps?.fieldsById.get(column.fieldId)) ||
-    (Array.isArray(sourcePath) &&
-      fieldMaps?.fieldsByPath.get(sourcePath.join('.'))) ||
-    fieldMaps?.fieldsByName.get(fieldName);
+  const serverField = column?.fieldId
+    ? fieldsById?.get(column.fieldId)
+    : undefined;
   const rawDisplayName =
     serverField?.displayName ?? column?.displayName ?? metadata?.displayName;
   const comment = column?.comment ?? metadata?.comment;
@@ -575,8 +557,7 @@ function getMeta(
       : {}),
     ...(rawDisplayName !== undefined ? { displayName } : {}),
     ...(comment !== undefined ? { comment } : {}),
-    ...(!serverField &&
-    (isDisplayNameCustom !== undefined || legacyDisplayName)
+    ...(!serverField && (isDisplayNameCustom !== undefined || legacyDisplayName)
       ? { isDisplayNameCustom: Boolean(displayName) }
       : {}),
     subType: column?.category,
@@ -885,30 +866,33 @@ function findLatestFieldMeta(
     field => field.active !== false && field.isActive !== false,
   );
   if (row.fieldId) {
-    const fieldById = activeFields.find(field => field.fieldId === row.fieldId);
-    if (fieldById) {
-      return fieldById;
-    }
-
-    // A stale canonical id must not be rebound to a different field by a
-    // legacy path/name match. COMPAT execution can still use the original
-    // row, while STRICT execution must preserve the stale id so the backend
-    // can reject it explicitly.
-    return undefined;
+    return activeFields.find(field => field.fieldId === row.fieldId);
   }
-  if (row.path?.length) {
-    const pathMatches = activeFields.filter(
-      field => field.path?.join('\0') === row.path?.join('\0'),
-    );
-    if (pathMatches.length === 1) {
-      return pathMatches[0];
-    }
-  }
+  return undefined;
+}
 
-  const nameMatches = activeFields.filter(
-    field => (field.originName || field.name) === row.colName,
+function findDisplayFieldMeta(
+  row: ChartDataSectionField,
+  fields: ChartDataViewMeta[],
+): ChartDataViewMeta | undefined {
+  if (row.fieldId) return undefined;
+  const activeFields = fields.filter(
+    field => field.active !== false && field.isActive !== false,
   );
-  return nameMatches.length === 1 ? nameMatches[0] : undefined;
+  const rowPath = row.path?.join('.');
+  const candidates = activeFields.filter(field => {
+    const fieldPath = field.path?.join('.');
+    return (
+      (rowPath && fieldPath === rowPath) ||
+      field.originName === row.colName ||
+      field.name === row.colName ||
+      field.path?.[field.path.length - 1] === row.colName
+    );
+  });
+  const identities = new Set(
+    candidates.map(field => field.fieldId || field.name),
+  );
+  return identities.size === 1 ? candidates[0] : undefined;
 }
 
 export function reconcileChartConfigFieldMeta(
@@ -921,7 +905,27 @@ export function reconcileChartConfigFieldMeta(
       ...section,
       rows: section.rows?.map(row => {
         const latestMeta = findLatestFieldMeta(row, fields);
+        const displayMeta = latestMeta || findDisplayFieldMeta(row, fields);
         if (!latestMeta) {
+          if (displayMeta) {
+            return {
+              ...row,
+              ...(displayMeta.sourceComment !== undefined && {
+                sourceComment: displayMeta.sourceComment,
+              }),
+              ...(displayMeta.customName !== undefined && {
+                customName: displayMeta.customName,
+              }),
+              ...(displayMeta.comment !== undefined && {
+                comment: displayMeta.comment,
+              }),
+              ...(!row.isDisplayNameCustom &&
+                !row.customName &&
+                displayMeta.displayName !== undefined && {
+                  displayName: displayMeta.displayName,
+                }),
+            };
+          }
           return row.category ===
             ChartDataViewFieldCategory.DateLevelComputedField
             ? { ...row, type: getDateLevelFieldType(row) || row.type }
@@ -934,15 +938,18 @@ export function reconcileChartConfigFieldMeta(
           path: latestMeta.path ?? row.path,
           sourceComment: latestMeta.sourceComment ?? row.sourceComment,
           customName: latestMeta.customName ?? row.customName,
+          comment: latestMeta.comment ?? row.comment,
           type:
             row.category === ChartDataViewFieldCategory.DateLevelComputedField
               ? getDateLevelFieldType(row, latestMeta.type) || row.type
               : row.type,
           displayName:
-            latestMeta.displayName ??
-            row.displayName ??
-            latestMeta.originName ??
-            row.colName,
+            row.isDisplayNameCustom === true
+              ? row.displayName
+              : latestMeta.displayName ??
+                row.displayName ??
+                latestMeta.originName ??
+                row.colName,
           isDisplayNameCustom: undefined,
         };
       }),

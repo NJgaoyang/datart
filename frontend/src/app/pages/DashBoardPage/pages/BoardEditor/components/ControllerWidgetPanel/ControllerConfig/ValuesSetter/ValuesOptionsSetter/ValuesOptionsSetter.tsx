@@ -30,32 +30,23 @@ import { ControllerFacadeTypes } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import migrationViewConfig from 'app/migration/ViewConfig/migrationViewConfig';
 import beginViewModelMigration from 'app/migration/ViewConfig/migrationViewModelConfig';
-import { BoardContext } from 'app/pages/DashBoardPage/components/BoardProvider/BoardProvider';
 import {
   OPERATOR_TYPE_OPTION,
   ValueOptionType,
 } from 'app/pages/DashBoardPage/constants';
-import { ViewSimple } from 'app/pages/MainPage/pages/ViewPage/slice/types';
 import { RelationFilterValue } from 'app/types/ChartConfig';
 import ChartDataView from 'app/types/ChartDataView';
 import { View } from 'app/types/View';
 import { hasAggregationFunction } from 'app/utils/chartHelper';
 import { getDistinctFields } from 'app/utils/fetch';
 import { transformMeta } from 'app/utils/internalChartHelper';
-import {
-  FC,
-  memo,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { FC, memo, useCallback, useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { ControllerWidgetContent } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { request2 } from 'utils/request';
 import { getFieldDisplayName } from 'utils/utils';
 import { convertToTree } from '../../../../../../../utils/widget';
+import { sortControllerOptions } from '../../../../../../../utils/sortControllerOptions';
 import { ControllerConfig } from '../../../types';
 import TreeSetter from '../TreeSetter';
 import { AssistViewFields } from './AssistViewFields';
@@ -72,31 +63,23 @@ const ValuesOptionsSetter: FC<{
   viewMap: Record<string, ChartDataView>;
 }> = memo(({ form, viewMap, controllerType }) => {
   const tc = useI18NPrefix(`viz.control`);
-  const { orgId } = useContext(BoardContext);
   const [optionValues, setOptionValues] = useState<RelationFilterValue[]>([]);
   const [targetKeys, setTargetKeys] = useState<string[]>([]);
   const [labelOptions, setLabelOptions] = useState<
     DefaultOptionType[] | undefined
   >([]);
   const [labelKey, setLabelKey] = useState<string | undefined>();
-  const [viewList, setViewList] = useState<optionProps[]>([]);
+  const viewList = useMemo<optionProps[]>(
+    () =>
+      Object.values(viewMap)
+        .filter(view => view && !view.isFolder)
+        .map(view => ({ value: view.id, label: view.name })),
+    [viewMap],
+  );
 
   const isTree = useMemo(() => {
     return controllerType === ControllerFacadeTypes.DropDownTree;
   }, [controllerType]);
-
-  const getViewList = useCallback(async orgId => {
-    const { data } = await request2<ViewSimple[]>(`/views?orgId=${orgId}`);
-    const views = data
-      .filter(item => !item.isFolder)
-      .map(item => {
-        return {
-          value: item.id,
-          label: item.name,
-        };
-      });
-    setViewList(views);
-  }, []);
 
   const getControllerConfig = useCallback(() => {
     return form?.getFieldValue('config') as ControllerConfig;
@@ -368,10 +351,6 @@ const ValuesOptionsSetter: FC<{
     }, 500);
   }, [updateOptions]);
 
-  useEffect(() => {
-    getViewList(orgId);
-  }, [getViewList, orgId]);
-
   return (
     <Wrapper>
       <Form.Item
@@ -494,7 +473,7 @@ const ValuesOptionsSetter: FC<{
                           onChange={onTargetKeyChange}
                           style={{ width: '100%' }}
                         >
-                          {optionValues.map(item => (
+                          {sortControllerOptions(optionValues, getControllerConfig()?.optionSort).map(item => (
                             <Select.Option
                               key={String(item.key) + String(item.label)}
                               value={item.key}
@@ -527,6 +506,16 @@ const ValuesOptionsSetter: FC<{
           }}
         </Form.Item>
       </Form.Item>
+      {!isTree && (
+        <Form.Item name={['config', 'optionSort']} label={tc('optionSort')} initialValue="original">
+          <Select>
+            <Select.Option value="auto">{tc('optionSortAuto')}</Select.Option>
+            <Select.Option value="asc">{tc('optionSortAsc')}</Select.Option>
+            <Select.Option value="desc">{tc('optionSortDesc')}</Select.Option>
+            <Select.Option value="original">{tc('optionSortOriginal')}</Select.Option>
+          </Select>
+        </Form.Item>
+      )}
     </Wrapper>
   );
 });
