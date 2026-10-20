@@ -19,7 +19,7 @@
 import WordCloudChart from '../WordCloudChart';
 
 describe('<WordCloudChart />', () => {
-  let component;
+  let component: InstanceType<typeof WordCloudChart>;
   beforeEach(() => {
     component = new WordCloudChart();
   });

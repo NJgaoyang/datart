@@ -17,6 +17,9 @@
  */
 
 import ChartIFrameContainerDispatcher from '../ChartIFrameContainerDispatcher';
+import type { IChart } from 'app/types/Chart';
+import type { ChartConfig } from 'app/types/ChartConfig';
+import type { CSSProperties, ReactElement } from 'react';
 
 describe('ChartIFrameContainerDispatcher Test', () => {
   test('should get new instance if not init', () => {
@@ -26,9 +29,9 @@ describe('ChartIFrameContainerDispatcher Test', () => {
 
   test('should create new container and show current container if not exist', () => {
     const instance = ChartIFrameContainerDispatcher.instance();
-    const chart = {};
+    const chart = {} as IChart;
     const dataset = {};
-    const config = {};
+    const config = {} as ChartConfig;
     const style = {};
     const containers = instance.getContainers(
       'id=1',
@@ -38,7 +41,7 @@ describe('ChartIFrameContainerDispatcher Test', () => {
       style,
     );
     expect(containers.length).toEqual(1);
-    expect(containers[0].props.style).toEqual({
+    expect((containers[0] as unknown as ReactElement<{ style: CSSProperties }>).props.style).toEqual({
       transform: 'none',
       position: 'relative',
     });
@@ -46,9 +49,9 @@ describe('ChartIFrameContainerDispatcher Test', () => {
 
   test('should switch new container if id matched', () => {
     const instance = ChartIFrameContainerDispatcher.instance();
-    const chart = {};
+    const chart = {} as IChart;
     const dataset = {};
-    const config = {};
+    const config = {} as ChartConfig;
     const style = {};
     instance.getContainers('id=1', chart, dataset, config, style);
     const containers = instance.getContainers(
@@ -59,11 +62,11 @@ describe('ChartIFrameContainerDispatcher Test', () => {
       style,
     );
     expect(containers.length).toEqual(2);
-    expect(containers[0].props.style).toEqual({
+    expect((containers[0] as unknown as ReactElement<{ style: CSSProperties }>).props.style).toEqual({
       transform: 'translate(-9999px, -9999px)',
       position: 'absolute',
     });
-    expect(containers[1].props.style).toEqual({
+    expect((containers[1] as unknown as ReactElement<{ style: CSSProperties }>).props.style).toEqual({
       transform: 'none',
       position: 'relative',
     });

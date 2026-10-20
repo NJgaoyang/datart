@@ -20,18 +20,19 @@ import '@testing-library/jest-dom';
 import { fireEvent, render } from '@testing-library/react';
 import { vi } from 'vitest';
 import BasicCheckbox from '../Basic/BasicCheckbox';
+import type { ChartStyleConfig } from 'app/types/ChartConfig';
 
 describe('<BasicCheckbox />', () => {
-  let translator;
+  let translator: (label: string) => string;
   beforeAll(() => {
-    translator = label => `This is a ${label}`;
+    translator = (label: string) => `This is a ${label}`;
   });
 
   test('should render component correct', () => {
     const { getByText, getByRole } = render(
       <BasicCheckbox
         translate={translator}
-        data={{ label: 'Component Label', value: true }}
+        data={{ label: 'Component Label', value: true } as ChartStyleConfig}
       />,
     );
     expect(getByText('This is a Component Label')).toBeInTheDocument();
@@ -52,7 +53,7 @@ describe('<BasicCheckbox />', () => {
           label: 'Component Label',
           value: true,
           options: { needRefresh },
-        }}
+        } as ChartStyleConfig}
       />,
     );
     fireEvent.click(getByRole('checkbox'));
@@ -70,7 +71,7 @@ describe('<BasicCheckbox />', () => {
         data={{
           label: 'Component Label',
           options: { hideLabel: true },
-        }}
+        } as ChartStyleConfig}
       />,
     );
     expect(container.querySelector('.ant-form-item-label label')).toBeNull();

@@ -20,6 +20,8 @@ import '@testing-library/jest-dom';
 import { render } from '@testing-library/react';
 import { vi } from 'vitest';
 import { ChartIFrameContainer } from '../index';
+import type { IChart } from 'app/types/Chart';
+import type { ChartConfig } from 'app/types/ChartConfig';
 
 vi.mock('uuid', () => ({ v4: vi.fn(() => 'test-uuid') }));
 
@@ -28,8 +30,8 @@ describe('ChartIFrameContainer Test', () => {
     const { container } = render(
       <ChartIFrameContainer
         dataset={[]}
-        chart={{ useIFrame: true }}
-        config={{}}
+        chart={{ useIFrame: true } as IChart}
+        config={{} as ChartConfig}
       />,
     );
     expect(container.querySelector('iframe')).not.toBeNull();
@@ -39,8 +41,8 @@ describe('ChartIFrameContainer Test', () => {
     const { container } = render(
       <ChartIFrameContainer
         dataset={[]}
-        chart={{ useIFrame: false }}
-        config={{}}
+        chart={{ useIFrame: false } as IChart}
+        config={{} as ChartConfig}
       />,
     );
     expect(container.querySelector('iframe')).toBeNull();

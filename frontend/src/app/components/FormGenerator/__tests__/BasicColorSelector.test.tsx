@@ -19,18 +19,19 @@
 import '@testing-library/jest-dom';
 import { render } from '@testing-library/react';
 import BasicColorSelector from '../Basic/BasicColorSelector';
+import type { ChartStyleConfig } from 'app/types/ChartConfig';
 
 describe('<BasicColorSelector />', () => {
-  let translator;
+  let translator: (label: string) => string;
   beforeAll(() => {
-    translator = label => `This is a ${label}`;
+    translator = (label: string) => `This is a ${label}`;
   });
 
   test('should render component correct', () => {
     const { container, getByText } = render(
       <BasicColorSelector
         translate={translator}
-        data={{ label: 'Component Label', value: '#fafafa' }}
+        data={{ label: 'Component Label', value: '#fafafa' } as ChartStyleConfig}
       />,
     );
 
@@ -44,7 +45,7 @@ describe('<BasicColorSelector />', () => {
         data={{
           label: 'Component Label',
           options: { hideLabel: true },
-        }}
+        } as ChartStyleConfig}
       />,
     );
     expect(container.querySelector('.ant-form-item-label label')).toBeNull();
