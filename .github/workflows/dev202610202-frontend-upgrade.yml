@@ -56,7 +56,7 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add src
             HUSKY=0 git commit -m "refactor(frontend): migrate React 19 refs and AntD 6 UI props"
-            git push origin HEAD:dev202610202
+            HUSKY=0 git push origin HEAD:dev202610202
           fi
       - name: TypeScript and grid-specific regression
         run: npm run check:grid
