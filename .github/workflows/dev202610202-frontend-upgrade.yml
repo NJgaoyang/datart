@@ -58,6 +58,8 @@ jobs:
             HUSKY=0 git commit -m "refactor(frontend): migrate React 19 refs and AntD 6 UI props"
             HUSKY=0 git push origin HEAD:dev202610202
           fi
+      - name: BI chart resource loading regression
+        run: npx vitest run src/app/components/ChartIFrameContainer/__tests__/ChartIFrameResourceLoader.test.ts
       - name: SQL workbench split regression
         run: npx vitest run src/app/components/__tests__/SplitWorkbench.test.tsx
       - name: TypeScript and grid-specific regression
