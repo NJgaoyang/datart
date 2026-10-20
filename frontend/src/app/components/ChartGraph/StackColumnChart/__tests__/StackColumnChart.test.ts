@@ -16,14 +16,14 @@
  * limitations under the License.
  */
 
-import RoseChart from '../RoseChart';
+import StackColumnChart from '../StackColumnChart';
 
-describe('<RoseChart />', () => {
-  let component;
+describe('<StackColumnChart />', () => {
+  let component: InstanceType<typeof StackColumnChart>;
   beforeEach(() => {
-    component = new RoseChart();
+    component = new StackColumnChart();
   });
-  test('it should mount', () => {
+  test('It should mount', () => {
     expect(component).toBeDatartChartModel();
   });
 });

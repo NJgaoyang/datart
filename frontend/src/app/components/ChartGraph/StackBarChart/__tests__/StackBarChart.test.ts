@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-import ScatterOutlineMapChart from '../ScatterOutlineMapChart';
+import StackBarChart from '../StackBarChart';
 
-describe('<ScatterOutlineMapChart />', () => {
-  let component;
+describe('<StackBarChart />', () => {
+  let component: InstanceType<typeof StackBarChart>;
   beforeEach(() => {
-    component = new ScatterOutlineMapChart();
+    component = new StackBarChart();
   });
   test('It should mount', () => {
     expect(component).toBeDatartChartModel();

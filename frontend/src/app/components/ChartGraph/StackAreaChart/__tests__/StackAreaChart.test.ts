@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-import StackBarChart from '../StackBarChart';
+import StackAreaChart from '../StackAreaChart';
 
-describe('<StackBarChart />', () => {
-  let component;
+describe('<StackAreaChart />', () => {
+  let component: InstanceType<typeof StackAreaChart>;
   beforeEach(() => {
-    component = new StackBarChart();
+    component = new StackAreaChart();
   });
   test('It should mount', () => {
     expect(component).toBeDatartChartModel();

@@ -16,14 +16,13 @@
  * limitations under the License.
  */
 
-import WaterfallChart from '../WaterfallChart';
+import RoseChart from '../RoseChart';
 
-describe('<WaterfallChart />', () => {
-  let component;
+describe('<RoseChart />', () => {
+  let component: InstanceType<typeof RoseChart>;
   beforeEach(() => {
-    component = new WaterfallChart();
+    component = new RoseChart();
   });
-
   test('it should mount', () => {
     expect(component).toBeDatartChartModel();
   });

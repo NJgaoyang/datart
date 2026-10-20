@@ -19,7 +19,7 @@
 import ReactVizXYPlotChart from '../ReactVizXYPlotChart';
 
 describe('<ReactVizXYPlotChart />', () => {
-  let component;
+  let component: InstanceType<typeof ReactVizXYPlotChart>;
   beforeEach(() => {
     component = new ReactVizXYPlotChart();
   });

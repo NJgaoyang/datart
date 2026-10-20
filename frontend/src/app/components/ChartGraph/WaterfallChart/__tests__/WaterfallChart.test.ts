@@ -16,14 +16,15 @@
  * limitations under the License.
  */
 
-import StackAreaChart from '../StackAreaChart';
+import WaterfallChart from '../WaterfallChart';
 
-describe('<StackAreaChart />', () => {
-  let component;
+describe('<WaterfallChart />', () => {
+  let component: InstanceType<typeof WaterfallChart>;
   beforeEach(() => {
-    component = new StackAreaChart();
+    component = new WaterfallChart();
   });
-  test('It should mount', () => {
+
+  test('it should mount', () => {
     expect(component).toBeDatartChartModel();
   });
 });
