@@ -24,6 +24,7 @@ import { createRoot } from 'react-dom/client';
 import { HelmetProvider } from 'react-helmet-async';
 import { Provider } from 'react-redux';
 import { configureAppStore } from './redux/configureStore';
+import AppErrorBoundary from './app/AppErrorBoundary';
 import { ThemeProvider } from 'styles/theme/ThemeProvider';
 import { Debugger } from 'utils/debugger';
 import './locales/i18n';
@@ -43,7 +44,9 @@ export const generateEntryPoint = EntryPointComponent => {
         <ThemeProvider>
           <HelmetProvider>
             <React.StrictMode>
-              <EntryPointComponent />
+              <AppErrorBoundary>
+                <EntryPointComponent />
+              </AppErrorBoundary>
             </React.StrictMode>
           </HelmetProvider>
         </ThemeProvider>
