@@ -11,6 +11,7 @@ export const DEFAULT_BUNDLE_BUDGET = Object.freeze({
   // Baseline (2026-10-18) app + vendor: ~12.7M raw bytes.
   // Deliberate ~18-26% headroom for normal development, not a target FPS.
   initialBytes: 15_000_000,
+  entryBudgets: { 'index.html': 10_000_000 },
   allJsBytes: 16_000_000,
   largestChunkBytes: 10_500_000,
 });
@@ -55,9 +56,10 @@ export function evaluateBundleBudget(manifest, fileBytes, budget = DEFAULT_BUNDL
     const bytes = [...new Set([...seen].map(name => manifest[name].file).filter(isJs))]
       .reduce((total, file) => total + fileBytes(file), 0);
     entrySizes[key] = bytes;
-    if (bytes > budget.initialBytes) {
+    const initialLimit = budget.entryBudgets?.[key] ?? budget.initialBytes;
+    if (bytes > initialLimit) {
       throw new Error('Initial JS budget exceeded for ' + key + ': ' +
-        bytes + ' > ' + budget.initialBytes + ' bytes');
+        bytes + ' > ' + initialLimit + ' bytes');
     }
   }
 

@@ -1,6 +1,6 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { Dropdown, Menu, Tooltip } from 'antd';
-import { ToolbarButton } from 'app/components';
+import { ToolbarButton } from '../ToolbarButton';
 import React, { ReactElement } from 'react';
 
 interface AddButtonProps {
