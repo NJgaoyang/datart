@@ -19,7 +19,7 @@ describe('mobile range date filter', () => {
     fireEvent.mouseDown(input!);
     fireEvent.click(input!);
     await waitFor(() =>
-      expect(document.querySelector('.ant-picker-dropdown.datart-mobile-date-popup')).not.toBeNull(),
+      expect(document.querySelector('.ant-picker-dropdown.datart-dashboard-date-popup.datart-mobile-date-popup')).not.toBeNull(),
     );
   });
 
@@ -36,7 +36,7 @@ describe('mobile range date filter', () => {
     fireEvent.mouseDown(input!);
     fireEvent.click(input!);
     await waitFor(() =>
-      expect(document.querySelector('.ant-picker-dropdown.datart-mobile-date-popup')).not.toBeNull(),
+      expect(document.querySelector('.ant-picker-dropdown.datart-dashboard-date-popup.datart-mobile-date-popup')).not.toBeNull(),
     );
   });
 
