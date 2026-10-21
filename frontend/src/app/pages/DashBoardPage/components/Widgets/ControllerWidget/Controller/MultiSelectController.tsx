@@ -69,7 +69,7 @@ export const SelectController: React.FC<SelectControllerProps> = memo(
         )}
         onChange={onChange}
         mode={'multiple'}
-        variant="borderless"
+        variant="outlined"
         options={[
           ...((options || []).flatMap(item => {
             //  ##659
@@ -103,7 +103,7 @@ const StyledSelect = styled(Select)`
   min-width: 0;
 
   &.ant-select .ant-select-selector {
-    background-color: transparent !important;
+    background-color: #fff !important;
   }
 
   /* 多选标签不换行，溢出折叠而非撑宽容器 */

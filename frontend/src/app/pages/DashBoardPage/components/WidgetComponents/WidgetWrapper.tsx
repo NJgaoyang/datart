@@ -49,8 +49,19 @@ const Wrapper = styled.div`
      DatePicker suffix. Its width automatically includes status/lock icons. */
   &.controller-widget {
     align-items: center;
-    border-radius: 8px;
-    box-shadow: inset 0 0 0 1px ${p => p.theme.borderColorSplit};
+    /* Refined light filter card, scoped to dashboard controllers only. */
+    padding: 5px 10px !important;
+    border: 1px solid #e6ebf3 !important;
+    border-radius: 9px !important;
+    background: #f8fafc !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.045) !important;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+
+    &:hover,
+    &:focus-within {
+      border-color: #d0def2 !important;
+      box-shadow: 0 2px 8px rgba(23, 55, 103, 0.07) !important;
+    }
 
     .controller-widget-content {
       flex: 1 1 auto;
@@ -79,6 +90,21 @@ const Wrapper = styled.div`
 
   &.dashboard-action-widget {
     border-radius: 8px;
+  }
+
+  /* Action widgets retain their grid positions; only their surfaces change. */
+  &.dashboard-query-action,
+  &.dashboard-reset-action {
+    padding: 6px 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  @media (pointer: coarse) {
+    &.controller-widget {
+      padding: 4px 6px !important;
+    }
   }
 
   &:hover .widget-tool-dropdown,
