@@ -114,7 +114,8 @@ export const GlobalOverlays = createGlobalStyle`
     font-weight: 500;
   }
 
-  .datart-dashboard-filter-popup .ant-select-tree-node-content-wrapper:hover {
+  .datart-dashboard-filter-popup .ant-select-tree-node-content-wrapper:hover,
+  .datart-dashboard-filter-popup .ant-tree-node-content-wrapper:hover {
     border-radius: 6px;
     background: rgba(22, 119, 255, 0.065);
   }
