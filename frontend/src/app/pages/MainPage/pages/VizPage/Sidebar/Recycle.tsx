@@ -9,7 +9,8 @@ import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { selectIsOrgOwner } from 'app/pages/MainPage/slice/selectors';
 import { CommonFormTypes } from 'globalConstants';
 import { memo, useCallback, useContext, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import { getInsertedNodeIndex, stopPPG } from 'utils/utils';
 import { SaveFormContext } from '../SaveFormContext';
@@ -27,7 +28,7 @@ interface RecycleProps {
 
 export const Recycle = memo(
   ({ type, orgId, selectedId, list, listLoading, onInit }: RecycleProps) => {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const { showSaveForm } = useContext(SaveFormContext);
     const vizs = useSelector(selectVizs);

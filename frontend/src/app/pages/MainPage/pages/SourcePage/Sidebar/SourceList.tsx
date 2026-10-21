@@ -33,7 +33,8 @@ import {
 } from 'app/pages/MainPage/slice/selectors';
 import { CommonFormTypes } from 'globalConstants';
 import { memo, useCallback, useContext, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import { onDropTreeFn, stopPPG, uuidv4 } from 'utils/utils';
 import { CascadeAccess, getCascadeAccess } from '../../../Access';
@@ -55,7 +56,7 @@ interface SourceListProps {
 }
 
 export const SourceList = memo(({ sourceId, list }: SourceListProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const orgId = useSelector(selectOrgId);
   const deleteLoading = useSelector(selectDeleteSourceLoading);

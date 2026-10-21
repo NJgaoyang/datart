@@ -25,7 +25,8 @@ import { selectVizs } from 'app/pages/MainPage/pages/VizPage/slice/selectors';
 import { ChartStyleConfig } from 'app/types/ChartConfig';
 import { updateBy } from 'app/utils/mutation';
 import { FC, memo, useContext, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import widgetManagerInstance from '../../../../components/WidgetManager';
 import { editBoardStackActions } from '../../slice';
@@ -38,7 +39,7 @@ import { WidgetConfigPanel } from './WidgetConfigPanel';
 
 export const WidgetSetting: FC<{ boardId?: string }> = memo(({ boardId }) => {
   const t = useI18NPrefix(`viz.board.setting`);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const widget = useContext(WidgetContext);
   const widgetTypeName = widgetManagerInstance
     .toolkit(widget.config.originalType)

@@ -27,7 +27,8 @@ import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { CommonFormTypes } from 'globalConstants';
 import { produce } from 'immer';
 import { memo, useCallback, useContext, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import {
   FONT_SIZE_ICON_MD,
@@ -71,7 +72,7 @@ interface StructViewProps {
 export const StructView = memo(
   ({ allowManage, allowEnableViz }: StructViewProps) => {
     const { actions } = useViewSlice();
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const { initActions } = useContext(EditorContext);
     const { showSaveForm } = useContext(SaveFormContext);
     const t = useI18NPrefix(`view.structView`);

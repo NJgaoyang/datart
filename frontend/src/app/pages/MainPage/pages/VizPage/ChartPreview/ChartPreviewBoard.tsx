@@ -55,7 +55,8 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { BORDER_RADIUS, SPACE_LG } from 'styles/StyleConstants';
@@ -116,7 +117,7 @@ const ChartPreviewBoard: FC<{
     const { actions: vizAction } = useVizSlice();
     const { actions } = useMainSlice();
     const chartManager = ChartManager.instance();
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const { parse } = useQSLibUrlHelper();
     const [version, setVersion] = useState<string>();
     const previewCharts = useSelector(selectPreviewCharts);

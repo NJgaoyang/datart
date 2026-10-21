@@ -5,7 +5,8 @@ import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import BoardEditor from 'app/pages/DashBoardPage/pages/BoardEditor';
 import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
 import { useCallback, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useLocation, useMatch, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { LEVEL_1 } from 'styles/StyleConstants';
@@ -25,7 +26,7 @@ import { VizContainer } from './VizContainer';
 
 export function Main({ sliderVisible }: { sliderVisible: boolean }) {
   const { actions } = useVizSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const vizMatch = useMatch('/organizations/:orgId/vizs/:vizId');
   const boardEditorMatch = useMatch(

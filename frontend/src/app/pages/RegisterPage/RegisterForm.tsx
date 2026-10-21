@@ -22,7 +22,8 @@ import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { selectRegisterLoading } from 'app/slice/selectors';
 import { register } from 'app/slice/thunks';
 import React, { FC, useCallback } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { LINE_HEIGHT_ICON_LG } from 'styles/StyleConstants';
@@ -32,7 +33,7 @@ interface RegisterFormProps {
   onRegisterSuccess: (email: string) => void;
 }
 export const RegisterForm: FC<RegisterFormProps> = ({ onRegisterSuccess }) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const loading = useSelector(selectRegisterLoading);
   const [form] = Form.useForm();

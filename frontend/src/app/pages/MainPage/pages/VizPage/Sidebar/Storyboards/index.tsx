@@ -18,7 +18,8 @@ import {
 import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
 import { CommonFormTypes } from 'globalConstants';
 import { memo, useCallback, useContext, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { SPACE_XS } from 'styles/StyleConstants';
 import { getInsertedNodeIndex } from 'utils/utils';
@@ -50,7 +51,7 @@ export const Storyboards = memo(
     sliderVisible,
     handleSliderVisible,
   }: FoldersProps) => {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const orgId = useSelector(selectOrgId);
     const { showSaveForm } = useContext(SaveFormContext);
     const storyborads = useSelector(selectStoryboards);

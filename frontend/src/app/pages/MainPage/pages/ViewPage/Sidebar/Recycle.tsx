@@ -30,7 +30,8 @@ import {
 } from 'app/pages/MainPage/slice/selectors';
 import { CommonFormTypes } from 'globalConstants';
 import { memo, useCallback, useContext, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import { getInsertedNodeIndex, stopPPG } from 'utils/utils';
 import { SaveFormContext } from '../SaveFormContext';
@@ -51,7 +52,7 @@ interface RecycleProps {
 }
 
 export const Recycle = memo(({ list }: RecycleProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { showSaveForm } = useContext(SaveFormContext);
   const loading = useSelector(selectArchivedListLoading);

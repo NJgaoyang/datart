@@ -434,7 +434,6 @@ export type FieldDisplayMeta = {
   customName?: string;
   sourceComment?: string;
   comment?: string;
-  isDisplayNameCustom?: boolean;
 };
 
 export function getFieldCommentDisplayName(comment?: string): string {
@@ -442,39 +441,6 @@ export function getFieldCommentDisplayName(comment?: string): string {
   const separator = value.search(/[，,；;：:]/);
   const label = (separator < 0 ? value : value.slice(0, separator)).trim();
   return label.length > 16 ? `${label.slice(0, 16)}…` : label;
-}
-
-export function getFieldCustomDisplayName(
-  field: FieldDisplayMeta,
-): string | undefined {
-  const fieldName =
-    field.originName || field.path?.[field.path.length - 1] || field.name || '';
-  const displayName = field.displayName?.trim();
-  const comments = [field.sourceComment, field.comment]
-    .map(value => value?.trim())
-    .filter(Boolean);
-
-  if (!displayName) {
-    return undefined;
-  }
-  if (field.isDisplayNameCustom === true) {
-    return displayName;
-  }
-  if (field.isDisplayNameCustom === false) {
-    return undefined;
-  }
-  if (field.fieldId || field.sourceComment !== undefined) {
-    return undefined;
-  }
-
-  const defaultNames = [fieldName, field.name, field.path?.join('.')].filter(
-    Boolean,
-  );
-  if (defaultNames.includes(displayName) || comments.includes(displayName)) {
-    return undefined;
-  }
-
-  return displayName;
 }
 
 export function getFieldDisplayName(field: FieldDisplayMeta): string {
@@ -485,29 +451,16 @@ export function getFieldDisplayName(field: FieldDisplayMeta): string {
     '';
   return (
     field.customName?.trim() ||
-    getFieldCustomDisplayName(field) ||
     getFieldCommentDisplayName(field.sourceComment) ||
     getFieldCommentDisplayName(field.comment) ||
+    field.displayName?.trim() ||
     fieldName
   );
 }
 
-/** Dataset/ViewField displayName is a compatibility fallback for canonical metadata. */
+/** Uses canonical field metadata for dataset labels. */
 export function getDatasetFieldDisplayName(field?: FieldDisplayMeta): string {
-  if (!field) {
-    return '';
-  }
-  return (
-    field.customName?.trim() ||
-    getFieldCustomDisplayName(field) ||
-    getFieldCommentDisplayName(field.sourceComment) ||
-    getFieldCommentDisplayName(field.comment) ||
-    field.displayName?.trim() ||
-    field.originName?.trim() ||
-    field.path?.[field.path.length - 1] ||
-    field.name?.trim() ||
-    ''
-  );
+  return field ? getFieldDisplayName(field) : '';
 }
 
 export function modelListFormsTreeByTableName(model, type) {

@@ -53,7 +53,7 @@ export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
         : sortedLayoutWidgets,
       [colsKey, sortedLayoutWidgets],
     );
-    const layoutMap = useGridLayoutMap(visibleLayoutWidgets, canvasWidth, colsKey);
+    const layoutMap = useGridLayoutMap(visibleLayoutWidgets);
 
     const onLayoutChange = useCallback(() => {
       thEmitScroll();

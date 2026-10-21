@@ -89,7 +89,7 @@ const DataModelBranch: FC<{
             <DatasetCommentLabel
               label={getFieldDisplayName(node)}
               comment={node.sourceComment || node.comment}
-              hasCustomName={Boolean(node.customName || node.isDisplayNameCustom)}
+              hasCustomName={Boolean(node.customName)}
             />
             {node.role === ColumnRole.Hierarchy && (
               <div className="action">

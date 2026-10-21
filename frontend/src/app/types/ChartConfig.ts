@@ -120,8 +120,6 @@ export type ChartDataSectionField = {
   displayName?: string;
   customName?: string;
   sourceComment?: string;
-  /** Legacy chart configuration only; canonical requests use fieldId/displayName. */
-  isDisplayNameCustom?: boolean;
   format?: FormatFieldAction;
   aggregate?: AggregateFieldActionType;
   /** Opt-in, mathematically correct ratio of SUM operands (zero denominator => null). */

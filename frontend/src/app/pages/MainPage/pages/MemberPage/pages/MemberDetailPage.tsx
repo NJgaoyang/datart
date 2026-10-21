@@ -24,7 +24,8 @@ import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { selectSystemInfo } from 'app/slice/selectors';
 import { CommonFormTypes } from 'globalConstants';
 import { useCallback, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useMatch, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { BORDER_RADIUS, SPACE_LG } from 'styles/StyleConstants';
@@ -55,7 +56,7 @@ export function MemberDetailPage() {
   const [formType, setFormType] = useState(CommonFormTypes.Add);
   const [passwordVisible, setPasswordVisible] = useState(true);
   const { actions } = useMemberSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const systemInfo = useSelector(selectSystemInfo);
   const orgId = useSelector(selectOrgId);

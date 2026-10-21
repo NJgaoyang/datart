@@ -26,7 +26,7 @@ import { Widget } from '../types/widgetTypes';
 const BUTTON_TYPES: ReadonlySet<string> = new Set(['queryBtn', 'resetBtn']);
 
 /** 筛选器控件类型 —— 高度通常 1-2 行即可 */
-const CONTROLLER_TYPES: ReadonlySet<string> = new Set([
+export const CONTROLLER_TYPES: ReadonlySet<string> = new Set([
   'dropdownList',
   'multiDropdownList',
   'dropDownTree',
@@ -50,49 +50,22 @@ interface WidgetLayoutConstraints {
 export const getWidgetConstraints = (
   originalType: string,
   mobile = false,
-  canvasWidth = mobile ? 340 : 996,
 ): WidgetLayoutConstraints => {
   if (BUTTON_TYPES.has(originalType)) {
     return { maxW: mobile ? 24 : 72, maxH: mobile ? 40 : 160 };
   }
   if (CONTROLLER_TYPES.has(originalType)) {
     if (mobile) {
-      // mRect is one 24-column mobile layout at every screen width.
-      // Legacy minima (rangeTime: 3 rows / 340px) made an already compact
-      // one-line date picker impossible to shrink. Do not change any saved
-      // rectangles here: only relax the RESIZE bounds on the editor.
-      // The date range keeps two 24px rows for a usable 36px picker; other
-      // controls may be as small as one grid row.
       return {
-        minW: originalType === 'rangeTime' ? 16 : 4,
+        minW: 1,
         maxW: 24,
         minH: originalType === 'rangeTime' ? 2 : 1,
         maxH: 16,
       };
     }
-    // Desktop resizing continues using text/interaction minimum widths.
-    // Grid columns alone are not a useful minimum for date ranges/tree inputs.
-    const minimumPixels = ({
-      rangeTime: 340,
-      time: 260,
-      rangeValue: 280,
-      dropDownTree: 260,
-      multiDropdownList: 250,
-      checkboxGroup: 240,
-      radioGroup: 240,
-      slider: 230,
-      dropdownList: 220,
-      value: 200,
-      text: 200,
-    } as Record<string, number>)[originalType] || 220;
-    const cols = 72;
-    const minW = Math.min(
-      cols,
-      Math.max(18, Math.ceil(minimumPixels / (Math.max(1, canvasWidth) / cols))),
-    );
     const isComplex = ['rangeTime', 'dropDownTree', 'multiDropdownList', 'checkboxGroup', 'radioGroup'].includes(originalType);
     return {
-      minW,
+      minW: 1,
       maxW: 72,
       minH: originalType === 'rangeTime' ? 3 : isComplex ? 2 : 1,
       maxH: 24,
@@ -104,8 +77,6 @@ export const getWidgetConstraints = (
 
 export default function useGridLayoutMap(
   layoutWidgets: Widget[],
-  canvasWidth = 0,
-  deviceKey: 'lg' | 'sm' = 'lg',
 ) {
   const layoutMap = useMemo<ResponsiveLayouts>(() => {
     const lg: LayoutItem[] = [];
@@ -118,12 +89,8 @@ export default function useGridLayoutMap(
           ? normalizeAutoRectForCols(widget.config.pRect, LAYOUT_COLS_MAP.sm)
           : { x: 0, y: 0, width: 1, height: 1 });
       const lock = widget.config.lock;
-      const constraints = getWidgetConstraints(
-        widget.config.originalType, false, deviceKey === 'lg' ? canvasWidth || 996 : 996,
-      );
-      const mobileConstraints = getWidgetConstraints(
-        widget.config.originalType, true, deviceKey === 'sm' ? canvasWidth || 340 : 340,
-      );
+      const constraints = getWidgetConstraints(widget.config.originalType, false);
+      const mobileConstraints = getWidgetConstraints(widget.config.originalType, true);
 
       lg.push({
         i: widget.id,
@@ -151,6 +118,6 @@ export default function useGridLayoutMap(
       });
     });
     return { lg, sm };
-  }, [layoutWidgets, canvasWidth, deviceKey]);
+  }, [layoutWidgets]);
   return layoutMap;
 }

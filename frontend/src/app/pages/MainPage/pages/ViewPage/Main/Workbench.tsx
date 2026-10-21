@@ -27,7 +27,8 @@ import React, {
   useEffect,
   useMemo,
 } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { getPath } from 'utils/utils';
 import {
@@ -48,7 +49,7 @@ import { StructView } from './StructView';
 import { ViewJoinBuilder } from './ViewJoinBuilder';
 
 export const Workbench = memo(() => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const { editorInstance } = useContext(EditorContext);
   const { actions } = useViewSlice();
 

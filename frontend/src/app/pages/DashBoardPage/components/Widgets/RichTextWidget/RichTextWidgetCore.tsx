@@ -37,7 +37,7 @@ import ReactQuill, { Quill } from 'react-quill-new';
 // DeltaStatic
 import { FONT_FAMILIES, FONT_SIZES } from 'globalConstants';
 import 'react-quill-new/dist/quill.snow.css';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { SPACE_TIMES } from 'styles/StyleConstants';
 import { WidgetActionContext } from '../../ActionProvider/WidgetActionProvider';
@@ -76,7 +76,7 @@ export const RichTextWidgetCore: React.FC<RichTextWidgetProps> = ({
   boardEditing,
 }) => {
   const t = useI18NPrefix();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
 
   const { onEditClearActiveWidgets } = useContext(WidgetActionContext);
   const initContent = useMemo(() => {

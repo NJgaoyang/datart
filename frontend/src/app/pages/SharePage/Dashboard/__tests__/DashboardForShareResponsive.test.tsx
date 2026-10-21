@@ -2,8 +2,8 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 import { DashboardForShare } from '../DashboardForShare';
 
+vi.mock('redux/hooks', () => ({ useAppDispatch: () => vi.fn() }));
 vi.mock('react-redux', () => ({
-  useDispatch: () => vi.fn(),
   useSelector: () => ({
     needFetchItems: [],
     hasFetchItems: [],

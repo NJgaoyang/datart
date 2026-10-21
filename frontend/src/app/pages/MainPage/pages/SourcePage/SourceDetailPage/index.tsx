@@ -45,7 +45,8 @@ import {
   TIME_FORMATTER,
 } from 'globalConstants';
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useMatch, useNavigate } from 'react-router-dom';
 import { AppDispatch } from 'redux/configureStore';
 import styled from 'styled-components';
@@ -106,7 +107,7 @@ export function SourceDetailPage() {
   const [poolStatsLoading, setPoolStatsLoading] = useState(false);
   const { actions } = useSourceSlice();
   const { actions: viewActions } = useViewSlice();
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch<AppDispatch>();
   const navigate = useNavigate();
   const orgId = useSelector(selectOrgId);
   const isOwner = useSelector(selectIsOrgOwner);

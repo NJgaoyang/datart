@@ -1,4 +1,4 @@
-import { CSSProperties, LegacyRef, PureComponent, ReactNode } from 'react';
+import { CSSProperties, Ref, PureComponent, ReactNode } from 'react';
 
 interface PaneProps {
   className: string;
@@ -6,7 +6,7 @@ interface PaneProps {
   size?: string | number;
   split?: 'vertical' | 'horizontal';
   style?: CSSProperties;
-  eleRef: LegacyRef<HTMLDivElement>;
+  eleRef: Ref<HTMLDivElement>;
 }
 
 export class Pane extends PureComponent<PaneProps> {

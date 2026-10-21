@@ -1,9 +1,7 @@
 /**
  * Datart dashboard element size tracking.
  *
- * Use the browser ResizeObserver directly. react-resize-detector 6.x is from
- * the pre-React-19 era and its legacy ref lifecycle may leave nested dashboard
- * charts with the placeholder 1x1 size after Tabs mount/change.
+ * Track chart dimensions with the browser ResizeObserver, including hidden panes.
  *
  * The ref shape intentionally stays compatible with useRenderWidget (which
  * inspects cacheWhRef.current) and existing grid/auto-group callers.
@@ -13,8 +11,6 @@ import { useLayoutEffect, useRef, useState } from 'react';
 export const useCacheWidthHeight = (arg?: {
   initW?: number;
   initH?: number;
-  refreshMode?: 'throttle' | 'debounce';
-  refreshRate?: number;
 }) => {
   const { initW, initH } = arg || {};
   const cacheWhRef = useRef<HTMLDivElement>(null);

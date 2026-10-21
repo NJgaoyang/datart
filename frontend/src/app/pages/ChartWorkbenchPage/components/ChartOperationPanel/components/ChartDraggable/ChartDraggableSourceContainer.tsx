@@ -91,7 +91,6 @@ export const ChartDraggableSourceContainer: FC<
   customName,
   displayName,
   comment,
-  isDisplayNameCustom,
   folderRole,
   dateFormat,
   onDeleteComputedField,
@@ -113,14 +112,13 @@ export const ChartDraggableSourceContainer: FC<
         path,
         displayName,
         comment,
-        isDisplayNameCustom,
       })
     : getFieldDisplayName({
         name: colName,
+        customName,
         path,
         displayName,
         comment,
-        isDisplayNameCustom,
       });
   const [showChild, setShowChild] = useToggle(false);
   const isHierarchyFieldOrTable =
@@ -148,7 +146,6 @@ export const ChartDraggableSourceContainer: FC<
               dateFormat,
               displayName,
               comment,
-              isDisplayNameCustom,
             },
             children,
           ),
@@ -165,7 +162,6 @@ export const ChartDraggableSourceContainer: FC<
       dateFormat,
       displayName,
       fieldId,
-      isDisplayNameCustom,
       originName,
       sourceComment,
       customName,
@@ -367,7 +363,6 @@ export const ChartDraggableSourceContainer: FC<
     comment,
     sourceComment,
     customName,
-    isDisplayNameCustom,
     path,
     fieldDisplayName,
     children,
@@ -402,7 +397,6 @@ export const ChartDraggableSourceContainer: FC<
           path={item.path}
           displayName={item.displayName}
           comment={item.comment}
-          isDisplayNameCustom={item.isDisplayNameCustom}
           category={item.category}
           expression={item.expression}
           type={item.type}

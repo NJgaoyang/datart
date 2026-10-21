@@ -12,7 +12,8 @@ import { MenuItemLabel, Popup, Tree, TreeTitle } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { CommonFormTypes } from 'globalConstants';
 import { FC, memo, useCallback, useContext, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import { onDropTreeFn, stopPPG } from 'utils/utils';
 import { CascadeAccess, getCascadeAccess } from '../../../Access';
@@ -45,7 +46,7 @@ export const ScheduleList: FC<{
   scheduleId?: string;
   list?: TreeDataNode[];
 }> = memo(({ orgId, scheduleId, list }) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const editingSchedule = useSelector(selectEditingSchedule);
   const loading = useSelector(selectScheduleListLoading);
   const deleteLoading = useSelector(selectDeleteLoading);

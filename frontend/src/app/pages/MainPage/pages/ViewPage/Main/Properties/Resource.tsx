@@ -43,7 +43,8 @@ import { updateBy } from 'app/utils/mutation';
 import { DEFAULT_DEBOUNCE_WAIT } from 'globalConstants';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import { memo, useCallback, useContext, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { SPACE_MD, SPACE_XS } from 'styles/StyleConstants';
 import { RootState } from 'types';
@@ -61,7 +62,7 @@ import Container from './Container';
 
 export const Resource = memo(() => {
   const t = useI18NPrefix('view.resource');
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const { editorCompletionItemProviderRef } = useContext(EditorContext);
   const isDatabaseSchemaLoading = useSelector(selectDatabaseSchemaLoading);
   const sourceId = useSelector<RootState>(state =>
@@ -75,8 +76,7 @@ export const Resource = memo(() => {
   );
 
   const { height, ref: treeWrapperRef } = useResizeObserver({
-    refreshMode: 'debounce',
-    refreshRate: 200,
+    debounceMs: 200,
   });
 
   const buildTableNode = useCallback((database: DatabaseSchema) => {

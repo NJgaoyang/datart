@@ -129,7 +129,6 @@ export const buildDateLevelFields = (args: {
             path: v.path,
             displayName: v.displayName,
             comment: v.comment,
-            isDisplayNameCustom: v.isDisplayNameCustom,
           };
         }
         return null;
@@ -243,7 +242,6 @@ export const handleDateLevelsName = (
     category: string;
     displayName?: string;
     comment?: string;
-    isDisplayNameCustom?: boolean;
   },
   parentDisplayName?: string,
 ): string => {
@@ -264,7 +262,6 @@ export const handleDateLevelsName = (
           path: col.path,
           displayName: sourceDisplayName,
           comment: col.comment,
-          isDisplayNameCustom: col.isDisplayNameCustom,
         })
       }${levelSuffix}`;
     }
@@ -278,7 +275,6 @@ export const handleDateLevelsName = (
         path: col.path,
         displayName: col.displayName,
         comment: col.comment,
-        isDisplayNameCustom: col.isDisplayNameCustom,
       })
     }${levelSuffix}`;
   } else {

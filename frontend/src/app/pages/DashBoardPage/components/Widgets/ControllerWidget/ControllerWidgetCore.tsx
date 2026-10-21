@@ -464,6 +464,20 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
       max-width: 100%;
     }
 
+    .ant-picker,
+    .ant-select-selector,
+    .ant-input,
+    .ant-input-number {
+      border-radius: 6px;
+    }
+
+    .ant-picker:focus-within,
+    .ant-select-focused .ant-select-selector,
+    .ant-input:focus,
+    .ant-input-number-focused {
+      box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.2);
+    }
+
     .ant-select,
     .ant-checkbox-wrapper,
     .ant-input,

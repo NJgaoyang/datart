@@ -23,7 +23,8 @@ import {
 } from 'app/slice/selectors';
 import { login } from 'app/slice/thunks';
 import React, { useCallback } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { LoginFormLight } from './LoginFormLight';
@@ -55,7 +56,7 @@ const gradientShift = keyframes`
 `;
 
 export function LoginPageLight() {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const systemInfo = useSelector(selectSystemInfo);
   const loading = useSelector(selectLoginLoading);

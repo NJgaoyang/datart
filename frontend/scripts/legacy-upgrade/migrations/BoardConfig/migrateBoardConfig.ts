@@ -17,8 +17,6 @@ import { getInitBoardConfigBeta3 } from './legacyBoardDefaults';
  * limitations under the License.
  */
 import {
-  LEGACY_AUTO_LAYOUT_VERSION,
-  LEGACY_PC_ROW_LAYOUT_VERSION,
   MOBILE_LAYOUT_VERSION,
   MOBILE_MIN_MARGIN,
   MOBILE_MIN_PADDING,
@@ -29,6 +27,8 @@ import {
   getInitBoardConfig,
 } from 'app/pages/DashBoardPage/utils/board';
 import {
+  LEGACY_AUTO_LAYOUT_VERSION,
+  LEGACY_PC_ROW_LAYOUT_VERSION,
   APP_VERSION_BETA_0,
   APP_VERSION_BETA_2,
   APP_VERSION_BETA_4,

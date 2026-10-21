@@ -3,8 +3,7 @@ import { gunzipSync, gzipSync } from 'node:zlib';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { createRequire } from 'node:module';
-import { build } from 'esbuild';
+import { loadUpgradeEngine } from './legacy-upgrade/runtime.mjs';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const args = process.argv.slice(2);
@@ -21,7 +20,7 @@ if (!input || !output || args.includes('--help')) {
   process.exit(args.includes('--help') ? 0 : 1);
 }
 const temporary = await mkdtemp(join(root, 'node_modules/.legacy-template-'));
-let dom;
+let engine;
 try {
   const bytes = await readFile(resolve(input));
   const compressed = bytes[0] === 0x1f && bytes[1] === 0x8b;
@@ -53,46 +52,8 @@ try {
   } else {
     source = JSON.parse(decoded.toString('utf8'));
   }
-  const bundled = join(temporary, 'convert.cjs');
-  await build({
-    entryPoints: [join(root, 'scripts/legacy-upgrade/convert.ts')],
-    outfile: bundled,
-    bundle: true,
-    platform: 'node',
-    format: 'cjs',
-    tsconfig: join(root, 'scripts/legacy-upgrade/tsconfig.json'),
-    plugins: [
-      {
-        name: 'dependencies',
-        setup(build) {
-          build.onResolve({ filter: /^[^./]/ }, args =>
-            /^(app|utils|styles|locales|store|types|hooks)\//.test(args.path) ||
-            ['globalConstants', 'i18n', 'locales'].includes(args.path)
-              ? null
-              : { path: args.path, external: true },
-          );
-        },
-      },
-    ],
-    loader: { '.css': 'empty', '.less': 'empty' },
-  });
-  const { JSDOM } = await import('jsdom');
-  dom = new JSDOM('', { url: 'http://localhost/' });
-  for (const key of [
-    'window',
-    'document',
-    'localStorage',
-    'sessionStorage',
-    'navigator',
-    'HTMLElement',
-  ]) {
-    Object.defineProperty(globalThis, key, {
-      value: dom.window[key],
-      configurable: true,
-    });
-  }
-  const { upgradeTemplate } = createRequire(bundled)(bundled);
-  const converted = upgradeTemplate(source);
+  engine = await loadUpgradeEngine();
+  const converted = engine.upgradeTemplate(source);
   const json = Buffer.from(JSON.stringify(converted, null, 2));
   await writeFile(resolve(output), compressed ? gzipSync(json) : json, {
     flag: 'wx',
@@ -103,6 +64,6 @@ try {
   console.error(error.message);
   process.exitCode = 1;
 } finally {
-  dom?.window.close();
+  await engine?.close();
   await rm(temporary, { recursive: true, force: true });
 }

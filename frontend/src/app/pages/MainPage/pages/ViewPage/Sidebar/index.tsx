@@ -35,7 +35,8 @@ import {
 import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
 import { CommonFormTypes } from 'globalConstants';
 import { memo, useCallback, useContext, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { LEVEL_10, SPACE_TIMES, SPACE_XS, WHITE } from 'styles/StyleConstants';
@@ -62,7 +63,7 @@ interface SidebarProps {
 export const Sidebar = memo(
   ({ isDragging, width, sliderVisible, handleSliderVisible }: SidebarProps) => {
     const navigate = useNavigate();
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const { showSaveForm } = useContext(SaveFormContext);
     const orgId = useSelector(selectOrgId);
     const selectViewTree = useMemo(makeSelectViewTree, []);

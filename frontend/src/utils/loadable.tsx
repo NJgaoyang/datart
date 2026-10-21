@@ -40,3 +40,4 @@ export const defaultLazyLoad = <
 ) => {
   return lazyLoad(importFunc, selectorFunc, opts);
 };
+import type { JSX } from 'react';

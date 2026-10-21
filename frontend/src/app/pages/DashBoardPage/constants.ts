@@ -31,15 +31,9 @@ export const BOARD_FILE_IMG_PREFIX = 'resources/image/dashboard/';
 export const BASE_VIEW_WIDTH = 1024;
 /** Native RGL v2 dashboard schema. Version 3 is intentionally distinct from older persisted layouts. */
 export const AUTO_LAYOUT_VERSION = 3;
-export const LEGACY_AUTO_LAYOUT_VERSION = 1;
-export const LEGACY_AUTO_GRID_COLS = 12;
 export const AUTO_GRID_COLS = 72;
-export const LEGACY_BASE_ROW_HEIGHT = 32;
 export const PC_ROW_LAYOUT_VERSION = 3;
-export const LEGACY_PC_ROW_LAYOUT_VERSION = 1;
-export const LEGACY_MOBILE_GRID_COLS = 6;
 export const MOBILE_GRID_COLS = 24;
-export const LEGACY_MOBILE_LAYOUT_VERSION = 1;
 export const MOBILE_LAYOUT_VERSION = 3;
 export const BASE_ROW_HEIGHT = 8;
 export const MIN_ROW_HEIGHT = 6;

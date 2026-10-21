@@ -55,7 +55,8 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { SPACE_MD, SPACE_XS } from 'styles/StyleConstants';
 import { errorHandle, uuidv4 } from 'utils/utils';
@@ -72,7 +73,7 @@ import Container from './Container';
 
 export const Variables = memo(() => {
   const { actions } = useViewSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const [formType, setFormType] = useState(CommonFormTypes.Add);
   const [formVisible, setFormVisible] = useState(false);
   const [editingVariable, setEditingVariable] = useState<

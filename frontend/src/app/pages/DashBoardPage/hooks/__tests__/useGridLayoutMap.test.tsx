@@ -58,8 +58,8 @@ describe('new automatic dashboard grid mapping', () => {
         mRect: { x: 0, y: 0, width: 24, height: 3 },
       },
     } as Widget;
-    const { result } = renderHook(() => useGridLayoutMap([rangeTime], 340, 'sm'));
-    expect(result.current.sm?.[0].minW).toBe(16);
+    const { result } = renderHook(() => useGridLayoutMap([rangeTime]));
+    expect(result.current.sm?.[0].minW).toBe(1);
     expect(result.current.sm?.[0].minH).toBe(2);
     expect(result.current.sm?.[0].maxH).toBe(16);
     expect(result.current.sm?.[0].h).toBe(3);
@@ -67,7 +67,7 @@ describe('new automatic dashboard grid mapping', () => {
     expect(result.current.lg?.[0].minH).toBe(3);
   });
 
-  it('provides different minimum sizes for desktop and mobile controls', () => {
+  it('allows controls to shrink horizontally on desktop and mobile', () => {
     const controller = {
       id: 'filter-1',
       config: {
@@ -78,8 +78,8 @@ describe('new automatic dashboard grid mapping', () => {
       },
     } as Widget;
     const { result } = renderHook(() => useGridLayoutMap([controller]));
-    expect(result.current.lg?.[0].minW).toBe(18);
-    expect(result.current.sm?.[0].minW).toBe(4);
+    expect(result.current.lg?.[0].minW).toBe(1);
+    expect(result.current.sm?.[0].minW).toBe(1);
     expect(result.current.sm?.[0].minH).toBe(1);
     expect(result.current.lg?.[0].maxW).toBe(72);
     expect(result.current.sm?.[0].maxW).toBe(24);

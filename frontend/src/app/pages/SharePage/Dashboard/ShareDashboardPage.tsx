@@ -28,7 +28,8 @@ import {
 } from 'app/utils/fetch';
 import { StorageKeys } from 'globalConstants';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useLocation, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { getToken } from 'utils/auth';
@@ -58,7 +59,7 @@ function ShareDashboardPage() {
   useEditBoardSlice();
   useBoardSlice();
 
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const location = useLocation();
   const params = useParams<{ token: string }>();
   const search = location.search;

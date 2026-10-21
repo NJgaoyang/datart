@@ -20,7 +20,8 @@ import useResizeObserver from 'app/hooks/useResizeObserver';
 import { FC, memo, useEffect, useMemo } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { urlSearchTransfer } from 'utils/urlSearchTransfer';
 import { boardDrillManager } from '../../components/BoardDrillManager/BoardDrillManager';
@@ -64,15 +65,14 @@ export const Board: FC<BoardProps> = memo(
     showZoomCtrl,
   }) => {
     const boardId = id;
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const editingBoard = useSelector(selectEditBoard);
     const readBoardHide = useMemo(
       () => editingBoard?.id === boardId,
       [boardId, editingBoard.id],
     );
     const { ref, width, height } = useResizeObserver<HTMLDivElement>({
-      refreshMode: 'debounce',
-      refreshRate: 2000,
+      debounceMs: 2000,
     });
 
     const dashboard = useSelector((state: { board: BoardState }) =>

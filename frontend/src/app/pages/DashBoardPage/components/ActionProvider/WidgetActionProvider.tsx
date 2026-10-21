@@ -21,7 +21,7 @@ import { ChartMouseEventParams } from 'app/types/Chart';
 import { ChartConfig } from 'app/types/ChartConfig';
 import debounce from 'lodash/debounce';
 import { createContext, FC, memo, ReactNode, useMemo } from 'react';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import {
   changeGroupRectAction,
@@ -73,7 +73,7 @@ export const WidgetActionProvider: FC<{
   children?: ReactNode;
 }> = memo(
   ({ boardEditing, boardId, orgId, boardType, renderMode, children }) => {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const methods = useMemo(() => {
       const contextValue: WidgetActionContextProps = {

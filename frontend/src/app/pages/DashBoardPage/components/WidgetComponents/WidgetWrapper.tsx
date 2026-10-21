@@ -49,6 +49,8 @@ const Wrapper = styled.div`
      DatePicker suffix. Its width automatically includes status/lock icons. */
   &.controller-widget {
     align-items: center;
+    border-radius: 8px;
+    box-shadow: inset 0 0 0 1px ${p => p.theme.borderColorSplit};
 
     .controller-widget-content {
       flex: 1 1 auto;
@@ -73,6 +75,10 @@ const Wrapper = styled.div`
       opacity: 1;
       pointer-events: auto;
     }
+  }
+
+  &.dashboard-action-widget {
+    border-radius: 8px;
   }
 
   &:hover .widget-tool-dropdown,

@@ -70,7 +70,6 @@ const ChartDraggableElementHierarchy: FC<{
             path: columnConfig.path,
             displayName: columnConfig.displayName,
             comment: columnConfig.comment,
-            isDisplayNameCustom: columnConfig.isDisplayNameCustom,
           })}
         </StyledGroupName>
         <Space orientation="vertical" size="small">

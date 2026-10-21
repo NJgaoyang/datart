@@ -71,7 +71,8 @@ import {
 import { updateBy } from 'app/utils/mutation';
 import { CommonFormTypes } from 'globalConstants';
 import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { LEVEL_100 } from 'styles/StyleConstants';
@@ -127,7 +128,7 @@ export const ChartEditor: FC<ChartEditorProps> = ({
 }) => {
   const saveFormContextValue = useSaveFormContext();
   const { actions } = useWorkbenchSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const dataset = useSelector(datasetsSelector);
   const dataview = useSelector(currentDataViewSelector);
   const chartConfig = useSelector(chartConfigSelector);

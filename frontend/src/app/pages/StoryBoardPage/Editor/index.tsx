@@ -33,7 +33,8 @@ import React, {
 } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import Reveal from 'reveal.js';
@@ -64,7 +65,7 @@ export const StoryEditor: React.FC<{}> = memo(() => {
   useBoardSlice();
   useEditBoardSlice();
   useStoryBoardSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const { orgId = '', storyId = '' } = useParams<{
     orgId: string;
     storyId: string;

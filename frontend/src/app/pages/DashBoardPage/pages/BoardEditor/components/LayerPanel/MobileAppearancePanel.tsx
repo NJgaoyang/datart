@@ -12,14 +12,15 @@ import widgetManager from 'app/pages/DashBoardPage/components/WidgetManager';
 import { DeviceType } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { isMobileWidgetVisible } from 'app/pages/DashBoardPage/utils/autoLayout';
 import { FC, memo, useCallback } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { editBoardStackActions } from '../../slice';
 import { selectDeviceType, selectMobileLayoutWidgets } from '../../slice/selectors';
 
 export const MobileAppearancePanel: FC = memo(() => {
   const deviceType = useSelector(selectDeviceType);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const widgets = useSelector(selectMobileLayoutWidgets);
 
   const changeVisible = useCallback(

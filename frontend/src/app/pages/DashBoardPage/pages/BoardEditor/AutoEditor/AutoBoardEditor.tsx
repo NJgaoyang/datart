@@ -31,13 +31,15 @@ import useBoardScroll from 'app/pages/DashBoardPage/hooks/useBoardScroll';
 import useEditAutoLayoutMap from 'app/pages/DashBoardPage/hooks/useEditAutoLayoutMap';
 import useGridLayoutMap from 'app/pages/DashBoardPage/hooks/useGridLayoutMap';
 import { DeviceType } from 'app/pages/DashBoardPage/pages/Board/slice/types';
+import { MOBILE_BOARD_THEME } from 'app/pages/DashBoardPage/pages/Board/mobileTheme';
 import { getBoardMarginPadding } from 'app/pages/DashBoardPage/utils/board';
 import { isMobileWidgetVisible } from 'app/pages/DashBoardPage/utils/autoLayout';
 import { hasGridGeometryChanged } from 'app/pages/DashBoardPage/utils/gridLayout';
 import { memo, useCallback, useContext, useMemo } from 'react';
 import type { Layout } from 'react-grid-layout';
 import { DashboardGridLayout } from 'app/pages/DashBoardPage/components/GridLayout/DashboardGridLayout';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { LEVEL_100, LEVEL_DASHBOARD_EDIT_OVERLAY } from 'styles/StyleConstants';
 import BoardOverlay from '../components/BoardOverlay';
@@ -46,7 +48,7 @@ import { selectDeviceType, selectEditingWidgetIds } from '../slice/selectors';
 import { WidgetOfAutoEditor } from './WidgetOfAutoEditor';
 
 export const AutoBoardEditor: React.FC<{}> = memo(() => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const { boardId, name } = useContext(BoardContext);
   const boardConfig = useContext(BoardConfigValContext);
   const { background, allowOverlap, compactType, showGrid } = boardConfig;
@@ -58,8 +60,13 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
     useGridWidgetHeight(mobilePreview);
   const layoutDeviceType = deviceType;
   const { curMargin, curPadding } = useMemo(() => {
+    if (mobilePreview) {
+      const gap = MOBILE_BOARD_THEME.gridGap;
+      const padding = MOBILE_BOARD_THEME.pagePadding;
+      return { curMargin: [gap, gap] as [number, number], curPadding: [padding, padding] as [number, number] };
+    }
     return getBoardMarginPadding(boardConfig, activeColsKey);
-  }, [activeColsKey, boardConfig]);
+  }, [activeColsKey, boardConfig, mobilePreview]);
 
   const { gridWrapRef, thEmitScroll } = useBoardScroll(boardId);
 
@@ -71,7 +78,7 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
         : sortedLayoutWidgets,
     [activeColsKey, sortedLayoutWidgets],
   );
-  const layoutMap = useGridLayoutMap(visibleLayoutWidgets, canvasWidth, activeColsKey);
+  const layoutMap = useGridLayoutMap(visibleLayoutWidgets);
 
   // Keep pointer interactions in RGL; commit a single final layout after each gesture.
   const persistLayout = useCallback(
@@ -91,11 +98,6 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
     },
     [activeColsKey, layoutDeviceType, dispatch, layoutMap, thEmitScroll],
   );
-
-  const onLayoutChange = useCallback(() => {
-    // Do not dispatch Redux actions for every preview/collision frame.
-    thEmitScroll();
-  }, [thEmitScroll]);
 
   const { deviceClassName } = useMemo(() => {
     let deviceClassName: string = 'desktop';
@@ -169,7 +171,6 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
                 compactType={compactType}
                 showGrid={showGrid}
                 onLayoutCommit={persistLayout}
-                onLayoutChange={onLayoutChange}
               >
                 {boardChildren}
               </DashboardGridLayout>
@@ -199,6 +200,10 @@ const Wrapper = styled.div<{}>`
 
   .react-resizable-handle {
     z-index: ${LEVEL_100};
+  }
+
+  .react-grid-item {
+    transition: none;
   }
 
   /* DataEase 风格：保留右下角调整大小的命中区域，不显示三角形图标。 */

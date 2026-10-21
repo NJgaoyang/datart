@@ -25,7 +25,8 @@ import {
 import { modifyAccountPassword } from 'app/slice/thunks';
 import { ModifyUserPassword } from 'app/slice/types';
 import { FC, useCallback, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import {
   getConfirmPasswordValidator,
   getPasswordValidator,
@@ -36,7 +37,7 @@ interface ModifyPasswordProps {
   onCancel: () => void;
 }
 export const ModifyPassword: FC<ModifyPasswordProps> = ({ open, onCancel }) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const loggedInUser = useSelector(selectLoggedInUser);
   const loading = useSelector(selectModifyPasswordLoading);
   const [form] = Form.useForm();

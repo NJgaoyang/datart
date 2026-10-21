@@ -17,7 +17,8 @@
  */
 
 import { useContext, useEffect, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { LAYOUT_COLS_MAP } from '../constants';
 import { DeviceType } from '../pages/Board/slice/types';
 import { editBoardStackActions, editDashBoardInfoActions } from '../pages/BoardEditor/slice';
@@ -31,7 +32,7 @@ import { WidgetActionContext } from '../components/ActionProvider/WidgetActionPr
 
 export default function useBoardEditorHotkeys() {
   const { undo, redo } = useContext(BoardActionContext);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const selectedIdsValue = useSelector(selectSelectedIds);
   const selectedIds = useMemo(
     () => new Set(selectedIdsValue.split(',').filter(Boolean)),

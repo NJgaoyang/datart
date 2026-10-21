@@ -34,7 +34,8 @@ import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
 import { dispatchResize } from 'app/utils/dispatchResize';
 import { CommonFormTypes } from 'globalConstants';
 import { memo, useCallback, useContext, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useMatch, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { LEVEL_5, SPACE_TIMES, SPACE_XS } from 'styles/StyleConstants';
@@ -59,7 +60,7 @@ interface SidebarProps {
 
 export const Sidebar = memo(
   ({ width, isDragging, sliderVisible, handleSliderVisible }: SidebarProps) => {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const orgId = useSelector(selectOrgId);
     const archived = useSelector(selectArchived);

@@ -26,7 +26,6 @@ import { isEmptyArray, isEqualObject } from 'utils/object';
 import {
   getDiffParams,
   getFieldCommentDisplayName,
-  getFieldCustomDisplayName,
   getFieldDisplayName,
   getTextWidth,
 } from 'utils/utils';
@@ -183,15 +182,10 @@ export function hydrateViewColumnDisplayMeta(
 
   return {
     ...column,
-    sourceComment: field.sourceComment ?? column.sourceComment,
-    customName: field.customName ?? column.customName,
-    comment: field.sourceComment ?? column.comment,
-    displayName:
-      column.isDisplayNameCustom === true
-        ? column.displayName
-        : field.displayName ?? column.displayName,
-    isDisplayNameCustom:
-      column.isDisplayNameCustom === true || Boolean(field.customName),
+    sourceComment: field.sourceComment,
+    customName: field.customName,
+    comment: field.sourceComment,
+    displayName: field.displayName ?? column.displayName,
   };
 }
 
@@ -283,7 +277,8 @@ export function transformQueryResultToModelAndDataSource(
         category: hierarchyColumn?.category || ColumnCategories.UnCategorized, // FIXME: model 重构时一起改
         displayName: hierarchyColumn?.displayName,
         comment: hierarchyColumn?.comment,
-        isDisplayNameCustom: hierarchyColumn?.isDisplayNameCustom,
+        customName: hierarchyColumn?.customName,
+        sourceComment: hierarchyColumn?.sourceComment,
       },
     };
   }, {});
@@ -306,19 +301,9 @@ export function normalizeModelDisplayNames(
   model: HierarchyModel,
 ): HierarchyModel {
   const normalize = (column: any): any => {
-    const path = Array.isArray(column?.name) ? column.name : column?.path;
-    const name = path?.[path.length - 1] || column?.name || '';
-    const customDisplayName = getFieldCustomDisplayName({
-      name,
-      path,
-      displayName: column?.displayName,
-      comment: column?.comment,
-      isDisplayNameCustom: column?.isDisplayNameCustom,
-    });
     return {
       ...column,
-      displayName: customDisplayName,
-      isDisplayNameCustom: Boolean(customDisplayName),
+      customName: column?.customName?.trim() || undefined,
       ...(column?.children
         ? { children: column.children.map(child => normalize(child)) }
         : {}),

@@ -203,6 +203,29 @@ class ViewFieldServiceImplTest {
     }
 
     @Test
+    void newFieldsKeepCanonicalCustomNamesFromTheEditorHierarchy() {
+        FakeViewFieldMapper mapper = new FakeViewFieldMapper();
+        ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, null);
+        View sql = view("SQL", "{\"columns\":{\"city\":{\"name\":[\"city\"]}},\"hierarchy\":{\"city\":{\"name\":\"city\",\"customName\":\" 用户所在城市 \"}}}");
+
+        service.reconcile(sql);
+
+        assertEquals("用户所在城市", mapper.fields.get("SQL|city").getCustomName());
+    }
+
+    @Test
+    void savedModelCannotReviveAClearedCanonicalCustomName() {
+        FakeViewFieldMapper mapper = new FakeViewFieldMapper();
+        ViewField existing = field("field-city", "view-1", "SQL|city", "city");
+        mapper.fields.put(existing.getCanonicalKey(), existing);
+        ViewFieldServiceImpl service = new ViewFieldServiceImpl(mapper, null);
+
+        service.reconcile(view("SQL", "{\"columns\":{\"city\":{\"name\":[\"city\"],\"customName\":\"历史名称\"}}}"));
+
+        assertNull(existing.getCustomName());
+    }
+
+    @Test
     void rebuildDropsImportedTargetMetadataBeforeReconciling() {
         FakeViewFieldMapper mapper = new FakeViewFieldMapper();
         ViewField existing = field("old-id", "view-1", "SQL|city_name_std", "city_name_std");

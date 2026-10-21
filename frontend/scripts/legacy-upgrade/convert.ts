@@ -54,10 +54,12 @@ export function upgradeTemplate(source: any) {
     }
     const boardConfig = migrateBoardConfig(JSON.stringify(config));
     const original = payload.widgets;
-    const parsed = original.map((widget: any) => ({
-      ...widget,
-      config: JSON.stringify(objectConfig(widget.config, '组件')),
-    }));
+    const parsed = original.map((widget: any) => {
+      const config = objectConfig(widget.config, '组件');
+      const chart = config.content?.dataChart?.config;
+      if (chart) objectConfig(chart, '内嵌图表');
+      return { ...widget, config: JSON.stringify(config) };
+    });
     const widgets = migrateWidgetChartConfig(
       migrateWidgetConfig(migrateWidgets(parsed, boardConfig.type)),
     );

@@ -1477,7 +1477,9 @@ describe('Internal Chart Helper ', () => {
     test('should transform meta without hierarchy and no children', () => {
       const model = JSON.stringify({ a: { type: 'STRING' } });
       const metas = transformMeta(model);
-      expect(metas).toEqual([{ category: 'field', path: 'a', type: 'STRING' }]);
+      expect(metas).toEqual([
+        { name: 'a', category: 'field', path: 'a', type: 'STRING' },
+      ]);
     });
 
     test('should transform meta without hierarchy but have children', () => {
@@ -1539,7 +1541,12 @@ describe('Internal Chart Helper ', () => {
       expect(transformMeta(model)?.[0]).toMatchObject({
         comment: '非储能用户可用电池比例',
       });
-      expect(transformMeta(model)?.[0].displayName).toBeUndefined();
+      expect(
+        getColumnRenderName({
+          ...transformMeta(model)?.[0],
+          colName: 'available_battery_per_non_storage_user_ratio',
+        } as ChartDataSectionField),
+      ).toBe('非储能用户可用电池比例');
     });
   });
 
@@ -1610,7 +1617,7 @@ describe('Internal Chart Helper ', () => {
           fieldId: 'field-city',
           originName: 'city',
           displayName: '看板城市',
-          isDisplayNameCustom: true,
+          customName: '看板城市',
           sourceComment: '数据集城市注释',
         } as ChartDataSectionField),
       ).toEqual('看板城市');
@@ -1644,7 +1651,6 @@ describe('Internal Chart Helper ', () => {
         colName: 'created_date',
         displayName: 'created_date',
         comment: '创建时间',
-        isDisplayNameCustom: false,
       } as ChartDataSectionField);
 
       expect(result).toEqual('创建时间');
@@ -1654,7 +1660,6 @@ describe('Internal Chart Helper ', () => {
       const result = getColumnRenderOriginName({
         colName: 'cabinet_efficiency',
         displayName: 'cabinet_efficiency',
-        isDisplayNameCustom: false,
       } as ChartDataSectionField);
 
       expect(result).toEqual('cabinet_efficiency');
@@ -1783,7 +1788,7 @@ describe('Internal Chart Helper ', () => {
       expect(metas[0].displayName).toBe('推荐官城市');
     });
 
-    test('does not copy legacy display-name flags from canonical ViewField metadata', () => {
+    test('uses custom names from canonical ViewField metadata', () => {
       const metas = transformHierarchyMeta(
         JSON.stringify({
           columns: {
@@ -1791,7 +1796,6 @@ describe('Internal Chart Helper ', () => {
               name: ['city'],
               fieldId: 'field-city',
               displayName: 'city',
-              isDisplayNameCustom: false,
             },
           },
         }),
@@ -1809,7 +1813,7 @@ describe('Internal Chart Helper ', () => {
         fieldId: 'field-city',
         displayName: '城市',
       });
-      expect(metas[0].isDisplayNameCustom).toBeUndefined();
+      expect(metas[0].customName).toBe('城市');
     });
 
     test('keeps physical paths for STRUCT views', () => {
@@ -1878,6 +1882,7 @@ describe('Internal Chart Helper ', () => {
             type: 'STRING',
             category: 'UNCATEGORIZED',
             displayName: '自定义名称',
+            customName: '自定义名称',
             comment: '字段注释',
           },
           commented: {
@@ -1898,11 +1903,14 @@ describe('Internal Chart Helper ', () => {
 
       const metas = transformHierarchyMeta(JSON.stringify(model));
 
-      expect(metas.map(meta => meta.displayName)).toEqual([
-        '自定义名称',
-        undefined,
-        undefined,
-      ]);
+      expect(
+        metas.map(meta =>
+          getColumnRenderName({
+            ...meta,
+            colName: meta.name,
+          } as ChartDataSectionField),
+        ),
+      ).toEqual(['自定义名称', '字段注释', '字段注释']);
       expect(metas.map(meta => meta.comment)).toEqual([
         '字段注释',
         '字段注释',
@@ -2122,7 +2130,7 @@ describe('Internal Chart Helper ', () => {
               category: 'field',
               colName: 'net_increase_users',
               displayName: '在租用户较昨日净增人数',
-              isDisplayNameCustom: true,
+              customName: '在租用户较昨日净增人数',
             },
           ],
         },
@@ -2133,7 +2141,6 @@ describe('Internal Chart Helper ', () => {
         name: 'net_increase_users',
         fieldId: 'current',
         displayName: 'net_increase_users',
-        isDisplayNameCustom: false,
       },
     ] as any;
 
@@ -2178,7 +2185,7 @@ describe('Internal Chart Helper ', () => {
               fieldId: 'current',
               alias: { name: '净增' },
               displayName: '历史字段名',
-              isDisplayNameCustom: true,
+              customName: '历史字段名',
             },
           ],
         },
@@ -2189,7 +2196,6 @@ describe('Internal Chart Helper ', () => {
         name: 'net_increase_users',
         fieldId: 'current',
         displayName: '在租用户较昨日净增人数',
-        isDisplayNameCustom: false,
       },
     ] as any;
 
@@ -2198,7 +2204,7 @@ describe('Internal Chart Helper ', () => {
     expect(result.datas?.[0].rows?.[0]).toMatchObject({
       fieldId: 'current',
       alias: { name: '净增' },
-      displayName: '历史字段名',
+      displayName: '在租用户较昨日净增人数',
     });
   });
 

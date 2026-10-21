@@ -50,7 +50,7 @@ describe('field display metadata', () => {
         name: 'order_id',
         displayName: '订单号',
         comment: '订单编号',
-        isDisplayNameCustom: true,
+        customName: '订单号',
       }),
     ).toBe('订单号');
     expect(
@@ -58,7 +58,6 @@ describe('field display metadata', () => {
         name: 'order_id',
         displayName: undefined,
         comment: '订单编号',
-        isDisplayNameCustom: false,
       }),
     ).toBe('订单编号');
     expect(getFieldDisplayName({ name: 'order_id' })).toBe('order_id');
@@ -67,7 +66,7 @@ describe('field display metadata', () => {
         name: 'order_id',
         displayName: 'order_id',
         comment: '订单编号',
-        isDisplayNameCustom: true,
+        customName: 'order_id',
       }),
     ).toBe('order_id');
   });
@@ -154,6 +153,23 @@ describe('field display metadata', () => {
     expect(getFieldDisplayName(column)).toBe('用户所在城市');
   });
 
+  test('clears stale custom names when canonical dataset metadata has no custom name', () => {
+    const column = hydrateViewColumnDisplayMeta(
+      {
+        fieldId: 'city-field',
+        name: 'city',
+        type: DataViewFieldType.STRING,
+        customName: '旧名称',
+        sourceComment: '旧注释',
+        comment: '旧注释',
+      },
+      [{ fieldId: 'city-field', originName: 'city', displayName: 'city' }],
+    );
+    expect(column.customName).toBeUndefined();
+    expect(column.sourceComment).toBeUndefined();
+    expect(getFieldDisplayName(column)).toBe('city');
+  });
+
   test('resolves same-name join fields only with an exact path', () => {
     const schemas: any = [
       {
@@ -238,6 +254,7 @@ describe('normalizeModelDisplayNames test', () => {
           name: ['custom'],
           type: DataViewFieldType.STRING,
           displayName: '自定义名称',
+          customName: '自定义名称',
           comment: '字段注释',
         },
       },
@@ -248,10 +265,9 @@ describe('normalizeModelDisplayNames test', () => {
     expect(normalized.columns?.ratio).toMatchObject({
       name: ['ratio'],
       comment: '资产配比',
-      isDisplayNameCustom: false,
     });
     expect(normalized.columns?.custom.displayName).toBe('自定义名称');
-    expect(normalized.columns?.custom.isDisplayNameCustom).toBe(true);
+    expect(normalized.columns?.custom.customName).toBe('自定义名称');
   });
 });
 
@@ -698,16 +714,27 @@ describe('content-fit source preview columns', () => {
       's_order_daily_report.some_long_database_city_field_identifier': {
         type: DataViewFieldType.STRING,
         displayName: '城市',
-        isDisplayNameCustom: true,
+        customName: '城市',
       },
     };
-    const widths = getColumnWidthMap(model, [{ 's_order_daily_report.some_long_database_city_field_identifier': '南京市' }]);
-    expect(widths['s_order_daily_report.some_long_database_city_field_identifier']).toBeLessThan(160);
+    const widths = getColumnWidthMap(model, [
+      {
+        's_order_daily_report.some_long_database_city_field_identifier':
+          '南京市',
+      },
+    ]);
+    expect(
+      widths['s_order_daily_report.some_long_database_city_field_identifier'],
+    ).toBeLessThan(160);
   });
 
   it('caps exceptional long values and fits ordinary compact data', () => {
     const model: any = { city: { type: DataViewFieldType.STRING } };
-    expect(getColumnWidthMap(model, [{city:'a'.repeat(200)}])['city']).toBeLessThanOrEqual(360);
-    expect(getColumnWidthMap(model, [{city:'杭州'}])['city']).toBeLessThan(160);
+    expect(
+      getColumnWidthMap(model, [{ city: 'a'.repeat(200) }])['city'],
+    ).toBeLessThanOrEqual(360);
+    expect(getColumnWidthMap(model, [{ city: '杭州' }])['city']).toBeLessThan(
+      160,
+    );
   });
 });

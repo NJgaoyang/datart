@@ -45,7 +45,8 @@ import {
 } from 'app/pages/MainPage/slice/selectors';
 import { CommonFormTypes } from 'globalConstants';
 import { memo, useCallback, useContext, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import { request2 } from 'utils/request';
 import { getInsertedNodeIndex, onDropTreeFn, stopPPG } from 'utils/utils';
@@ -86,7 +87,7 @@ interface ViewLineage {
 }
 
 export const FolderTree = memo(({ treeData }: FolderTreeProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
   const [lineage, setLineage] = useState<ViewLineage>();
   const [lineageVisible, setLineageVisible] = useState(false);

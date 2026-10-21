@@ -12,7 +12,8 @@ import {
 } from 'app/pages/MainPage/slice/selectors';
 import { CommonFormTypes } from 'globalConstants';
 import { memo, useCallback, useContext, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import { getInsertedNodeIndex, stopPPG } from 'utils/utils';
 import { useToScheduleDetails } from '../hooks';
@@ -35,7 +36,7 @@ interface RecycleProps {
 }
 
 export const Recycle = memo(({ scheduleId, list }: RecycleProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const loading = useSelector(selectArchivedListLoading);
   const orgId = useSelector(selectOrgId);

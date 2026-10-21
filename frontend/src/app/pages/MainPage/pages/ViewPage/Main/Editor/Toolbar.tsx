@@ -31,7 +31,8 @@ import { Chronograph } from 'app/components/Chronograph';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { CommonFormTypes } from 'globalConstants';
 import { memo, useCallback, useContext, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { format } from 'sql-formatter';
 import styled from 'styled-components';
@@ -71,7 +72,7 @@ interface ToolbarProps {
 export const Toolbar = memo(
   ({ allowManage, allowEnableViz, type }: ToolbarProps) => {
     const { actions } = useViewSlice();
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const { onRun, onSave } = useContext(EditorContext);
     const { showSaveForm } = useContext(SaveFormContext);
     const sources = useSelector(selectSources);

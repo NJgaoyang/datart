@@ -21,7 +21,8 @@ import { Button, Modal, Space } from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import classnames from 'classnames';
 import { FC, memo, PropsWithChildren, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import type { HistoryEditBoard } from 'app/pages/DashBoardPage/pages/BoardEditor/slice/types';
 import { hasUnsavedBoardChanges } from 'app/pages/DashBoardPage/utils/boardUnsavedState';
 import { getBoardSaveStatus } from 'app/pages/DashBoardPage/utils/boardSaveStatus';
@@ -45,7 +46,7 @@ import { BoardInfoContext } from '../BoardProvider/BoardInfoProvider';
 import { BoardContext } from '../BoardProvider/BoardProvider';
 
 const EditorHeader: FC<PropsWithChildren> = memo(({ children }) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   const t = useI18NPrefix(`viz.action`);

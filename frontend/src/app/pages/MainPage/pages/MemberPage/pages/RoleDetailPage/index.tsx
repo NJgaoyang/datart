@@ -24,7 +24,8 @@ import { fetchCheckName } from 'app/utils/fetch';
 import debounce from 'debounce-promise';
 import { CommonFormTypes, DEFAULT_DEBOUNCE_WAIT } from 'globalConstants';
 import { useCallback, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useMatch, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { BORDER_RADIUS, SPACE_LG, SPACE_MD } from 'styles/StyleConstants';
@@ -53,7 +54,7 @@ export function RoleDetailPage() {
     [],
   );
   const { actions } = useMemberSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const orgId = useSelector(selectOrgId);
   const roles = useSelector(selectRoles);

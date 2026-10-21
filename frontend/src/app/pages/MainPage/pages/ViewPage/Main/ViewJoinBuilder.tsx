@@ -4,7 +4,8 @@ import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { ViewFieldMeta } from 'app/types/View';
 import { CommonFormTypes } from 'globalConstants';
 import { memo, useCallback, useContext, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { SPACE_LG, SPACE_MD, SPACE_XS } from 'styles/StyleConstants';
 import { request2 } from 'utils/request';
@@ -62,7 +63,7 @@ const parseColumns = (view?: ViewDetail) => {
 };
 
 export const ViewJoinBuilder = memo(() => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const views = useSelector(selectViews);
   const currentViewId = useSelector(state =>
     selectCurrentEditingViewAttr(state, { name: 'id' }),

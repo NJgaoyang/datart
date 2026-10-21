@@ -151,18 +151,24 @@ const Wrapper = styled.div`
   display: flex;
   flex-shrink: 0;
   align-items: center;
+  min-height: 64px;
   padding: ${SPACE_SM} ${SPACE_LG};
   background-color: ${p => p.theme.componentBackground};
-  box-shadow: ${p => p.theme.shadowSider};
+  border-bottom: 1px solid ${p => p.theme.borderColorSplit};
 
   h1 {
     flex: 1;
     font-size: ${FONT_SIZE_ICON_SM};
     font-weight: ${FONT_WEIGHT_MEDIUM};
     line-height: ${LINE_HEIGHT_ICON_SM};
+    margin: 0;
 
     &.disabled {
       color: ${p => p.theme.textColorLight};
     }
+  }
+
+  .ant-btn {
+    border-radius: 8px;
   }
 `;

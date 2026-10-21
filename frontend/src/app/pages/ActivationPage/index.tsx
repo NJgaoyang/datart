@@ -3,7 +3,7 @@ import { AuthorizationStatus } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { getUserInfoByToken } from 'app/slice/thunks';
 import { useCallback, useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import { request2 } from 'utils/request';
 
@@ -12,7 +12,7 @@ export const ActivationPage = () => {
     AuthorizationStatus.Initialized,
   );
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const t = useI18NPrefix('authorization');
 
   const activateAndLogin = useCallback(

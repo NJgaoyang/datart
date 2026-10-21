@@ -24,7 +24,8 @@ import debounce from 'lodash/debounce';
 import { language } from 'monaco-editor/esm/vs/basic-languages/sql/sql';
 import { memo, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { FONT_SIZE_BASE } from 'styles/StyleConstants';
 import { selectThemeKey } from 'styles/theme/slice/selectors';
@@ -50,7 +51,7 @@ import { isNewView } from '../../utils';
 
 export const SQLEditor = memo(() => {
   const { actions } = useViewSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const {
     editorInstance,
     editorCompletionItemProviderRef,

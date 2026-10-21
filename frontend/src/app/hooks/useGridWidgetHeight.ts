@@ -23,14 +23,14 @@ import {
 } from 'app/pages/DashBoardPage/constants';
 import { boardActions } from 'app/pages/DashBoardPage/pages/Board/slice';
 import { useContext, useLayoutEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import useResizeObserver from './useResizeObserver';
 import { getAdaptiveGridColsKey, getGridCanvasWidth } from 'app/pages/DashBoardPage/utils/gridViewport';
 
 export const useGridWidgetHeight = (mobilePreview?: boolean) => {
   const { boardId, renderMode, isMobile } = useContext(BoardContext);
   const mobileMode = mobilePreview ?? isMobile ?? false;
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const [cacheW, setCacheW] = useState(0);
   const { ref, width = 0, height = 0 } = useResizeObserver<HTMLDivElement>();
 

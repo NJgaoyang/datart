@@ -67,7 +67,8 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import {
@@ -94,7 +95,7 @@ const ChartDataViewPanel: FC<{
 }> = memo(({ dataView, defaultViewId, chartConfig, onDataViewChange }) => {
   const t = useI18NPrefix(`viz.workbench.dataview`);
   const tView = useI18NPrefix('view');
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [showModal, modalContextHolder] = useStateModal({});
   const { availableSourceFunctions } = useContext(ChartDataViewContext);
@@ -307,7 +308,6 @@ const ChartDataViewPanel: FC<{
               path: v.path,
               displayName: v.displayName,
               comment: v.comment,
-              isDisplayNameCustom: v.isDisplayNameCustom,
             });
             const columnNameArr = columnNameObj[tableName];
             columnNameObj[tableName] = columnNameArr

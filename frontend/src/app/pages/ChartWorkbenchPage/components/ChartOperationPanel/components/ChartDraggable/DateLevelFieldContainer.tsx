@@ -35,7 +35,6 @@ function DateLevelFieldContainer({
         path: item?.path,
         displayName: item?.displayName,
         comment: item?.comment,
-        isDisplayNameCustom: item?.isDisplayNameCustom,
       },
       collect: monitor => ({
         isDragging: monitor.isDragging(),

@@ -67,11 +67,7 @@ import {
   isUndefined,
   pipe,
 } from 'utils/object';
-import {
-  getDatasetFieldDisplayName,
-  getFieldCustomDisplayName,
-  getFieldDisplayName,
-} from 'utils/utils';
+import { getDatasetFieldDisplayName, getFieldDisplayName } from 'utils/utils';
 import { getDrillableRows, round } from './chartHelper';
 import { getDateLevelFieldType } from './dateLevel';
 
@@ -354,14 +350,13 @@ export function getColumnRenderOriginName(c?: ChartDataSectionField) {
           customName: c.customName,
           sourceComment: c.sourceComment,
           comment: c.comment,
-          isDisplayNameCustom: c.isDisplayNameCustom,
         })
       : getFieldDisplayName({
           name: c.colName,
           path: c.path,
           displayName: c.displayName,
           comment: c.comment,
-          isDisplayNameCustom: c.isDisplayNameCustom,
+          customName: c.customName,
         });
   if (c.aggregate === AggregateFieldActionType.None) {
     return displayName;
@@ -524,27 +519,10 @@ function getMeta(
   const rawDisplayName =
     serverField?.displayName ?? column?.displayName ?? metadata?.displayName;
   const comment = column?.comment ?? metadata?.comment;
-  const isDisplayNameCustom =
-    column?.isDisplayNameCustom ?? metadata?.isDisplayNameCustom;
-  const legacyDisplayName = getFieldCustomDisplayName({
-    name: fieldName,
-    path: column?.path,
-    displayName: rawDisplayName,
-    comment,
-    isDisplayNameCustom,
-  });
-  const displayName =
-    serverField?.displayName ??
-    legacyDisplayName ??
-    (rawDisplayName &&
-    Array.isArray(column?.path) &&
-    rawDisplayName === column.path.join('.')
-      ? rawDisplayName
-      : undefined);
-  const columnMeta = { ...(column || {}) };
-  delete columnMeta.isDisplayNameCustom;
   return {
-    ...columnMeta,
+    ...(column || {}),
+    name: fieldName,
+    customName: column?.customName ?? metadata?.customName,
     ...(viewType === 'SQL' ? { path: [fieldName] } : {}),
     ...(serverField
       ? {
@@ -555,11 +533,8 @@ function getMeta(
           displayName: serverField.displayName,
         }
       : {}),
-    ...(rawDisplayName !== undefined ? { displayName } : {}),
+    ...(rawDisplayName !== undefined ? { displayName: rawDisplayName } : {}),
     ...(comment !== undefined ? { comment } : {}),
-    ...(!serverField && (isDisplayNameCustom !== undefined || legacyDisplayName)
-      ? { isDisplayNameCustom: Boolean(displayName) }
-      : {}),
     subType: column?.category,
     category: isHierarchy
       ? ChartDataViewFieldCategory.Hierarchy
@@ -851,9 +826,6 @@ export const buildDragItem = (item, children: any[] = []) => {
     path: item?.path,
     displayName: item?.displayName,
     comment: item?.comment,
-    ...(item?.fieldId
-      ? {}
-      : { isDisplayNameCustom: item?.isDisplayNameCustom }),
     children: children.map(c => buildDragItem(c)),
   };
 };
@@ -919,8 +891,7 @@ export function reconcileChartConfigFieldMeta(
               ...(displayMeta.comment !== undefined && {
                 comment: displayMeta.comment,
               }),
-              ...(!row.isDisplayNameCustom &&
-                !row.customName &&
+              ...(!row.customName &&
                 displayMeta.displayName !== undefined && {
                   displayName: displayMeta.displayName,
                 }),
@@ -937,20 +908,17 @@ export function reconcileChartConfigFieldMeta(
           originName: latestMeta.originName ?? row.originName ?? row.colName,
           path: latestMeta.path ?? row.path,
           sourceComment: latestMeta.sourceComment ?? row.sourceComment,
-          customName: latestMeta.customName ?? row.customName,
+          customName: latestMeta.customName,
           comment: latestMeta.comment ?? row.comment,
           type:
             row.category === ChartDataViewFieldCategory.DateLevelComputedField
               ? getDateLevelFieldType(row, latestMeta.type) || row.type
               : row.type,
           displayName:
-            row.isDisplayNameCustom === true
-              ? row.displayName
-              : latestMeta.displayName ??
-                row.displayName ??
-                latestMeta.originName ??
-                row.colName,
-          isDisplayNameCustom: undefined,
+            latestMeta.displayName ??
+            row.displayName ??
+            latestMeta.originName ??
+            row.colName,
         };
       }),
     })),

@@ -28,7 +28,8 @@ import useI18NPrefix from 'app/hooks/useI18NPrefix';
 
 import classnames from 'classnames';
 import { memo, useCallback, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { FONT_FAMILY, FONT_SIZE_BASE } from 'styles/StyleConstants';
 import { CloneValueDeep, isEmptyArray } from 'utils/object';
@@ -58,7 +59,7 @@ interface ResultsProps {
 
 export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
   const { actions } = useViewSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const viewId = useSelector(state =>
     selectCurrentEditingViewAttr(state, { name: 'id' }),
   ) as string;

@@ -77,6 +77,10 @@ function checkSource(directory) {
     }
     if (!/\.tsx?$/.test(entry.name)) continue;
     const source = readFileSync(path, 'utf8');
+    if (/\b(?:isDisplayNameCustom|LEGACY_AUTO_LAYOUT_VERSION|LEGACY_PC_ROW_LAYOUT_VERSION)\b/.test(source))
+      throw Error('Historical field or layout metadata belongs to the offline tool: ' + path);
+    if (/declare module ['"]react-redux['"]/.test(source))
+      throw Error('Use typed Redux hooks instead of global overloads: ' + path);
     const file = ts.createSourceFile(
       path,
       source,
@@ -86,7 +90,7 @@ function checkSource(directory) {
     function visit(node) {
       if (
         ts.isImportDeclaration(node) &&
-        /(?:Compat\/|react-monaco-editor|app\/migration|legacy-upgrade)/.test(
+        /(?:Compat\/|react-monaco-editor|react-resize-detector|app\/migration|legacy-upgrade)/.test(
           node.moduleSpecifier.text,
         )
       ) {
@@ -115,5 +119,13 @@ function checkSource(directory) {
 }
 if (pkg.dependencies['react-monaco-editor'])
   throw Error('Use the native Monaco editor API');
+if (pkg.devDependencies['react-test-renderer'] || pkg.devDependencies['@types/react-test-renderer'])
+  throw Error('Use Testing Library instead of the removed test renderer');
+for (const name of ['@types/react', '@types/react-dom']) {
+  if (major(name, pkg.devDependencies) !== 19)
+    throw Error(name + ' must use React 19 types');
+  if (pkg.resolutions?.[name] && major(name, pkg.resolutions) !== 19)
+    throw Error(name + ' resolution must use React 19 types');
+}
 checkSource(join(root, 'src'));
 console.log('Runtime uses native UI APIs and excludes historical converters.');
