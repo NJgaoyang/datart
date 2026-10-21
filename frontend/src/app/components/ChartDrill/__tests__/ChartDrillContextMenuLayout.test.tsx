@@ -24,7 +24,7 @@ describe('dashboard chart height inside AntD tab or group', () => {
     const innerStyle = getComputedStyle(inner!);
     expect(outerStyle.height).toBe('100%');
     expect(outerStyle.display).toBe('flex');
-    expect(outerStyle.minHeight).toBe('0px');
+    expect(parseFloat(outerStyle.minHeight)).toBe(0);
     expect(innerStyle.height).toBe('100%');
     expect(innerStyle.display).toBe('flex');
     expect(inner!.querySelector('[data-testid="chart-frame"]')).not.toBeNull();
