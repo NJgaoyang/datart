@@ -62,7 +62,11 @@ export const TreeSelectController: React.FC<TreeControllerFormProps> = memo(
       <StyledTreeSelect
         allowClear
         classNames={{
-          popup: { root: isMobile ? 'datart-mobile-filter-popup' : undefined },
+          popup: {
+          root: isMobile
+            ? 'datart-dashboard-filter-popup datart-mobile-filter-popup'
+            : 'datart-dashboard-filter-popup',
+        },
         }}
         popupMatchSelectWidth={!isMobile}
         value={value}
