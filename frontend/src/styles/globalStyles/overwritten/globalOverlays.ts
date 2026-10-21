@@ -85,6 +85,61 @@ export const GlobalOverlays = createGlobalStyle`
     z-index: ${LEVEL_1000 - 1};
   }
 
+  /* Dashboard filters render popups in the document/fullscreen root.
+     Keep their visual language aligned with the in-widget controls without
+     changing editor menus or non-dashboard dropdowns. */
+  .ant-select-dropdown.datart-dashboard-filter-popup {
+    padding: 6px;
+    border: 1px solid ${p => p.theme.borderColorSplit};
+    border-radius: 12px;
+    background-color: ${p => p.theme.componentBackground};
+    box-shadow:
+      0 4px 10px rgba(15, 23, 42, 0.06),
+      0 14px 32px rgba(15, 23, 42, 0.10);
+  }
+
+  .datart-dashboard-filter-popup .ant-select-item-option {
+    min-height: 34px;
+    border-radius: 7px;
+    transition: background-color 140ms ease;
+  }
+
+  .datart-dashboard-filter-popup .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+    background: rgba(22, 119, 255, 0.065);
+  }
+
+  .datart-dashboard-filter-popup .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+    background: rgba(22, 119, 255, 0.10);
+    color: ${p => p.theme.textColor};
+    font-weight: 500;
+  }
+
+  .datart-dashboard-filter-popup .ant-select-tree-node-content-wrapper:hover {
+    border-radius: 6px;
+    background: rgba(22, 119, 255, 0.065);
+  }
+
+  .ant-picker-dropdown.datart-dashboard-date-popup .ant-picker-panel-container {
+    border: 1px solid ${p => p.theme.borderColorSplit};
+    border-radius: 12px;
+    background: ${p => p.theme.componentBackground};
+    box-shadow:
+      0 4px 10px rgba(15, 23, 42, 0.06),
+      0 14px 32px rgba(15, 23, 42, 0.10);
+  }
+
+  /* The mobile calendar footer is sticky; match the active theme rather
+     than forcing the light theme's white background. */
+  .ant-picker-dropdown.datart-dashboard-date-popup.datart-mobile-date-popup .ant-picker-footer {
+    background: ${p => p.theme.componentBackground};
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .datart-dashboard-filter-popup .ant-select-item-option {
+      transition: none;
+    }
+  }
+
   /* color popover */
   .datart-aggregation-colorpopover{
     .ant-popover-arrow{
