@@ -58,6 +58,8 @@ jobs:
             HUSKY=0 git commit -m "refactor(frontend): migrate React 19 refs and AntD 6 UI props"
             HUSKY=0 git push origin HEAD:dev202610202
           fi
+      - name: Native BI chart size and tab visibility regression
+        run: npx vitest run src/app/hooks/__tests__/useCacheWidthHeight.test.tsx
       - name: Ant Design 6 dashboard nested tab content regression
         run: npx vitest run src/app/pages/DashBoardPage/components/Widgets/TabWidget/__tests__/TabWidgetCore.test.tsx
       - name: React 19 draggable and resizable mount regression
