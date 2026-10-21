@@ -177,9 +177,12 @@ const MapWrapper = styled.div`
   position: relative;
   box-sizing: border-box;
   display: flex;
-  flex: 1;
+  flex: 1 1 auto;
+  flex-direction: column;
   width: 100%;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
 `;
 const TabsBoxWrap = styled.div<{ tabsAlign: string }>`
   width: 100%;

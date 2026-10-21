@@ -20,7 +20,8 @@ import type { CSSProperties } from 'react';
 import { LEVEL_10 } from 'styles/StyleConstants';
 export const FlexStyle: CSSProperties = {
   display: 'flex',
-  flex: '1',
+  flex: '1 1 auto',
+  minWidth: '0',
   minHeight: '0',
 };
 export const ZIndexStyle: CSSProperties = {
@@ -28,5 +29,7 @@ export const ZIndexStyle: CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   width: '100%',
-  height: ' 100%',
+  height: '100%',
+  minWidth: '0',
+  minHeight: '0',
 };

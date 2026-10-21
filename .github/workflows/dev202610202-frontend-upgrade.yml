@@ -60,6 +60,8 @@ jobs:
           fi
       - name: Native BI chart size and tab visibility regression
         run: npx vitest run src/app/hooks/__tests__/useCacheWidthHeight.test.tsx
+      - name: Dashboard chart height propagation regression
+        run: npx vitest run src/app/components/ChartDrill/__tests__/ChartDrillContextMenuLayout.test.tsx
       - name: Ant Design 6 dashboard nested tab content regression
         run: npx vitest run src/app/pages/DashBoardPage/components/Widgets/TabWidget/__tests__/TabWidgetCore.test.tsx
       - name: React 19 draggable and resizable mount regression

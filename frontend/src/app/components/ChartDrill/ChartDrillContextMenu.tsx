@@ -265,7 +265,7 @@ const ChartDrillContextMenu: FC<{
         destroyPopupOnHide={true}
         trigger={['contextMenu']}
       >
-        <div style={{ height: '100%' }}>{children}</div>
+        <div className="chart-drill-content">{children}</div>
       </LegacyDropdown>
     </StyledChartDrill>
   );
@@ -275,7 +275,26 @@ export default ChartDrillContextMenu;
 
 const StyledChartDrill = styled.div`
   position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
   width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+
+  /* A dashboard tab's chart uses percentage heights. Without a definite
+     parent height the nested flex chart collapses to 0px even when data
+     was returned successfully. */
+  > .chart-drill-content {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
 `;
 
 const StyledChartDrillMenu = styled(Menu)`

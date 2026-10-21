@@ -680,9 +680,6 @@ const StyledWrapper = styled.div`
   min-height: 0;
   width: 100%;
   height: 100%;
-  .chart-drill-menu-container {
-    height: 100%;
-  }
 `;
 const ChartFrameBox = styled.div`
   display: flex;
