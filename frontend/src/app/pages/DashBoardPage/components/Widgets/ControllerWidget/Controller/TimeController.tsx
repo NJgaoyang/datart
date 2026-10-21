@@ -77,7 +77,9 @@ export const TimeController: React.FC<SingleTimeSetProps> = memo(
             className="control-datePicker"
             classNames={{
               popup: {
-                root: isMobile ? 'datart-mobile-date-popup' : undefined,
+                root: isMobile
+                  ? 'datart-dashboard-date-popup datart-mobile-date-popup'
+                  : 'datart-dashboard-date-popup',
               },
             }}
             variant="borderless"
