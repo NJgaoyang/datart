@@ -53,7 +53,11 @@ export const SelectController: React.FC<SelectControllerProps> = memo(
     return (
       <StyledSelect
         classNames={{
-          popup: { root: isMobile ? 'datart-mobile-filter-popup' : undefined },
+          popup: {
+          root: isMobile
+            ? 'datart-dashboard-filter-popup datart-mobile-filter-popup'
+            : 'datart-dashboard-filter-popup',
+        },
         }}
         popupMatchSelectWidth={!isMobile}
         allowClear
