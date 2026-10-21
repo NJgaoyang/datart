@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Tabs } from 'antd';
+import { Tabs, type TabsProps } from 'antd';
 import { TabWidgetContent } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import {
   memo,
@@ -23,6 +23,7 @@ import {
   useContext,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useState,
 } from 'react';
 import { useDispatch } from 'react-redux';
@@ -40,8 +41,6 @@ import { WidgetContext } from '../../WidgetProvider/WidgetProvider';
 import { WidgetWrapProvider } from '../../WidgetProvider/WidgetWrapProvider';
 import tabProto, { TabToolkit } from './tabConfig';
 
-const { TabPane } = Tabs;
-
 export const TabWidgetCore: React.FC<{}> = memo(() => {
   const dispatch = useDispatch();
   const widget = useContext(WidgetContext);
@@ -56,13 +55,20 @@ export const TabWidgetCore: React.FC<{}> = memo(() => {
     boardId,
   } = useContext(BoardContext);
   const { itemMap } = widget.config.content as TabWidgetContent;
-  const tabsCons = Object.values(itemMap).sort((a, b) => a.index - b.index);
-  const [activeKey, SetActiveKey] = useState<string | number>(
-    tabsCons[0]?.index || 0,
+  const tabsCons = useMemo(
+    () => Object.values(itemMap || {}).sort((a, b) => a.index - b.index),
+    [itemMap],
   );
+  // Ant Design 6 uses string item keys. Keep both edit/read tabs controlled.
+  const [activeKey, setActiveKey] = useState<string>(
+    String(tabsCons[0]?.index ?? ''),
+  );
+  const resolvedActiveKey = tabsCons.some(t => String(t.index) === activeKey)
+    ? activeKey
+    : String(tabsCons[0]?.index ?? '');
 
   useEffect(() => {
-    const tab = tabsCons?.find(t => String(t.index) === String(activeKey));
+    const tab = tabsCons.find(t => String(t.index) === resolvedActiveKey);
     if (tab && editing) {
       onEditSelectWidget({
         multipleKey: false,
@@ -70,17 +76,17 @@ export const TabWidgetCore: React.FC<{}> = memo(() => {
         selected: true,
       });
     }
-  }, [activeKey, editing, onEditSelectWidget, tabsCons]);
+  }, [resolvedActiveKey, editing, onEditSelectWidget, tabsCons]);
 
   const onTabChange = useCallback((activeKey: string) => {
-    SetActiveKey(activeKey);
+    setActiveKey(activeKey);
   }, []);
 
   // 标签内容提交后同步一次尺寸，避免通过多个定时器重复补偿布局。
   useLayoutEffect(() => {
     const frame = requestAnimationFrame(dispatchResize);
     return () => cancelAnimationFrame(frame);
-  }, [activeKey]);
+  }, [resolvedActiveKey]);
 
   const tabAdd = useCallback(() => {
     const newTabId = `tab_${uuidv4()}`;
@@ -97,9 +103,7 @@ export const TabWidgetCore: React.FC<{}> = memo(() => {
         },
       }),
     );
-    setImmediate(() => {
-      SetActiveKey(nextIndex);
-    });
+    setActiveKey(String(nextIndex));
   }, [dispatch, tabsCons, widget.id]);
 
   const tabRemove = useCallback(
@@ -113,12 +117,13 @@ export const TabWidgetCore: React.FC<{}> = memo(() => {
           mode: boardType,
         }),
       );
-      setImmediate(() => {
-        SetActiveKey(tabsCons[0].index);
-      });
+      if (resolvedActiveKey === String(targetKey)) {
+        const remaining = tabsCons.filter(tab => String(tab.index) !== String(targetKey));
+        setActiveKey(String(remaining[0]?.index ?? ''));
+      }
     },
 
-    [dispatch, widget.id, boardType, tabsCons],
+    [dispatch, widget.id, boardType, tabsCons, resolvedActiveKey],
   );
 
   const tabEdit = useCallback(
@@ -128,39 +133,43 @@ export const TabWidgetCore: React.FC<{}> = memo(() => {
     [tabAdd, tabRemove],
   );
 
+  const tabItems: TabsProps['items'] = tabsCons.map(tab => ({
+    key: String(tab.index),
+    label: tab.name || 'tab',
+    className: 'TabPane',
+    children: tab.childWidgetId ? (
+      <WidgetWrapProvider
+        id={tab.childWidgetId}
+        boardEditing={boardEditing}
+        boardId={boardId}
+      >
+        <MapWrapper>
+          <WidgetMapper boardEditing={boardEditing} hideTitle={true} />
+        </MapWrapper>
+      </WidgetWrapProvider>
+    ) : (
+      boardEditing ? <DropHolder tabItem={tab} tabWidgetId={widget.id} /> : null
+    ),
+  }));
+
   return (
     <TabsBoxWrap className="TabsBoxWrap" tabsAlign={align}>
       <Tabs
+        items={tabItems}
         onChange={onTabChange}
         size="small"
         tabBarGutter={1}
-        tabPosition={position as any}
-        activeKey={editing ? String(activeKey) : undefined}
+        tabPlacement={(
+          position === 'left' ? 'start'
+          : position === 'right' ? 'end'
+          : position
+        ) as TabsProps['tabPlacement']}
+        activeKey={resolvedActiveKey}
         tabBarStyle={{ fontSize: '16px' }}
         type={editing ? 'editable-card' : undefined}
         onEdit={editing ? tabEdit : undefined}
-        destroyInactiveTabPane
-      >
-        {tabsCons.map(tab => (
-          <TabPane tab={tab.name || 'tab'} key={tab.index} className="TabPane">
-            {tab.childWidgetId ? (
-              <WidgetWrapProvider
-                id={tab.childWidgetId}
-                boardEditing={boardEditing}
-                boardId={boardId}
-              >
-                <MapWrapper>
-                  <WidgetMapper boardEditing={boardEditing} hideTitle={true} />
-                </MapWrapper>
-              </WidgetWrapProvider>
-            ) : (
-              boardEditing && (
-                <DropHolder tabItem={tab} tabWidgetId={widget.id} />
-              )
-            )}
-          </TabPane>
-        ))}
-      </Tabs>
+        destroyOnHidden
+      />
     </TabsBoxWrap>
   );
 });
