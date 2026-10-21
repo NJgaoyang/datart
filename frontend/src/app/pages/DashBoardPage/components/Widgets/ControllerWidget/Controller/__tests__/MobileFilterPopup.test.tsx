@@ -12,6 +12,24 @@ const option = {
 };
 
 describe('narrow mobile filter popups', () => {
+  it('keeps the refined popup styling on desktop without mobile width rules', async () => {
+    render(
+      <BoardContext.Provider value={{ isMobile: false } as any}>
+        <Form>
+          <SelectControllerForm name="value" options={[option]} onChange={vi.fn()} />
+        </Form>
+      </BoardContext.Provider>,
+    );
+    fireEvent.mouseDown(screen.getByRole('combobox'));
+    await waitFor(() => {
+      const popup = document.querySelector(
+        '.ant-select-dropdown.datart-dashboard-filter-popup',
+      );
+      expect(popup).not.toBeNull();
+      expect(popup?.classList.contains('datart-mobile-filter-popup')).toBe(false);
+    });
+  });
+
   it('opens the mobile single-select popup and preserves the full option title', async () => {
     const onChange = vi.fn();
     render(
@@ -29,7 +47,7 @@ describe('narrow mobile filter popups', () => {
     await waitFor(() => {
       expect(
         document.querySelector(
-          '.ant-select-dropdown.datart-mobile-filter-popup',
+          '.ant-select-dropdown.datart-dashboard-filter-popup.datart-mobile-filter-popup',
         ),
       ).not.toBeNull();
       expect(
@@ -59,7 +77,7 @@ describe('narrow mobile filter popups', () => {
     await waitFor(() => {
       expect(
         document.querySelector(
-          '.ant-select-dropdown.datart-mobile-filter-popup',
+          '.ant-select-dropdown.datart-dashboard-filter-popup.datart-mobile-filter-popup',
         ),
       ).not.toBeNull();
       expect(
@@ -91,7 +109,7 @@ describe('narrow mobile filter popups', () => {
     await waitFor(() => {
       expect(
         document.querySelector(
-          '.ant-select-dropdown.datart-mobile-filter-popup',
+          '.ant-select-dropdown.datart-dashboard-filter-popup.datart-mobile-filter-popup',
         ),
       ).not.toBeNull();
       expect(
