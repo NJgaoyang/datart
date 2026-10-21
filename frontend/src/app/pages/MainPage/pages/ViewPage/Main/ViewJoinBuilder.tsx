@@ -319,7 +319,7 @@ export const ViewJoinBuilder = memo(() => {
       </Form>
       <Modal
         title={t('previewTitle')}
-        visible={previewVisible}
+        open={previewVisible}
         width="80%"
         onCancel={() => setPreviewVisible(false)}
         footer={[

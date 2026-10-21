@@ -183,6 +183,7 @@ export const SubjectForm = memo(
     return (
       <StyledModal
         {...modalProps}
+        open={modalProps.open ?? modalProps.visible}
         width={768}
         title={
           scope === VariableScopes.Public ? (

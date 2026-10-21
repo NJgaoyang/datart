@@ -181,7 +181,7 @@ export function MonitorPage() {
         />
       </Card>
       <Modal
-        visible={Boolean(selectedTrace)}
+        open={Boolean(selectedTrace)}
         title={t('sqlDetail')}
         footer={null}
         width={900}

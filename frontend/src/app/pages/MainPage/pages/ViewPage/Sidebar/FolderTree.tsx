@@ -399,7 +399,7 @@ export const FolderTree = memo(({ treeData }: FolderTreeProps) => {
       />
       <Modal
         title={t('lineage.title')}
-        visible={lineageVisible}
+        open={lineageVisible}
         footer={null}
         confirmLoading={lineageLoading}
         onCancel={() => setLineageVisible(false)}

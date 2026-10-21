@@ -172,7 +172,7 @@ export const RichTextWidgetCore: React.FC<RichTextWidgetProps> = ({
         closable={false}
         maskClosable={false}
         keyboard={false}
-        visible={widgetInfo.editing}
+        open={widgetInfo.editing}
         onOk={modalOk}
         onCancel={modalCancel}
       >

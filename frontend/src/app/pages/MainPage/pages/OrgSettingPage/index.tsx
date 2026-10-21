@@ -192,7 +192,7 @@ export function OrgSettingPage() {
       </Card>
       <Modal
         title={t('historyMigrationPreview')}
-        visible={migrationVisible}
+        open={migrationVisible}
         width={960}
         onCancel={() => setMigrationVisible(false)}
         footer={null}

@@ -66,6 +66,8 @@ jobs:
         run: npx vitest run src/app/pages/DashBoardPage/components/Widgets/TabWidget/__tests__/TabWidgetCore.test.tsx
       - name: React 19 draggable and resizable mount regression
         run: npx vitest run src/app/components/Compat/__tests__/ResizableReact19.test.tsx
+      - name: Modal visibility, free dashboard editing and mobile filters regression
+        run: npx vitest run src/app/components/__tests__/ModalVisibility.test.tsx src/app/pages/DashBoardPage/pages/BoardEditor/FreeEditor/__tests__/WidgetOfFreeEdit.test.tsx src/app/pages/DashBoardPage/components/Widgets/ControllerWidget/Controller/__tests__/MobileFilterPopup.test.tsx
       - name: React 19 Monaco lifecycle crash regression
         run: npx vitest run src/app/components/Compat/__tests__/MonacoEditor.test.tsx
       - name: Dataset save state regression

@@ -70,6 +70,7 @@ export const WidgetOfFreeEdit: React.FC<{}> = () => {
     widget.config.rect.y,
   ]);
   const curXYRef = useRef<[number, number]>([0, 0]);
+  const nodeRef = useRef<HTMLDivElement>(null);
   const [curW, setCurW] = useState(widget.config.rect.width);
   const [curH, setCurH] = useState(widget.config.rect.height);
   useEffect(() => {
@@ -193,6 +194,7 @@ export const WidgetOfFreeEdit: React.FC<{}> = () => {
 
   return (
     <DraggableCoreTyped
+      nodeRef={nodeRef}
       allowAnyClick
       grid={[1, 1]}
       scale={scale[0]}
@@ -215,7 +217,7 @@ export const WidgetOfFreeEdit: React.FC<{}> = () => {
         resizeHandles={['n', 'e', 's', 'w', 'ne', 'nw', 'se', 'sw']}
         lockAspectRatio={false}
       >
-        <ItemWrap style={style} onClick={ssp} hideHandle={hideHandle}>
+        <ItemWrap ref={nodeRef} style={style} onClick={ssp} hideHandle={hideHandle}>
           <WidgetMapper boardEditing={true} hideTitle={false} />
         </ItemWrap>
       </Resizable>

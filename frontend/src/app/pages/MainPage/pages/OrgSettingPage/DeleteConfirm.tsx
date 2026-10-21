@@ -35,6 +35,7 @@ export const DeleteConfirm = (props: ModalProps) => {
   return (
     <Modal
       {...props}
+      open={props.open ?? props.visible}
       footer={[
         <Button key="cancel" onClick={e => props.onCancel?.(e as React.MouseEvent<HTMLButtonElement>)}>
           {t('cancel')}
