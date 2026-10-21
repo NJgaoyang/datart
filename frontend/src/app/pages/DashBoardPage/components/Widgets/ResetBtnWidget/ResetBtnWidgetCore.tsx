@@ -34,7 +34,7 @@ export const ResetBtnWidgetCore: React.FC<{}> = () => {
   const title = getWidgetTitle(widget.config.customConfig.props);
   title.title = widget.config.name;
   return (
-    <Wrapper onClick={onQuery}>
+    <Wrapper className="dashboard-modern-reset-button" onClick={onQuery}>
       <span
         style={{
           color: title.font.color,

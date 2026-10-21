@@ -40,7 +40,11 @@ export const QueryBtnWidgetCore: React.FC<{}> = memo(() => {
   title.title = widget.config.name;
   const { background } = getWidgetBaseStyle(widget.config.customConfig.props);
   return (
-    <Wrapper $bgColor={background.color} onClick={onQuery}>
+    <Wrapper
+      className="dashboard-modern-query-button"
+      $bgColor={background.color}
+      onClick={onQuery}
+    >
       <span
         style={{
           color: title.font.color,

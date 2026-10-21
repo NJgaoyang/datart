@@ -23,6 +23,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useSelector } from 'react-redux';
 import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
+import { dashboardModernStyles } from '../../styles/dashboardModernStyles';
 import { urlSearchTransfer } from 'utils/urlSearchTransfer';
 import { boardDrillManager } from '../../components/BoardDrillManager/BoardDrillManager';
 import { TitleHeader } from '../../components/BoardHeader/TitleHeader';
@@ -167,7 +168,14 @@ export const Board: FC<BoardProps> = memo(
     }, [boardId, dispatch, fetchData, searchParams]);
 
     return (
-      <Wrapper ref={ref} className="dashboard-box">
+      <Wrapper
+        ref={ref}
+        className={
+          dashboard?.config?.type === 'auto'
+            ? 'dashboard-box dashboard-modern-auto'
+            : 'dashboard-box'
+        }
+      >
         <DndProvider backend={HTML5Backend}>{viewBoard}</DndProvider>
       </Wrapper>
     );
@@ -187,5 +195,10 @@ const Wrapper = styled.div`
     flex: 1;
     flex-direction: column;
     min-height: 0;
+  }
+
+  /* Opt-in by board type: no impact on free-layout dashboards or editors. */
+  &.dashboard-modern-auto {
+    ${dashboardModernStyles}
   }
 `;

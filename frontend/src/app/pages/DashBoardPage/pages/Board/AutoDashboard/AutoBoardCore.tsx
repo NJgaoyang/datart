@@ -76,7 +76,7 @@ export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
     );
     return (
       <Wrapper>
-        <StyledContainer bg={background}>
+        <StyledContainer className="dashboard-modern-canvas" bg={background}>
           <div className="grid-wrap" ref={gridWrapRef}>
             <div className="widget-row-height" ref={ref}>
               <DashboardGridLayout
