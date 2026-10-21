@@ -29,15 +29,17 @@ export const SqlOperatorSet: React.FC<SqlOperatorSetProps> = memo(
     }
 
     return (
-      <Select value={value} onChange={_onChange}>
-        {options.map(item => {
-          return (
-            <Select.Option key={item.value} value={item.value}>
-              {item.name}
-            </Select.Option>
-          );
-        })}
-      </Select>
+      <Select
+        value={value}
+        onChange={_onChange}
+        options={[
+          ...(options.flatMap(item => {
+            return [
+              { key: String(item.value), value: item.value, label: item.name },
+            ];
+          }) || []),
+        ]}
+      />
     );
   },
 );

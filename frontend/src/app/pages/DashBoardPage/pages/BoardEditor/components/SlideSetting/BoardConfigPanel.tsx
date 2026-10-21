@@ -69,28 +69,33 @@ export const BoardConfigCollapse: FC<{
 }> = memo(({ configs, onChange }) => {
   const t = useI18NPrefix();
   return (
-    <Collapse className="" ghost>
-      {configs
-        ?.filter(c => !Boolean(c.hidden))
-        .map((c, index) => (
-          <Collapse.Panel
-            header={<CollapseHeader title={t(c.label, true)} />}
-            key={c.key}
-          >
-            <GroupLayout
-              ancestors={[index]}
-              mode={
-                c.comType === 'group'
-                  ? FormGroupLayoutMode.INNER
-                  : FormGroupLayoutMode.OUTER
-              }
-              data={c}
-              translate={t}
-              dataConfigs={[]}
-              onChange={onChange}
-            />
-          </Collapse.Panel>
-        ))}
-    </Collapse>
+    <Collapse
+      className=""
+      ghost
+      items={[
+        ...(configs
+          ?.filter(c => !Boolean(c.hidden))
+          .flatMap((c, index) => [
+            {
+              label: <CollapseHeader title={t(c.label, true)} />,
+              key: String(c.key),
+              children: (
+                <GroupLayout
+                  ancestors={[index]}
+                  mode={
+                    c.comType === 'group'
+                      ? FormGroupLayoutMode.INNER
+                      : FormGroupLayoutMode.OUTER
+                  }
+                  data={c}
+                  translate={t}
+                  dataConfigs={[]}
+                  onChange={onChange}
+                />
+              ),
+            },
+          ]) || []),
+      ]}
+    />
   );
 });

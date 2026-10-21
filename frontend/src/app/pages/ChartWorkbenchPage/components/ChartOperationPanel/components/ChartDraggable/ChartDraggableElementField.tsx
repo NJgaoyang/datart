@@ -1,4 +1,3 @@
-import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -158,12 +157,12 @@ const ChartDraggableElementField: FC<{
     };
 
     return (
-      <LegacyDropdown
+      <Dropdown
         key={columnConfig.uid}
         disabled={!config?.actions}
-        destroyPopupOnHide={true}
-        overlay={renderActionExtensionMenu()}
-        overlayClassName="datart-data-section-dropdown"
+        destroyOnHidden={true}
+        popupRender={() => renderActionExtensionMenu()}
+        classNames={{ root: 'datart-data-section-dropdown' }}
         trigger={['click']}
       >
         <StyledWrapper className={classnames({ replace: showReplaceMenu })}>
@@ -173,7 +172,7 @@ const ChartDraggableElementField: FC<{
             {enableActionsIcons(columnConfig)}
           </div>
         </StyledWrapper>
-      </LegacyDropdown>
+      </Dropdown>
     );
   },
 );

@@ -32,13 +32,10 @@ import {
 } from 'utils/validators';
 const FormItem = Form.Item;
 interface ModifyPasswordProps {
-  visible: boolean;
+  open: boolean;
   onCancel: () => void;
 }
-export const ModifyPassword: FC<ModifyPasswordProps> = ({
-  visible,
-  onCancel,
-}) => {
+export const ModifyPassword: FC<ModifyPasswordProps> = ({ open, onCancel }) => {
   const dispatch = useDispatch();
   const loggedInUser = useSelector(selectLoggedInUser);
   const loading = useSelector(selectModifyPasswordLoading);
@@ -51,10 +48,10 @@ export const ModifyPassword: FC<ModifyPasswordProps> = ({
   }, [form]);
 
   useEffect(() => {
-    if (visible) {
+    if (open) {
       reset();
     }
-  }, [visible, reset]);
+  }, [open, reset]);
 
   const formSubmit = useCallback(
     ({ confirmPassword, ...params }: ModifyUserPassword) => {
@@ -75,7 +72,7 @@ export const ModifyPassword: FC<ModifyPasswordProps> = ({
     <Modal
       title={t('title')}
       footer={false}
-      open={visible}
+      open={open}
       onCancel={onCancel}
       afterClose={reset}
     >

@@ -17,16 +17,17 @@
  */
 
 import { Form, Input, message, Select } from 'antd';
+import { APP_CURRENT_VERSION } from 'app/configVersion';
 import { DataViewFieldType, DateFormat } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import useStateModal, { StateModalSize } from 'app/hooks/useStateModal';
-import { APP_CURRENT_VERSION } from 'app/migration/constants';
+
+import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import ChartComputedFieldSettingPanel from 'app/pages/ChartWorkbenchPage/components/ChartOperationPanel/components/ChartDataViewPanel/components/ChartComputedFieldSettingPanel';
 import { ChartDataViewMeta } from 'app/types/ChartDataViewMeta';
 import { checkComputedFieldAsync } from 'app/utils/fetch';
 import { updateBy, updateByKey } from 'app/utils/mutation';
 import { FC, memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 import { SPACE_LG } from 'styles/StyleConstants';
@@ -54,8 +55,8 @@ import {
 } from '../../../slice/types';
 import {
   dataModelColumnSorter,
-  hydrateViewColumnDisplayMeta,
   getHierarchyColumnByField,
+  hydrateViewColumnDisplayMeta,
   resolveSchemaColumnComment,
 } from '../../../utils';
 import Container from '../Container';
@@ -429,11 +430,15 @@ const DataModelTree: FC = memo(() => {
             name="hierarchyName"
             rules={[{ required: true }]}
           >
-            <Select defaultActiveFirstOption onChange={onChangeEvent}>
-              {currentHierarchies?.map(n => (
-                <Select.Option value={n.name}>{n.name}</Select.Option>
-              ))}
-            </Select>
+            <Select
+              defaultActiveFirstOption
+              onChange={onChangeEvent}
+              options={[
+                ...(currentHierarchies?.flatMap(n => [
+                  { value: n.name, label: n.name },
+                ]) || []),
+              ]}
+            />
           </StyledFormItem>
         );
       },

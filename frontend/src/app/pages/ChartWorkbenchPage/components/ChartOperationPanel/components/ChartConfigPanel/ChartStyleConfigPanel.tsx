@@ -17,9 +17,9 @@
  */
 
 import { Collapse } from 'antd';
-import ItemLayout from 'app/components/FormGenerator/Layout/ItemLayout';
 import { FormGroupLayoutMode } from 'app/components/FormGenerator/constants';
 import GroupLayout from 'app/components/FormGenerator/Layout/GroupLayout';
+import ItemLayout from 'app/components/FormGenerator/Layout/ItemLayout';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { ChartDataConfig, ChartStyleConfig } from 'app/types/ChartConfig';
 import { FC, memo } from 'react';
@@ -39,28 +39,38 @@ const ChartStyleConfigPanel: FC<{
     const t = useI18NPrefix(i18nPrefix);
 
     return (
-      <Collapse className="datart-config-panel" ghost>
+      <div className="datart-config-panel">
         {configs
           ?.filter(c => !Boolean(c.hidden))
           ?.map((c, index) => {
             if (c.comType === 'group') {
               return (
-                <Collapse.Panel header={t(c.label, true)} key={c.key}>
-                  <GroupLayout
-                    ancestors={[index]}
-                    mode={
-                      c.comType === 'group'
-                        ? FormGroupLayoutMode.INNER
-                        : FormGroupLayoutMode.OUTER
-                    }
-                    data={c}
-                    translate={t}
-                    dataConfigs={dataConfigs}
-                    onChange={onChange}
-                    context={context}
-                    flatten
-                  />
-                </Collapse.Panel>
+                <Collapse
+                  key={c.key}
+                  ghost
+                  items={[
+                    {
+                      key: c.key,
+                      label: t(c.label, true),
+                      children: (
+                        <GroupLayout
+                          ancestors={[index]}
+                          mode={
+                            c.comType === 'group'
+                              ? FormGroupLayoutMode.INNER
+                              : FormGroupLayoutMode.OUTER
+                          }
+                          data={c}
+                          translate={t}
+                          dataConfigs={dataConfigs}
+                          onChange={onChange}
+                          context={context}
+                          flatten
+                        />
+                      ),
+                    },
+                  ]}
+                />
               );
             } else {
               return (
@@ -75,7 +85,7 @@ const ChartStyleConfigPanel: FC<{
               );
             }
           })}
-      </Collapse>
+      </div>
     );
   },
   (prev, next) =>

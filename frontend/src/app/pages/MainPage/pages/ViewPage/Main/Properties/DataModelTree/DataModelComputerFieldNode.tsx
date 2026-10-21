@@ -26,14 +26,12 @@ import {
   NumberOutlined,
 } from '@ant-design/icons';
 import { Menu, Popconfirm, Tooltip } from 'antd';
-import { IW, MenuListItem, Popup } from 'app/components';
+import { IW, MenuItemLabel, Popup } from 'app/components';
 import { DataViewFieldType } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { ChartDataViewMeta } from 'app/types/ChartDataViewMeta';
 import { FC, memo } from 'react';
 import styled from 'styled-components';
-import { getFieldDisplayName } from 'utils/utils';
-import { DatasetCommentLabel } from '../../../components/DatasetCommentLabel';
 import {
   FONT_SIZE_BASE,
   FONT_SIZE_TITLE,
@@ -43,6 +41,8 @@ import {
   SPACE_XS,
   WARNING,
 } from 'styles/StyleConstants';
+import { getFieldDisplayName } from 'utils/utils';
+import { DatasetCommentLabel } from '../../../components/DatasetCommentLabel';
 
 const DataModelComputerFieldNode: FC<{
   node: ChartDataViewMeta;
@@ -87,10 +87,10 @@ const DataModelComputerFieldNode: FC<{
             <StyledIW fontSize={FONT_SIZE_TITLE}>{icon}</StyledIW>
           </Tooltip>
           <DatasetCommentLabel
-              label={getFieldDisplayName(node)}
-              comment={node.sourceComment || node.comment}
-              hasCustomName={Boolean(node.customName || node.isDisplayNameCustom)}
-            />
+            label={getFieldDisplayName(node)}
+            comment={node.sourceComment || node.comment}
+            hasCustomName={Boolean(node.customName || node.isDisplayNameCustom)}
+          />
         </div>
         <div className="action">
           <Popup
@@ -101,25 +101,34 @@ const DataModelComputerFieldNode: FC<{
                 prefixCls="ant-dropdown-menu"
                 selectable={false}
                 onClick={({ key }) => menuClick(node, key)}
-              >
-                <MenuListItem
-                  key="exit"
-                  prefix={<EditOutlined className="icon" />}
-                >
-                  {t('edit')}
-                </MenuListItem>
-                <MenuListItem
-                  key="del"
-                  prefix={<DeleteOutlined className="icon" />}
-                >
-                  <Popconfirm
-                    title={t('deleteSure')}
-                    onConfirm={() => menuClick(node, 'delete')}
-                  >
-                    {t('delete')}
-                  </Popconfirm>
-                </MenuListItem>
-              </Menu>
+                items={[
+                  {
+                    key: String('exit'),
+                    label: (
+                      <MenuItemLabel prefix={<EditOutlined className="icon" />}>
+                        {t('edit')}
+                      </MenuItemLabel>
+                    ),
+                  },
+                  {
+                    key: String('del'),
+                    label: (
+                      <MenuItemLabel
+                        prefix={<DeleteOutlined className="icon" />}
+                      >
+                        {
+                          <Popconfirm
+                            title={t('deleteSure')}
+                            onConfirm={() => menuClick(node, 'delete')}
+                          >
+                            {t('delete')}
+                          </Popconfirm>
+                        }
+                      </MenuItemLabel>
+                    ),
+                  },
+                ]}
+              />
             }
           >
             <MoreOutlined />

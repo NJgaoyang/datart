@@ -21,12 +21,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 import { selectLoginLoading } from '../slice/selectors';
 
-function ShareLoginModal({ visible, onChange }) {
+function ShareLoginModal({ open, onChange }) {
   const dispatch = useDispatch();
   const loading = useSelector(selectLoginLoading);
 
   return (
-    visible && (
+    open && (
       <LoginWrapper>
         <LoginFormLight loading={loading} inShare={true} onLogin={onChange} />
       </LoginWrapper>

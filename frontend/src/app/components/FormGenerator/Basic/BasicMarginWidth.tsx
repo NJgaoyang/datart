@@ -79,14 +79,11 @@ const BasicMarginWidth: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
             className="datart-ant-select"
             value={getMode(mixedValue)}
             onChange={handleModeChange}
-          >
-            <Select.Option value={widthModeTypes[0]}>
-              {widthModeTypes[0]}
-            </Select.Option>
-            <Select.Option value={widthModeTypes[1]}>
-              {widthModeTypes[1]}
-            </Select.Option>
-          </Select>
+            options={[
+              { value: widthModeTypes[0], label: widthModeTypes[0] },
+              { value: widthModeTypes[1], label: widthModeTypes[1] },
+            ]}
+          />
         </Space>
       </StyledBasicMarginWidth>
     );

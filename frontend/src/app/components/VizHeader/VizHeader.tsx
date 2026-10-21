@@ -1,4 +1,3 @@
-import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -173,9 +172,9 @@ const VizHeader: FC<{
                 </Button>
               )}
               {!isArchived && (
-                <LegacyDropdown key="more" arrow overlay={getOverlays()}>
+                <Dropdown key="more" arrow popupRender={() => getOverlays()}>
                   <Button icon={<MoreOutlined />} />
-                </LegacyDropdown>
+                </Dropdown>
               )}
             </>
           }

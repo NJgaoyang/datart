@@ -32,7 +32,7 @@ import {
   useState,
 } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useMatch } from 'react-router-dom';
+import { useMatch, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { SPACE_MD } from 'styles/StyleConstants';
 import { selectOrgId } from '../../../slice/selectors';
@@ -53,9 +53,7 @@ export const MemberList = memo(() => {
   const list = useSelector(selectMembers);
   const listLoading = useSelector(selectMemberListLoading);
   const inviteLoading = useSelector(selectInviteMemberLoading);
-  const matchRoleDetail = useMatch(
-    '/organizations/:orgId/members/:memberId',
-  );
+  const matchRoleDetail = useMatch('/organizations/:orgId/members/:memberId');
   const memberId = matchRoleDetail?.params.memberId;
   const t = useI18NPrefix('member.sidebar');
 
@@ -113,7 +111,7 @@ export const MemberList = memo(() => {
               Modal.info({
                 title: title.join('；'),
                 content: <Emails>{content}</Emails>,
-                maskClosable: false,
+                mask: { closable: false },
               });
             }
             setInviteFormVisible(false);
@@ -184,11 +182,11 @@ export const MemberList = memo(() => {
       </ListWrapper>
       <InviteForm
         title={t('inviteMember')}
-        visible={inviteFormVisible}
+        open={inviteFormVisible}
         confirmLoading={inviteLoading}
         onSave={invite}
         onCancel={hideInviteForm}
-        maskClosable={false}
+        mask={{ closable: false }}
       />
     </Wrapper>
   );

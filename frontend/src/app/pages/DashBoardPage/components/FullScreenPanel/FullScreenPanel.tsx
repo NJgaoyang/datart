@@ -116,11 +116,12 @@ export const FullScreenPanel: React.FC<{}> = memo(() => {
                   mode="inline"
                   onClick={changeItem}
                   defaultSelectedKeys={[itemId]}
-                >
-                  {widgets.map(ele => (
-                    <Menu.Item key={ele.id}>{ele.config.name}</Menu.Item>
-                  ))}
-                </Menu>
+                  items={[
+                    ...(widgets.flatMap(ele => [
+                      { key: String(ele.id), label: ele.config.name },
+                    ]) || []),
+                  ]}
+                />
               </div>
             )}
           </div>

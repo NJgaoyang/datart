@@ -174,7 +174,7 @@ const ScorecardConditionalStyle: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
     };
 
     return (
-      <StyledScorecardConditionalStylePanel direction="vertical">
+      <StyledScorecardConditionalStylePanel orientation="vertical">
         <Button type="primary" onClick={openConditionalStyle}>
           {t('conditionalStyleTable.btn.add')}
         </Button>
@@ -192,7 +192,7 @@ const ScorecardConditionalStyle: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
         </Row>
         <AddModal
           context={context}
-          visible={visible}
+          open={visible}
           translate={t}
           values={currentItem}
           allItems={allItems}

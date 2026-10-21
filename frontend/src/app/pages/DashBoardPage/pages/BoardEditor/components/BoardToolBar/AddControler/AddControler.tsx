@@ -1,4 +1,3 @@
-import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -131,52 +130,71 @@ export const AddController: React.FC<AddControlBtnProps> = () => {
     return <span style={{ color: G60, fontWeight: 500 }}>{text}</span>;
   };
   const controlerItems = (
-    <Menu onClick={onAddController}>
-      <Menu.ItemGroup
-        key="conventionalControllers"
-        title={renderTitle(tType('common'))}
-      >
-        {conventionalControllers.map(({ icon, type }) => (
-          <Menu.Item key={type} icon={icon}>
-            {tFilterName(type)}
-          </Menu.Item>
-        ))}
-      </Menu.ItemGroup>
-      <Menu.ItemGroup key="dateControllers" title={renderTitle(tType('date'))}>
-        {dateControllers.map(({ icon, type }) => (
-          <Menu.Item key={type} icon={icon}>
-            {tFilterName(type)}
-          </Menu.Item>
-        ))}
-      </Menu.ItemGroup>
-      <Menu.ItemGroup
-        key="numericalControllers"
-        title={renderTitle(tType('numeric'))}
-      >
-        {numericalControllers.map(({ icon, type, disabled }) => (
-          <Menu.Item key={type} icon={icon} disabled={disabled}>
-            {tFilterName(type)}
-          </Menu.Item>
-        ))}
-      </Menu.ItemGroup>
-      <Menu.ItemGroup key="buttons" title={renderTitle(tType('button'))}>
-        {buttons.map(({ icon, type, disabled }) => (
-          <Menu.Item key={type} icon={icon} disabled={disabled}>
-            {tWt(type)}
-          </Menu.Item>
-        ))}
-      </Menu.ItemGroup>
-    </Menu>
+    <Menu
+      onClick={onAddController}
+      items={[
+        {
+          type: 'group',
+          key: String('conventionalControllers'),
+          label: renderTitle(tType('common')),
+          children: [
+            ...(conventionalControllers.flatMap(({ icon, type }) => [
+              { key: String(type), icon: icon, label: tFilterName(type) },
+            ]) || []),
+          ],
+        },
+        {
+          type: 'group',
+          key: String('dateControllers'),
+          label: renderTitle(tType('date')),
+          children: [
+            ...(dateControllers.flatMap(({ icon, type }) => [
+              { key: String(type), icon: icon, label: tFilterName(type) },
+            ]) || []),
+          ],
+        },
+        {
+          type: 'group',
+          key: String('numericalControllers'),
+          label: renderTitle(tType('numeric')),
+          children: [
+            ...(numericalControllers.flatMap(({ icon, type, disabled }) => [
+              {
+                key: String(type),
+                icon: icon,
+                disabled: disabled,
+                label: tFilterName(type),
+              },
+            ]) || []),
+          ],
+        },
+        {
+          type: 'group',
+          key: String('buttons'),
+          label: renderTitle(tType('button')),
+          children: [
+            ...(buttons.flatMap(({ icon, type, disabled }) => [
+              {
+                key: String(type),
+                icon: icon,
+                disabled: disabled,
+                label: tWt(type),
+              },
+            ]) || []),
+          ],
+        },
+      ]}
+    />
   );
   return (
-    <LegacyDropdown
-      overlay={controlerItems}
+    <Dropdown
+      popupRender={() => controlerItems}
       placement="bottomLeft"
       trigger={['click']}
     >
       <Tooltip title={t('controller')}>
         <ToolbarButton icon={<ControlOutlined />} />
       </Tooltip>
-    </LegacyDropdown>
+    </Dropdown>
   );
 };

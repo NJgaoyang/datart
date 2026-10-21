@@ -21,16 +21,16 @@ import { FormItemEx } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { useMemberSlice } from 'app/pages/MainPage/pages/MemberPage/slice';
 import {
-  selectMembers,
   selectRoles as rdxSelectRoles,
+  selectMembers,
 } from 'app/pages/MainPage/pages/MemberPage/slice/selectors';
 import {
   getMembers,
   getRoles,
 } from 'app/pages/MainPage/pages/MemberPage/slice/thunks';
 import { selectIsOrgOwner } from 'app/pages/MainPage/slice/selectors';
-import { TIME_FORMATTER } from 'globalConstants';
 import dayjs from 'dayjs';
+import { TIME_FORMATTER } from 'globalConstants';
 import { FC, memo, useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
@@ -155,7 +155,7 @@ const ShareLinkModal: FC<{
       }
       okButtonProps={{ loading: btnLoading }}
       onCancel={onCancel}
-      destroyOnClose
+      destroyOnHidden
       forceRender
     >
       <Form
@@ -211,33 +211,43 @@ const ShareLinkModal: FC<{
                     placeholder={t('share.selectRole')}
                     mode="multiple"
                     maxTagCount="responsive"
-                    optionFilterProp="label"
                     value={selectRoles || []}
-                  >
-                    {rolesList?.map((v, i) => {
-                      return (
-                        <Select.Option key={i} value={v.id} label={v.name}>
-                          {v.name}
-                        </Select.Option>
-                      );
-                    })}
-                  </StyledSelection>
+                    options={[
+                      ...(rolesList?.flatMap((v, i) => {
+                        return [
+                          {
+                            key: String(i),
+                            value: v.id,
+                            label: v.name,
+                            children: v.name,
+                          },
+                        ];
+                      }) || []),
+                    ]}
+                    optionRender={({ data }) => data.children ?? data.label}
+                    showSearch={{ optionFilterProp: 'label' }}
+                  />
                   <StyledSelection
                     onChange={handleChangeMembers}
                     placeholder={t('share.selectUser')}
                     mode="multiple"
                     maxTagCount="responsive"
-                    optionFilterProp="label"
                     value={selectUsers || []}
-                  >
-                    {usersList?.map((v, i) => {
-                      return (
-                        <Select.Option key={i} value={v.id} label={v.username}>
-                          {v.username}
-                        </Select.Option>
-                      );
-                    })}
-                  </StyledSelection>
+                    options={[
+                      ...(usersList?.flatMap((v, i) => {
+                        return [
+                          {
+                            key: String(i),
+                            value: v.id,
+                            label: v.username,
+                            children: v.username,
+                          },
+                        ];
+                      }) || []),
+                    ]}
+                    optionRender={({ data }) => data.children ?? data.label}
+                    showSearch={{ optionFilterProp: 'label' }}
+                  />
                 </Space>
               </FormItemEx>
             )}

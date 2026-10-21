@@ -73,7 +73,7 @@ const ChartDraggableElementHierarchy: FC<{
             isDisplayNameCustom: columnConfig.isDisplayNameCustom,
           })}
         </StyledGroupName>
-        <Space direction="vertical" size="small">
+        <Space orientation="vertical" size="small">
           {renderChildren()}
         </Space>
       </div>

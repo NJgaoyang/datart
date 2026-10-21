@@ -1,4 +1,3 @@
-import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -43,9 +42,9 @@ const SetFieldType = memo(
     const t = useI18NPrefix('view.schemaTable');
     const tg = useI18NPrefix('global');
     return (
-      <LegacyDropdown
+      <Dropdown
         trigger={['click']}
-        overlay={
+        popupRender={() => (
           <Menu
             selectedKeys={[
               field.type,
@@ -54,48 +53,55 @@ const SetFieldType = memo(
             ]}
             className="datart-schema-table-header-menu"
             onClick={({ keyPath }) => onChange(keyPath, field?.name)}
-          >
-            {Object.values(DataViewFieldType).map(t => {
-              if (
-                [DataViewFieldType.DATE, DataViewFieldType.DATETIME].includes(t) &&
-                hasFormat
-              ) {
-                return (
-                  <Menu.SubMenu
-                    key={t}
-                    title={tg(`columnType.${t.toLowerCase()}`)}
-                    popupClassName="datart-schema-table-header-menu"
-                  >
-                    {Object.values(DateFormat).map(format => {
-                      return <Menu.Item key={format}>{format}</Menu.Item>;
-                    })}
-                  </Menu.SubMenu>
-                );
-              }
-              return (
-                <Menu.Item key={t}>
-                  {tg(`columnType.${t.toLowerCase()}`)}
-                </Menu.Item>
-              );
-            })}
-            {hasCategory && (
-              <>
-                <Menu.Divider />
-                <Menu.SubMenu
-                  key="categories"
-                  title={t('category')}
-                  popupClassName="datart-schema-table-header-menu"
-                >
-                  {Object.values(ColumnCategories).map(t => (
-                    <Menu.Item key={`category-${t}`}>
-                      {tg(`columnCategory.${t.toLowerCase()}`)}
-                    </Menu.Item>
-                  ))}
-                </Menu.SubMenu>
-              </>
-            )}
-          </Menu>
-        }
+            items={[
+              ...(Object.values(DataViewFieldType).flatMap(t => {
+                if (
+                  [DataViewFieldType.DATE, DataViewFieldType.DATETIME].includes(
+                    t,
+                  ) &&
+                  hasFormat
+                ) {
+                  return [
+                    {
+                      key: String(t),
+                      popupClassName: 'datart-schema-table-header-menu',
+                      label: tg(`columnType.${t.toLowerCase()}`),
+                      children: [
+                        ...(Object.values(DateFormat).flatMap(format => {
+                          return [{ key: String(format), label: format }];
+                        }) || []),
+                      ],
+                    },
+                  ];
+                }
+                return [
+                  {
+                    key: String(t),
+                    label: tg(`columnType.${t.toLowerCase()}`),
+                  },
+                ];
+              }) || []),
+              ...(hasCategory
+                ? [
+                    { type: 'divider' as const },
+                    {
+                      key: String('categories'),
+                      popupClassName: 'datart-schema-table-header-menu',
+                      label: t('category'),
+                      children: [
+                        ...(Object.values(ColumnCategories).flatMap(t => [
+                          {
+                            key: String(`category-${t}`),
+                            label: tg(`columnCategory.${t.toLowerCase()}`),
+                          },
+                        ]) || []),
+                      ],
+                    },
+                  ]
+                : []),
+            ]}
+          />
+        )}
       >
         <Tooltip
           title={hasCategory ? t('typeAndCategory') : t('category')}
@@ -103,7 +109,7 @@ const SetFieldType = memo(
         >
           {icon}
         </Tooltip>
-      </LegacyDropdown>
+      </Dropdown>
     );
   },
 );

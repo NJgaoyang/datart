@@ -52,8 +52,6 @@ import ChartToolbar from '../ChartToolbar';
 import ChartDataConfigPanel from './ChartDataConfigPanel';
 import ChartStyleConfigPanel from './ChartStyleConfigPanel';
 
-const { TabPane } = Tabs;
-
 const CONFIG_PANEL_TABS = {
   DATA: 'data',
   STYLE: 'style',
@@ -137,52 +135,65 @@ const ChartConfigPanel: FC<{
                 activeKey={tabActiveKey}
                 className="tabs"
                 onChange={setTabActiveKey}
-              >
-                {!isEmptyArray(editorDataConfigs) && (
-                  <TabPane
-                    tab={
-                      <span>
-                        <DatabaseOutlined />
-                        {t('title.content')}
-                      </span>
-                    }
-                    key={CONFIG_PANEL_TABS.DATA}
-                  />
-                )}
-                {!isEmptyArray(chartConfig?.styles) && (
-                  <TabPane
-                    tab={
-                      <span>
-                        <DashboardOutlined />
-                        {t('title.design')}
-                      </span>
-                    }
-                    key={CONFIG_PANEL_TABS.STYLE}
-                  />
-                )}
-                {!isEmptyArray(chartConfig?.settings) && (
-                  <TabPane
-                    tab={
-                      <span>
-                        <SettingOutlined />
-                        {t('title.setting')}
-                      </span>
-                    }
-                    key={CONFIG_PANEL_TABS.SETTING}
-                  />
-                )}
-                {!isEmptyArray(chartConfig?.interactions) && (
-                  <TabPane
-                    tab={
-                      <span>
-                        <BlockOutlined />
-                        {t('title.interaction')}
-                      </span>
-                    }
-                    key={CONFIG_PANEL_TABS.INTERACTION}
-                  />
-                )}
-              </Tabs>
+                items={[
+                  ...(!isEmptyArray(editorDataConfigs)
+                    ? [
+                        {
+                          label: (
+                            <span>
+                              <DatabaseOutlined />
+                              {t('title.content')}
+                            </span>
+                          ),
+                          key: String(CONFIG_PANEL_TABS.DATA),
+                          children: null,
+                        },
+                      ]
+                    : []),
+                  ...(!isEmptyArray(chartConfig?.styles)
+                    ? [
+                        {
+                          label: (
+                            <span>
+                              <DashboardOutlined />
+                              {t('title.design')}
+                            </span>
+                          ),
+                          key: String(CONFIG_PANEL_TABS.STYLE),
+                          children: null,
+                        },
+                      ]
+                    : []),
+                  ...(!isEmptyArray(chartConfig?.settings)
+                    ? [
+                        {
+                          label: (
+                            <span>
+                              <SettingOutlined />
+                              {t('title.setting')}
+                            </span>
+                          ),
+                          key: String(CONFIG_PANEL_TABS.SETTING),
+                          children: null,
+                        },
+                      ]
+                    : []),
+                  ...(!isEmptyArray(chartConfig?.interactions)
+                    ? [
+                        {
+                          label: (
+                            <span>
+                              <BlockOutlined />
+                              {t('title.interaction')}
+                            </span>
+                          ),
+                          key: String(CONFIG_PANEL_TABS.INTERACTION),
+                          children: null,
+                        },
+                      ]
+                    : []),
+                ]}
+              />
               <Pane selected={tabActiveKey === CONFIG_PANEL_TABS.DATA}>
                 <ChartDataConfigPanel
                   dataConfigs={editorDataConfigs}

@@ -69,9 +69,7 @@ export const EditorPage: FC = () => {
   );
   const [periodUnit, setPeriodUnit] = useState<TimeModes>(TimeModes.Minute);
   const [periodInput, setPeriodInput] = useState(false);
-  const editorMatch = useMatch(
-    '/organizations/:orgId/schedules/:scheduleId',
-  );
+  const editorMatch = useMatch('/organizations/:orgId/schedules/:scheduleId');
   const params = (editorMatch?.params ?? {}) as {
     orgId: string;
     scheduleId: string;
@@ -113,7 +111,7 @@ export const EditorPage: FC = () => {
         showSaveForm({
           scheduleType: 'title',
           type: CommonFormTypes.Add,
-          visible: true,
+          open: true,
           simple: true,
           parentIdLabel: t('parent'),
           onSave: (val, onClose) => {
@@ -243,7 +241,7 @@ export const EditorPage: FC = () => {
     showSaveForm({
       scheduleType: 'folder',
       type: CommonFormTypes.Edit,
-      visible: true,
+      open: true,
       simple: false,
       initialValues: { id, name, parentId: null },
       parentIdLabel: t('parent'),

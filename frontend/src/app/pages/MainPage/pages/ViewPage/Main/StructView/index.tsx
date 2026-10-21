@@ -38,8 +38,6 @@ import {
   SPACE_SM,
   SPACE_TIMES,
   SPACE_UNIT,
-  SPACE_XL,
-  SPACE_XS,
 } from 'styles/StyleConstants';
 import { isEqualObject } from 'utils/object';
 import { getInsertedNodeIndex } from 'utils/utils';
@@ -312,7 +310,7 @@ export const StructView = memo(
         if (isNewView(id)) {
           showSaveForm({
             type: CommonFormTypes.Edit,
-            visible: true,
+            open: true,
             parentIdLabel: t('file'),
             initialValues: {
               name: '',
@@ -468,7 +466,9 @@ export const StructView = memo(
                                     return (
                                       <JoinConditionLine>
                                         <SelectJoinColumns
-                                          columnWidths={getJoinConditionWidths(join.conditions || [])}
+                                          columnWidths={getJoinConditionWidths(
+                                            join.conditions || [],
+                                          )}
                                           structure={structure}
                                           onChange={(
                                             columnName,
@@ -488,15 +488,23 @@ export const StructView = memo(
                                           allowManage={allowManage}
                                         />
                                         <JoinActionRail>
-                                          {ind === (join.conditions?.length || 0) - 1 && (
+                                          {ind ===
+                                            (join.conditions?.length || 0) -
+                                              1 && (
                                             <>
                                               <Button
                                                 aria-label="添加关联字段"
                                                 type="text"
                                                 size="small"
                                                 icon={<PlusOutlined />}
-                                                disabled={!allowManage || !left?.length || !right?.length}
-                                                onClick={() => handleTableJoinAddColumns(i)}
+                                                disabled={
+                                                  !allowManage ||
+                                                  !left?.length ||
+                                                  !right?.length
+                                                }
+                                                onClick={() =>
+                                                  handleTableJoinAddColumns(i)
+                                                }
                                               />
                                               {ind > 0 && (
                                                 <Button
@@ -506,7 +514,12 @@ export const StructView = memo(
                                                   size="small"
                                                   icon={<CloseOutlined />}
                                                   disabled={!allowManage}
-                                                  onClick={() => handleDeleteConditions(i, ind)}
+                                                  onClick={() =>
+                                                    handleDeleteConditions(
+                                                      i,
+                                                      ind,
+                                                    )
+                                                  }
                                                 />
                                               )}
                                             </>

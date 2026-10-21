@@ -16,8 +16,6 @@
  * limitations under the License.
  */
 
-import 'core-js/features/string/replace-all';
-import { migrateWidgets } from 'app/migration/BoardConfig/migrateWidgets';
 import { ChartDataRequestBuilder } from 'app/models/ChartDataRequestBuilder';
 import {
   DataChart,
@@ -34,9 +32,7 @@ import { ChartConfig } from 'app/types/ChartConfig';
 import { ChartDetailConfigDTO } from 'app/types/ChartConfigDTO';
 import { ChartDTO } from 'app/types/ChartDTO';
 import { convertToChartDto } from 'app/utils/ChartDtoHelper';
-
-// import 'core-js/stable/map';
-// need polyfill [Object.values,Array.prototype.find,new Map]
+import { parseWidgets } from 'app/utils/configParser';
 
 /**
  * @param ''
@@ -53,15 +49,9 @@ const getBoardQueryData = (dataStr: string) => {
     datacharts,
     serverViews,
   );
-  const migratedWidgets = migrateWidgets(
-    serverWidgets,
-    dashboard.config.type,
-    dashboard.config.layoutVersion,
-    dashboard.config.mobileLayoutVersion,
-    dashboard.config.pcRowLayoutVersion,
-  );
+  const parsedWidgets = parseWidgets(serverWidgets);
   const { widgetMap, wrappedDataCharts } = getWidgetMap(
-    migratedWidgets, // TODO
+    parsedWidgets, // TODO
     dataCharts,
     dashboard.config.type,
     serverViews,

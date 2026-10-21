@@ -17,10 +17,10 @@
  */
 
 import { Collapse } from 'antd';
-import CollapseHeader from 'app/components/FormGenerator/Layout/CollapseHeader';
-import ItemLayout from 'app/components/FormGenerator/Layout/ItemLayout';
 import { FormGroupLayoutMode } from 'app/components/FormGenerator/constants';
+import CollapseHeader from 'app/components/FormGenerator/Layout/CollapseHeader';
 import GroupLayout from 'app/components/FormGenerator/Layout/GroupLayout';
+import ItemLayout from 'app/components/FormGenerator/Layout/ItemLayout';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import ChartI18NContext from 'app/pages/ChartWorkbenchPage/contexts/Chart18NContext';
 import { WidgetContext } from 'app/pages/DashBoardPage/components/WidgetProvider/WidgetProvider';
@@ -77,30 +77,37 @@ export const BoardConfigCollapse: FC<{
 }> = memo(({ configs, dataConfigs, context, onChange }) => {
   const t = useI18NPrefix();
   return (
-    <Collapse className="datart-config-panel" ghost>
+    <div className="datart-config-panel">
       {configs
         ?.filter(c => !Boolean(c.hidden))
         .map((c, index) => {
           if (c.comType === 'group') {
             return (
-              <Collapse.Panel
-                header={<CollapseHeader title={t(c.label, true)} />}
+              <Collapse
                 key={c.key}
-              >
-                <GroupLayout
-                  ancestors={[index]}
-                  mode={
-                    c.comType === 'group'
-                      ? FormGroupLayoutMode.INNER
-                      : FormGroupLayoutMode.OUTER
-                  }
-                  data={c}
-                  translate={t}
-                  dataConfigs={[]}
-                  context={context}
-                  onChange={onChange}
-                />
-              </Collapse.Panel>
+                ghost
+                items={[
+                  {
+                    key: c.key,
+                    label: <CollapseHeader title={t(c.label, true)} />,
+                    children: (
+                      <GroupLayout
+                        ancestors={[index]}
+                        mode={
+                          c.comType === 'group'
+                            ? FormGroupLayoutMode.INNER
+                            : FormGroupLayoutMode.OUTER
+                        }
+                        data={c}
+                        translate={t}
+                        dataConfigs={[]}
+                        context={context}
+                        onChange={onChange}
+                      />
+                    ),
+                  },
+                ]}
+              />
             );
           } else {
             return (
@@ -115,6 +122,6 @@ export const BoardConfigCollapse: FC<{
             );
           }
         })}
-    </Collapse>
+    </div>
   );
 });

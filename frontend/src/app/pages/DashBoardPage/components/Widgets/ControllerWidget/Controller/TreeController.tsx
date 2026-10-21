@@ -17,8 +17,8 @@
  */
 import { Form, Tree, TreeSelect } from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
-import { RelationFilterValue } from 'app/types/ChartConfig';
 import { BoardContext } from 'app/pages/DashBoardPage/components/BoardProvider/BoardProvider';
+import { RelationFilterValue } from 'app/types/ChartConfig';
 import React, { memo, useCallback, useContext } from 'react';
 import styled from 'styled-components';
 
@@ -61,7 +61,9 @@ export const TreeSelectController: React.FC<TreeControllerFormProps> = memo(
     return (
       <StyledTreeSelect
         allowClear
-        classNames={{ popup: { root: isMobile ? 'datart-mobile-filter-popup' : undefined } }}
+        classNames={{
+          popup: { root: isMobile ? 'datart-mobile-filter-popup' : undefined },
+        }}
         popupMatchSelectWidth={!isMobile}
         value={value}
         style={{ width: '100%' }}
@@ -70,10 +72,14 @@ export const TreeSelectController: React.FC<TreeControllerFormProps> = memo(
         maxTagCount={3}
         onChange={onChange}
         multiple
-        bordered={false}
+        variant="borderless"
         treeData={treeData}
-        dropdownStyle={{ maxHeight: 'min(55dvh, 300px)', overflowY: 'auto' }}
-        dropdownRender={() => {
+        styles={{
+          popup: {
+            root: { maxHeight: 'min(55dvh, 300px)', overflowY: 'auto' },
+          },
+        }}
+        popupRender={() => {
           return (
             <Tree
               checkedKeys={value}
@@ -82,7 +88,11 @@ export const TreeSelectController: React.FC<TreeControllerFormProps> = memo(
               checkStrictly
               titleRender={(node: any) => {
                 const text = String(node.title || node.key || '');
-                return <span className="datart-filter-tree-label" title={text}>{text}</span>;
+                return (
+                  <span className="datart-filter-tree-label" title={text}>
+                    {text}
+                  </span>
+                );
               }}
               treeData={treeData}
             />

@@ -17,7 +17,7 @@
  */
 
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { migrateStoryPageConfig } from 'app/migration/StoryConfig/migrateStoryPageConfig';
+
 import { getBoardDetail } from 'app/pages/DashBoardPage/pages/Board/slice/thunk';
 import { selectVizs } from 'app/pages/MainPage/pages/VizPage/slice/selectors';
 import { ExecuteToken } from 'app/pages/SharePage/slice/types';
@@ -143,7 +143,7 @@ export const addStoryPage = createAsyncThunk<
   });
   const page = {
     ...data,
-    config: migrateStoryPageConfig(data.config),
+    config: JSON.parse(data.config),
   } as StoryPage;
   dispatch(storyActions.addStoryPage(page));
   return null;

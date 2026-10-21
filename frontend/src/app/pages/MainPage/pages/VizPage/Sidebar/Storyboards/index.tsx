@@ -17,7 +17,7 @@ import {
 } from 'app/pages/MainPage/pages/PermissionPage/constants';
 import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
 import { CommonFormTypes } from 'globalConstants';
-import React, { memo, useCallback, useContext, useMemo } from 'react';
+import { memo, useCallback, useContext, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 import { SPACE_XS } from 'styles/StyleConstants';
@@ -116,7 +116,7 @@ export const Storyboards = memo(
             showSaveForm({
               vizType: VizResourceSubTypes.Storyboard,
               type: CommonFormTypes.Add,
-              visible: true,
+              open: true,
               onSave: (values, onClose) => {
                 const index = getInsertedNodeIndex(values, storyborads);
                 dispatch(
@@ -138,7 +138,7 @@ export const Storyboards = memo(
             showSaveForm({
               vizType: VizResourceSubTypes.Storyboard,
               type: CommonFormTypes.Add,
-              visible: true,
+              open: true,
               onSave: (values, onClose) => {
                 const index = getInsertedNodeIndex(values, storyborads);
                 dispatch(

@@ -1,5 +1,5 @@
 import { Popover, PopoverProps } from 'antd';
-import React, {
+import {
   cloneElement,
   isValidElement,
   useCallback,
@@ -10,18 +10,18 @@ import { mergeClassNames } from 'utils/utils';
 
 export function Popup({
   content,
-  overlayClassName,
-  onVisibleChange,
+  classNames,
+  onOpenChange,
   ...rest
-}: PopoverProps & { overlayClassName?: string; onVisibleChange?: (open: boolean) => void }) {
+}: PopoverProps) {
   const [visible, setVisible] = useState(false);
 
   const visibleChange = useCallback(
     v => {
       setVisible(v);
-      onVisibleChange && onVisibleChange(v);
+      onOpenChange?.(v);
     },
-    [onVisibleChange],
+    [onOpenChange],
   );
 
   const onClose = useCallback(() => {
@@ -36,11 +36,14 @@ export function Popup({
     [content, onClose],
   );
 
-  const className = mergeClassNames(overlayClassName, 'datart-popup');
   return (
     <Popover
       {...rest}
-      classNames={{ root: className }}
+      classNames={info => {
+        const names =
+          typeof classNames === 'function' ? classNames(info) : classNames;
+        return { ...names, root: mergeClassNames(names?.root, 'datart-popup') };
+      }}
       content={injectedContent}
       open={visible}
       onOpenChange={visibleChange}
@@ -48,5 +51,5 @@ export function Popup({
   );
 }
 
-export { MenuListItem } from './MenuListItem';
+export { MenuItemLabel } from './MenuItemLabel';
 export { MenuWrapper } from './MenuWrapper';

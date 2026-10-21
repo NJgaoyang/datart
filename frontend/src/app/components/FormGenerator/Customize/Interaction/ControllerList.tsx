@@ -137,16 +137,15 @@ const ControllerList: FC<
           style={{ width: '150px' }}
           value={value}
           onChange={value => handleRelationChange(record.id, 'source', value)}
-          dropdownMatchSelectWidth={false}
-        >
-          {(isFieldType(record) ? sourceFields : sourceVariables)?.map(sf => {
-            return (
-              <Select.Option value={sf?.name}>
-                {handleDateLevelsName(sf)}
-              </Select.Option>
-            );
-          })}
-        </Select>
+          popupMatchSelectWidth={false}
+          options={[
+            ...((isFieldType(record) ? sourceFields : sourceVariables)?.flatMap(
+              sf => {
+                return [{ value: sf?.name, label: handleDateLevelsName(sf) }];
+              },
+            ) || []),
+          ]}
+        />
       ),
     },
     {
@@ -158,12 +157,13 @@ const ControllerList: FC<
           style={{ width: '150px' }}
           value={value}
           onChange={value => handleRelationChange(record.id, 'target', value)}
-          dropdownMatchSelectWidth={false}
-        >
-          {controllerNames?.map(name => {
-            return <Select.Option value={name}>{name}</Select.Option>;
-          })}
-        </Select>
+          popupMatchSelectWidth={false}
+          options={[
+            ...(controllerNames?.flatMap(name => {
+              return [{ value: name, label: name }];
+            }) || []),
+          ]}
+        />
       ),
     },
     {

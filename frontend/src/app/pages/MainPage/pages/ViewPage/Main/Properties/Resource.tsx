@@ -1,4 +1,3 @@
-import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -42,8 +41,8 @@ import useResizeObserver from 'app/hooks/useResizeObserver';
 import { useSearchAndExpand } from 'app/hooks/useSearchAndExpand';
 import { updateBy } from 'app/utils/mutation';
 import { DEFAULT_DEBOUNCE_WAIT } from 'globalConstants';
+import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import { memo, useCallback, useContext, useEffect, useState } from 'react';
-import { monaco } from 'react-monaco-editor';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 import { SPACE_MD, SPACE_XS } from 'styles/StyleConstants';
@@ -189,12 +188,19 @@ export const Resource = memo(() => {
 
   const getOverlays = useCallback(() => {
     return (
-      <Menu onClick={handleMenuClick}>
-        <Menu.SubMenu key="sort" title={t('sortType')}>
-          <Menu.Item key="byNameSort">{t('byName')}</Menu.Item>
-          <Menu.Item key="byOriginalFieldSort">{t('byField')}</Menu.Item>
-        </Menu.SubMenu>
-      </Menu>
+      <Menu
+        onClick={handleMenuClick}
+        items={[
+          {
+            key: String('sort'),
+            label: t('sortType'),
+            children: [
+              { key: String('byNameSort'), label: t('byName') },
+              { key: String('byOriginalFieldSort'), label: t('byField') },
+            ],
+          },
+        ]}
+      />
     );
   }, [handleMenuClick, t]);
 
@@ -207,12 +213,16 @@ export const Resource = memo(() => {
               prefix={<SearchOutlined className="icon" />}
               placeholder={t('search')}
               className="input"
-              bordered={false}
+              variant="borderless"
               onChange={debouncedSearch}
             />
-            <LegacyDropdown key="more" trigger={['click']} overlay={getOverlays()}>
+            <Dropdown
+              key="more"
+              trigger={['click']}
+              popupRender={() => getOverlays()}
+            >
               <Button type="text" icon={<MoreOutlined />} />
-            </LegacyDropdown>
+            </Dropdown>
           </StyleSpace>
         </Col>
       </SearchBar>

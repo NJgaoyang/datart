@@ -17,7 +17,7 @@
  */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { ChartDataSectionType } from 'app/constants';
-import { migrateChartConfig } from 'app/migration';
+
 import ChartManager from 'app/models/ChartManager';
 import {
   FilterSearchParams,
@@ -120,10 +120,7 @@ export const slice = createSlice({
       });
       if (currentChart) {
         chartConfig = transferChartConfig(
-          mergeToChartConfig(
-            currentChart?.config,
-            migrateChartConfig(chartConfigDTO),
-          ),
+          mergeToChartConfig(currentChart?.config, chartConfigDTO),
           filterSearchParams,
           isMatchByName,
           jumpFilters,

@@ -32,7 +32,6 @@ import {
 } from 'react';
 import styled from 'styled-components';
 import { Group } from '../SettingPanel';
-const { Panel } = Collapse;
 export const RectSet: FC<{ wid: string; rect: RectConfig }> = memo(
   ({ wid, rect }) => {
     const { onEditFreeWidgetRect } = useContext(WidgetActionContext);
@@ -63,62 +62,68 @@ export const RectSet: FC<{ wid: string; rect: RectConfig }> = memo(
     const changeW = useCallback(val => changeRect('width', val), [changeRect]);
     const changeH = useCallback(val => changeRect('height', val), [changeRect]);
     return (
-      <Collapse className="datart-config-panel" ghost>
-        <Panel
-          header={t('position') + '&' + t('size')}
-          key="position"
-          forceRender
-        >
-          <Group>
-            <BW label={t('position')}>
-              <StyledFlex>
-                <StyledPadding>
-                  <label>X</label>
-                  <InputNumber
-                    value={rectVal.x?.toFixed(1)}
-                    className="datart-ant-input-number"
-                    onChange={changeX}
-                  />
-                </StyledPadding>
+      <Collapse
+        className="datart-config-panel"
+        ghost
+        items={[
+          {
+            label: t('position') + '&' + t('size'),
+            key: String('position'),
+            forceRender: true,
+            children: (
+              <>
+                <Group>
+                  <BW label={t('position')}>
+                    <StyledFlex>
+                      <StyledPadding>
+                        <label>X</label>
+                        <InputNumber
+                          value={rectVal.x?.toFixed(1)}
+                          className="datart-ant-input-number"
+                          onChange={changeX}
+                        />
+                      </StyledPadding>
 
-                <StyledPadding>
-                  <label>Y</label>
-                  <InputNumber
-                    value={rectVal.y?.toFixed(1)}
-                    className="datart-ant-input-number"
-                    onChange={changeY}
-                  />
-                </StyledPadding>
-              </StyledFlex>
-            </BW>
-          </Group>
-
-          <Group>
-            <BW label={t('size')}>
-              <StyledFlex>
-                <StyledPadding>
-                  <label>W</label>
-                  <InputNumber
-                    value={rectVal.width?.toFixed(1)}
-                    className="datart-ant-input-number"
-                    onChange={changeW}
-                  />
-                </StyledPadding>
-                <StyledFlex>
-                  <StyledPadding>
-                    <label>H</label>
-                    <InputNumber
-                      value={rectVal?.height?.toFixed(1)}
-                      className="datart-ant-input-number"
-                      onChange={changeH}
-                    />
-                  </StyledPadding>
-                </StyledFlex>
-              </StyledFlex>
-            </BW>
-          </Group>
-        </Panel>
-      </Collapse>
+                      <StyledPadding>
+                        <label>Y</label>
+                        <InputNumber
+                          value={rectVal.y?.toFixed(1)}
+                          className="datart-ant-input-number"
+                          onChange={changeY}
+                        />
+                      </StyledPadding>
+                    </StyledFlex>
+                  </BW>
+                </Group>
+                <Group>
+                  <BW label={t('size')}>
+                    <StyledFlex>
+                      <StyledPadding>
+                        <label>W</label>
+                        <InputNumber
+                          value={rectVal.width?.toFixed(1)}
+                          className="datart-ant-input-number"
+                          onChange={changeW}
+                        />
+                      </StyledPadding>
+                      <StyledFlex>
+                        <StyledPadding>
+                          <label>H</label>
+                          <InputNumber
+                            value={rectVal?.height?.toFixed(1)}
+                            className="datart-ant-input-number"
+                            onChange={changeH}
+                          />
+                        </StyledPadding>
+                      </StyledFlex>
+                    </StyledFlex>
+                  </BW>
+                </Group>
+              </>
+            ),
+          },
+        ]}
+      />
     );
   },
 );

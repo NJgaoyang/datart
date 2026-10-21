@@ -18,8 +18,8 @@
 import { Form, Select } from 'antd';
 import { SelectValue } from 'antd/lib/select';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
-import { ControlOption } from 'app/pages/DashBoardPage/pages/BoardEditor/components/ControllerWidgetPanel/types';
 import { BoardContext } from 'app/pages/DashBoardPage/components/BoardProvider/BoardProvider';
+import { ControlOption } from 'app/pages/DashBoardPage/pages/BoardEditor/components/ControllerWidgetPanel/types';
 import React, { memo, useContext } from 'react';
 import styled from 'styled-components';
 
@@ -32,7 +32,6 @@ export interface SelectControllerProps {
   name?: string;
   required?: boolean;
 }
-const { Option } = Select;
 export const MultiSelectControllerForm: React.FC<SelectControllerProps> = memo(
   ({ label, name, required, ...rest }) => {
     return (
@@ -53,8 +52,9 @@ export const SelectController: React.FC<SelectControllerProps> = memo(
     const { isMobile } = useContext(BoardContext);
     return (
       <StyledSelect
-        showSearch
-        classNames={{ popup: { root: isMobile ? 'datart-mobile-filter-popup' : undefined } }}
+        classNames={{
+          popup: { root: isMobile ? 'datart-mobile-filter-popup' : undefined },
+        }}
         popupMatchSelectWidth={!isMobile}
         allowClear
         value={value}
@@ -62,30 +62,39 @@ export const SelectController: React.FC<SelectControllerProps> = memo(
         placeholder={t('multiSelectController')}
         maxTagTextLength={4}
         maxTagCount={3}
-        maxTagPlaceholder={(omittedValues) => (
-          <span style={{ whiteSpace: 'nowrap' }}>+{omittedValues.length}...</span>
+        maxTagPlaceholder={omittedValues => (
+          <span style={{ whiteSpace: 'nowrap' }}>
+            +{omittedValues.length}...
+          </span>
         )}
-        optionFilterProp="label"
         onChange={onChange}
         mode={'multiple'}
-        bordered={false}
-        filterOption={(input, option) =>
-          String(option?.label).toLowerCase().indexOf(input.toLowerCase()) >= 0
-        }
-      >
-        {(options || []).map(item => {
-          //  ##659
-          return (
-            <Option
-              key={item.value + item.label}
-              label={item.label ?? item.value ?? 'none'}
-              value={item.value}
-            >
-              <span title={String(item.label ?? item.value ?? '')}>{item.label ?? item.value}</span>
-            </Option>
-          );
-        })}
-      </StyledSelect>
+        variant="borderless"
+        options={[
+          ...((options || []).flatMap(item => {
+            //  ##659
+            return [
+              {
+                key: String(item.value + item.label),
+                label: item.label ?? item.value ?? 'none',
+                value: item.value,
+                children: (
+                  <span title={String(item.label ?? item.value ?? '')}>
+                    {item.label ?? item.value}
+                  </span>
+                ),
+              },
+            ];
+          }) || []),
+        ]}
+        optionRender={({ data }) => data.children ?? data.label}
+        showSearch={{
+          optionFilterProp: 'label',
+          filterOption: (input, option) =>
+            String(option?.label).toLowerCase().indexOf(input.toLowerCase()) >=
+            0,
+        }}
+      />
     );
   },
 );

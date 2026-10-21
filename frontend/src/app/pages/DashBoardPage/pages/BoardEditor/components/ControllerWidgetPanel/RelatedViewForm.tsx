@@ -48,7 +48,6 @@ export interface RelatedViewFormProps {
 
   getFormRelatedViews: () => RelatedView[];
 }
-const Option = Select.Option;
 const RadioButton = Radio.Button;
 const RadioGroup = Radio.Group;
 export const RelatedViewForm: React.FC<RelatedViewFormProps> = memo(
@@ -107,7 +106,7 @@ export const RelatedViewForm: React.FC<RelatedViewFormProps> = memo(
       (index: number) => {
         const relatedViews = getFormRelatedViews();
         if (!relatedViews) {
-          return null;
+          return [];
         }
 
         if (
@@ -122,21 +121,20 @@ export const RelatedViewForm: React.FC<RelatedViewFormProps> = memo(
             .filter(v => {
               return filterValueTypeByControl(controllerType, v.valueType);
             })
-            .map(item => (
-              <Option
-                key={item.id}
-                fieldvaluetype={item.valueType}
-                value={item.name}
-                label={item.name}
-              >
+            .map(item => ({
+              key: item.id,
+              fieldvaluetype: item.valueType,
+              value: item.name,
+              label: item.name,
+              children: (
                 <div
                   style={{ display: 'flex', justifyContent: 'space-between' }}
                 >
                   <span>{item.name}</span>
                   <FieldType>{item.valueType}</FieldType>
                 </div>
-              </Option>
-            ));
+              ),
+            }));
         } else {
           let viewComputedField =
             viewMap?.[relatedViews[index].viewId]?.computedFields?.filter(
@@ -152,21 +150,20 @@ export const RelatedViewForm: React.FC<RelatedViewFormProps> = memo(
               return filterValueTypeByControl(controllerType, v.type);
             })
             .map(item => {
-              return (
-                <Option
-                  key={item.name}
-                  fieldvaluetype={item.type}
-                  value={item.name}
-                  label={getFieldDisplayName(item)}
-                >
+              return {
+                key: item.name,
+                fieldvaluetype: item.type,
+                value: item.name,
+                label: getFieldDisplayName(item),
+                children: (
                   <div
                     style={{ display: 'flex', justifyContent: 'space-between' }}
                   >
                     <span>{getFieldDisplayName(item)}</span>
                     <FieldType>{item.type}</FieldType>
                   </div>
-                </Option>
-              );
+                ),
+              };
             });
         }
       },
@@ -243,9 +240,9 @@ export const RelatedViewForm: React.FC<RelatedViewFormProps> = memo(
                         allowClear
                         {...(isMultiple(index) && { mode: 'multiple' })}
                         onChange={fieldValueChange(index)}
-                      >
-                        {renderOptions(index)}
-                      </Select>
+                        options={renderOptions(index) ?? []}
+                        optionRender={({ data }) => data.children}
+                      />
                     </Form.Item>
                   </Form.Item>
                 ))}

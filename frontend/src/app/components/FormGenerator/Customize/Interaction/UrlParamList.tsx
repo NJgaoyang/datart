@@ -120,16 +120,15 @@ const UrlParamList: FC<
           style={{ width: '150px' }}
           value={value}
           onChange={value => handleRelationChange(record.id, 'source', value)}
-          dropdownMatchSelectWidth={false}
-        >
-          {(isFieldType(record) ? sourceFields : sourceVariables)?.map(sf => {
-            return (
-              <Select.Option value={sf?.name}>
-                {handleDateLevelsName(sf)}
-              </Select.Option>
-            );
-          })}
-        </Select>
+          popupMatchSelectWidth={false}
+          options={[
+            ...((isFieldType(record) ? sourceFields : sourceVariables)?.flatMap(
+              sf => {
+                return [{ value: sf?.name, label: handleDateLevelsName(sf) }];
+              },
+            ) || []),
+          ]}
+        />
       ),
     },
     {

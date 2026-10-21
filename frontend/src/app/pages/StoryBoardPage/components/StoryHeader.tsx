@@ -1,4 +1,3 @@
-import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -24,7 +23,7 @@ import { ShareManageModal } from 'app/components/VizOperationMenu';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { useStatusTitle } from 'app/pages/DashBoardPage/hooks/useStatusTitle';
 import { generateShareLinkAsync } from 'app/utils/fetch';
-import React, { FC, memo, useCallback, useContext, useState } from 'react';
+import { FC, memo, useCallback, useContext, useState } from 'react';
 import { StoryContext } from '../contexts/StoryContext';
 import { StoryOverLay } from './StoryOverLay';
 
@@ -117,19 +116,19 @@ export const StoryHeader: FC<StoryHeaderProps> = memo(
               {t('play')}
             </Button>
             {(allowManage || allowShare) && (
-              <LegacyDropdown
-                overlay={
+              <Dropdown
+                popupRender={() => (
                   <StoryOverLay
                     allowShare={allowShare}
                     allowManage={allowManage}
                     onOpenShareLink={onOpenShareLink}
                     onPublish={Number(status) === 2 ? onPublish : ''}
                   />
-                }
+                )}
                 arrow
               >
                 <Button icon={<MoreOutlined />} />
-              </LegacyDropdown>
+              </Dropdown>
             )}
 
             {allowShare && (

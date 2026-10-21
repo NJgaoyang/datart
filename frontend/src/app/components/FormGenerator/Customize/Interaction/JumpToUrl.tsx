@@ -1,4 +1,3 @@
-import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -66,10 +65,10 @@ const JumpToUrl: FC<
         placeholder={t('drillThrough.rule.inputUrl')}
         onChange={e => handleUpdateUrl(e.target.value)}
       />
-      <LegacyDropdown
-        destroyPopupOnHide
-        overlayStyle={{ margin: 4 }}
-        overlay={() => (
+      <Dropdown
+        destroyOnHidden
+        styles={{ root: { margin: 4 } }}
+        popupRender={() => (
           <UrlParamList
             translate={t}
             targetRelId={value?.relId}
@@ -88,7 +87,7 @@ const JumpToUrl: FC<
         arrow
       >
         <Button type="link">{t('drillThrough.rule.relation.setting')}</Button>
-      </LegacyDropdown>
+      </Dropdown>
     </Space>
   );
 });

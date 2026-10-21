@@ -91,7 +91,7 @@ export const findVisibleMobilePresentation = (
   [...root.querySelectorAll<HTMLElement>('.mobile-table-presentation')].find(
     candidate => {
       if (
-        candidate.closest('.ant-tabs-tabpane:not(.ant-tabs-tabpane-active)')
+        candidate.closest('.ant-tabs-content:not(.ant-tabs-content-active)')
       ) {
         return false;
       }

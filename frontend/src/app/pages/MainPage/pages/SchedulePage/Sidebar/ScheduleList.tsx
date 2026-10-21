@@ -8,7 +8,7 @@ import {
   SendOutlined,
 } from '@ant-design/icons';
 import { Menu, message, Popconfirm, TreeDataNode } from 'antd';
-import { MenuListItem, Popup, Tree, TreeTitle } from 'app/components';
+import { MenuItemLabel, Popup, Tree, TreeTitle } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { CommonFormTypes } from 'globalConstants';
 import { FC, memo, useCallback, useContext, useEffect, useState } from 'react';
@@ -81,7 +81,7 @@ export const ScheduleList: FC<{
             showSaveForm({
               scheduleType: 'folder',
               type: CommonFormTypes.Edit,
-              visible: true,
+              open: true,
               simple: false,
               initialValues: {
                 id,
@@ -224,83 +224,116 @@ export const ScheduleList: FC<{
                   prefixCls="ant-dropdown-menu"
                   selectable={false}
                   onClick={moreMenuClick(node)}
-                >
-                  {isAuthorized && (
-                    <MenuListItem
-                      key="info"
-                      prefix={<EditOutlined className="icon" />}
-                    >
-                      {tg('button.info')}
-                    </MenuListItem>
-                  )}
-                  {isAuthorized && !active && !isFolder && (
-                    <MenuListItem
-                      key="start"
-                      prefix={
-                        startLoading ? (
-                          <LoadingOutlined className="icon" />
-                        ) : (
-                          <CaretRightOutlined className="icon" />
-                        )
-                      }
-                    >
-                      {t('start')}
-                    </MenuListItem>
-                  )}
-                  {isAuthorized && active && !isFolder && (
-                    <MenuListItem
-                      key="stop"
-                      prefix={
-                        stopLoading ? (
-                          <LoadingOutlined className="icon" />
-                        ) : (
-                          <PauseOutlined className="icon" />
-                        )
-                      }
-                    >
-                      {t('stop')}
-                    </MenuListItem>
-                  )}
-
-                  {isAuthorized && !isFolder && (
-                    <MenuListItem
-                      key="execute"
-                      prefix={
-                        executeLoading ? (
-                          <LoadingOutlined className="icon" />
-                        ) : (
-                          <SendOutlined className="icon" />
-                        )
-                      }
-                    >
-                      {t('executeImmediately')}
-                    </MenuListItem>
-                  )}
-
-                  {isAuthorized && (
-                    <MenuListItem
-                      key="delete"
-                      prefix={
-                        deleteLoading ? (
-                          <LoadingOutlined className="icon" />
-                        ) : (
-                          <DeleteOutlined className="icon" />
-                        )
-                      }
-                    >
-                      <Popconfirm
-                        title={
-                          isFolder
-                            ? tg('operation.deleteConfirm')
-                            : tg('operation.archiveConfirm')
-                        }
-                        onConfirm={del(id, isFolder)}
-                      >
-                        {isFolder ? tg('button.delete') : tg('button.archive')}
-                      </Popconfirm>
-                    </MenuListItem>
-                  )}
-                </Menu>
+                  items={[
+                    ...(isAuthorized
+                      ? [
+                          {
+                            key: String('info'),
+                            label: (
+                              <MenuItemLabel
+                                prefix={<EditOutlined className="icon" />}
+                              >
+                                {tg('button.info')}
+                              </MenuItemLabel>
+                            ),
+                          },
+                        ]
+                      : []),
+                    ...(isAuthorized && !active && !isFolder
+                      ? [
+                          {
+                            key: String('start'),
+                            label: (
+                              <MenuItemLabel
+                                prefix={
+                                  startLoading ? (
+                                    <LoadingOutlined className="icon" />
+                                  ) : (
+                                    <CaretRightOutlined className="icon" />
+                                  )
+                                }
+                              >
+                                {t('start')}
+                              </MenuItemLabel>
+                            ),
+                          },
+                        ]
+                      : []),
+                    ...(isAuthorized && active && !isFolder
+                      ? [
+                          {
+                            key: String('stop'),
+                            label: (
+                              <MenuItemLabel
+                                prefix={
+                                  stopLoading ? (
+                                    <LoadingOutlined className="icon" />
+                                  ) : (
+                                    <PauseOutlined className="icon" />
+                                  )
+                                }
+                              >
+                                {t('stop')}
+                              </MenuItemLabel>
+                            ),
+                          },
+                        ]
+                      : []),
+                    ...(isAuthorized && !isFolder
+                      ? [
+                          {
+                            key: String('execute'),
+                            label: (
+                              <MenuItemLabel
+                                prefix={
+                                  executeLoading ? (
+                                    <LoadingOutlined className="icon" />
+                                  ) : (
+                                    <SendOutlined className="icon" />
+                                  )
+                                }
+                              >
+                                {t('executeImmediately')}
+                              </MenuItemLabel>
+                            ),
+                          },
+                        ]
+                      : []),
+                    ...(isAuthorized
+                      ? [
+                          {
+                            key: String('delete'),
+                            label: (
+                              <MenuItemLabel
+                                prefix={
+                                  deleteLoading ? (
+                                    <LoadingOutlined className="icon" />
+                                  ) : (
+                                    <DeleteOutlined className="icon" />
+                                  )
+                                }
+                              >
+                                {
+                                  <Popconfirm
+                                    title={
+                                      isFolder
+                                        ? tg('operation.deleteConfirm')
+                                        : tg('operation.archiveConfirm')
+                                    }
+                                    onConfirm={del(id, isFolder)}
+                                  >
+                                    {isFolder
+                                      ? tg('button.delete')
+                                      : tg('button.archive')}
+                                  </Popconfirm>
+                                }
+                              </MenuItemLabel>
+                            ),
+                          },
+                        ]
+                      : []),
+                  ]}
+                />
               }
             >
               <span className="action" onClick={stopPPG}>

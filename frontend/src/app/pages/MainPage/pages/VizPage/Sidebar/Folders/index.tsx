@@ -15,7 +15,7 @@ import {
 import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
 import { dispatchResize } from 'app/utils/dispatchResize';
 import { CommonFormTypes } from 'globalConstants';
-import React, { memo, useCallback, useContext, useMemo } from 'react';
+import { memo, useCallback, useContext, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
@@ -130,7 +130,7 @@ export const Folders = memo(
         addVizFn({
           vizType: key,
           type: CommonFormTypes.Add,
-          visible: true,
+          open: true,
           initialValues: undefined,
         });
       },

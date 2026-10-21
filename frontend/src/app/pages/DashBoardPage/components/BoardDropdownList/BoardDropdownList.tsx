@@ -62,118 +62,131 @@ export const BoardDropdownList: FC<Props> = memo(
     const { onBoardToDownLoad } = useContext(BoardActionContext);
     const { publishBoard } = usePublishBoard(boardId, 'DASHBOARD', status);
     return (
-      <Menu>
-        <Menu.Item
-          key="reloadData"
-          onClick={reloadData}
-          icon={<ReloadOutlined />}
-        >
-          {t('syncData')}
-        </Menu.Item>
-        {allowShare && (
-          <>
-            <Menu.Divider key={'shareLinkLine'} />
-            <Menu.Item
-              key={'shareLink'}
-              onClick={onOpenShareLink}
-              icon={<ShareAltOutlined />}
-            >
-              {t('share.shareLink')}
-            </Menu.Item>
-          </>
-        )}
-        {allowDownload && (
-          <>
-            <Menu.Divider key={'exportDataLine'} />
-            <Menu.Item key={'exportData'} icon={<CloudDownloadOutlined />}>
-              <Popconfirm
-                placement="left"
-                title={t('common.confirm')}
-                okText={t('common.ok')}
-                cancelText={t('common.cancel')}
-                onConfirm={() => {
-                  onBoardToDownLoad?.(DownloadFileType.Excel);
-                }}
-              >
-                {t('share.exportData')}
-              </Popconfirm>
-            </Menu.Item>
-            <Menu.Item key={'exportPDF'} icon={<CloudDownloadOutlined />}>
-              <Popconfirm
-                placement="left"
-                title={t('common.confirm')}
-                okText={t('common.ok')}
-                cancelText={t('common.cancel')}
-                onConfirm={() => {
-                  onBoardToDownLoad?.(DownloadFileType.Pdf);
-                }}
-              >
-                {t('share.exportPDF')}
-              </Popconfirm>
-            </Menu.Item>
-            <Menu.Item key={'exportPicture'} icon={<CloudDownloadOutlined />}>
-              <Popconfirm
-                placement="left"
-                title={t('common.confirm')}
-                okText={t('common.ok')}
-                cancelText={t('common.cancel')}
-                onConfirm={() => {
-                  onBoardToDownLoad?.(DownloadFileType.Image);
-                }}
-              >
-                {t('share.exportPicture')}
-              </Popconfirm>
-            </Menu.Item>
-            <Menu.Item key="exportTpl" icon={<CloudDownloadOutlined />}>
-              <Popconfirm
-                placement="left"
-                title={t('common.confirm')}
-                okText={t('common.ok')}
-                cancelText={t('common.cancel')}
-                onConfirm={openMockData}
-              >
-                {t('share.exportTpl')}
-              </Popconfirm>
-            </Menu.Item>
-          </>
-        )}
-        {allowManage && (
-          <>
-            <Menu.Divider key="unpublishLine" />
-            {status === 2 && (
-              <Menu.Item
-                key={'unpublish'}
-                onClick={publishBoard}
-                icon={<FileAddOutlined />}
-              >
-                {t('unpublish')}
-              </Menu.Item>
-            )}
-
-            <Menu.Item
-              key={'saveAs'}
-              onClick={() => saveAsViz(boardId, 'DASHBOARD')}
-              icon={<CopyFilled />}
-            >
-              {tg('button.saveAs')}
-            </Menu.Item>
-            <Menu.Item
-              key={'addToStory'}
-              onClick={openStoryList}
-              icon={<FileAddOutlined />}
-            >
-              {t('addToStory')}
-            </Menu.Item>
-            <Menu.Item
-              key={'archive'}
-              onClick={recycleViz}
-              icon={<DeleteOutlined />}
-            >
-              {tg('button.archive')}
-            </Menu.Item>
-          </>
-        )}
-      </Menu>
+      <Menu
+        items={[
+          {
+            key: String('reloadData'),
+            onClick: reloadData,
+            icon: <ReloadOutlined />,
+            label: t('syncData'),
+          },
+          ...(allowShare
+            ? [
+                { type: 'divider' as const, key: String('shareLinkLine') },
+                {
+                  key: String('shareLink'),
+                  onClick: onOpenShareLink,
+                  icon: <ShareAltOutlined />,
+                  label: t('share.shareLink'),
+                },
+              ]
+            : []),
+          ...(allowDownload
+            ? [
+                { type: 'divider' as const, key: String('exportDataLine') },
+                {
+                  key: String('exportData'),
+                  icon: <CloudDownloadOutlined />,
+                  label: (
+                    <Popconfirm
+                      placement="left"
+                      title={t('common.confirm')}
+                      okText={t('common.ok')}
+                      cancelText={t('common.cancel')}
+                      onConfirm={() => {
+                        onBoardToDownLoad?.(DownloadFileType.Excel);
+                      }}
+                    >
+                      {t('share.exportData')}
+                    </Popconfirm>
+                  ),
+                },
+                {
+                  key: String('exportPDF'),
+                  icon: <CloudDownloadOutlined />,
+                  label: (
+                    <Popconfirm
+                      placement="left"
+                      title={t('common.confirm')}
+                      okText={t('common.ok')}
+                      cancelText={t('common.cancel')}
+                      onConfirm={() => {
+                        onBoardToDownLoad?.(DownloadFileType.Pdf);
+                      }}
+                    >
+                      {t('share.exportPDF')}
+                    </Popconfirm>
+                  ),
+                },
+                {
+                  key: String('exportPicture'),
+                  icon: <CloudDownloadOutlined />,
+                  label: (
+                    <Popconfirm
+                      placement="left"
+                      title={t('common.confirm')}
+                      okText={t('common.ok')}
+                      cancelText={t('common.cancel')}
+                      onConfirm={() => {
+                        onBoardToDownLoad?.(DownloadFileType.Image);
+                      }}
+                    >
+                      {t('share.exportPicture')}
+                    </Popconfirm>
+                  ),
+                },
+                {
+                  key: String('exportTpl'),
+                  icon: <CloudDownloadOutlined />,
+                  label: (
+                    <Popconfirm
+                      placement="left"
+                      title={t('common.confirm')}
+                      okText={t('common.ok')}
+                      cancelText={t('common.cancel')}
+                      onConfirm={openMockData}
+                    >
+                      {t('share.exportTpl')}
+                    </Popconfirm>
+                  ),
+                },
+              ]
+            : []),
+          ...(allowManage
+            ? [
+                { type: 'divider' as const, key: String('unpublishLine') },
+                ...(status === 2
+                  ? [
+                      {
+                        key: String('unpublish'),
+                        onClick: publishBoard,
+                        icon: <FileAddOutlined />,
+                        label: t('unpublish'),
+                      },
+                    ]
+                  : []),
+                {
+                  key: String('saveAs'),
+                  onClick: () => saveAsViz(boardId, 'DASHBOARD'),
+                  icon: <CopyFilled />,
+                  label: tg('button.saveAs'),
+                },
+                {
+                  key: String('addToStory'),
+                  onClick: openStoryList,
+                  icon: <FileAddOutlined />,
+                  label: t('addToStory'),
+                },
+                {
+                  key: String('archive'),
+                  onClick: recycleViz,
+                  icon: <DeleteOutlined />,
+                  label: tg('button.archive'),
+                },
+              ]
+            : []),
+        ]}
+      />
     );
   },
 );

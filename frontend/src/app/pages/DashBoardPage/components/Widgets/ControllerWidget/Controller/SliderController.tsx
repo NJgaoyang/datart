@@ -63,7 +63,7 @@ export const SlideController: React.FC<SelectControllerProps> = memo(
         <Slider
           value={val}
           onChange={setVal}
-          onAfterChange={onChange}
+          onChangeComplete={onChange}
           min={minValue}
           max={maxValue}
           step={step}

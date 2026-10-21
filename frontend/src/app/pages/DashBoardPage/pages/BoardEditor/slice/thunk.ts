@@ -4,9 +4,8 @@ import {
   MOBILE_LAYOUT_VERSION,
   PC_ROW_LAYOUT_VERSION,
 } from 'app/pages/DashBoardPage/constants';
-import migrateWidgetChartConfig from 'app/migration/BoardConfig/migrateWidgetChartConfig';
-import migrateWidgetConfig from 'app/migration/BoardConfig/migrateWidgetConfig';
-import { migrateWidgets } from 'app/migration/BoardConfig/migrateWidgets';
+import { parseWidgets } from 'app/utils/configParser';
+
 import { ChartDataRequestBuilder } from 'app/models/ChartDataRequestBuilder';
 import {
   boardDrillManager,
@@ -34,13 +33,17 @@ import {
   getInitBoardInfo,
 } from 'app/pages/DashBoardPage/utils/board';
 import {
+  getDesktopGridLayout,
+  getMobileGridLayout,
+} from 'app/pages/DashBoardPage/utils/gridLayout';
+import {
   convertWrapChartWidget,
   createToSaveWidgetGroup,
   createWidgetInfo,
-  getWidgetMap,
   getLayoutWidgets,
+  getWidgetMap,
 } from 'app/pages/DashBoardPage/utils/widget';
-import { getDesktopGridLayout, getMobileGridLayout } from 'app/pages/DashBoardPage/utils/gridLayout';
+import { getWidgetQueryErrorMessage } from 'app/pages/DashBoardPage/utils/widgetQueryError';
 import { Variable } from 'app/pages/MainPage/pages/VariablePage/slice/types';
 import { PendingChartDataRequestFilter } from 'app/types/ChartDataRequest';
 import ChartDataView from 'app/types/ChartDataView';
@@ -49,7 +52,6 @@ import { filterSqlOperatorName } from 'app/utils/internalChartHelper';
 import { RootState } from 'types';
 import { request2 } from 'utils/request';
 import { uuidv4 } from 'utils/utils';
-import { getWidgetQueryErrorMessage } from 'app/pages/DashBoardPage/utils/widgetQueryError';
 import {
   editBoardStackActions,
   editDashBoardInfoActions,
@@ -126,17 +128,10 @@ export const fetchEditBoardDetail = createAsyncThunk<
       serverDataCharts,
       serverViews,
     );
-    let migratedWidgets = migrateWidgets(
-      serverWidgets,
-      boardType,
-      dashboard.config.layoutVersion,
-      dashboard.config.mobileLayoutVersion,
-      dashboard.config.pcRowLayoutVersion,
-    );
-    migratedWidgets = migrateWidgetConfig(migratedWidgets);
-    migratedWidgets = migrateWidgetChartConfig(migratedWidgets);
+    let parsedWidgets = parseWidgets(serverWidgets);
+
     const { widgetMap, wrappedDataCharts } = getWidgetMap(
-      migratedWidgets, //todo
+      parsedWidgets, //todo
       dataCharts,
       boardType,
       serverViews,

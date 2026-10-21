@@ -167,20 +167,22 @@ export const TimeSetter: React.FC<{
           validateTrigger={['onBlur']}
           rules={[{ required: true }]}
         >
-          <Select style={{ width: '100px' }} onChange={onChange}>
-            <Select.Option
-              key={TimeFilterValueCategory.Exact}
-              value={TimeFilterValueCategory.Exact}
-            >
-              {filterDataT('exact')}
-            </Select.Option>
-            <Select.Option
-              key={TimeFilterValueCategory.Relative}
-              value={TimeFilterValueCategory.Relative}
-            >
-              {filterDataT('relative')}
-            </Select.Option>
-          </Select>
+          <Select
+            style={{ width: '100px' }}
+            onChange={onChange}
+            options={[
+              {
+                key: String(TimeFilterValueCategory.Exact),
+                value: TimeFilterValueCategory.Exact,
+                label: filterDataT('exact'),
+              },
+              {
+                key: String(TimeFilterValueCategory.Relative),
+                value: TimeFilterValueCategory.Relative,
+                label: filterDataT('relative'),
+              },
+            ]}
+          />
         </Form.Item>
       );
     },
@@ -212,15 +214,19 @@ export const TimeSetter: React.FC<{
               validateTrigger={['onChange', 'onBlur']}
               rules={[{ required: true }]}
             >
-              <Select>
-                {PickerTypeOptions.map(item => {
-                  return (
-                    <Select.Option key={item.value} value={item.value}>
-                      {item.name}
-                    </Select.Option>
-                  );
-                })}
-              </Select>
+              <Select
+                options={[
+                  ...(PickerTypeOptions.flatMap(item => {
+                    return [
+                      {
+                        key: String(item.value),
+                        value: item.value,
+                        label: item.name,
+                      },
+                    ];
+                  }) || []),
+                ]}
+              />
             </Form.Item>
             {controllerType === ControllerFacadeTypes.Time && (
               <>

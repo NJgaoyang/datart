@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
+import { APP_CURRENT_VERSION } from 'app/configVersion';
 import { FONT_DEFAULT } from 'app/constants';
-import { APP_CURRENT_VERSION } from 'app/migration/constants';
+
 import { LAYOUT_COLS_MAP } from 'app/pages/DashBoardPage/constants';
 import type {
   BoardType,

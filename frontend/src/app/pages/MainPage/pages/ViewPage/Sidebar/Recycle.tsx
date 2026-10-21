@@ -22,7 +22,7 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons';
 import { Menu, message, Popconfirm, TreeDataNode } from 'antd';
-import { MenuListItem, Popup, Tree, TreeTitle } from 'app/components';
+import { MenuItemLabel, Popup, Tree, TreeTitle } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import {
   selectIsOrgOwner,
@@ -102,7 +102,7 @@ export const Recycle = memo(({ list }: RecycleProps) => {
           case 'reset':
             showSaveForm({
               type: CommonFormTypes.Edit,
-              visible: true,
+              open: true,
               simple: true,
               initialValues: { name, parentId: null },
               parentIdLabel: t('folder'),
@@ -143,25 +143,36 @@ export const Recycle = memo(({ list }: RecycleProps) => {
                   prefixCls="ant-dropdown-menu"
                   selectable={false}
                   onClick={moreMenuClick(key, title)}
-                >
-                  <MenuListItem
-                    key="reset"
-                    prefix={<ReloadOutlined className="icon" />}
-                  >
-                    {tg('button.restore')}
-                  </MenuListItem>
-                  <MenuListItem
-                    key="delelte"
-                    prefix={<DeleteOutlined className="icon" />}
-                  >
-                    <Popconfirm
-                      title={tg('operation.deleteConfirm')}
-                      onConfirm={del(key)}
-                    >
-                      {tg('button.delete')}
-                    </Popconfirm>
-                  </MenuListItem>
-                </Menu>
+                  items={[
+                    {
+                      key: String('reset'),
+                      label: (
+                        <MenuItemLabel
+                          prefix={<ReloadOutlined className="icon" />}
+                        >
+                          {tg('button.restore')}
+                        </MenuItemLabel>
+                      ),
+                    },
+                    {
+                      key: String('delelte'),
+                      label: (
+                        <MenuItemLabel
+                          prefix={<DeleteOutlined className="icon" />}
+                        >
+                          {
+                            <Popconfirm
+                              title={tg('operation.deleteConfirm')}
+                              onConfirm={del(key)}
+                            >
+                              {tg('button.delete')}
+                            </Popconfirm>
+                          }
+                        </MenuItemLabel>
+                      ),
+                    },
+                  ]}
+                />
               }
             >
               <span className="action" onClick={stopPPG}>

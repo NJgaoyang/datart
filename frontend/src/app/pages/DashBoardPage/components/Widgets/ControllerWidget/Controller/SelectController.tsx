@@ -18,8 +18,8 @@
 import { Form, Select } from 'antd';
 import { SelectValue } from 'antd/lib/select';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
-import { ControlOption } from 'app/pages/DashBoardPage/pages/BoardEditor/components/ControllerWidgetPanel/types';
 import { BoardContext } from 'app/pages/DashBoardPage/components/BoardProvider/BoardProvider';
+import { ControlOption } from 'app/pages/DashBoardPage/pages/BoardEditor/components/ControllerWidgetPanel/types';
 import React, { memo, useContext } from 'react';
 import styled from 'styled-components';
 
@@ -33,7 +33,6 @@ export interface SelectControllerProps {
   name?: string;
   required?: boolean;
 }
-const { Option } = Select;
 export const SelectControllerForm: React.FC<SelectControllerProps> = memo(
   ({ label, name, required, value, ...rest }) => {
     return (
@@ -59,33 +58,40 @@ export const SelectController: React.FC<SelectControllerProps> = ({
   const { isMobile } = useContext(BoardContext);
   return (
     <StyledSelect
-      showSearch
-      classNames={{ popup: { root: isMobile ? 'datart-mobile-filter-popup' : undefined } }}
+      classNames={{
+        popup: { root: isMobile ? 'datart-mobile-filter-popup' : undefined },
+      }}
       popupMatchSelectWidth={!isMobile}
       allowClear
       value={value}
       style={{ width: '100%' }}
       placeholder={t('selectController')}
       onChange={onChange}
-      optionFilterProp="label"
-      bordered={false}
-      filterOption={(input, option) =>
-        String(option?.label).toLowerCase().indexOf(input.toLowerCase()) >= 0
-      }
-    >
-      {(options || []).map(item => {
-        //  ##659
-        return (
-          <Option
-            key={item.value + item.label}
-            label={item.label ?? item.value ?? 'none'}
-            value={item.value}
-          >
-            <span title={String(item.label ?? item.value ?? '')}>{item.label ?? item.value}</span>
-          </Option>
-        );
-      })}
-    </StyledSelect>
+      variant="borderless"
+      options={[
+        ...((options || []).flatMap(item => {
+          //  ##659
+          return [
+            {
+              key: String(item.value + item.label),
+              label: item.label ?? item.value ?? 'none',
+              value: item.value,
+              children: (
+                <span title={String(item.label ?? item.value ?? '')}>
+                  {item.label ?? item.value}
+                </span>
+              ),
+            },
+          ];
+        }) || []),
+      ]}
+      optionRender={({ data }) => data.children ?? data.label}
+      showSearch={{
+        optionFilterProp: 'label',
+        filterOption: (input, option) =>
+          String(option?.label).toLowerCase().indexOf(input.toLowerCase()) >= 0,
+      }}
+    />
   );
 };
 const StyledSelect = styled(Select)`

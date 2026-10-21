@@ -580,19 +580,16 @@ const ChartPreviewBoard: FC<{
         );
 
         try {
-          navigate(
-            `/organizations/${orgId}/vizs/${dashboardId}/boardEditor`,
-            {
-              state: {
-                widgetInfo: JSON.stringify({
-                  chartType: '',
-                  dataChart: currentChartPreview?.backendChart,
-                  dataview: currentChartPreview?.backendChart?.view,
-                  dashboardType,
-                }),
-              },
+          navigate(`/organizations/${orgId}/vizs/${dashboardId}/boardEditor`, {
+            state: {
+              widgetInfo: JSON.stringify({
+                chartType: '',
+                dataChart: currentChartPreview?.backendChart,
+                dataview: currentChartPreview?.backendChart?.view,
+                dashboardType,
+              }),
             },
-          );
+          });
         } catch (error) {
           throw error;
         }
@@ -692,7 +689,10 @@ const ChartPreviewBoard: FC<{
               />
             </div>
             <ChartWrapper ref={ref}>
-              <Spin wrapperClassName="spinWrapper" spinning={loadingStatus}>
+              <Spin
+                classNames={{ root: 'spinWrapper' }}
+                spinning={loadingStatus}
+              >
                 <ChartDrillContextMenu
                   chartConfig={chartPreview?.chartConfig!}
                   metas={chartPreview?.backendChart?.view?.meta}

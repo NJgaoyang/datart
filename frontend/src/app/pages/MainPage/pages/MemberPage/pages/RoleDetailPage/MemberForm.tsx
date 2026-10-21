@@ -46,10 +46,10 @@ export const MemberForm = memo(
     );
 
     useEffect(() => {
-      if (modalProps.visible) {
+      if (modalProps.open) {
         dispatch(getMembers(orgId));
       }
-    }, [dispatch, orgId, modalProps.visible]);
+    }, [dispatch, orgId, modalProps.open]);
 
     useEffect(() => {
       setTargetKeys(initialValues.map(({ id }) => id));

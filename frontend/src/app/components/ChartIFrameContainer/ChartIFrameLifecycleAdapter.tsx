@@ -110,7 +110,8 @@ const ChartIFrameLifecycleAdapter: FC<{
     setContainerStatus(ContainerStatus.LOADING);
     setLoadFailed(false);
 
-    chartResourceLoader.loadResource(document, chart.getDependencies?.())
+    chartResourceLoader
+      .loadResource(document, chart.getDependencies?.())
       .then(() => {
         if (cancelled) return;
         chart.init(config);
@@ -127,7 +128,11 @@ const ChartIFrameLifecycleAdapter: FC<{
       .catch(error => {
         if (cancelled) return;
         // Preserve the underlying error for diagnostics, not for end users.
-        console.error('Datart chart initialization failed:', chart.meta?.id, error);
+        console.error(
+          'Datart chart initialization failed:',
+          chart.meta?.id,
+          error,
+        );
         setLoadFailed(true);
         setContainerStatus(ContainerStatus.FAILED);
       });
@@ -228,7 +233,7 @@ const ChartIFrameLifecycleAdapter: FC<{
         <Alert
           type="error"
           showIcon
-          message="图表组件初始化失败"
+          title="图表组件初始化失败"
           description="请刷新页面重试；如问题持续，请联系管理员检查浏览器控制台。"
         />
       )}

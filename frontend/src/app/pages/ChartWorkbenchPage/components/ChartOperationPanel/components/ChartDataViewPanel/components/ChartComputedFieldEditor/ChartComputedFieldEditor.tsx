@@ -17,6 +17,7 @@
  */
 
 import { Divider, Row } from 'antd';
+import CodeEditor from 'app/components/CodeEditor';
 import {
   ChartComputedFieldHandle,
   FunctionDescription,
@@ -30,7 +31,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import MonacoEditor from 'app/components/Compat/MonacoEditor';
 import styled from 'styled-components';
 import ChartComputedFieldEditorDarkTheme from './ChartComputedFieldEditorDarkTheme';
 import DatartQueryLanguageSpecification from './DatartQueryLanguageSpecification';
@@ -123,18 +123,13 @@ const ChartComputedFieldEditor: ForwardRefRenderFunction<
   return (
     <StyledChartComputedFieldEditor>
       <Row>
-        <MonacoEditor
+        <CodeEditor
           theme="dqlTheme"
           language="dql"
           value={editorText}
           onChange={onChange}
-          editorWillMount={handleEdtiorWillMount}
-          editorDidMount={handleEditorDidMount}
-          overrideServices={
-            {
-              // onDidChangeCursorPosition: () => console.log('overrideServices |onDidChangeCursorPosition ---->'),
-            }
-          }
+          onBeforeMount={handleEdtiorWillMount}
+          onMount={handleEditorDidMount}
           options={{
             lineDecorationsWidth: 1,
           }}

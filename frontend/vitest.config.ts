@@ -16,9 +16,16 @@ export default defineConfig({
     // Vitest 5 defaults clearMocks to true; retain existing test isolation semantics.
     clearMocks: false,
     environment: 'jsdom',
-    setupFiles: ['src/test/jestShim.ts', 'jest-canvas-mock', 'src/setupTests.ts'],
+    setupFiles: [
+      'src/test/jestShim.ts',
+      'jest-canvas-mock',
+      'src/setupTests.ts',
+    ],
     css: false,
-    include: ['src/**/__tests__/**/*.{spec,test}.{js,jsx,ts,tsx}'],
+    include: [
+      'src/**/__tests__/**/*.{spec,test}.{js,jsx,ts,tsx}',
+      'scripts/legacy-upgrade/**/__tests__/**/*.test.{ts,tsx}',
+    ],
     testTimeout: 20000,
   },
 });

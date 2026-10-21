@@ -22,7 +22,7 @@ import {
   PlusOutlined,
 } from '@ant-design/icons';
 import { Menu } from 'antd';
-import { Avatar, MenuListItem, ToolbarButton } from 'app/components';
+import { Avatar, MenuItemLabel, ToolbarButton } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import {
   selectOrganizationListLoading,
@@ -31,7 +31,7 @@ import {
 } from 'app/pages/MainPage/slice/selectors';
 import classnames from 'classnames';
 import { BASE_RESOURCE_URL } from 'globalConstants';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
@@ -86,29 +86,37 @@ export function OrganizationList() {
         prefixCls="ant-dropdown-menu"
         selectable={false}
         onClick={menuSelect}
-      >
-        {organizations.map(o => {
-          const itemClass = classnames({
-            selected: orgId === o.id,
-          });
-          return (
-            <MenuListItem
-              key={o.id}
-              className={itemClass}
-              prefix={
-                <Avatar size="small" src={`${BASE_RESOURCE_URL}${o.avatar}`}>
-                  {o.name.substr(0, 1).toUpperCase()}
-                </Avatar>
-              }
-              {...(orgId === o.id && {
-                suffix: <CheckOutlined className="icon" />,
-              })}
-            >
-              <p>{o.name}</p>
-            </MenuListItem>
-          );
-        })}
-      </StyledMenu>
+        items={[
+          ...(organizations.flatMap(o => {
+            const itemClass = classnames({
+              selected: orgId === o.id,
+            });
+            return [
+              {
+                key: String(o.id),
+                className: itemClass,
+                ...(orgId === o.id && {
+                  suffix: <CheckOutlined className="icon" />,
+                }),
+                label: (
+                  <MenuItemLabel
+                    prefix={
+                      <Avatar
+                        size="small"
+                        src={`${BASE_RESOURCE_URL}${o.avatar}`}
+                      >
+                        {o.name.substr(0, 1).toUpperCase()}
+                      </Avatar>
+                    }
+                  >
+                    {<p>{o.name}</p>}
+                  </MenuItemLabel>
+                ),
+              },
+            ];
+          }) || []),
+        ]}
+      />
     );
   }
 
@@ -123,7 +131,7 @@ export function OrganizationList() {
         />
       </Title>
       {list}
-      <OrganizationForm visible={formVisible} onCancel={hideForm} />
+      <OrganizationForm open={formVisible} onCancel={hideForm} />
     </Wrapper>
   );
 }

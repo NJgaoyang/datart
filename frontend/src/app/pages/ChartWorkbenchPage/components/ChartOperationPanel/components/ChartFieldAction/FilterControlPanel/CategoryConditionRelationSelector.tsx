@@ -54,34 +54,29 @@ const CategoryConditionRelationSelector: FC<{
           setInputValue('');
           handleConditionFilterChange(op, null);
         }}
-      >
-        <Select.OptGroup label={t('include')}>
-          {[
-            FilterSqlOperator.Contain,
-            FilterSqlOperator.PrefixContain,
-            FilterSqlOperator.SuffixContain,
-            FilterSqlOperator.Equal,
-            FilterSqlOperator.Null,
-          ].map(f => (
-            <Select.Option key={f} value={f}>
-              {t2(f)}
-            </Select.Option>
-          ))}
-        </Select.OptGroup>
-        <Select.OptGroup label={t('notInclude')}>
-          {[
-            FilterSqlOperator.NotContain,
-            FilterSqlOperator.NotPrefixContain,
-            FilterSqlOperator.NotSuffixContain,
-            FilterSqlOperator.NotEqual,
-            FilterSqlOperator.NotNull,
-          ].map(f => (
-            <Select.Option key={f} value={f}>
-              {t2(f)}
-            </Select.Option>
-          ))}
-        </Select.OptGroup>
-      </Select>
+        options={[
+          {
+            label: t('include'),
+            options: [
+              FilterSqlOperator.Contain,
+              FilterSqlOperator.PrefixContain,
+              FilterSqlOperator.SuffixContain,
+              FilterSqlOperator.Equal,
+              FilterSqlOperator.Null,
+            ].map(f => ({ key: f, value: f, children: t2(f), label: t2(f) })),
+          },
+          {
+            label: t('notInclude'),
+            options: [
+              FilterSqlOperator.NotContain,
+              FilterSqlOperator.NotPrefixContain,
+              FilterSqlOperator.NotSuffixContain,
+              FilterSqlOperator.NotEqual,
+              FilterSqlOperator.NotNull,
+            ].map(f => ({ key: f, value: f, children: t2(f), label: t2(f) })),
+          },
+        ]}
+      />
     );
   };
 
@@ -89,14 +84,16 @@ const CategoryConditionRelationSelector: FC<{
     <Space>
       {condition?.operator !== FilterSqlOperator.Null &&
         condition?.operator !== FilterSqlOperator.NotNull && (
-          <Input
-            addonBefore={renderRelationSelector()}
-            value={inputValue}
-            onChange={e => {
-              setInputValue(e.target.value);
-              debounceHandleFilterChange(condition?.operator, e.target.value);
-            }}
-          />
+          <Space.Compact>
+            {renderRelationSelector()}
+            <Input
+              value={inputValue}
+              onChange={e => {
+                setInputValue(e.target.value);
+                debounceHandleFilterChange(condition?.operator, e.target.value);
+              }}
+            />
+          </Space.Compact>
         )}
       {(condition?.operator === FilterSqlOperator.Null ||
         condition?.operator === FilterSqlOperator.NotNull) &&

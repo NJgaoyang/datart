@@ -29,8 +29,9 @@ import {
   TreeSelect,
 } from 'antd';
 import { ModalForm, ModalFormProps } from 'app/components';
+import { APP_CURRENT_VERSION } from 'app/configVersion';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
-import { APP_CURRENT_VERSION } from 'app/migration/constants';
+
 import { fetchCheckName } from 'app/utils/fetch';
 import debounce from 'debounce-promise';
 import { DEFAULT_DEBOUNCE_WAIT } from 'globalConstants';
@@ -60,7 +61,7 @@ import {
   selectCurrentEditingView,
 } from './slice/selectors';
 
-type SaveFormProps = Omit<ModalFormProps, 'type' | 'visible' | 'onSave'>;
+type SaveFormProps = Omit<ModalFormProps, 'type' | 'open' | 'onSave'>;
 
 export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
   const [advancedVisible, setAdvancedVisible] = useState(false);
@@ -70,7 +71,7 @@ export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
   const [expensiveQuery, setExpensiveQuery] = useState(false); // beta.2 add expensiveQuery
   const {
     type,
-    visible,
+    open,
     simple,
     parentIdLabel,
     initialValues,
@@ -145,7 +146,7 @@ export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
       {...modalProps}
       title={t(simple ? 'folder' : 'title')}
       type={type}
-      visible={visible}
+      open={open}
       confirmLoading={currentEditingView?.stage === ViewViewModelStages.Saving}
       onSave={save}
       onCancel={onCancel}

@@ -64,18 +64,17 @@ export const ExportSelector: FC<{
       <Card title={t('export.title')}>
         <div className="export-box">
           <TreeSelect
-            showSearch
-            autoClearSearchValue
             className="export-tree"
             treeCheckable={true}
             value={selectedIds}
-            dropdownStyle={{ maxHeight: 1000, overflow: 'auto' }}
+            styles={{ popup: { root: { maxHeight: 1000, overflow: 'auto' } } }}
             placeholder={t('export.selectText')}
             allowClear
             multiple
             treeData={treeData}
             treeDefaultExpandAll
             onChange={onChange}
+            showSearch={{ autoClearSearchValue: true }}
           ></TreeSelect>
           <Button
             className="export-btn"

@@ -29,12 +29,12 @@ import {
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { QueryResult } from 'app/pages/MainPage/pages/ViewPage/slice/types';
 import { DataProviderAttribute } from 'app/pages/MainPage/slice/types';
-type Rule = NonNullable<FormItemProps['rules']>[number];
 import { ReactElement } from 'react';
 import { ArrayConfig } from './ArrayConfig';
 import { FileUpload } from './FileUpload';
 import { Properties } from './Properties';
 import { SchemaComponent } from './SchemaComponent';
+type Rule = NonNullable<FormItemProps['rules']>[number];
 
 interface ConfigComponentProps {
   attr: DataProviderAttribute;
@@ -109,13 +109,12 @@ export function ConfigComponent({
           onChange={onDbTypeChange}
           showSearch
           allowClear
-        >
-          {options?.map(({ dbType }) => (
-            <Select.Option key={dbType} value={dbType}>
-              {dbType}
-            </Select.Option>
-          ))}
-        </Select>
+          options={[
+            ...(options?.flatMap(({ dbType }) => [
+              { key: String(dbType), value: dbType, label: dbType },
+            ]) || []),
+          ]}
+        />
       );
       break;
     case 'path':
@@ -137,13 +136,16 @@ export function ConfigComponent({
           if (options && options.length > 0) {
             if (options.length > 3) {
               component = (
-                <Select disabled={disabled} showSearch allowClear>
-                  {options.map(o => (
-                    <Select.Option key={o} value={o}>
-                      {o}
-                    </Select.Option>
-                  ))}
-                </Select>
+                <Select
+                  disabled={disabled}
+                  showSearch
+                  allowClear
+                  options={[
+                    ...(options.flatMap(o => [
+                      { key: String(o), value: o, label: o },
+                    ]) || []),
+                  ]}
+                />
               );
             } else {
               component = (

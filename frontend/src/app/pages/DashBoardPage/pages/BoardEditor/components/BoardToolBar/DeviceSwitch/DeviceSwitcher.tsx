@@ -1,4 +1,3 @@
-import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -47,32 +46,34 @@ export const DeviceSwitcher = () => {
     );
   }, [curDeviceType]);
   const deviceItems = (
-    <Menu onClick={onDeviceSwitch}>
-      <Menu.Item
-        disabled={curDeviceType === DeviceType.Desktop}
-        key={DeviceType.Desktop}
-        icon={<DesktopOutlined />}
-      >
-        {DeviceType.Desktop}
-      </Menu.Item>
-      {/* <Menu.Item key={'tablet'} icon={<TabletOutlined />}>
-        {'tablet'}
-      </Menu.Item> */}
-      <Menu.Item
-        disabled={curDeviceType === DeviceType.Mobile}
-        key={DeviceType.Mobile}
-        icon={<MobileOutlined />}
-      >
-        {DeviceType.Mobile}
-      </Menu.Item>
-    </Menu>
+    <Menu
+      onClick={onDeviceSwitch}
+      items={[
+        {
+          disabled: curDeviceType === DeviceType.Desktop,
+          key: String(DeviceType.Desktop),
+          icon: <DesktopOutlined />,
+          label: DeviceType.Desktop,
+        },
+        {
+          disabled: curDeviceType === DeviceType.Mobile,
+          key: String(DeviceType.Mobile),
+          icon: <MobileOutlined />,
+          label: DeviceType.Mobile,
+        },
+      ]}
+    />
   );
 
   return (
-    <LegacyDropdown overlay={deviceItems} placement="bottomLeft" trigger={['click']}>
+    <Dropdown
+      popupRender={() => deviceItems}
+      placement="bottomLeft"
+      trigger={['click']}
+    >
       <Tooltip title={t('deviceSwitch')}>
         <ToolbarButton icon={curIcon} />
       </Tooltip>
-    </LegacyDropdown>
+    </Dropdown>
   );
 };

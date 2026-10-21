@@ -308,7 +308,7 @@ const ControllerWidgetPanel: React.FC<WidgetControllerPanelParams> = memo(
         open={visible}
         onOk={onSubmit}
         centered
-        destroyOnClose
+        destroyOnHidden
         width={1160}
         afterClose={afterClose}
         onCancel={() => setVisible(false)}

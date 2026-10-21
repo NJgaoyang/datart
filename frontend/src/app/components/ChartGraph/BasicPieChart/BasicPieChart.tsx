@@ -46,8 +46,8 @@ import {
   transformToDataSet,
   valueFormatter,
 } from 'app/utils/chartHelper';
-import { init } from 'echarts';
 import { applyMobileChartOption } from 'app/utils/mobileChartOption';
+import { init } from 'echarts';
 import Config from './config';
 import { PieSeries, PieSeriesImpl, PieSeriesStyle } from './types';
 
@@ -351,20 +351,6 @@ class BasicPieChart extends Chart {
         return seriesParams.name;
       }
       const data = seriesParams?.data || {};
-
-      //处理 label 旧数据中没有 showValue, showPercent, showName 数据  alpha.3版本之后是 boolean 类型 后续版本稳定之后 可以移除此逻辑
-      // TODO migration start
-      if (
-        showName === null ||
-        showPercent === null ||
-        showValue === null ||
-        showName === void 0 ||
-        showPercent === void 0 ||
-        showValue === void 0
-      ) {
-        return `${seriesParams?.name}: ${seriesParams?.percent + '%'}`;
-      }
-      // TODO migration end --tl
 
       return `${showName ? seriesParams?.name : ''}${
         showName && (showValue || showPercent) ? ': ' : ''

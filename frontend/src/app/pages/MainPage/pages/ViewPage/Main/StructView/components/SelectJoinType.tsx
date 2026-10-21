@@ -1,4 +1,3 @@
-import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -33,22 +32,29 @@ interface SelectJoinTypeProps {
 const SelectJoinType = memo(({ type, onChange }: SelectJoinTypeProps) => {
   const t = useI18NPrefix(`view.structView`);
   return (
-    <LegacyDropdown
+    <Dropdown
       trigger={['click']}
       placement="bottomLeft"
-      overlay={
-        <Menu selectedKeys={[type]} onClick={e => onChange(e.key)}>
-          <Menu.Item key={StructViewJoinType.LeftJoin}>
-            {t(StructViewJoinType.LeftJoin)}
-          </Menu.Item>
-          <Menu.Item key={StructViewJoinType.RightJoin}>
-            {t(StructViewJoinType.RightJoin)}
-          </Menu.Item>
-          <Menu.Item key={StructViewJoinType.InnerJoin}>
-            {t(StructViewJoinType.InnerJoin)}
-          </Menu.Item>
-        </Menu>
-      }
+      popupRender={() => (
+        <Menu
+          selectedKeys={[type]}
+          onClick={e => onChange(e.key)}
+          items={[
+            {
+              key: String(StructViewJoinType.LeftJoin),
+              label: t(StructViewJoinType.LeftJoin),
+            },
+            {
+              key: String(StructViewJoinType.RightJoin),
+              label: t(StructViewJoinType.RightJoin),
+            },
+            {
+              key: String(StructViewJoinType.InnerJoin),
+              label: t(StructViewJoinType.InnerJoin),
+            },
+          ]}
+        />
+      )}
     >
       <Icon
         className={classnames('iconfont', {
@@ -57,7 +63,7 @@ const SelectJoinType = memo(({ type, onChange }: SelectJoinTypeProps) => {
           'icon-join_left': type === StructViewJoinType.LeftJoin,
         })}
       ></Icon>
-    </LegacyDropdown>
+    </Dropdown>
   );
 });
 

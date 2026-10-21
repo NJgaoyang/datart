@@ -17,8 +17,9 @@
  */
 
 import { TreeDataNode } from 'antd';
+import { APP_CURRENT_VERSION } from 'app/configVersion';
 import { DataViewFieldType } from 'app/constants';
-import { APP_CURRENT_VERSION } from 'app/migration/constants';
+
 import { FONT_WEIGHT_MEDIUM, SPACE_UNIT } from 'styles/StyleConstants';
 import { Nullable } from 'types';
 import { isEmptyArray, isEqualObject } from 'utils/object';
@@ -29,6 +30,7 @@ import {
   getFieldDisplayName,
   getTextWidth,
 } from 'utils/utils';
+import { PreviewFieldMeta, ViewFieldMeta } from '../../../../types/View';
 import {
   ColumnCategories,
   DEFAULT_PREVIEW_SIZE,
@@ -48,7 +50,6 @@ import {
   ViewType,
   ViewViewModel,
 } from './slice/types';
-import { PreviewFieldMeta, ViewFieldMeta } from '../../../../types/View';
 
 export function generateEditingView(
   attrs?: Partial<ViewViewModel>,

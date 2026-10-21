@@ -62,22 +62,22 @@ const SortAction: FC<{
   const renderOptions = mode => {
     if (mode === 'menu') {
       return (
-        <>
-          {[SortActionType.None, SortActionType.ASC, SortActionType.DESC].map(
-            sort => {
-              return (
-                <Menu.Item
-                  key={sort}
-                  eventKey={sort}
-                  icon={direction === sort ? <CheckOutlined /> : ''}
-                  onClick={() => handleSortTypeChange(sort)}
-                >
-                  {t(`sort.${sort?.toLowerCase()}`)}
-                </Menu.Item>
-              );
-            },
-          )}
-        </>
+        <Menu
+          items={[
+            ...[
+              SortActionType.None,
+              SortActionType.ASC,
+              SortActionType.DESC,
+            ].map(sort => {
+              return {
+                key: String(sort),
+                icon: direction === sort ? <CheckOutlined /> : '',
+                onClick: () => handleSortTypeChange(sort),
+                label: t(`sort.${sort?.toLowerCase()}`),
+              };
+            }),
+          ]}
+        />
       );
     }
 
@@ -88,7 +88,7 @@ const SortAction: FC<{
             onChange={e => handleSortTypeChange(e.target?.value)}
             value={direction}
           >
-            <Space direction="vertical">
+            <Space orientation="vertical">
               <Radio key={SortActionType.None} value={SortActionType.None}>
                 {t('sort.none')}
               </Radio>

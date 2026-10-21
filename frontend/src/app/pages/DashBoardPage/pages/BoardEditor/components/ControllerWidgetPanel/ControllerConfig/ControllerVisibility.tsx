@@ -22,11 +22,11 @@ import {
   ALL_SQL_OPERATOR_OPTIONS,
   VISIBILITY_TYPE_OPTION,
 } from 'app/pages/DashBoardPage/constants';
+import { ControllerWidgetContent } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { Widget } from 'app/pages/DashBoardPage/types/widgetTypes';
 import { FilterSqlOperator } from 'globalConstants';
 import { FC, memo, useCallback } from 'react';
 import styled from 'styled-components';
-import { ControllerWidgetContent } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 
 const ControllerVisibility: FC<{
   form: FormInstance<ControllerWidgetContent> | undefined;
@@ -85,15 +85,18 @@ const ControllerVisibility: FC<{
                     <Select
                       placeholder={tc('title')}
                       style={{ width: '160px' }}
-                    >
-                      {otherStrFilterWidgets.map(ele => {
-                        return (
-                          <Select.Option key={ele.id} value={ele.id}>
-                            {ele.config.name}
-                          </Select.Option>
-                        );
-                      })}
-                    </Select>
+                      options={[
+                        ...(otherStrFilterWidgets.flatMap(ele => {
+                          return [
+                            {
+                              key: String(ele.id),
+                              value: ele.id,
+                              label: ele.config.name,
+                            },
+                          ];
+                        }) || []),
+                      ]}
+                    />
                   </Form.Item>
                   {' - '}
                   <Form.Item
@@ -101,20 +104,26 @@ const ControllerVisibility: FC<{
                     noStyle
                     rules={[{ required: true, message: '' }]}
                   >
-                    <Select placeholder="" style={{ width: '100px' }}>
-                      {ALL_SQL_OPERATOR_OPTIONS.filter(it =>
-                        [
-                          FilterSqlOperator.Equal,
-                          FilterSqlOperator.NotEqual,
-                        ].includes(it.value),
-                      ).map(it => {
-                        return (
-                          <Select.Option key={it.value} value={it.value}>
-                            {it.name}
-                          </Select.Option>
-                        );
-                      })}
-                    </Select>
+                    <Select
+                      placeholder=""
+                      style={{ width: '100px' }}
+                      options={[
+                        ...(ALL_SQL_OPERATOR_OPTIONS.filter(it =>
+                          [
+                            FilterSqlOperator.Equal,
+                            FilterSqlOperator.NotEqual,
+                          ].includes(it.value),
+                        ).flatMap(it => {
+                          return [
+                            {
+                              key: String(it.value),
+                              value: it.value,
+                              label: it.name,
+                            },
+                          ];
+                        }) || []),
+                      ]}
+                    />
                   </Form.Item>
                   {' - '}
                   <Form.Item

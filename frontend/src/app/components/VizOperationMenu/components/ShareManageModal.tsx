@@ -282,7 +282,7 @@ const ShareManageModal: FC<{
         open={visibility}
         onOk={onOk}
         onCancel={onCancel}
-        destroyOnClose
+        destroyOnHidden
         closable={false}
       >
         <Table

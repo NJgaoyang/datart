@@ -1,4 +1,3 @@
-import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -17,11 +16,7 @@ import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
  * limitations under the License.
  */
 
-import {
-  EditOutlined,
-  MoreOutlined,
-  SendOutlined,
-} from '@ant-design/icons';
+import { EditOutlined, MoreOutlined, SendOutlined } from '@ant-design/icons';
 import { Button, Dropdown, Space } from 'antd';
 import { ShareManageModal } from 'app/components/VizOperationMenu';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
@@ -78,14 +73,11 @@ export const TitleHeader: FC = memo(() => {
 
   const saveToStoryOk = useCallback(
     (storyId: string) => {
-      navigate(
-        `/organizations/${orgId}/vizs/storyEditor/${storyId}`,
-        {
-          state: {
-            addDashboardId: boardId,
-          },
+      navigate(`/organizations/${orgId}/vizs/storyEditor/${storyId}`, {
+        state: {
+          addDashboardId: boardId,
         },
-      );
+      });
       setShowSaveToStory(false);
     },
     [boardId, navigate, orgId],
@@ -113,19 +105,19 @@ export const TitleHeader: FC = memo(() => {
           </>
         )}
         {!isArchived && (
-          <LegacyDropdown
-            overlay={
+          <Dropdown
+            popupRender={() => (
               <BoardDropdownList
                 onOpenShareLink={onOpenShareLink}
                 openStoryList={() => setShowSaveToStory(true)}
                 openMockData={() => setMockDataModal(true)}
               />
-            }
+            )}
             placement="bottomRight"
             arrow
           >
             <Button icon={<MoreOutlined />} />
-          </LegacyDropdown>
+          </Dropdown>
         )}
         {!isArchived && allowManage && (
           <SaveToStoryBoard

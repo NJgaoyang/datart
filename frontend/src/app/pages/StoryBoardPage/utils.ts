@@ -16,8 +16,6 @@
  * limitations under the License.
  */
 
-import { migrateStoryConfig } from 'app/migration/StoryConfig/migrateStoryConfig';
-import { migrateStoryPageConfig } from 'app/migration/StoryConfig/migrateStoryPageConfig';
 import {
   ServerStoryBoard,
   StoryBoard,
@@ -29,7 +27,7 @@ import {
 } from './slice/types';
 
 export const formatStory = (data: ServerStoryBoard) => {
-  let config = migrateStoryConfig(data.config);
+  let config = JSON.parse(data.config);
   let story = { ...data, config: config } as StoryBoard;
   return story;
 };
@@ -82,6 +80,6 @@ export const getInitStoryPageConfig = (index?: number): StoryPageConfig => {
 export const getStoryPage = (pages: StoryPageOfServer[]) => {
   return pages.map(page => ({
     ...page,
-    config: migrateStoryPageConfig(page.config),
+    config: JSON.parse(page.config),
   }));
 };

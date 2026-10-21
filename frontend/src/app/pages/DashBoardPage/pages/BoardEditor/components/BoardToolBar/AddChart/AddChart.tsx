@@ -80,7 +80,7 @@ export const AddChart = () => {
 
       <ChartSelectModalModal
         dataCharts={chartOptions}
-        visible={dataChartVisible}
+        open={dataChartVisible}
         onSelectedCharts={onSelectedDataCharts}
         onCancel={() => setDataChartVisible(false)}
       />

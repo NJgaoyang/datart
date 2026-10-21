@@ -22,7 +22,7 @@ import {
   TableOutlined,
 } from '@ant-design/icons';
 import { Button, Checkbox, Divider, Empty, Input, Menu, Popover } from 'antd';
-import { MenuListItem, Tree } from 'app/components';
+import { MenuItemLabel, Tree } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { useSearchAndExpand } from 'app/hooks/useSearchAndExpand';
 import classnames from 'classnames';
@@ -283,7 +283,7 @@ const SelectDataSource = memo(
         <Popover
           trigger={['click']}
           placement="bottomLeft"
-          classNames={{ root: "datart-popup" }}
+          classNames={{ root: 'datart-popup' }}
           open={allowManage && visible}
           onOpenChange={
             renderType === 'MANAGE' ? handleVisibleChange : undefined
@@ -329,22 +329,35 @@ const SelectDataSource = memo(
                   <Menu
                     prefixCls="ant-dropdown-menu"
                     onClick={handleCurrentSources}
-                  >
-                    {sources && sources.length > 0 ? (
-                      sources.map((v, i) => {
-                        return (
-                          <MenuListItem
-                            key={i}
-                            prefix={<DatabaseOutlined className="list-icon" />}
-                          >
-                            {v.name}
-                          </MenuListItem>
-                        );
-                      })
-                    ) : (
-                      <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                    )}
-                  </Menu>
+                    items={[
+                      ...(sources && sources.length > 0
+                        ? sources.flatMap((v, i) => {
+                            return [
+                              {
+                                key: String(i),
+                                label: (
+                                  <MenuItemLabel
+                                    prefix={
+                                      <DatabaseOutlined className="list-icon" />
+                                    }
+                                  >
+                                    {v.name}
+                                  </MenuItemLabel>
+                                ),
+                              },
+                            ];
+                          }) || []
+                        : [
+                            {
+                              key: 'Empty',
+                              label: (
+                                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                              ),
+                              style: { padding: 0 },
+                            },
+                          ]),
+                    ]}
+                  />
                 </SourceList>
               </PopoverBody>
             )
@@ -357,9 +370,7 @@ const SelectDataSource = memo(
             })}
           >
             {selectedTableSchema?.table?.length
-              ? selectedTableSchema.table[
-                  selectedTableSchema.table.length - 1
-                ]
+              ? selectedTableSchema.table[selectedTableSchema.table.length - 1]
               : t('selectTable')}
           </TableButton>
         </Popover>

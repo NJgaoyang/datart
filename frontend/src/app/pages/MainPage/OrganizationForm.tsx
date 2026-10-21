@@ -21,7 +21,7 @@ import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { fetchCheckName } from 'app/utils/fetch';
 import debounce from 'debounce-promise';
 import { DEFAULT_DEBOUNCE_WAIT } from 'globalConstants';
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { selectSaveOrganizationLoading } from './slice/selectors';
@@ -33,7 +33,7 @@ interface OrganizationFormProps extends Omit<ModalProps, 'onCancel'> {
   onCancel: () => void;
 }
 
-export function OrganizationForm({ visible, onCancel }: OrganizationFormProps) {
+export function OrganizationForm({ open, onCancel }: OrganizationFormProps) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const loading = useSelector(selectSaveOrganizationLoading);
@@ -67,7 +67,7 @@ export function OrganizationForm({ visible, onCancel }: OrganizationFormProps) {
   return (
     <Modal
       title={t('create')}
-      open={visible}
+      open={open}
       okText={t('save')}
       confirmLoading={loading}
       onOk={save}

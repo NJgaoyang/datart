@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 
-vi.mock('react-monaco-editor', () => ({
+vi.mock('app/components/CodeEditor', () => ({
   default: ({ language, value }: { language?: string; value?: string }) => (
     <div data-testid="monaco-editor" data-language={language}>
       {value}
@@ -13,9 +13,7 @@ import ChartComputedFieldEditor from '../ChartComputedFieldEditor';
 
 describe('ChartComputedFieldEditor', () => {
   it('renders an empty expression with the editor contract', () => {
-    render(
-      <ChartComputedFieldEditor value="" onChange={() => {}} />,
-    );
+    render(<ChartComputedFieldEditor value="" onChange={() => {}} />);
 
     expect(screen.getByTestId('monaco-editor')).toHaveAttribute(
       'data-language',

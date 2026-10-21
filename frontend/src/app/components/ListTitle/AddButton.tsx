@@ -1,8 +1,7 @@
-import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 import { PlusOutlined } from '@ant-design/icons';
 import { Dropdown, Menu, Tooltip } from 'antd';
+import { ReactElement } from 'react';
 import { ToolbarButton } from '../ToolbarButton';
-import React, { ReactElement } from 'react';
 
 interface AddButtonProps {
   dataSource: {
@@ -25,17 +24,20 @@ export function AddButton({
       />
     </Tooltip>
   ) : (
-    <LegacyDropdown
+    <Dropdown
       trigger={['click']}
-      overlay={
-        <Menu onClick={callback}>
-          {safeItems.map(({ key, text }) => (
-            <Menu.Item key={key}>{text}</Menu.Item>
-          ))}
-        </Menu>
-      }
+      popupRender={() => (
+        <Menu
+          onClick={callback}
+          items={[
+            ...(safeItems.flatMap(({ key, text }) => [
+              { key: String(key), label: text },
+            ]) || []),
+          ]}
+        />
+      )}
     >
       <ToolbarButton size="small" icon={icon || <PlusOutlined />} />
-    </LegacyDropdown>
+    </Dropdown>
   );
 }

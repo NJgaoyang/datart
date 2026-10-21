@@ -27,16 +27,14 @@ import { updateBy } from 'app/utils/mutation';
 import { FC, memo, useContext, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
+import widgetManagerInstance from '../../../../components/WidgetManager';
 import { editBoardStackActions } from '../../slice';
 import { showRectAction } from '../../slice/actions/actions';
 import { selectSortAllWidgets } from '../../slice/selectors';
-import widgetManagerInstance from '../../../../components/WidgetManager';
 import { NameSet } from './SettingItem/NameSet';
 import { RectSet } from './SettingItem/RectSet';
 import { SettingPanel } from './SettingPanel';
 import { WidgetConfigPanel } from './WidgetConfigPanel';
-
-const { TabPane } = Tabs;
 
 export const WidgetSetting: FC<{ boardId?: string }> = memo(({ boardId }) => {
   const t = useI18NPrefix(`viz.board.setting`);
@@ -133,41 +131,52 @@ export const WidgetSetting: FC<{ boardId?: string }> = memo(({ boardId }) => {
       <StyledWidgetSetting
         activeKey={currentTab}
         onChange={key => setCurrentTab(key)}
-      >
-        <TabPane tab={t('style')} key="style">
-          <SettingPanel title={`${t('widget')}${t('setting')}`}>
-            <>
-              <NameSet
-                wid={widget.id}
-                name={widget.config.name}
-                boardVizs={allWidgets}
-              />
-              {showRect && <RectSet wid={widget.id} rect={widget.config.rect} />}
-              <WidgetConfigPanel
-                configs={widget.config.customConfig.props || []}
-                onChange={handleStyleConfigChange}
-              />
-            </>
-          </SettingPanel>
-        </TabPane>
-        <TabPane tab={t('interaction')} key="interaction">
-          <SettingPanel title={`${t('widget')}${t('setting')}`}>
-            <WidgetConfigPanel
-              configs={updateInteractionOptionWhenHasChartInteraction(
-                widget.config.customConfig.interactions || [],
-              )}
-              dataConfigs={dataChart?.config?.chartConfig?.datas}
-              context={{
-                widgetId: widget?.id,
-                vizs,
-                boardVizs: allWidgets,
-                dataview: chartDataView,
-              }}
-              onChange={handleInteractionConfigChange}
-            />
-          </SettingPanel>
-        </TabPane>
-      </StyledWidgetSetting>
+        items={[
+          {
+            label: t('style'),
+            key: String('style'),
+            children: (
+              <SettingPanel title={`${t('widget')}${t('setting')}`}>
+                <>
+                  <NameSet
+                    wid={widget.id}
+                    name={widget.config.name}
+                    boardVizs={allWidgets}
+                  />
+                  {showRect && (
+                    <RectSet wid={widget.id} rect={widget.config.rect} />
+                  )}
+                  <WidgetConfigPanel
+                    configs={widget.config.customConfig.props || []}
+                    onChange={handleStyleConfigChange}
+                  />
+                </>
+              </SettingPanel>
+            ),
+          },
+          {
+            label: t('interaction'),
+            key: String('interaction'),
+            children: (
+              <SettingPanel title={`${t('widget')}${t('setting')}`}>
+                <WidgetConfigPanel
+                  configs={updateInteractionOptionWhenHasChartInteraction(
+                    widget.config.customConfig.interactions || [],
+                  )}
+                  dataConfigs={dataChart?.config?.chartConfig?.datas}
+                  context={{
+                    widgetId: widget?.id,
+                    vizs,
+                    boardVizs: allWidgets,
+                    dataview: chartDataView,
+                  }}
+                  onChange={handleInteractionConfigChange}
+                />
+              </SettingPanel>
+            ),
+          },
+        ]}
+      />
     </Inspector>
   );
 });
@@ -245,15 +254,14 @@ const StyledWidgetSetting = styled(Tabs)`
     font-size: 13px;
   }
 
-  > .ant-tabs-content-holder {
+  > .ant-tabs-body-holder {
     flex: 1;
     min-height: 0;
     overflow: auto;
   }
 
   .ant-tabs-content,
-  .ant-tabs-tabpane {
+  .ant-tabs-content {
     height: 100%;
   }
-
 `;

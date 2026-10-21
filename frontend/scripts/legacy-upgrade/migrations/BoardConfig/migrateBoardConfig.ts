@@ -1,3 +1,4 @@
+import { getInitBoardConfigBeta3 } from './legacyBoardDefaults';
 /**
  * Datart
  *
@@ -26,7 +27,6 @@ import { BoardTypes } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { BoardConfig } from 'app/pages/DashBoardPage/types/boardTypes';
 import {
   getInitBoardConfig,
-  getInitBoardConfigBeta3,
 } from 'app/pages/DashBoardPage/utils/board';
 import {
   APP_VERSION_BETA_0,

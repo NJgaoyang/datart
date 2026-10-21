@@ -37,22 +37,16 @@ import {
   ResourceTypes,
 } from 'app/pages/MainPage/pages/PermissionPage/constants';
 import { fetchCheckName } from 'app/utils/fetch';
+import dayjs from 'dayjs';
 import debounce from 'debounce-promise';
 import {
   CommonFormTypes,
   DEFAULT_DEBOUNCE_WAIT,
   TIME_FORMATTER,
 } from 'globalConstants';
-import dayjs from 'dayjs';
-import React, {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useMatch } from 'react-router-dom';
+import { useMatch, useNavigate } from 'react-router-dom';
 import { AppDispatch } from 'redux/configureStore';
 import styled from 'styled-components';
 import {
@@ -106,7 +100,8 @@ export function SourceDetailPage() {
   const [providerType, setProviderType] = useState('');
   const [testLoading, setTestLoading] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<string | undefined>();
-  const [poolStats, setPoolStats] = useState<Record<string, number | boolean>>();
+  const [poolStats, setPoolStats] =
+    useState<Record<string, number | boolean>>();
   const [queryTraces, setQueryTraces] = useState<Record<string, any>[]>([]);
   const [poolStatsLoading, setPoolStatsLoading] = useState(false);
   const { actions } = useSourceSlice();
@@ -299,7 +294,7 @@ export function SourceDetailPage() {
           showSaveForm({
             sourceType: 'title',
             type: CommonFormTypes.Add,
-            visible: true,
+            open: true,
             simple: true,
             parentIdLabel: t('sidebar.parent'),
             onSave: (val, onClose) => {
@@ -368,7 +363,7 @@ export function SourceDetailPage() {
     showSaveForm({
       sourceType: 'folder',
       type: CommonFormTypes.Edit,
-      visible: true,
+      open: true,
       simple: false,
       initialValues: { id, name, parentId: null },
       parentIdLabel: t('sidebar.parent'),
@@ -529,7 +524,7 @@ export function SourceDetailPage() {
         />
         <Content>
           <Card
-            bordered={false}
+            variant="borderless"
             extra={
               <div>
                 {lastUpdateTime && `${t('lastUpdateTime')}: ${lastUpdateTime}`}
@@ -587,13 +582,12 @@ export function SourceDetailPage() {
                   loading={dataProviderListLoading}
                   disabled={isArchived}
                   onChange={dataProviderChange}
-                >
-                  {Object.keys(dataProviders).map(key => (
-                    <Select.Option key={key} value={key}>
-                      {key}
-                    </Select.Option>
-                  ))}
-                </Select>
+                  options={[
+                    ...(Object.keys(dataProviders).flatMap(key => [
+                      { key: String(key), value: key, label: key },
+                    ]) || []),
+                  ]}
+                />
               </Form.Item>
               {dataProviderConfigTemplateLoading && <LoadingOutlined />}
 
@@ -623,7 +617,9 @@ export function SourceDetailPage() {
               }
             >
               {!poolStats || poolStats.initialized === false ? (
-                <span>当前数据源尚未建立连接；执行一次查询后即可查看连接池状态。</span>
+                <span>
+                  当前数据源尚未建立连接；执行一次查询后即可查看连接池状态。
+                </span>
               ) : (
                 <Descriptions size="small" column={3}>
                   <Descriptions.Item label="活跃连接">
@@ -664,7 +660,8 @@ export function SourceDetailPage() {
                     title: '开始时间',
                     dataIndex: 'startedAt',
                     width: 170,
-                    render: value => value ? dayjs(value).format(TIME_FORMATTER) : '-',
+                    render: value =>
+                      value ? dayjs(value).format(TIME_FORMATTER) : '-',
                   },
                 ]}
               />

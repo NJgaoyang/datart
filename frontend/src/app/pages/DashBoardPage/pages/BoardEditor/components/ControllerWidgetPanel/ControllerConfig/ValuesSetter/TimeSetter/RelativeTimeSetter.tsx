@@ -15,13 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import type { FormItemProps } from 'antd';
 import { Form, InputNumber, Select } from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { TIME_DIRECTION, TIME_UNIT_OPTIONS } from 'globalConstants';
-import type { FormItemProps } from 'antd';
-type NamePath = NonNullable<FormItemProps['name']>;
 import React, { memo, useEffect, useState } from 'react';
 import { RelativeDate } from '../../../types';
+type NamePath = NonNullable<FormItemProps['name']>;
 export interface RelativeTimeSetProps {
   relativeName: NamePath;
   value?: any;
@@ -80,15 +80,18 @@ export const RelateTimeInput: React.FC<RelativeTimeSetProps> = ({
         style={{ width: '80px' }}
         value={dateVal.direction}
         onChange={onChangeDirection}
-      >
-        {TIME_DIRECTION.map(item => {
-          return (
-            <Select.Option key={item.name} value={item.value}>
-              {filterDataT(item.name)}
-            </Select.Option>
-          );
-        })}
-      </Select>
+        options={[
+          ...(TIME_DIRECTION.flatMap(item => {
+            return [
+              {
+                key: String(item.name),
+                value: item.value,
+                label: filterDataT(item.name),
+              },
+            ];
+          }) || []),
+        ]}
+      />
 
       {dateVal.direction !== '+0' && (
         <InputNumber
@@ -103,13 +106,16 @@ export const RelateTimeInput: React.FC<RelativeTimeSetProps> = ({
         style={{ width: '80px' }}
         value={dateVal.unit}
         onChange={onChangeUnit}
-      >
-        {TIME_UNIT_OPTIONS.map(item => (
-          <Select.Option key={item.value} value={item.value}>
-            {filterDataT(item.name)}
-          </Select.Option>
-        ))}
-      </Select>
+        options={[
+          ...(TIME_UNIT_OPTIONS.flatMap(item => [
+            {
+              key: String(item.value),
+              value: item.value,
+              label: filterDataT(item.name),
+            },
+          ]) || []),
+        ]}
+      />
     </>
   );
 };

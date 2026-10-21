@@ -94,31 +94,37 @@ export const StoryPageSetting: React.FC<StoryPageSettingProps> = memo(() => {
     >
       <>
         <Form.Item name="in" label={t('cutIn')}>
-          <Select style={{ width: '120px' }} placeholder="Select a option">
-            {EFFECT_IN_OPTIONS.map(ele => (
-              <Select.Option key={ele} value={ele}>
-                {ele}
-              </Select.Option>
-            ))}
-          </Select>
+          <Select
+            style={{ width: '120px' }}
+            placeholder="Select a option"
+            options={[
+              ...(EFFECT_IN_OPTIONS.flatMap(ele => [
+                { key: String(ele), value: ele, label: ele },
+              ]) || []),
+            ]}
+          />
         </Form.Item>
         <Form.Item name="out" label={t('cutOut')}>
-          <Select style={{ width: '120px' }} placeholder="Select a option ">
-            {EFFECT_OUT_OPTIONS.map(ele => (
-              <Select.Option key={ele} value={ele}>
-                {ele}
-              </Select.Option>
-            ))}
-          </Select>
+          <Select
+            style={{ width: '120px' }}
+            placeholder="Select a option "
+            options={[
+              ...(EFFECT_OUT_OPTIONS.flatMap(ele => [
+                { key: String(ele), value: ele, label: ele },
+              ]) || []),
+            ]}
+          />
         </Form.Item>
         <Form.Item name="speed" label={t('speed')}>
-          <Select style={{ width: '120px' }} placeholder="Select a option ">
-            {EFFECT_SPEED_OPTIONS.map(ele => (
-              <Select.Option key={ele} value={ele}>
-                {ele}
-              </Select.Option>
-            ))}
-          </Select>
+          <Select
+            style={{ width: '120px' }}
+            placeholder="Select a option "
+            options={[
+              ...(EFFECT_SPEED_OPTIONS.flatMap(ele => [
+                { key: String(ele), value: ele, label: ele },
+              ]) || []),
+            ]}
+          />
         </Form.Item>
       </>
     </Form>

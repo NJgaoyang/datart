@@ -1,4 +1,15 @@
-import { Alert, Button, Card, Form, Input, message, Modal, Table, Tag, Upload } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Form,
+  Input,
+  message,
+  Modal,
+  Table,
+  Tag,
+  Upload,
+} from 'antd';
 import { Avatar } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { fetchCheckName } from 'app/utils/fetch';
@@ -32,7 +43,8 @@ export function OrgSettingPage() {
   const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
   const [migrationVisible, setMigrationVisible] = useState(false);
   const [migrationLoading, setMigrationLoading] = useState(false);
-  const [migrationPreview, setMigrationPreview] = useState<HistoryMigrationPreview>();
+  const [migrationPreview, setMigrationPreview] =
+    useState<HistoryMigrationPreview>();
   const { actions } = useMainSlice();
   const [avatarLoading, setAvatarLoading] = useState(false);
   const dispatch = useDispatch();
@@ -91,7 +103,9 @@ export function OrgSettingPage() {
     setMigrationLoading(true);
     try {
       const { data } = await request2<HistoryMigrationPreview>({
-        url: `/admin/history-migration/preview?orgId=${encodeURIComponent(currentOrganization.id)}`,
+        url: `/admin/history-migration/preview?orgId=${encodeURIComponent(
+          currentOrganization.id,
+        )}`,
         method: 'GET',
       });
       setMigrationPreview(data);
@@ -180,7 +194,7 @@ export function OrgSettingPage() {
         <DeleteConfirm
           width={480}
           title={t('deleteOrg')}
-          visible={deleteConfirmVisible}
+          open={deleteConfirmVisible}
           onCancel={hideDeleteConfirm}
         />
       </Card>
@@ -202,7 +216,11 @@ export function OrgSettingPage() {
             <Alert
               type={migrationPreview.needsReview ? 'warning' : 'success'}
               showIcon
-              message={`${t('historyMigrationTotal')}: ${migrationPreview.total}，${t('historyMigrationReview')}: ${migrationPreview.needsReview}`}
+              title={`${t('historyMigrationTotal')}: ${
+                migrationPreview.total
+              }，${t('historyMigrationReview')}: ${
+                migrationPreview.needsReview
+              }`}
               description={t('historyMigrationReadonly')}
               style={{ marginBottom: SPACE_MD }}
             />
@@ -212,13 +230,25 @@ export function OrgSettingPage() {
               pagination={{ pageSize: 10 }}
               dataSource={migrationPreview.items}
               columns={[
-                { title: t('historyMigrationType'), dataIndex: 'resourceType', width: 120 },
-                { title: t('historyMigrationName'), dataIndex: 'resourceName', ellipsis: true },
+                {
+                  title: t('historyMigrationType'),
+                  dataIndex: 'resourceType',
+                  width: 120,
+                },
+                {
+                  title: t('historyMigrationName'),
+                  dataIndex: 'resourceName',
+                  ellipsis: true,
+                },
                 {
                   title: t('historyMigrationStatus'),
                   dataIndex: 'status',
                   width: 120,
-                  render: status => <Tag color={status === 'REVIEW' ? 'orange' : 'green'}>{status}</Tag>,
+                  render: status => (
+                    <Tag color={status === 'REVIEW' ? 'orange' : 'green'}>
+                      {status}
+                    </Tag>
+                  ),
                 },
                 {
                   title: t('historyMigrationReason'),

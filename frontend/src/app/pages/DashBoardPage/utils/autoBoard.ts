@@ -15,7 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { APP_CURRENT_VERSION } from 'app/migration/constants';
+
+import { APP_CURRENT_VERSION } from 'app/configVersion';
 import {
   AUTO_LAYOUT_VERSION,
   MOBILE_LAYOUT_VERSION,

@@ -109,13 +109,12 @@ export const TimerFormat: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
               maxTagCount={1}
               value={value.format}
               onChange={changeF}
-            >
-              {TIME_FORMATS.map(item => (
-                <Select.Option key={item} value={item}>
-                  {item}
-                </Select.Option>
-              ))}
-            </Select>
+              options={[
+                ...(TIME_FORMATS.flatMap(item => [
+                  { key: String(item), value: item, label: item },
+                ]) || []),
+              ]}
+            />
           </Group>
         </BW>
         <BW label={gt('interval')}>

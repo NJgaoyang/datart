@@ -18,12 +18,11 @@
 
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import sqlReservedWords from 'app/assets/javascripts/sqlReservedWords';
-import migrationViewConfig from 'app/migration/ViewConfig/migrationViewConfig';
-import { migrateViewConfig } from 'app/migration/ViewConfig/migrationViewDetailConfig';
-import beginViewModelMigration from 'app/migration/ViewConfig/migrationViewModelConfig';
+import { serializeConfig } from 'app/utils/configParser';
+
 import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
 import i18n from 'i18next';
-import { monaco } from 'react-monaco-editor';
+import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import { RootState } from 'types';
 import { startQuery } from 'utils/queryCancellation';
 import { request2 } from 'utils/request';
@@ -122,9 +121,9 @@ export const getViewDetail = createAsyncThunk<
         return rejectHandle(error, rejectWithValue);
       },
     });
-    data = migrationViewConfig(data);
-    data.config = migrateViewConfig(data.config);
-    data.model = beginViewModelMigration(data?.model, data.type);
+
+    data.config = serializeConfig(data.config);
+    data.model = serializeConfig(data?.model);
     return transformModelToViewModel(data, null, tempViewModel);
   },
 );

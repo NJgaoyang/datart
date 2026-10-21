@@ -16,8 +16,6 @@
  * limitations under the License.
  */
 import { Button, Empty, Modal } from 'antd';
-import { getChartViewState } from './chartViewState';
-import { WIDGET_QUERY_FORBIDDEN } from 'app/pages/DashBoardPage/utils/widgetQueryError';
 import ChartDrillContextMenu from 'app/components/ChartDrill/ChartDrillContextMenu';
 import ChartDrillPaths from 'app/components/ChartDrill/ChartDrillPaths';
 import { ChartIFrameContainer } from 'app/components/ChartIFrameContainer';
@@ -30,7 +28,9 @@ import {
 import ChartDrillContext from 'app/contexts/ChartDrillContext';
 import { useCacheWidthHeight } from 'app/hooks/useCacheWidthHeight';
 import useChartInteractions from 'app/hooks/useChartInteractions';
-import { migrateChartConfig } from 'app/migration';
+import { WIDGET_QUERY_FORBIDDEN } from 'app/pages/DashBoardPage/utils/widgetQueryError';
+import { getChartViewState } from './chartViewState';
+
 import { ChartDrillOption } from 'app/models/ChartDrillOption';
 import ChartManager from 'app/models/ChartManager';
 import { Widget } from 'app/pages/DashBoardPage/types/widgetTypes';
@@ -94,7 +94,9 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
     loading,
     rendered,
     rows: dataset?.rows,
-    failed: Boolean(dataset?.error || Object.values(errInfo || {}).some(Boolean)),
+    failed: Boolean(
+      dataset?.error || Object.values(errInfo || {}).some(Boolean),
+    ),
     forbidden: errInfo?.request === WIDGET_QUERY_FORBIDDEN,
   });
   const { boardId, renderMode, orgId, queryVariables, isMobile, isEmbedded } =
@@ -548,7 +550,7 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
       mergeToChartConfig(
         draft,
         produce(dataChart?.config, draft => {
-          migrateChartConfig(draft as ChartDetailConfigDTO);
+          draft as ChartDetailConfigDTO;
         }) as ChartDetailConfigDTO,
       );
     });
@@ -599,13 +601,18 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
     if (dataState === 'error') {
       return (
         <Empty description="图表查询失败，请稍后重试或检查数据源">
-          <Button loading={loading} disabled={loading} onClick={() => onWidgetGetData(widgetRef.current)}>
+          <Button
+            loading={loading}
+            disabled={loading}
+            onClick={() => onWidgetGetData(widgetRef.current)}
+          >
             重新查询
           </Button>
         </Empty>
       );
     }
-    if (dataState === 'empty') return <Empty description="当前筛选条件下暂无数据" />;
+    if (dataState === 'empty')
+      return <Empty description="当前筛选条件下暂无数据" />;
     if (cacheH <= 1 || cacheW <= 1) {
       return <Empty description="图表容器尚未完成布局，请检查仪表板图表尺寸" />;
     }

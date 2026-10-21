@@ -1,7 +1,6 @@
-import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 import { CloseOutlined } from '@ant-design/icons';
 import { Dropdown, Menu } from 'antd';
-import { EmptyFiller, TabPane, Tabs } from 'app/components';
+import { EmptyFiller, Tabs } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import BoardEditor from 'app/pages/DashBoardPage/pages/BoardEditor';
 import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
@@ -185,21 +184,20 @@ export function Main({ sliderVisible }: { sliderVisible: boolean }) {
   };
 
   const menu = (id: string) => (
-    <Menu onClick={e => handleClickMenu(e, id)}>
-      <Menu.Item key="CLOSE_OTHER">
-        <span>{t('closeOther')}</span>
-      </Menu.Item>
-      <Menu.Item key="CLOSE_ALL">
-        <span>{t('closeAll')}</span>
-      </Menu.Item>
-    </Menu>
+    <Menu
+      onClick={e => handleClickMenu(e, id)}
+      items={[
+        { key: String('CLOSE_OTHER'), label: <span>{t('closeOther')}</span> },
+        { key: String('CLOSE_ALL'), label: <span>{t('closeAll')}</span> },
+      ]}
+    />
   );
 
   const Tab = (id: string, name: string) => (
     <span>
-      <LegacyDropdown overlay={menu(id)} trigger={['contextMenu']}>
+      <Dropdown popupRender={() => menu(id)} trigger={['contextMenu']}>
         <span className="ant-dropdown-link">{name}</span>
-      </LegacyDropdown>
+      </Dropdown>
     </span>
   );
 
@@ -213,19 +211,21 @@ export function Main({ sliderVisible }: { sliderVisible: boolean }) {
           activeKey={selectedTab?.id}
           onChange={tabChange}
           onEdit={tabEdit}
-        >
-          {tabs.map(({ id, name }) => (
-            <TabPane
-              key={id}
-              tab={Tab(id, name)}
-              closeIcon={
-                <CloseIconWrapper>
-                  <CloseOutlined />
-                </CloseIconWrapper>
-              }
-            />
-          ))}
-        </Tabs>
+          items={[
+            ...(tabs.flatMap(({ id, name }) => [
+              {
+                key: String(id),
+                label: Tab(id, name),
+                removeIcon: (
+                  <CloseIconWrapper>
+                    <CloseOutlined />
+                  </CloseIconWrapper>
+                ),
+                children: null,
+              },
+            ]) || []),
+          ]}
+        />
       </TabsWrapper>
       {selectedTab && (
         <VizContainer

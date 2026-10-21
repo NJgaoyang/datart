@@ -35,8 +35,7 @@ import { dispatchResize } from 'app/utils/dispatchResize';
 import { CommonFormTypes } from 'globalConstants';
 import { memo, useCallback, useContext, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useMatch } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+import { useMatch, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { LEVEL_5, SPACE_TIMES, SPACE_XS } from 'styles/StyleConstants';
 import { getInsertedNodeIndex } from 'utils/utils';
@@ -121,7 +120,7 @@ export const Sidebar = memo(
             showSaveForm({
               sourceType: 'folder',
               type: CommonFormTypes.Add,
-              visible: true,
+              open: true,
               simple: false,
               parentIdLabel: t('sidebar.parent'),
               onSave: (values, onClose) => {

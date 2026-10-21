@@ -476,7 +476,7 @@ export const ChartEditor: FC<ChartEditorProps> = ({
           addVizFn({
             vizType: 'DATACHART',
             type: CommonFormTypes.Add,
-            visible: true,
+            open: true,
             initialValues: {
               config: JSON.stringify({
                 aggregation,
@@ -547,19 +547,16 @@ export const ChartEditor: FC<ChartEditorProps> = ({
     (dashboardId, dashboardType) => {
       const dataChart = buildDataChart();
       try {
-        navigate(
-          `/organizations/${orgId}/vizs/${dashboardId}/boardEditor`,
-          {
-            state: {
-              widgetInfo: JSON.stringify({
-                chartType,
-                dataChart,
-                dataview,
-                dashboardType,
-              }),
-            },
+        navigate(`/organizations/${orgId}/vizs/${dashboardId}/boardEditor`, {
+          state: {
+            widgetInfo: JSON.stringify({
+              chartType,
+              dataChart,
+              dataview,
+              dashboardType,
+            }),
           },
-        );
+        });
       } catch (error) {
         throw error;
       }

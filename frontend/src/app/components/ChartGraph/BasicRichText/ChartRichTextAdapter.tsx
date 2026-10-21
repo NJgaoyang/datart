@@ -1,4 +1,3 @@
-import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -57,8 +56,6 @@ Quill.register(size, true);
 const font = Quill.import('attributors/style/font') as any;
 font.whitelist = FONT_FAMILIES.map(font => font.value);
 Quill.register(font, true);
-
-const MenuItem = Menu.Item;
 
 const ChartRichTextAdapter: FC<{
   dataList: Array<{ id: string | undefined; name: string; value: string }>;
@@ -253,19 +250,24 @@ const ChartRichTextAdapter: FC<{
 
     const fieldItems = useMemo(() => {
       return dataList?.length ? (
-        <Menu>
-          {dataList.map(fieldName => (
-            <MenuItem key={fieldName.name}>
-              <a onClick={selectField(fieldName)} href="#javascript;">
-                {fieldName.name}
-              </a>
-            </MenuItem>
-          ))}
-        </Menu>
+        <Menu
+          items={[
+            ...(dataList.flatMap(fieldName => [
+              {
+                key: String(fieldName.name),
+                label: (
+                  <a onClick={selectField(fieldName)} href="#javascript;">
+                    {fieldName.name}
+                  </a>
+                ),
+              },
+            ]) || []),
+          ]}
+        />
       ) : (
-        <Menu>
-          <MenuItem key="nodata">{t?.('common.noData')}</MenuItem>
-        </Menu>
+        <Menu
+          items={[{ key: String('nodata'), label: t?.('common.noData') }]}
+        />
       );
     }, [dataList, selectField, t]);
 
@@ -275,8 +277,8 @@ const ChartRichTextAdapter: FC<{
           id: containerId as string,
           extendNodes: {
             4: (
-              <LegacyDropdown
-                overlay={fieldItems}
+              <Dropdown
+                popupRender={() => fieldItems}
                 trigger={['click']}
                 key="ql-selectLink"
               >
@@ -287,7 +289,7 @@ const ChartRichTextAdapter: FC<{
                 >
                   <SelectOutlined />
                 </a>
-              </LegacyDropdown>
+              </Dropdown>
             ),
           },
           t,
@@ -349,7 +351,7 @@ const ChartRichTextAdapter: FC<{
           {isEditing && reactQuillView}
         </Modal>
         <CustomColor
-          visible={customColorVisible}
+          open={customColorVisible}
           onCancel={() => setCustomColorVisible(false)}
           color={customColor?.[customColorType]}
           colorChange={customColorChange}

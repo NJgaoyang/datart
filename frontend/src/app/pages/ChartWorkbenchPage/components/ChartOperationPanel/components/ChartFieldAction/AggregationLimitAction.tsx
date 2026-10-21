@@ -48,23 +48,25 @@ const AggregationLimitAction: FC<{
   const renderOptions = mode => {
     if (mode === 'menu') {
       return (
-        <>
-          {AggregateFieldSubAggregateType[
-            ChartDataSectionFieldActionType.AggregateLimit
-          ]?.map(agg => {
-            return (
-              <Menu.Item key={agg} onClick={() => onChange(agg)}>
-                {t(agg)}
-              </Menu.Item>
-            );
-          })}
-        </>
+        <Menu
+          items={[
+            ...AggregateFieldSubAggregateType[
+              ChartDataSectionFieldActionType.AggregateLimit
+            ]?.map(agg => {
+              return {
+                key: String(agg),
+                onClick: () => onChange(agg),
+                label: t(agg),
+              };
+            }),
+          ]}
+        />
       );
     }
 
     return (
       <Radio.Group onChange={e => onChange(e.target?.value)} value={aggregate}>
-        <Space direction="vertical">
+        <Space orientation="vertical">
           {AggregateFieldSubAggregateType[
             ChartDataSectionFieldActionType.AggregateLimit
           ]?.map(agg => {

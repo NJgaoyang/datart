@@ -23,12 +23,12 @@ import ChartFilterCondition, {
   ConditionBuilder,
 } from 'app/models/ChartFilterCondition';
 import { formatTime } from 'app/utils/time';
+import dayjs from 'dayjs';
 import {
   FilterSqlOperator,
   RECOMMEND_TIME,
   TIME_FORMATTER,
 } from 'globalConstants';
-import dayjs from 'dayjs';
 import {
   forwardRef,
   ForwardRefRenderFunction,
@@ -93,26 +93,32 @@ const DateConditionConfiguration: ForwardRefRenderFunction<
     <StyledDateConditionConfiguration
       activeKey={type}
       onChange={clearFilterWhenTypeChange}
-      destroyInactiveTabPane={true}
-    >
-      <Tabs.TabPane
-        tab={t('recommend')}
-        key={FilterConditionType.RecommendTime}
-      >
-        <TimeSelector.RecommendRangeTimeSelector
-          i18nPrefix={i18nPrefix}
-          condition={condition}
-          onConditionChange={onConditionChange}
-        />
-      </Tabs.TabPane>
-      <Tabs.TabPane tab={t('manual')} key={FilterConditionType.RangeTime}>
-        <TimeSelector.ManualRangeTimeSelector
-          i18nPrefix={i18nPrefix}
-          condition={condition}
-          onConditionChange={onConditionChange}
-        />
-      </Tabs.TabPane>
-    </StyledDateConditionConfiguration>
+      destroyOnHidden={true}
+      items={[
+        {
+          label: t('recommend'),
+          key: String(FilterConditionType.RecommendTime),
+          children: (
+            <TimeSelector.RecommendRangeTimeSelector
+              i18nPrefix={i18nPrefix}
+              condition={condition}
+              onConditionChange={onConditionChange}
+            />
+          ),
+        },
+        {
+          label: t('manual'),
+          key: String(FilterConditionType.RangeTime),
+          children: (
+            <TimeSelector.ManualRangeTimeSelector
+              i18nPrefix={i18nPrefix}
+              condition={condition}
+              onConditionChange={onConditionChange}
+            />
+          ),
+        },
+      ]}
+    />
   );
 };
 
@@ -122,7 +128,7 @@ const StyledDateConditionConfiguration = styled(Tabs)`
   width: 100%;
   padding: 0 !important;
 
-  .ant-tabs-content-holder {
+  .ant-tabs-body-holder {
     margin: 10px 0;
   }
 `;

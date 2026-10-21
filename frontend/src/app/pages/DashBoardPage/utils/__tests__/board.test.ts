@@ -18,8 +18,8 @@
 
 import { BoardConfigValue } from '../../components/BoardProvider/BoardConfigProvider';
 import { MOBILE_MIN_MARGIN, MOBILE_MIN_PADDING } from '../../constants';
-import { getBoardMarginPadding, getInitBoardConfigBeta3 } from '../board';
 import { initAutoBoardConfig } from '../autoBoard';
+import { getBoardMarginPadding } from '../board';
 
 describe('test getBoardMarginPadding', () => {
   const boardConfig = {
@@ -70,19 +70,22 @@ describe('one-pixel default spacing for newly created dashboards', () => {
     }
   });
 
-  it('uses one-pixel legacy defaults, without overriding existing custom spacing', () => {
-    const config = getInitBoardConfigBeta3('auto');
-    expect(config.margin).toEqual([1, 1]);
-    expect(config.containerPadding).toEqual([1, 1]);
-    expect(config.mobileMargin).toEqual([1, 1]);
-    expect(config.mobileContainerPadding).toEqual([1, 1]);
-  });
-
   it('preserves explicit existing spacing and supports zeros', () => {
-    const custom = { margin: [9, 5], padding: [6, 8], mMargin: [3, 1], mPadding: [4, 2] } as BoardConfigValue;
+    const custom = {
+      margin: [9, 5],
+      padding: [6, 8],
+      mMargin: [3, 1],
+      mPadding: [4, 2],
+    } as BoardConfigValue;
     expect(getBoardMarginPadding(custom, 'lg').curMargin).toEqual([9, 5]);
     expect(getBoardMarginPadding(custom, 'sm').curPadding).toEqual([4, 2]);
-    const zero = { ...custom, margin: [0, 0], padding: [0, 0], mMargin: [0, 0], mPadding: [0, 0] } as BoardConfigValue;
+    const zero = {
+      ...custom,
+      margin: [0, 0],
+      padding: [0, 0],
+      mMargin: [0, 0],
+      mPadding: [0, 0],
+    } as BoardConfigValue;
     expect(getBoardMarginPadding(zero, 'lg').curMargin).toEqual([0, 0]);
     expect(getBoardMarginPadding(zero, 'sm').curPadding).toEqual([0, 0]);
   });

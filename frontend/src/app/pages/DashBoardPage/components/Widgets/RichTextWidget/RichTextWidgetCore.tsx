@@ -35,10 +35,10 @@ import React, {
 } from 'react';
 import ReactQuill, { Quill } from 'react-quill-new';
 // DeltaStatic
+import { FONT_FAMILIES, FONT_SIZES } from 'globalConstants';
 import 'react-quill-new/dist/quill.snow.css';
 import { useDispatch } from 'react-redux';
 import styled from 'styled-components';
-import { FONT_FAMILIES, FONT_SIZES } from 'globalConstants';
 import { SPACE_TIMES } from 'styles/StyleConstants';
 import { WidgetActionContext } from '../../ActionProvider/WidgetActionProvider';
 import { Formats, MarkdownOptions } from './config';
@@ -170,7 +170,7 @@ export const RichTextWidgetCore: React.FC<RichTextWidgetProps> = ({
       <Modal
         width={992}
         closable={false}
-        maskClosable={false}
+        mask={{ closable: false }}
         keyboard={false}
         open={widgetInfo.editing}
         onOk={modalOk}

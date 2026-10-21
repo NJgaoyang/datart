@@ -1,4 +1,3 @@
-import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -95,22 +94,25 @@ const CrossFilteringRuleList: FC<
                 onChange={relation =>
                   onRuleChange(record?.id, 'relation', relation)
                 }
-              >
-                <Select.Option value={InteractionFieldRelation.Auto}>
-                  {t('drillThrough.rule.relation.auto')}
-                </Select.Option>
-                <Select.Option value={InteractionFieldRelation.Customize}>
-                  {t('drillThrough.rule.relation.customize')}
-                </Select.Option>
-              </Select>
-              <LegacyDropdown
-                destroyPopupOnHide
-                overlayStyle={{ margin: 4 }}
+                options={[
+                  {
+                    value: InteractionFieldRelation.Auto,
+                    label: t('drillThrough.rule.relation.auto'),
+                  },
+                  {
+                    value: InteractionFieldRelation.Customize,
+                    label: t('drillThrough.rule.relation.customize'),
+                  },
+                ]}
+              />
+              <Dropdown
+                destroyOnHidden
+                styles={{ root: { margin: 4 } }}
                 disabled={
                   record?.relation !== InteractionFieldRelation.Customize ||
                   !rules?.map(r => r.id).includes(record?.id)
                 }
-                overlay={() => (
+                popupRender={() => (
                   <BoardRelationList
                     translate={t}
                     targetRelId={record?.relId}
@@ -138,7 +140,7 @@ const CrossFilteringRuleList: FC<
                 <Button type="link">
                   {t('drillThrough.rule.relation.setting')}
                 </Button>
-              </LegacyDropdown>
+              </Dropdown>
             </Space>
           );
         },

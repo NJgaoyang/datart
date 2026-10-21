@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-import { APP_VERSION_BETA_4, APP_VERSION_RC_2 } from 'app/migration/constants';
 import {
   buildUpdateChartRequest,
   convertToChartConfigDTO,
@@ -29,12 +28,16 @@ describe('chartDtoHelper Test', () => {
     const data = {
       config: JSON.stringify({ id: 1 }),
       view: {
-        model: JSON.stringify({ name: 2 }),
+        type: 'SQL',
+        model: JSON.stringify({
+          hierarchy: { name: { name: 'name', path: ['name'] } },
+          columns: { name: { name: 'name' } },
+        }),
       },
     };
     const dto = convertToChartDto(data);
     expect(dto).toEqual({
-      config: { id: 1, computedFields: [], version: APP_VERSION_RC_2 },
+      config: { id: 1, computedFields: [] },
       view: {
         meta: [
           {
@@ -46,7 +49,6 @@ describe('chartDtoHelper Test', () => {
           },
         ],
         type: 'SQL',
-        version: APP_VERSION_BETA_4,
       },
     });
   });
@@ -56,7 +58,6 @@ describe('chartDtoHelper Test', () => {
       config: JSON.stringify({ id: 1 }),
       view: {
         model: JSON.stringify({
-          version: APP_VERSION_BETA_4,
           hierarchy: {
             'root.age': {
               category: 'UNCATEGORIZED',
@@ -100,7 +101,6 @@ describe('chartDtoHelper Test', () => {
             type: 'STRING',
           },
         ],
-        version: APP_VERSION_RC_2,
       },
       view: {
         meta: [
@@ -116,7 +116,6 @@ describe('chartDtoHelper Test', () => {
           },
         ],
         type: 'STRUCT',
-        version: APP_VERSION_BETA_4,
       },
     });
   });

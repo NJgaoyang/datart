@@ -65,133 +65,144 @@ const VizOperationMenu: FC<{
 
       if (onReloadData) {
         menus.push(
-          <Menu.Item
-            key="reloadData"
-            icon={<ReloadOutlined />}
-            onClick={onReloadData}
-          >
-            {t('syncData')}
-          </Menu.Item>,
-          <Menu.Divider key={'reloadDataLine'} />,
+          {
+            key: String('reloadData'),
+            icon: <ReloadOutlined />,
+            onClick: onReloadData,
+            label: t('syncData'),
+          },
+          { type: 'divider' as const, key: String('reloadDataLine') },
         );
       }
 
       if (allowManage && onSaveAsVizs) {
-        menus.push(
-          <Menu.Item key="saveAs" icon={<CopyFilled />} onClick={onSaveAsVizs}>
-            {tg('button.saveAs')}
-          </Menu.Item>,
-        );
+        menus.push({
+          key: String('saveAs'),
+          icon: <CopyFilled />,
+          onClick: onSaveAsVizs,
+          label: tg('button.saveAs'),
+        });
       }
 
       if (allowManage && onSaveAsVizs) {
         menus.push(
-          <Menu.Item
-            key="addToDash"
-            icon={<FileAddOutlined />}
-            onClick={() => onAddToDashBoard(true)}
-          >
-            {t('addToDash')}
-          </Menu.Item>,
-          <Menu.Divider key="addToDashLine" />,
+          {
+            key: String('addToDash'),
+            icon: <FileAddOutlined />,
+            onClick: () => onAddToDashBoard(true),
+            label: t('addToDash'),
+          },
+          { type: 'divider' as const, key: String('addToDashLine') },
         );
       }
 
       if (allowShare && onShareLinkClick) {
-        menus.push(
-          <Menu.Item
-            key="shareLink"
-            icon={<ShareAltOutlined />}
-            onClick={onShareLinkClick}
-          >
-            {t('share.shareLink')}
-          </Menu.Item>,
-        );
+        menus.push({
+          key: String('shareLink'),
+          icon: <ShareAltOutlined />,
+          onClick: onShareLinkClick,
+          label: t('share.shareLink'),
+        });
       }
 
       if (allowDownload && onDownloadDataLinkClick) {
         menus.push(
-          <Menu.Item key="exportData" icon={<CloudDownloadOutlined />}>
-            <Popconfirm
-              placement="left"
-              title={t('common.confirm')}
-              onConfirm={() => {
-                onDownloadDataLinkClick(DownloadFileType.Excel);
-              }}
-              okText={t('common.ok')}
-              cancelText={t('common.cancel')}
-            >
-              {t('share.exportData')}
-            </Popconfirm>
-          </Menu.Item>,
-          <Menu.Item key="exportPDF" icon={<CloudDownloadOutlined />}>
-            <Popconfirm
-              placement="left"
-              title={t('common.confirm')}
-              onConfirm={() => {
-                onDownloadDataLinkClick(DownloadFileType.Pdf);
-              }}
-              okText={t('common.ok')}
-              cancelText={t('common.cancel')}
-            >
-              {t('share.exportPDF')}
-            </Popconfirm>
-          </Menu.Item>,
-          <Menu.Item key="exportPicture" icon={<CloudDownloadOutlined />}>
-            <Popconfirm
-              placement="left"
-              title={t('common.confirm')}
-              onConfirm={() => {
-                onDownloadDataLinkClick(DownloadFileType.Image);
-              }}
-              okText={t('common.ok')}
-              cancelText={t('common.cancel')}
-            >
-              {t('share.exportPicture')}
-            </Popconfirm>
-          </Menu.Item>,
-          <Menu.Item key="exportTpl" icon={<CloudDownloadOutlined />}>
-            <Popconfirm
-              placement="left"
-              title={t('common.confirm')}
-              okText={t('common.ok')}
-              cancelText={t('common.cancel')}
-              onConfirm={openMockData}
-            >
-              {t('share.exportTpl')}
-            </Popconfirm>
-          </Menu.Item>,
-          <Menu.Divider />,
-          <Menu.Divider key="downloadDataLine" />,
+          {
+            key: String('exportData'),
+            icon: <CloudDownloadOutlined />,
+            label: (
+              <Popconfirm
+                placement="left"
+                title={t('common.confirm')}
+                onConfirm={() => {
+                  onDownloadDataLinkClick(DownloadFileType.Excel);
+                }}
+                okText={t('common.ok')}
+                cancelText={t('common.cancel')}
+              >
+                {t('share.exportData')}
+              </Popconfirm>
+            ),
+          },
+          {
+            key: String('exportPDF'),
+            icon: <CloudDownloadOutlined />,
+            label: (
+              <Popconfirm
+                placement="left"
+                title={t('common.confirm')}
+                onConfirm={() => {
+                  onDownloadDataLinkClick(DownloadFileType.Pdf);
+                }}
+                okText={t('common.ok')}
+                cancelText={t('common.cancel')}
+              >
+                {t('share.exportPDF')}
+              </Popconfirm>
+            ),
+          },
+          {
+            key: String('exportPicture'),
+            icon: <CloudDownloadOutlined />,
+            label: (
+              <Popconfirm
+                placement="left"
+                title={t('common.confirm')}
+                onConfirm={() => {
+                  onDownloadDataLinkClick(DownloadFileType.Image);
+                }}
+                okText={t('common.ok')}
+                cancelText={t('common.cancel')}
+              >
+                {t('share.exportPicture')}
+              </Popconfirm>
+            ),
+          },
+          {
+            key: String('exportTpl'),
+            icon: <CloudDownloadOutlined />,
+            label: (
+              <Popconfirm
+                placement="left"
+                title={t('common.confirm')}
+                okText={t('common.ok')}
+                cancelText={t('common.cancel')}
+                onConfirm={openMockData}
+              >
+                {t('share.exportTpl')}
+              </Popconfirm>
+            ),
+          },
+          { type: 'divider' as const },
+          { type: 'divider' as const, key: String('downloadDataLine') },
         );
       }
 
       if (allowManage && onPublish) {
-        menus.push(
-          <Menu.Item
-            key="publish"
-            icon={<VerticalAlignBottomOutlined />}
-            onClick={onPublish}
-          >
-            {t('unpublish')}
-          </Menu.Item>,
-        );
+        menus.push({
+          key: String('publish'),
+          icon: <VerticalAlignBottomOutlined />,
+          onClick: onPublish,
+          label: t('unpublish'),
+        });
       }
 
       if (allowManage && onRecycleViz) {
-        menus.push(
-          <Menu.Item key="delete" icon={<DeleteOutlined />}>
+        menus.push({
+          key: String('delete'),
+          icon: <DeleteOutlined />,
+          label: (
             <Popconfirm
               title={tg('operation.archiveConfirm')}
               onConfirm={onRecycleViz}
             >
               {tg('button.archive')}
             </Popconfirm>
-          </Menu.Item>,
-        );
+          ),
+        });
       }
 
-      return <Menu>{menus}</Menu>;
+      return <Menu items={[...menus]} />;
     };
 
     return <StyleVizOperationMenu>{moreActionMenu()}</StyleVizOperationMenu>;

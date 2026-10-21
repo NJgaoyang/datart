@@ -17,6 +17,7 @@
  */
 import { Tabs, type TabsProps } from 'antd';
 import { TabWidgetContent } from 'app/pages/DashBoardPage/pages/Board/slice/types';
+import { dispatchResize } from 'app/utils/dispatchResize';
 import {
   memo,
   useCallback,
@@ -29,7 +30,6 @@ import {
 import { useDispatch } from 'react-redux';
 import styled from 'styled-components';
 import { PRIMARY } from 'styles/StyleConstants';
-import { dispatchResize } from 'app/utils/dispatchResize';
 import { uuidv4 } from 'utils/utils';
 import { editBoardStackActions } from '../../../pages/BoardEditor/slice';
 import { WidgetActionContext } from '../../ActionProvider/WidgetActionProvider';
@@ -118,7 +118,9 @@ export const TabWidgetCore: React.FC<{}> = memo(() => {
         }),
       );
       if (resolvedActiveKey === String(targetKey)) {
-        const remaining = tabsCons.filter(tab => String(tab.index) !== String(targetKey));
+        const remaining = tabsCons.filter(
+          tab => String(tab.index) !== String(targetKey),
+        );
         setActiveKey(String(remaining[0]?.index ?? ''));
       }
     },
@@ -147,9 +149,9 @@ export const TabWidgetCore: React.FC<{}> = memo(() => {
           <WidgetMapper boardEditing={boardEditing} hideTitle={true} />
         </MapWrapper>
       </WidgetWrapProvider>
-    ) : (
-      boardEditing ? <DropHolder tabItem={tab} tabWidgetId={widget.id} /> : null
-    ),
+    ) : boardEditing ? (
+      <DropHolder tabItem={tab} tabWidgetId={widget.id} />
+    ) : null,
   }));
 
   return (
@@ -159,11 +161,13 @@ export const TabWidgetCore: React.FC<{}> = memo(() => {
         onChange={onTabChange}
         size="small"
         tabBarGutter={1}
-        tabPlacement={(
-          position === 'left' ? 'start'
-          : position === 'right' ? 'end'
-          : position
-        ) as TabsProps['tabPlacement']}
+        tabPlacement={
+          (position === 'left'
+            ? 'start'
+            : position === 'right'
+            ? 'end'
+            : position) as TabsProps['tabPlacement']
+        }
         activeKey={resolvedActiveKey}
         tabBarStyle={{ fontSize: '16px' }}
         type={editing ? 'editable-card' : undefined}
@@ -197,14 +201,14 @@ const TabsBoxWrap = styled.div<{ tabsAlign: string }>`
     background: none;
   }
 
-  & .ant-tabs-content-holder {
+  & .ant-tabs-body-holder {
     display: flex;
     flex: 1 1 auto;
     min-height: 0;
     overflow: hidden;
   }
 
-  & .ant-tabs-content {
+  & .ant-tabs-body {
     display: flex;
     flex: 1 1 auto;
     width: 100%;
@@ -214,8 +218,8 @@ const TabsBoxWrap = styled.div<{ tabsAlign: string }>`
     margin: 0 !important;
   }
 
-  & .ant-tabs-content-holder,
-  & .ant-tabs-tabpane,
+  & .ant-tabs-body-holder,
+  & .ant-tabs-content,
   & .TabPane,
   & .MapWrapper {
     box-sizing: border-box;
@@ -224,7 +228,7 @@ const TabsBoxWrap = styled.div<{ tabsAlign: string }>`
     margin: 0 !important;
   }
 
-  & .ant-tabs-tabpane {
+  & .ant-tabs-content {
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;

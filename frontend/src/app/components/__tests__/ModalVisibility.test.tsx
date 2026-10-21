@@ -1,9 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Form, Input } from 'antd';
+import PasswordModal from 'app/pages/SharePage/components/PasswordModal';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { Confirm } from '../Confirm';
 import { ModalForm } from '../ModalForm';
-import PasswordModal from 'app/pages/SharePage/components/PasswordModal';
 
 describe('Ant Design 6 modal visibility', () => {
   beforeEach(() => {
@@ -19,7 +19,7 @@ describe('Ant Design 6 modal visibility', () => {
   it('opens an existing save form and submits its values', async () => {
     const onSave = vi.fn();
     render(
-      <ModalForm visible title="保存数据集" okText="保存" onSave={onSave}>
+      <ModalForm open title="保存数据集" okText="保存" onSave={onSave}>
         <Form.Item
           name="name"
           rules={[{ required: true, message: '请输入数据集名称' }]}
@@ -41,22 +41,17 @@ describe('Ant Design 6 modal visibility', () => {
     );
   });
 
-  it('keeps closed forms hidden and lets open override the legacy flag', () => {
-    const { rerender } = render(<ModalForm visible={false} onSave={vi.fn()} />);
+  it('opens a closed form through the current open property', () => {
+    const { rerender } = render(<ModalForm open={false} onSave={vi.fn()} />);
     expect(screen.queryByRole('dialog')).toBeNull();
-    rerender(<ModalForm visible open={false} onSave={vi.fn()} />);
-    expect(screen.queryByRole('dialog')).toBeNull();
+    rerender(<ModalForm open onSave={vi.fn()} />);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
   it('opens the existing confirmation and preserves cancellation', () => {
     const onCancel = vi.fn();
     render(
-      <Confirm
-        visible
-        title="关闭数据集"
-        cancelText="取消"
-        onCancel={onCancel}
-      />,
+      <Confirm open title="关闭数据集" cancelText="取消" onCancel={onCancel} />,
     );
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /取\s*消/ }));
@@ -66,10 +61,10 @@ describe('Ant Design 6 modal visibility', () => {
   it('opens the share access-code dialog and submits the code', async () => {
     const onChange = vi.fn();
     const { rerender } = render(
-      <PasswordModal visible={false} onChange={onChange} />,
+      <PasswordModal open={false} onChange={onChange} />,
     );
     expect(screen.queryByRole('dialog')).toBeNull();
-    rerender(<PasswordModal visible onChange={onChange} />);
+    rerender(<PasswordModal open onChange={onChange} />);
     const dialog = screen.getByRole('dialog');
     fireEvent.change(dialog.querySelector('input')!, {
       target: { value: 'share-code' },

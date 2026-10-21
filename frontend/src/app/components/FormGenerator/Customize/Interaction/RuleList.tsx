@@ -65,17 +65,21 @@ const RuleList: FC<
           style={tableColumnStyle}
           value={value}
           onChange={value => onRuleChange(record.id, 'category', value)}
-        >
-          <Select.Option value={InteractionCategory.JumpToChart}>
-            {t('drillThrough.rule.category.jumpToChart')}
-          </Select.Option>
-          <Select.Option value={InteractionCategory.JumpToDashboard}>
-            {t('drillThrough.rule.category.jumpToDashboard')}
-          </Select.Option>
-          <Select.Option value={InteractionCategory.JumpToUrl}>
-            {t('drillThrough.rule.category.jumpToUrl')}
-          </Select.Option>
-        </Select>
+          options={[
+            {
+              value: InteractionCategory.JumpToChart,
+              label: t('drillThrough.rule.category.jumpToChart'),
+            },
+            {
+              value: InteractionCategory.JumpToDashboard,
+              label: t('drillThrough.rule.category.jumpToDashboard'),
+            },
+            {
+              value: InteractionCategory.JumpToUrl,
+              label: t('drillThrough.rule.category.jumpToUrl'),
+            },
+          ]}
+        />
       ),
     },
     {
@@ -87,14 +91,17 @@ const RuleList: FC<
           style={tableColumnStyle}
           value={value}
           onChange={value => onRuleChange(record.id, 'event', value)}
-        >
-          <Select.Option value={InteractionMouseEvent.Left}>
-            {t('drillThrough.rule.event.left')}
-          </Select.Option>
-          <Select.Option value={InteractionMouseEvent.Right}>
-            {t('drillThrough.rule.event.right')}
-          </Select.Option>
-        </Select>
+          options={[
+            {
+              value: InteractionMouseEvent.Left,
+              label: t('drillThrough.rule.event.left'),
+            },
+            {
+              value: InteractionMouseEvent.Right,
+              label: t('drillThrough.rule.event.right'),
+            },
+          ]}
+        />
       ),
     },
     {
@@ -106,17 +113,21 @@ const RuleList: FC<
           style={tableColumnStyle}
           value={value}
           onChange={value => onRuleChange(record.id, 'action', value)}
-        >
-          <Select.Option value={InteractionAction.Redirect}>
-            {t('drillThrough.rule.action.redirect')}
-          </Select.Option>
-          <Select.Option value={InteractionAction.Window}>
-            {t('drillThrough.rule.action.window')}
-          </Select.Option>
-          <Select.Option value={InteractionAction.Dialog}>
-            {t('drillThrough.rule.action.dialog')}
-          </Select.Option>
-        </Select>
+          options={[
+            {
+              value: InteractionAction.Redirect,
+              label: t('drillThrough.rule.action.redirect'),
+            },
+            {
+              value: InteractionAction.Window,
+              label: t('drillThrough.rule.action.window'),
+            },
+            {
+              value: InteractionAction.Dialog,
+              label: t('drillThrough.rule.action.dialog'),
+            },
+          ]}
+        />
       ),
     },
     {

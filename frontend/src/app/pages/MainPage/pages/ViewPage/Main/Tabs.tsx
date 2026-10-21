@@ -1,4 +1,3 @@
-import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -23,7 +22,7 @@ import {
   LoadingOutlined,
 } from '@ant-design/icons';
 import { Button, Dropdown, Menu, Space } from 'antd';
-import { Confirm, TabPane, Tabs as TabsComponent } from 'app/components';
+import { Confirm, Tabs as TabsComponent } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
 import { memo, useCallback, useContext, useState } from 'react';
@@ -132,21 +131,20 @@ export const Tabs = memo(() => {
   };
 
   const menu = (id: string) => (
-    <Menu onClick={e => handleClickMenu(e, id)}>
-      <Menu.Item key="CLOSE_OTHER">
-        <span>{t('closeOther')}</span>
-      </Menu.Item>
-      <Menu.Item key="CLOSE_ALL">
-        <span>{t('closeAll')}</span>
-      </Menu.Item>
-    </Menu>
+    <Menu
+      onClick={e => handleClickMenu(e, id)}
+      items={[
+        { key: String('CLOSE_OTHER'), label: <span>{t('closeOther')}</span> },
+        { key: String('CLOSE_ALL'), label: <span>{t('closeAll')}</span> },
+      ]}
+    />
   );
 
   const Tab = (id: string, name: string) => (
     <span>
-      <LegacyDropdown overlay={menu(id)} trigger={['contextMenu']}>
+      <Dropdown popupRender={() => menu(id)} trigger={['contextMenu']}>
         <span className="ant-dropdown-link">{name}</span>
-      </LegacyDropdown>
+      </Dropdown>
     </span>
   );
 
@@ -158,19 +156,25 @@ export const Tabs = memo(() => {
         activeKey={id}
         onChange={tabChange}
         onEdit={tabEdit}
-      >
-        {editingViews.map(({ id, name, touched, stage, error }) => (
-          <TabPane
-            key={id}
-            tab={error ? <span css={errorColor}>{name}</span> : Tab(id, name)}
-            closeIcon={
-              <CloseIcon touched={touched} stage={stage} error={!!error} />
-            }
-          />
-        ))}
-      </TabsComponent>
+        items={[
+          ...(editingViews.flatMap(({ id, name, touched, stage, error }) => [
+            {
+              key: String(id),
+              label: error ? (
+                <span css={errorColor}>{name}</span>
+              ) : (
+                Tab(id, name)
+              ),
+              removeIcon: (
+                <CloseIcon touched={touched} stage={stage} error={!!error} />
+              ),
+              children: null,
+            },
+          ]) || []),
+        ]}
+      />
       <Confirm
-        visible={confirmVisible}
+        open={confirmVisible}
         title={t('warning')}
         icon={<InfoCircleOutlined style={{ color: ORANGE }} />}
         footer={

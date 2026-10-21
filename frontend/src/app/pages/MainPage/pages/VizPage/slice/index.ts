@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { ChartDataSectionType } from 'app/constants';
-import { migrateChartConfig } from 'app/migration';
+
 import ChartManager from 'app/models/ChartManager';
 import { SelectedItem } from 'app/types/ChartConfig';
 import { mergeToChartConfig } from 'app/utils/ChartDtoHelper';
@@ -580,10 +580,7 @@ const slice = createSlice({
           backendChart: newChartDto,
           chartConfig: currentChart
             ? transferChartConfig(
-                mergeToChartConfig(
-                  currentChart?.config,
-                  migrateChartConfig(newChartDto?.config),
-                ),
+                mergeToChartConfig(currentChart?.config, newChartDto?.config),
                 filterSearchParams,
                 false,
                 jumpFilterParams,
@@ -596,10 +593,7 @@ const slice = createSlice({
           ...prevChartPreview,
           backendChart: newChartDto,
           chartConfig: transferChartConfig(
-            mergeToChartConfig(
-              currentChart?.config,
-              migrateChartConfig(newChartDto?.config),
-            ),
+            mergeToChartConfig(currentChart?.config, newChartDto?.config),
             filterSearchParams,
             false,
             jumpFilterParams,

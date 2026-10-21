@@ -19,7 +19,7 @@ import { Form, InputNumber, Select } from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { BORDER_STYLES } from 'app/pages/DashBoardPage/constants';
 import { BorderConfig } from 'app/pages/DashBoardPage/pages/Board/slice/types';
-import React, { FC, memo } from 'react';
+import { FC, memo } from 'react';
 
 export const BorderSet: FC<{
   border: BorderConfig;
@@ -36,13 +36,14 @@ export const BorderSet: FC<{
         <InputNumber className="datart-ant-input-number" />
       </Form.Item>
       <Form.Item label={t('style')} name={['border', 'style']}>
-        <Select className="datart-ant-select">
-          {BORDER_STYLES.map(item => (
-            <Select.Option key={item} value={item}>
-              {tLine(item)}
-            </Select.Option>
-          ))}
-        </Select>
+        <Select
+          className="datart-ant-select"
+          options={[
+            ...(BORDER_STYLES.flatMap(item => [
+              { key: String(item), value: item, label: tLine(item) },
+            ]) || []),
+          ]}
+        />
       </Form.Item>
       <Form.Item label={t('radius')} name={['border', 'radius']}>
         <InputNumber className="datart-ant-input-number" />

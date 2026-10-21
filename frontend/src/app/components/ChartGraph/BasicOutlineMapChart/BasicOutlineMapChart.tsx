@@ -38,8 +38,8 @@ import {
   toFormattedValue,
   transformToDataSet,
 } from 'app/utils/chartHelper';
-import { ECharts, init, registerMap } from 'echarts';
 import { applyMobileChartOption } from 'app/utils/mobileChartOption';
+import { ECharts, init, registerMap } from 'echarts';
 import { CloneValueDeep } from 'utils/object';
 import Config from './config';
 import geoChinaCity from './geo-china-city.map.json';
@@ -536,7 +536,7 @@ class BasicOutlineMapChart extends Chart {
         aggregateConfigs?.[0]?.color?.end || '#FA8C15',
       ],
     };
-    const positionConfig = position?.split(',');
+    const positionConfig = position.split(',');
     return [
       {
         type: 'continuous',
@@ -546,11 +546,8 @@ class BasicOutlineMapChart extends Chart {
         orient,
         align,
 
-        //处理 visualMap position  旧数据中没有 position 数据  beta.2版本之后是 string 类型 后续版本稳定之后 可以移除兼容逻辑
-        // TODO migration start
-        left: positionConfig?.[0] || 'right',
-        top: positionConfig?.[1] || 'bottom',
-        // TODO migration end --tl
+        left: positionConfig[0],
+        top: positionConfig[1],
 
         itemWidth,
         itemHeight,

@@ -1,4 +1,3 @@
-import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -40,22 +39,31 @@ export const ShortcutKeys = () => {
   const gt = useI18NPrefix(`global.button`);
   // shortcuts
   const menu = (
-    <Menu>
-      {Hotkeys.map(item => (
-        <Menu.Item key={item.text}>
-          <StyledWrap>
-            <div>{item.label || t(item.text)}</div>
-            <div>{item.key}</div>
-          </StyledWrap>
-        </Menu.Item>
-      ))}
-    </Menu>
+    <Menu
+      items={[
+        ...(Hotkeys.flatMap(item => [
+          {
+            key: String(item.text),
+            label: (
+              <StyledWrap>
+                <div>{item.label || t(item.text)}</div>
+                <div>{item.key}</div>
+              </StyledWrap>
+            ),
+          },
+        ]) || []),
+      ]}
+    />
   );
 
   return (
-    <LegacyDropdown overlay={menu} placement="bottomRight" trigger={['click']}>
+    <Dropdown
+      popupRender={() => menu}
+      placement="bottomRight"
+      trigger={['click']}
+    >
       <Button type="text">{gt('shortcuts')}</Button>
-    </LegacyDropdown>
+    </Dropdown>
   );
 };
 const StyledWrap = styled.div`

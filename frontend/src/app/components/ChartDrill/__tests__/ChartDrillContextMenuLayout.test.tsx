@@ -1,10 +1,9 @@
 import { render } from '@testing-library/react';
-import ChartDrillContextMenu from '../ChartDrillContextMenu';
 import { vi } from 'vitest';
+import ChartDrillContextMenu from '../ChartDrillContextMenu';
 
-vi.mock('app/hooks/useI18NPrefix', () => ({ default: () => (key: string) => key }));
-vi.mock('app/components/Compat/LegacyDropdown', () => ({
-  default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+vi.mock('app/hooks/useI18NPrefix', () => ({
+  default: () => (key: string) => key,
 }));
 
 describe('dashboard chart height inside AntD tab or group', () => {
@@ -16,7 +15,9 @@ describe('dashboard chart height inside AntD tab or group', () => {
         </ChartDrillContextMenu>
       </div>,
     );
-    const outer = container.querySelector<HTMLElement>('.chart-drill-menu-container');
+    const outer = container.querySelector<HTMLElement>(
+      '.chart-drill-menu-container',
+    );
     const inner = container.querySelector<HTMLElement>('.chart-drill-content');
     expect(outer).not.toBeNull();
     expect(inner).not.toBeNull();

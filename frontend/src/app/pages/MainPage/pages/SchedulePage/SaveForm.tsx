@@ -35,14 +35,14 @@ import { PermissionLevels, ResourceTypes } from '../PermissionPage/constants';
 import { SaveFormContext } from './SaveFormContext';
 import { makeSelectScheduleFolderTree } from './slice/selectors';
 
-type SaveFormProps = Omit<ModalFormProps, 'type' | 'visible' | 'onSave'>;
+type SaveFormProps = Omit<ModalFormProps, 'type' | 'open' | 'onSave'>;
 
 export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
   const selectScheduleFolderTree = useMemo(makeSelectScheduleFolderTree, []);
   const {
     scheduleType,
     type,
-    visible,
+    open,
     simple,
     parentIdLabel,
     initialValues,
@@ -105,12 +105,12 @@ export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
       {...modalProps}
       title={t(scheduleType)}
       type={type}
-      visible={visible}
+      open={open}
       onSave={save}
       onCancel={onCancel}
       afterClose={afterClose}
       ref={formRef}
-      maskClosable={false}
+      mask={{ closable: false }}
     >
       {!simple && (
         <Form.Item

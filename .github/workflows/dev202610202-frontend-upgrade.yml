@@ -47,17 +47,6 @@ jobs:
         run: |
           npm ci --legacy-peer-deps
           npm run check:upgrade-baseline
-      - name: Rewrite removed React and AntD legacy APIs
-        run: node scripts/migrate-react19-antd6.mjs
-      - name: Commit mechanical React and AntD compatibility changes
-        run: |
-          if ! git diff --quiet -- src; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add src
-            HUSKY=0 git commit -m "refactor(frontend): migrate React 19 refs and AntD 6 UI props"
-            HUSKY=0 git push origin HEAD:dev202610202
-          fi
       - name: Native BI chart size and tab visibility regression
         run: npx vitest run src/app/hooks/__tests__/useCacheWidthHeight.test.tsx
       - name: Dashboard chart height propagation regression

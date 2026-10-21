@@ -81,8 +81,14 @@ describe('Test getQueryData', () => {
             alias: 'COUNT(education)',
             column: ['education'],
             sqlOperator: 'COUNT',
+            ratioOfSums: false,
           },
-          { alias: 'SUM(chartAge)', column: ['chartAge'], sqlOperator: 'SUM' },
+          {
+            alias: 'SUM(chartAge)',
+            column: ['chartAge'],
+            sqlOperator: 'SUM',
+            ratioOfSums: false,
+          },
         ],
         groups: [{ alias: 'age', column: ['age'] }],
         filters: [
@@ -106,12 +112,12 @@ describe('Test getQueryData', () => {
         outputProjections: [
           { displayAlias: 'age', ordinal: 0, technicalAlias: 'age' },
           {
-            displayAlias: 'COUNT(education)',
+            displayAlias: 'education',
             ordinal: 1,
             technicalAlias: 'COUNT(education)',
           },
           {
-            displayAlias: 'SUM(chartAge)',
+            displayAlias: 'chartAge',
             ordinal: 2,
             technicalAlias: 'SUM(chartAge)',
           },
@@ -179,11 +185,13 @@ describe('Test getQueryData', () => {
             alias: 'SUM(viewComputerField_age)',
             column: ['viewComputerField_age'],
             sqlOperator: 'SUM',
+            ratioOfSums: false,
           },
           {
             alias: 'SUM(root.salary)',
-            column: ['root', 'salary'],
+            column: ['root.salary'],
             sqlOperator: 'SUM',
+            ratioOfSums: false,
           },
         ],
         groups: [
@@ -191,7 +199,7 @@ describe('Test getQueryData', () => {
             alias: 'root.birthday@date_level_delimiter@AGG_DATE_YEAR',
             column: ['root.birthday@date_level_delimiter@AGG_DATE_YEAR'],
           },
-          { alias: 'root.age', column: ['root', 'age'] },
+          { alias: 'root.age', column: ['root.age'] },
         ],
         filters: [],
         orders: [],
@@ -212,12 +220,12 @@ describe('Test getQueryData', () => {
           },
           { displayAlias: 'root.age', ordinal: 1, technicalAlias: 'root.age' },
           {
-            displayAlias: 'SUM(viewComputerField_age)',
+            displayAlias: 'viewComputerField_age',
             ordinal: 2,
             technicalAlias: 'SUM(viewComputerField_age)',
           },
           {
-            displayAlias: 'SUM(root.salary)',
+            displayAlias: 'root.salary',
             ordinal: 3,
             technicalAlias: 'SUM(root.salary)',
           },

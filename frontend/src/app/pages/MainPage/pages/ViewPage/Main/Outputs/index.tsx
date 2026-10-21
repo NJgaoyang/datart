@@ -22,7 +22,7 @@ import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import useResizeObserver from 'app/hooks/useResizeObserver';
 import { selectSystemInfo } from 'app/slice/selectors';
 import { transparentize } from 'polished';
-import React, { memo, useCallback } from 'react';
+import { memo, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
 import { SPACE_MD, SPACE_TIMES, SPACE_XS } from 'styles/StyleConstants';
@@ -85,7 +85,7 @@ export const Outputs = memo(({ hidden = false }: { hidden?: boolean }) => {
       {warnings && (
         <Alert
           className="warningBox"
-          message=""
+          title=""
           description={
             <p>
               {t('sqlRunWraning')}

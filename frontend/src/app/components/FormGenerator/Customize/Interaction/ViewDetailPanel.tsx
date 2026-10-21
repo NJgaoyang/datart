@@ -19,10 +19,10 @@
 import { Form, Radio, Select, Space } from 'antd';
 import { ChartStyleConfig } from 'app/types/ChartConfig';
 import { getAllColumnInMeta } from 'app/utils/chartHelper';
-import { getDatasetFieldDisplayName } from 'utils/utils';
 import { FC, memo, useState } from 'react';
 import styled from 'styled-components';
 import { isEmptyArray } from 'utils/object';
+import { getDatasetFieldDisplayName } from 'utils/utils';
 import { InteractionFieldMapper, InteractionMouseEvent } from '../../constants';
 import { ItemLayoutProps } from '../../types';
 import { itemLayoutComparer } from '../../utils';
@@ -77,7 +77,7 @@ const ViewDetailPanel: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
     };
 
     return (
-      <StyledDrillThroughPanel direction="vertical">
+      <StyledDrillThroughPanel orientation="vertical">
         <Form
           labelCol={{ offset: 2, span: 2 }}
           wrapperCol={{ span: 18 }}
@@ -109,7 +109,6 @@ const ViewDetailPanel: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
             <Form.Item label=" " colon={false} name="custom">
               <Select
                 mode="multiple"
-                optionFilterProp="label"
                 optionLabelProp="label"
                 optionRender={option => <span>{option.label}</span>}
                 allowClear
@@ -120,6 +119,7 @@ const ViewDetailPanel: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
                     label: getDatasetFieldDisplayName(f),
                   }),
                 )}
+                showSearch={{ optionFilterProp: 'label' }}
               />
             </Form.Item>
           )}

@@ -50,28 +50,26 @@ const AggregationAction: FC<{
   const renderOptions = mode => {
     if (mode === 'menu') {
       return (
-        <>
-          {AggregateFieldSubAggregateType[
-            ChartDataSectionFieldActionType.Aggregate
-          ]?.map(agg => {
-            return (
-              <Menu.Item
-                key={agg}
-                eventKey={agg}
-                icon={aggregate === agg ? <CheckOutlined /> : ''}
-                onClick={() => onChange(agg)}
-              >
-                {t(agg)}
-              </Menu.Item>
-            );
-          })}
-        </>
+        <Menu
+          items={[
+            ...AggregateFieldSubAggregateType[
+              ChartDataSectionFieldActionType.Aggregate
+            ]?.map(agg => {
+              return {
+                key: String(agg),
+                icon: aggregate === agg ? <CheckOutlined /> : '',
+                onClick: () => onChange(agg),
+                label: t(agg),
+              };
+            }),
+          ]}
+        />
       );
     }
 
     return (
       <Radio.Group onChange={e => onChange(e.target?.value)} value={aggregate}>
-        <Space direction="vertical">
+        <Space orientation="vertical">
           {AggregateFieldSubAggregateType[
             ChartDataSectionFieldActionType.Aggregate
           ]?.map(agg => {

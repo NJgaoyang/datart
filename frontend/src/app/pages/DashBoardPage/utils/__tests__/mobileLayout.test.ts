@@ -1,3 +1,4 @@
+import { Widget } from '../../types/widgetTypes';
 import {
   compactMobileLayout,
   findVisibleMobilePresentation,
@@ -7,7 +8,6 @@ import {
   markMobileTableLayoutReady,
   prepareMobileTableLayout,
 } from '../mobileLayout';
-import { Widget } from '../../types/widgetTypes';
 
 const makeMeasurable = (element: HTMLElement, height: number) => {
   Object.defineProperty(element, 'scrollHeight', {
@@ -32,10 +32,10 @@ describe('findVisibleMobilePresentation', () => {
   it('ignores a rendered but inactive tab and measures the active tab', () => {
     const root = document.createElement('div');
     root.innerHTML = `
-      <div class="ant-tabs-tabpane">
+      <div class="ant-tabs-content">
         <div id="inactive" class="mobile-table-presentation"></div>
       </div>
-      <div class="ant-tabs-tabpane ant-tabs-tabpane-active">
+      <div class="ant-tabs-content ant-tabs-content-active">
         <div id="active" class="mobile-table-presentation"></div>
       </div>
     `;

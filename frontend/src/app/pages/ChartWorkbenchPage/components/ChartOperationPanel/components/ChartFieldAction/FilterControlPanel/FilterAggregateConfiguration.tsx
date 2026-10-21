@@ -43,13 +43,15 @@ const FilterAggregateConfiguration: FC<{
   };
 
   return (
-    <Select value={aggregate} onChange={onChange}>
-      {getAggregateByModelType().map(agg => (
-        <Select.Option key={agg} value={agg}>
-          {t(agg)}
-        </Select.Option>
-      ))}
-    </Select>
+    <Select
+      value={aggregate}
+      onChange={onChange}
+      options={[
+        ...(getAggregateByModelType().flatMap(agg => [
+          { key: String(agg), value: agg, label: t(agg) },
+        ]) || []),
+      ]}
+    />
   );
 });
 

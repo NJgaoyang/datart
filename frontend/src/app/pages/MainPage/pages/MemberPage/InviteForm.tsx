@@ -90,8 +90,10 @@ export const InviteForm = memo(
             mode="tags"
             placeholder={t('search')}
             options={options}
-            filterOption={filterOption}
-            onSearch={debouncedSearchUser}
+            showSearch={{
+              filterOption: filterOption,
+              onSearch: debouncedSearchUser,
+            }}
           />
         </Form.Item>
         <Form.Item name="sendMail" valuePropName="checked" initialValue={true}>

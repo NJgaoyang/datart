@@ -15,8 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
-import { migrateViewConfig } from 'app/migration/ViewConfig/migrationViewDetailConfig';
+import { serializeConfig } from 'app/utils/configParser';
+
 import { CommonFormTypes } from 'globalConstants';
 import { useCallback, useContext } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -48,7 +50,7 @@ export function useSaveAsView() {
   const getViewData = useCallback(async (viewId): Promise<View> => {
     try {
       const { data } = await request2<View>(`/views/${viewId}`);
-      data.config = migrateViewConfig(data.config);
+      data.config = serializeConfig(data.config);
       return data;
     } catch (error) {
       errorHandle(error);
@@ -66,7 +68,7 @@ export function useSaveAsView() {
 
       showSaveForm({
         type: CommonFormTypes.SaveAs,
-        visible: true,
+        open: true,
         initialValues: {
           name: name + '_' + tg('copy'),
           parentId,

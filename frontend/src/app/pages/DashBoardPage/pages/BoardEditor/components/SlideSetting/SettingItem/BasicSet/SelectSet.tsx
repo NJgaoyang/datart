@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Form, Select } from 'antd';
 import type { FormItemProps } from 'antd';
+import { Form, Select } from 'antd';
+import { FC, memo } from 'react';
 type NamePath = NonNullable<FormItemProps['name']>;
-import React, { FC, memo } from 'react';
 export const SelectSet: FC<{
   options: any;
   value: string | undefined;
@@ -31,13 +31,12 @@ export const SelectSet: FC<{
         className="datart-ant-select"
         defaultValue={defaultValue}
         value={value}
-      >
-        {options.map(o => (
-          <Select.Option key={o.value} value={o.value}>
-            {o.name}
-          </Select.Option>
-        ))}
-      </Select>
+        options={[
+          ...(options.flatMap(o => [
+            { key: String(o.value), value: o.value, label: o.name },
+          ]) || []),
+        ]}
+      />
     </Form.Item>
   );
 });

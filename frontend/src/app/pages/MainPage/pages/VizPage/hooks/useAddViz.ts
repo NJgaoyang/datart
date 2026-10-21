@@ -29,7 +29,7 @@ import { Folder, VizType } from '../slice/types';
 export interface addVizParams {
   vizType: VizType;
   type: CommonFormTypes;
-  visible: boolean;
+  open: boolean;
   initialValues: any;
   callback?: (folder?: Folder) => void;
   onAfterClose?: () => void;
@@ -70,7 +70,7 @@ export function useAddViz({ showSaveForm }) {
     ({
       vizType,
       type,
-      visible,
+      open,
       initialValues,
       callback,
       onAfterClose,
@@ -78,7 +78,7 @@ export function useAddViz({ showSaveForm }) {
       showSaveForm({
         vizType: vizType,
         type: type,
-        visible: visible,
+        open: open,
         initialValues: initialValues,
         onSave: async (values: SaveFormModel, onClose) => {
           const dataValues = updateValue(vizType, values);

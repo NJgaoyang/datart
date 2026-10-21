@@ -19,9 +19,9 @@
 import { LoadingOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Col, Input, List, Row } from 'antd';
 import { ListItem, Popup, Tree } from 'app/components';
-import { ViewFieldMeta } from 'app/types/View';
 import { useDebouncedSearch } from 'app/hooks/useDebouncedSearch';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
+import { ViewFieldMeta } from 'app/types/View';
 import classnames from 'classnames';
 import { memo, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -197,7 +197,7 @@ export const ColumnPermissions = memo(() => {
             prefix={<SearchOutlined className="icon" />}
             placeholder={t('search')}
             className="input"
-            bordered={false}
+            variant="borderless"
             onChange={debouncedSearch}
           />
         </Col>

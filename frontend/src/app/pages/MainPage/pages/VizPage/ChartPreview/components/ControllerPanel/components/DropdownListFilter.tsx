@@ -65,15 +65,12 @@ const DropdownListFilter: FC<PresentControllerFilterProps> = memo(
       <StyledDropdownListFilter
         value={selectedNode}
         onChange={handleSelectedChange}
-      >
-        {(originalNodes || []).map(n => {
-          return (
-            <Select.Option key={n.key} value={n.key}>
-              {n.label}
-            </Select.Option>
-          );
-        })}
-      </StyledDropdownListFilter>
+        options={[
+          ...((originalNodes || []).flatMap(n => {
+            return [{ key: String(n.key), value: n.key, label: n.label }];
+          }) || []),
+        ]}
+      />
     );
   },
 );

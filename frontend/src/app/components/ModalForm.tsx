@@ -18,7 +18,6 @@ export const ModalForm = forwardRef(
       onSave,
       afterClose,
       children,
-      visible,
       open,
       ...rest
     }: ModalFormProps,
@@ -40,7 +39,7 @@ export const ModalForm = forwardRef(
     return (
       <Modal
         {...rest}
-        open={open ?? visible}
+        open={open}
         title={
           type === CommonFormTypes.SaveAs
             ? tg('button.saveAs')

@@ -1,4 +1,3 @@
-import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -62,23 +61,24 @@ export const AddContainer: React.FC<{}> = () => {
   ];
 
   const containerWidgetItems = (
-    <Menu onClick={onSelectContainerWidget}>
-      {containerWidgetTypes.map(({ name, type, disabled }) => (
-        <Menu.Item disabled={disabled} key={type}>
-          {name}
-        </Menu.Item>
-      ))}
-    </Menu>
+    <Menu
+      onClick={onSelectContainerWidget}
+      items={[
+        ...(containerWidgetTypes.flatMap(({ name, type, disabled }) => [
+          { disabled: disabled, key: String(type), label: name },
+        ]) || []),
+      ]}
+    />
   );
   return (
-    <LegacyDropdown
-      overlay={containerWidgetItems}
+    <Dropdown
+      popupRender={() => containerWidgetItems}
       placement="bottomLeft"
       trigger={['click']}
     >
       <Tooltip title={t('container')}>
         <ToolbarButton icon={<ContainerOutlined />}></ToolbarButton>
       </Tooltip>
-    </LegacyDropdown>
+    </Dropdown>
   );
 };

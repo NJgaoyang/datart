@@ -34,7 +34,7 @@ import {
 } from 'app/pages/MainPage/pages/PermissionPage/constants';
 import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
 import { CommonFormTypes } from 'globalConstants';
-import React, { memo, useCallback, useContext, useMemo } from 'react';
+import { memo, useCallback, useContext, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
@@ -123,7 +123,7 @@ export const Sidebar = memo(
           case 'folder':
             showSaveForm({
               type: CommonFormTypes.Add,
-              visible: true,
+              open: true,
               simple: true,
               parentIdLabel: t('parent'),
               onSave: (values, onClose) => {

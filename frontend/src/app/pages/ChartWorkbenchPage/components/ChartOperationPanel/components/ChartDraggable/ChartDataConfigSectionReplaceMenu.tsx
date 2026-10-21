@@ -63,21 +63,24 @@ export const ChartDataConfigSectionReplaceMenu: FC<{
   const renderMenuItem = (item: ChartDataViewMeta) => {
     const displayName = getDatasetFieldDisplayName(item);
     if (item.children && item.children.length) {
-      return (
-        <Menu.SubMenu key={item.name} title={displayName}>
-          {item.children.map(item => renderMenuItem(item))}
-        </Menu.SubMenu>
-      );
+      return {
+        key: String(item.name),
+        label: displayName,
+        children: [
+          ...(item.children.flatMap(item => renderMenuItem(item)) || []),
+        ],
+      };
     } else {
-      return (
-        <Menu.Item
-          key={item.name}
-          onClick={() => handleFieldConfigChanged(item)}
-        >
-          {displayName}
-        </Menu.Item>
-      );
+      return {
+        key: String(item.name),
+        onClick: () => handleFieldConfigChanged(item),
+        label: displayName,
+      };
     }
   };
-  return <Menu>{viewFields.map(item => renderMenuItem(item))}</Menu>;
+  return (
+    <Menu
+      items={[...(viewFields.flatMap(item => renderMenuItem(item)) || [])]}
+    />
+  );
 };

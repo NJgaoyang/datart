@@ -1,4 +1,3 @@
-import LegacyDropdown from 'app/components/Compat/LegacyDropdown';
 /**
  * Datart
  *
@@ -52,21 +51,24 @@ export const ChartWidgetDropdown: React.FC<{
   ];
 
   const chartWidgetItems = (
-    <Menu onClick={onChartWidget}>
-      {addChartTypes.map(({ name, icon, type }) => (
-        <Menu.Item key={type}>{name}</Menu.Item>
-      ))}
-    </Menu>
+    <Menu
+      onClick={onChartWidget}
+      items={[
+        ...(addChartTypes.flatMap(({ name, icon, type }) => [
+          { key: String(type), label: name },
+        ]) || []),
+      ]}
+    />
   );
   return (
-    <LegacyDropdown
-      overlay={chartWidgetItems}
+    <Dropdown
+      popupRender={() => chartWidgetItems}
       placement="bottomLeft"
       trigger={['click']}
     >
       <Tooltip title={t('dataChart')}>
         <ToolbarButton icon={<BarChartOutlined />} />
       </Tooltip>
-    </LegacyDropdown>
+    </Dropdown>
   );
 };

@@ -24,18 +24,18 @@ import { ViewType } from 'app/pages/MainPage/pages/ViewPage/slice/types';
 import { ChartDataViewMeta } from 'app/types/ChartDataViewMeta';
 import { ChartComputedFieldHandle } from 'app/types/ComputedFieldEditor';
 import { hasAggregationFunction } from 'app/utils/chartHelper';
+import { fetchSourceFunctionDefinitionsAsync } from 'app/utils/fetch';
 import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { getDatasetFieldDisplayName } from 'utils/utils';
-import { fetchSourceFunctionDefinitionsAsync } from 'app/utils/fetch';
 import ChartComputedFieldEditor from './ChartComputedFieldEditor/ChartComputedFieldEditor';
 import ChartSearchableList from './ChartSearchableList';
+import ComputedFunctionDescriptions from './computed-function-description-map';
 import {
   ComputedFieldDisplayName,
   toDisplayExpression,
   toQueryExpression,
 } from './computedFieldExpression';
-import ComputedFunctionDescriptions from './computed-function-description-map';
 import { FieldTemplate, FunctionTemplate, VariableTemplate } from './utils';
 
 enum TextType {
@@ -311,7 +311,7 @@ const ChartComputedFieldSettingPanel: FC<{
   );
 
   return (
-    <StyledChartComputedFieldSettingPanel direction="vertical">
+    <StyledChartComputedFieldSettingPanel orientation="vertical">
       <Row gutter={24}>
         <Col span={12}>
           <Space>
@@ -349,38 +349,49 @@ const ChartComputedFieldSettingPanel: FC<{
       </Row>
       <StyledRow>
         <StyledLeftPane style={{ width: leftPaneWidth }}>
-          <Tabs defaultActiveKey="field" onChange={() => {}}>
-            <Tabs.TabPane tab={`${t('field')}`} key="field">
-              {viewType === 'STRUCT' ? (
-                <Tree
-                  className="medium"
-                  loading={false}
-                  showIcon={false}
-                  treeData={fields as TreeDataNode[]}
-                  defaultExpandAll={true}
-                  height={300}
-                  onSelect={handleOnSelectValue}
-                />
-              ) : (
-                <ChartSearchableList
-                  source={(fields || []).map(f => ({
-                    value: f.name,
-                    label: getDatasetFieldDisplayName(f),
-                  }))}
-                  onItemSelected={handleFieldSelected}
-                />
-              )}
-            </Tabs.TabPane>
-            <Tabs.TabPane tab={`${t('variable')}`} key="variable">
-              <ChartSearchableList
-                source={(variables || []).map(f => ({
-                  value: f.name,
-                  label: f.name,
-                }))}
-                onItemSelected={handleVariableSelected}
-              />
-            </Tabs.TabPane>
-          </Tabs>
+          <Tabs
+            defaultActiveKey="field"
+            onChange={() => {}}
+            items={[
+              {
+                label: `${t('field')}`,
+                key: String('field'),
+                children:
+                  viewType === 'STRUCT' ? (
+                    <Tree
+                      className="medium"
+                      loading={false}
+                      showIcon={false}
+                      treeData={fields as TreeDataNode[]}
+                      defaultExpandAll={true}
+                      height={300}
+                      onSelect={handleOnSelectValue}
+                    />
+                  ) : (
+                    <ChartSearchableList
+                      source={(fields || []).map(f => ({
+                        value: f.name,
+                        label: getDatasetFieldDisplayName(f),
+                      }))}
+                      onItemSelected={handleFieldSelected}
+                    />
+                  ),
+              },
+              {
+                label: `${t('variable')}`,
+                key: String('variable'),
+                children: (
+                  <ChartSearchableList
+                    source={(variables || []).map(f => ({
+                      value: f.name,
+                      label: f.name,
+                    }))}
+                    onItemSelected={handleVariableSelected}
+                  />
+                ),
+              },
+            ]}
+          />
         </StyledLeftPane>
         <StyledResizer onMouseDown={handleResizeMouseDown}>
           <div />
@@ -397,7 +408,7 @@ const ChartComputedFieldSettingPanel: FC<{
           />
         </StyledMiddlePane>
         <StyledRightPane>
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space orientation="vertical" style={{ width: '100%' }}>
             <span>{`${t('functions')}`}</span>
             <Select
               value={selectedFunctionCategory}
@@ -460,7 +471,7 @@ const StyledLeftPane = styled.div`
     flex-direction: column;
     height: 100%;
   }
-  .ant-tabs-content-holder {
+  .ant-tabs-body-holder {
     flex: 1;
     min-height: 0;
     overflow: auto;

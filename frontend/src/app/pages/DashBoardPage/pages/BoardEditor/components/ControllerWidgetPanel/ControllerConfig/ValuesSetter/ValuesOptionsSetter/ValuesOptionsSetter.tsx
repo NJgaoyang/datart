@@ -28,12 +28,13 @@ import {
 import { DefaultOptionType } from 'antd/lib/cascader';
 import { ControllerFacadeTypes } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
-import migrationViewConfig from 'app/migration/ViewConfig/migrationViewConfig';
-import beginViewModelMigration from 'app/migration/ViewConfig/migrationViewModelConfig';
+import { serializeConfig } from 'app/utils/configParser';
+
 import {
   OPERATOR_TYPE_OPTION,
   ValueOptionType,
 } from 'app/pages/DashBoardPage/constants';
+import { ControllerWidgetContent } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { RelationFilterValue } from 'app/types/ChartConfig';
 import ChartDataView from 'app/types/ChartDataView';
 import { View } from 'app/types/View';
@@ -42,11 +43,10 @@ import { getDistinctFields } from 'app/utils/fetch';
 import { transformMeta } from 'app/utils/internalChartHelper';
 import { FC, memo, useCallback, useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
-import { ControllerWidgetContent } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { request2 } from 'utils/request';
 import { getFieldDisplayName } from 'utils/utils';
-import { convertToTree } from '../../../../../../../utils/widget';
 import { sortControllerOptions } from '../../../../../../../utils/sortControllerOptions';
+import { convertToTree } from '../../../../../../../utils/widget';
 import { ControllerConfig } from '../../../types';
 import TreeSetter from '../TreeSetter';
 import { AssistViewFields } from './AssistViewFields';
@@ -119,10 +119,9 @@ const ValuesOptionsSetter: FC<{
       return { option: [], data: undefined };
     }
     if (data) {
-      data = migrationViewConfig(data);
     }
     if (data?.model) {
-      data.model = beginViewModelMigration(data.model, data.type);
+      data.model = serializeConfig(data.model);
     }
     let meta = transformMeta(data?.model, data?.fields, data?.type);
     const viewComputedField =
@@ -406,7 +405,7 @@ const ValuesOptionsSetter: FC<{
                 )}
 
                 {getOptionType() === 'common' && (
-                  <Space direction="vertical" style={{ width: '100%' }}>
+                  <Space orientation="vertical" style={{ width: '100%' }}>
                     {!(isTree && getTreeBuildingMethod() === 'byHierarchy') && (
                       <Select
                         showSearch
@@ -415,16 +414,16 @@ const ValuesOptionsSetter: FC<{
                         allowClear
                         onChange={onLabelChange}
                         style={{ width: '100%' }}
-                      >
-                        {labelOptions?.map(item => (
-                          <Select.Option
-                            key={item.value}
-                            value={item.value as string}
-                          >
-                            {item.label}
-                          </Select.Option>
-                        ))}
-                      </Select>
+                        options={[
+                          ...(labelOptions?.flatMap(item => [
+                            {
+                              key: String(item.value),
+                              value: item.value as string,
+                              label: item.label,
+                            },
+                          ]) || []),
+                        ]}
+                      />
                     )}
                     <Form.Item name={['config', 'controllerValues']}>
                       {getParentFields()?.length ? (
@@ -434,8 +433,12 @@ const ValuesOptionsSetter: FC<{
                           allowClear
                           treeData={optionValues}
                           style={{ width: '100%' }}
-                          dropdownStyle={{ height: '300px', overflowY: 'auto' }}
-                          dropdownRender={() => {
+                          styles={{
+                            popup: {
+                              root: { height: '300px', overflowY: 'auto' },
+                            },
+                          }}
+                          popupRender={() => {
                             return (
                               <TreeSelectProps
                                 checkedKeys={targetKeys}
@@ -472,24 +475,31 @@ const ValuesOptionsSetter: FC<{
                           {...(isMultiple && { mode: 'multiple' })}
                           onChange={onTargetKeyChange}
                           style={{ width: '100%' }}
-                        >
-                          {sortControllerOptions(optionValues, getControllerConfig()?.optionSort).map(item => (
-                            <Select.Option
-                              key={String(item.key) + String(item.label)}
-                              value={item.key}
-                            >
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  justifyContent: 'space-between',
-                                }}
-                              >
-                                <span>{item.label || item.key}</span>
-                                <FieldKey>{item.key}</FieldKey>
-                              </div>
-                            </Select.Option>
-                          ))}
-                        </Select>
+                          options={[
+                            ...(sortControllerOptions(
+                              optionValues,
+                              getControllerConfig()?.optionSort,
+                            ).flatMap(item => [
+                              {
+                                key: String(
+                                  String(item.key) + String(item.label),
+                                ),
+                                value: item.key,
+                                label: (
+                                  <div
+                                    style={{
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                    }}
+                                  >
+                                    <span>{item.label || item.key}</span>
+                                    <FieldKey>{item.key}</FieldKey>
+                                  </div>
+                                ),
+                              },
+                            ]) || []),
+                          ]}
+                        />
                       )}
                     </Form.Item>
                   </Space>
@@ -507,13 +517,19 @@ const ValuesOptionsSetter: FC<{
         </Form.Item>
       </Form.Item>
       {!isTree && (
-        <Form.Item name={['config', 'optionSort']} label={tc('optionSort')} initialValue="original">
-          <Select>
-            <Select.Option value="auto">{tc('optionSortAuto')}</Select.Option>
-            <Select.Option value="asc">{tc('optionSortAsc')}</Select.Option>
-            <Select.Option value="desc">{tc('optionSortDesc')}</Select.Option>
-            <Select.Option value="original">{tc('optionSortOriginal')}</Select.Option>
-          </Select>
+        <Form.Item
+          name={['config', 'optionSort']}
+          label={tc('optionSort')}
+          initialValue="original"
+        >
+          <Select
+            options={[
+              { value: 'auto', label: tc('optionSortAuto') },
+              { value: 'asc', label: tc('optionSortAsc') },
+              { value: 'desc', label: tc('optionSortDesc') },
+              { value: 'original', label: tc('optionSortOriginal') },
+            ]}
+          />
         </Form.Item>
       )}
     </Wrapper>
