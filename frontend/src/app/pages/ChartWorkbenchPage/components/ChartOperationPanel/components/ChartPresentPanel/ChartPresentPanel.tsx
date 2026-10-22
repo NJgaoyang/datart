@@ -32,8 +32,10 @@ import ChartDataSetDTO from 'app/types/ChartDataSet';
 import ChartDataView from 'app/types/ChartDataView';
 import {
   getAllColumnInMeta,
+  getColumnRenderName,
   setRuntimeDateLevelFieldsInChartConfig,
 } from 'app/utils/chartHelper';
+import { findChartFieldByResultColumn } from 'app/utils/internalChartHelper';
 import { getDatasetFieldDisplayName } from 'utils/utils';
 import { FC, memo, useContext, useState } from 'react';
 import { useSelector } from 'react-redux';
@@ -148,12 +150,25 @@ const ChartPresentPanel: FC<{
                 size="small"
                 dataSource={dataset?.rows}
                 columns={dataset?.columns?.map((col, index) => {
-                  const field = getAllColumnInMeta(dataView?.meta)?.find(
-                    meta => meta.name === col.name,
+                  const resultName = Array.isArray(col.name)
+                    ? col.name.join('.')
+                    : col.name;
+                  const configField = findChartFieldByResultColumn(
+                    chartConfig?.datas?.flatMap(section => section.rows || []),
+                    resultName,
+                  );
+                  const metaField = getAllColumnInMeta(dataView?.meta)?.find(
+                    meta =>
+                      meta.name === resultName ||
+                      meta.originName === resultName,
                   );
                   return {
-                    key: col.name,
-                    title: field ? getDatasetFieldDisplayName(field) : col.name,
+                    key: resultName,
+                    title: configField
+                      ? getColumnRenderName(configField)
+                      : metaField
+                      ? getDatasetFieldDisplayName(metaField)
+                      : resultName,
                     dataIndex: index,
                   };
                 })}

@@ -31,6 +31,7 @@ import {
 } from 'app/types/ChartDataRequest';
 import ChartDataView from 'app/types/ChartDataView';
 import { getColumnRenderName } from 'app/utils/chartHelper';
+import { findChartFieldByResultColumn } from 'app/utils/internalChartHelper';
 import { fetchChartDataSet } from 'app/utils/fetch';
 import { FC, memo, useState } from 'react';
 import styled from 'styled-components';
@@ -73,8 +74,9 @@ const TemplateTable: FC<{
     const allConfigFields = chartConfig?.datas?.flatMap(d => d.rows || []);
     return (columns || []).map((col, index) => {
       const renderName = getRenderTitle(col);
-      const currentConfig = allConfigFields?.find(
-        f => f.colName === renderName,
+      const currentConfig = findChartFieldByResultColumn(
+        allConfigFields,
+        renderName,
       );
       return {
         title: currentConfig ? getColumnRenderName(currentConfig) : renderName,

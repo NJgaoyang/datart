@@ -9,6 +9,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 系统表查询字段索引自动迁移
@@ -24,6 +26,9 @@ public class AccessLogIndexMigration {
      * 所有需要创建的索引（按表分组，保持有序）
      * key = 索引名, value = ALTER TABLE 语句
      */
+    private static final Pattern TABLE_NAME_PATTERN = Pattern.compile(
+            "(?i)ALTER\\s+TABLE\\s+([A-Za-z0-9_]+)\\s+ADD\\s+INDEX");
+
     private static final Map<String, String> INDEXES = new LinkedHashMap<String, String>() {{
         // ========== access_log ==========
         put("idx_access_log_user",          "ALTER TABLE access_log ADD INDEX idx_access_log_user (user)");
@@ -97,7 +102,7 @@ public class AccessLogIndexMigration {
             String indexName = entry.getKey();
             String alterSql = entry.getValue();
             // 从索引名提取表名: idx_{table}_{column} -> {table}
-            String tableName = extractTableName(indexName);
+            String tableName = extractTableName(alterSql);
 
             try {
                 if (indexExists(tableName, indexName)) {
@@ -117,16 +122,15 @@ public class AccessLogIndexMigration {
     }
 
     /**
-     * 从索引名提取表名
-     * 命名规范: idx_{tableName}_{columnName}  ->  tableName
+     * 从 ALTER TABLE 语句中提取真实表名，避免多段列名（如 resource_type）
+     * 被按索引名切分时误判成不存在的表。
      */
-    private String extractTableName(String indexName) {
-        // idx_link_rel_type    -> link
-        // idx_access_log_user  -> access_log
-        // idx_schedule_log_end -> schedule_log
-        String withoutPrefix = indexName.substring(4); // 去掉 "idx_"
-        int lastUnderscore = withoutPrefix.lastIndexOf('_');
-        return lastUnderscore > 0 ? withoutPrefix.substring(0, lastUnderscore) : withoutPrefix;
+    static String extractTableName(String alterSql) {
+        if (alterSql == null) {
+            return "";
+        }
+        Matcher matcher = TABLE_NAME_PATTERN.matcher(alterSql);
+        return matcher.find() ? matcher.group(1) : "";
     }
 
     private boolean indexExists(String tableName, String indexName) {

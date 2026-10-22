@@ -404,7 +404,7 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
                         // Concurrent maps safely reuse metadata within the batch.
                         return execute(param, true, batchContext);
                     } catch (Exception e) {
-                        log.error("Batch query failed for view {}", param.getViewId(), e);
+                        log.error("Batch query failed for view {} user {}", param.getViewId(), username, e);
                         Dataframe failed = Dataframe.empty();
                         failed.setError("QUERY_FAILED");
                         return failed;
@@ -419,7 +419,7 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
                     jobs.add(CompletableFuture.completedFuture(
                             execute(param, true, batchContext)));
                 } catch (Exception e) {
-                    log.error("Batch query failed for view {}", param.getViewId(), e);
+                    log.error("Batch query failed for view {} user {}", param.getViewId(), username, e);
                     Dataframe failed = Dataframe.empty();
                     failed.setError("QUERY_FAILED");
                     jobs.add(CompletableFuture.completedFuture(failed));

@@ -4,6 +4,7 @@ import { ChartDataSectionType } from 'app/constants';
 import ChartManager from 'app/models/ChartManager';
 import { SelectedItem } from 'app/types/ChartConfig';
 import { mergeToChartConfig } from 'app/utils/ChartDtoHelper';
+import { reconcileChartConfigFieldMeta } from 'app/utils/internalChartHelper';
 import { useInjectReducer } from 'utils/@reduxjs/injectReducer';
 import { CloneValueDeep } from 'utils/object';
 import { uuidv4 } from 'utils/utils';
@@ -573,17 +574,24 @@ const slice = createSlice({
       const currentChart = ChartManager.instance().getById(
         newChartDto?.config?.chartGraphId,
       );
+      const reconciledMeta = [
+        ...(newChartDto?.view?.meta || []),
+        ...(newChartDto?.config?.computedFields || []),
+      ];
 
       if (index < 0) {
         state.chartPreviews.push({
           backendChartId: newChartDto?.id,
           backendChart: newChartDto,
           chartConfig: currentChart
-            ? transferChartConfig(
-                mergeToChartConfig(currentChart?.config, newChartDto?.config),
-                filterSearchParams,
-                false,
-                jumpFilterParams,
+            ? reconcileChartConfigFieldMeta(
+                transferChartConfig(
+                  mergeToChartConfig(currentChart?.config, newChartDto?.config),
+                  filterSearchParams,
+                  false,
+                  jumpFilterParams,
+                ),
+                reconciledMeta,
               )
             : undefined,
         });
@@ -592,12 +600,17 @@ const slice = createSlice({
         state.chartPreviews[index] = {
           ...prevChartPreview,
           backendChart: newChartDto,
-          chartConfig: transferChartConfig(
-            mergeToChartConfig(currentChart?.config, newChartDto?.config),
-            filterSearchParams,
-            false,
-            jumpFilterParams,
-          ),
+          chartConfig: currentChart
+            ? reconcileChartConfigFieldMeta(
+                transferChartConfig(
+                  mergeToChartConfig(currentChart?.config, newChartDto?.config),
+                  filterSearchParams,
+                  false,
+                  jumpFilterParams,
+                ),
+                reconciledMeta,
+              )
+            : undefined,
         };
       }
     });

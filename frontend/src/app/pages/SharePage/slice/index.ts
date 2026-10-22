@@ -28,6 +28,7 @@ import { ChartConfig, SelectedItem } from 'app/types/ChartConfig';
 import { PendingChartDataRequestFilter } from 'app/types/ChartDataRequest';
 import { ChartDTO } from 'app/types/ChartDTO';
 import { mergeToChartConfig } from 'app/utils/ChartDtoHelper';
+import { reconcileChartConfigFieldMeta } from 'app/utils/internalChartHelper';
 import { FilterSqlOperator } from 'globalConstants';
 import { useInjectReducer } from 'utils/@reduxjs/injectReducer';
 import { Omit } from 'utils/object';
@@ -125,6 +126,12 @@ export const slice = createSlice({
           isMatchByName,
           jumpFilters,
         );
+      }
+      if (chartConfig) {
+        chartConfig = reconcileChartConfigFieldMeta(chartConfig, [
+          ...(vizDetail?.view?.meta || []),
+          ...(vizDetail?.config?.computedFields || []),
+        ]);
       }
       const executeToken = data.executeToken;
       const executeKey = vizDetail?.viewId;

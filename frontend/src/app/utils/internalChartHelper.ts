@@ -370,6 +370,46 @@ export function getColumnRenderOriginName(c?: ChartDataSectionField) {
   return displayName;
 }
 
+/**
+ * Resolve the chart config field behind a query result column.
+ *
+ * Result columns keep the technical alias produced by
+ * ChartDataRequestBuilder.buildAliasName: the raw colName for dimensions and
+ * `${aggregate}(${colName})` for measures. Matching here keeps aggregate and
+ * computed-field headers on the dataset display name instead of leaking
+ * `SUM(english_name)` into tables.
+ */
+export function findChartFieldByResultColumn(
+  fields?: ChartDataSectionField[],
+  resultColumnName?: string | string[],
+): ChartDataSectionField | undefined {
+  const target = (
+    Array.isArray(resultColumnName)
+      ? resultColumnName.join('.')
+      : resultColumnName
+  )
+    ?.trim()
+    .toLowerCase();
+  if (!target) {
+    return undefined;
+  }
+  return fields?.find(field => {
+    const colName = field?.colName?.trim();
+    if (!colName) {
+      return false;
+    }
+    if (colName.toLowerCase() === target) {
+      return true;
+    }
+    const aggregate = field.aggregate;
+    return (
+      !!aggregate &&
+      aggregate !== AggregateFieldActionType.None &&
+      `${aggregate}(${colName})`.toLowerCase() === target
+    );
+  });
+}
+
 export function diffHeaderRows(
   oldRows: Array<{ colName: string }>,
   newRows: Array<{ colName: string }>,

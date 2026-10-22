@@ -135,7 +135,12 @@ describe('seamless automatic-grid preserves table height', () => {
   });
 
   it('does not inflate a zero-gutter grid', () => {
-    const config = { ...base, seamlessSpacing: true, margin: [0, 0], mMargin: [0, 0] };
+    const config = {
+      ...base,
+      seamlessSpacing: true,
+      margin: [0, 0],
+      mMargin: [0, 0],
+    } as BoardConfigValue;
     expect(getAutoBoardRowHeight(config, 'lg', 8)).toBe(8);
     expect(getAutoBoardRowHeight(config, 'sm', 24)).toBe(24);
   });

@@ -78,14 +78,18 @@ export const getExplicitTableWidth = (
   return addWidths(columns) && leaves ? Math.ceil(total) : undefined;
 };
 
-const AntdTableWrapper: FC<{
-  dataSource: [];
-  columns: [];
+type AntdTableWrapperProps = {
+  dataSource?: any[];
+  columns?: any[];
   widgetId?: string;
   children?: ReactNode;
   tableStyleConfig?: TableStyleConfigProps | undefined;
-  summaryFn?: (data) => { total: number; summarys: [] };
-}> = memo(
+  summaryFn?: (data: any) => { total?: number; summarys?: any[] };
+  // Accept the remaining Ant Design table props (scroll, pagination, ...).
+  [key: string]: any;
+};
+
+const AntdTableWrapper: FC<AntdTableWrapperProps> = memo(
   ({
     dataSource,
     columns,
@@ -96,7 +100,7 @@ const AntdTableWrapper: FC<{
     ...rest
   }) => {
     const { i18n } = useTranslation();
-    const explicitTableWidth = getExplicitTableWidth(columns);
+    const explicitTableWidth = getExplicitTableWidth(columns || []);
 
     const getTableSummaryRow = pageData => {
       if (!summaryFn) {

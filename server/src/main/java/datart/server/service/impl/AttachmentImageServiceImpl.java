@@ -54,16 +54,26 @@ public class AttachmentImageServiceImpl implements AttachmentService {
         shareCreateParam.setRowPermissionBy(ShareRowPermissionBy.CREATOR);
         ShareToken share = shareService.createShare(SHARE_USER + securityManager.getCurrentUser().getId(), shareCreateParam);
 
-        String url = Application.getWebRootURL() + "/" + shareCreateParam.getVizType().getShareRoute() + "/" + share.getId() + "?eager=true&type=" + share.getAuthenticationMode();
-        log.info("created share url: {} ", url);
-        File target = WebUtils.screenShot2File(url, FileUtils.withBasePath(path), downloadCreateParam.getImageWidth());
+        try {
+            String url = Application.getWebRootURL() + "/" + shareCreateParam.getVizType().getShareRoute() + "/" + share.getId() + "?eager=true&type=" + share.getAuthenticationMode();
+            log.info("created share url: {} ", url);
+            File target = WebUtils.screenShot2File(url, FileUtils.withBasePath(path), downloadCreateParam.getImageWidth());
 
-        path = generateFileName(path, fileName, attachmentType);
-        File file = new File(path);
-        target.renameTo(file);
-        log.info("create image file complete.");
-        shareService.delete(share.getId(), false);
-        return file;
+            path = generateFileName(path, fileName, attachmentType);
+            File file = new File(path);
+            target.renameTo(file);
+            log.info("create image file complete.");
+            return file;
+        } finally {
+            // Release the temporary share on success and on failure so
+            // expired scheduler shares do not accumulate. Cleanup must not
+            // hide the original export error.
+            try {
+                shareService.delete(share.getId(), false);
+            } catch (Exception cleanupError) {
+                log.warn("Failed to delete temporary share {}", share.getId(), cleanupError);
+            }
+        }
     }
 
 }

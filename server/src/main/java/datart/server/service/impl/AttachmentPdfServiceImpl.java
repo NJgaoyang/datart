@@ -59,17 +59,27 @@ public class AttachmentPdfServiceImpl implements AttachmentService {
         shareCreateParam.setRowPermissionBy(ShareRowPermissionBy.CREATOR);
         ShareToken share = shareService.createShare(SHARE_USER + securityManager.getCurrentUser().getId(), shareCreateParam);
 
-        String url = Application.getWebRootURL() + "/" + shareCreateParam.getVizType().getShareRoute() + "/" + share.getId() + "?eager=true&type=" + share.getAuthenticationMode();
-        log.info("share url {} ", url);
+        try {
+            String url = Application.getWebRootURL() + "/" + shareCreateParam.getVizType().getShareRoute() + "/" + share.getId() + "?eager=true&type=" + share.getAuthenticationMode();
+            log.info("share url {} ", url);
 
-        File imageFile = WebUtils.screenShot2File(url, FileUtils.withBasePath(path), downloadCreateParam.getImageWidth());
-        File file = new File(generateFileName(path, fileName, attachmentType));
-        createPDFFromImage(file.getPath(), imageFile.getPath());
+            File imageFile = WebUtils.screenShot2File(url, FileUtils.withBasePath(path), downloadCreateParam.getImageWidth());
+            File file = new File(generateFileName(path, fileName, attachmentType));
+            createPDFFromImage(file.getPath(), imageFile.getPath());
 
-        log.info("create pdf file complete.");
-        imageFile.delete();
-        shareService.delete(share.getId(), false);
-        return file;
+            log.info("create pdf file complete.");
+            imageFile.delete();
+            return file;
+        } finally {
+            // Release the temporary share on success and on failure so
+            // expired scheduler shares do not accumulate. Cleanup must not
+            // hide the original export error.
+            try {
+                shareService.delete(share.getId(), false);
+            } catch (Exception cleanupError) {
+                log.warn("Failed to delete temporary share {}", share.getId(), cleanupError);
+            }
+        }
     }
 
     /**
