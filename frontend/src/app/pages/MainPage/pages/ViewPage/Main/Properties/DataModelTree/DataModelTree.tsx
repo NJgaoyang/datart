@@ -17,24 +17,25 @@
  */
 
 import { Form, Input, message, Select } from 'antd';
+import { APP_CURRENT_VERSION } from 'app/configVersion';
 import { DataViewFieldType, DateFormat } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import useStateModal, { StateModalSize } from 'app/hooks/useStateModal';
-import { APP_CURRENT_VERSION } from 'app/migration/constants';
+
+import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import ChartComputedFieldSettingPanel from 'app/pages/ChartWorkbenchPage/components/ChartOperationPanel/components/ChartDataViewPanel/components/ChartComputedFieldSettingPanel';
 import { ChartDataViewMeta } from 'app/types/ChartDataViewMeta';
 import { checkComputedFieldAsync } from 'app/utils/fetch';
 import { updateBy, updateByKey } from 'app/utils/mutation';
 import { FC, memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { DragDropContext, Droppable } from '@hello-pangea/dnd';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { SPACE_LG } from 'styles/StyleConstants';
 import { Nullable } from 'types';
 import { CloneValueDeep, isEmpty, isEmptyArray } from 'utils/object';
 import { request2 } from 'utils/request';
 import {
-  getFieldCustomDisplayName,
   getFieldDisplayName,
   modelListFormsTreeByTableName,
 } from 'utils/utils';
@@ -54,8 +55,8 @@ import {
 } from '../../../slice/types';
 import {
   dataModelColumnSorter,
-  hydrateViewColumnDisplayMeta,
   getHierarchyColumnByField,
+  hydrateViewColumnDisplayMeta,
   resolveSchemaColumnComment,
 } from '../../../utils';
 import Container from '../Container';
@@ -72,7 +73,7 @@ import { toModel } from './utils';
 const DataModelTree: FC = memo(() => {
   const t = useI18NPrefix('view');
   const { actions } = useViewSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const [openStateModal, contextHolder] = useStateModal({});
   const [showModal, modalContextHolder] = useStateModal({});
 
@@ -128,7 +129,7 @@ const DataModelTree: FC = memo(() => {
           path,
           displayName: hierarchyColumn?.displayName,
           comment,
-          isDisplayNameCustom: hierarchyColumn?.isDisplayNameCustom,
+          customName: hierarchyColumn?.customName,
         });
       };
       const childrenData = script['columns']?.map((v, i) => {
@@ -177,7 +178,7 @@ const DataModelTree: FC = memo(() => {
               name: stringName,
               displayName: v.displayName,
               comment: v.comment,
-              isDisplayNameCustom: v.isDisplayNameCustom,
+              customName: v.customName,
             };
           }),
         );
@@ -429,11 +430,15 @@ const DataModelTree: FC = memo(() => {
             name="hierarchyName"
             rules={[{ required: true }]}
           >
-            <Select defaultActiveFirstOption onChange={onChangeEvent}>
-              {currentHierarchies?.map(n => (
-                <Select.Option value={n.name}>{n.name}</Select.Option>
-              ))}
-            </Select>
+            <Select
+              defaultActiveFirstOption
+              onChange={onChangeEvent}
+              options={[
+                ...(currentHierarchies?.flatMap(n => [
+                  { value: n.name, label: n.name },
+                ]) || []),
+              ]}
+            />
           </StyledFormItem>
         );
       },
@@ -494,7 +499,7 @@ const DataModelTree: FC = memo(() => {
   };
 
   const openEditDisplayNameModal = (node: Column) => {
-    const currentDisplayName = getFieldCustomDisplayName(node) || '';
+    const currentDisplayName = node.customName?.trim() || '';
     const columnName = node.name || '';
 
     return (openStateModal as Function)({
@@ -511,7 +516,8 @@ const DataModelTree: FC = memo(() => {
           const serverDisplayNamePatch = {
             displayName: data?.displayName,
             comment: data?.sourceComment,
-            isDisplayNameCustom: Boolean(data?.customName),
+            sourceComment: data?.sourceComment,
+            customName: data?.customName,
           };
           const update = (item: Column) => ({
             ...item,
@@ -564,11 +570,11 @@ const DataModelTree: FC = memo(() => {
         const displayNamePatch = trimmedDisplayName
           ? {
               displayName: trimmedDisplayName,
-              isDisplayNameCustom: true,
+              customName: trimmedDisplayName,
             }
           : {
               displayName: undefined,
-              isDisplayNameCustom: false,
+              customName: undefined,
             };
         let newHierarchy: Model;
         if (

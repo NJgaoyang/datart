@@ -19,12 +19,13 @@
 import { LoadingOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Col, Input, List, Row } from 'antd';
 import { ListItem, Popup, Tree } from 'app/components';
-import { ViewFieldMeta } from 'app/types/View';
 import { useDebouncedSearch } from 'app/hooks/useDebouncedSearch';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
+import { ViewFieldMeta } from 'app/types/View';
 import classnames from 'classnames';
 import { memo, useCallback, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { SPACE_MD, SPACE_XS, WARNING } from 'styles/StyleConstants';
 import {
@@ -43,7 +44,7 @@ import Container from './Container';
 
 export const ColumnPermissions = memo(() => {
   const { actions } = useViewSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const viewId = useSelector(state =>
     selectCurrentEditingViewAttr(state, { name: 'id' }),
   ) as string;
@@ -197,7 +198,7 @@ export const ColumnPermissions = memo(() => {
             prefix={<SearchOutlined className="icon" />}
             placeholder={t('search')}
             className="input"
-            bordered={false}
+            variant="borderless"
             onChange={debouncedSearch}
           />
         </Col>

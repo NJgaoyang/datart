@@ -24,11 +24,11 @@ import {
 } from 'app/pages/MainPage/pages/VizPage/slice/thunks';
 import { VizType } from 'app/pages/MainPage/pages/VizPage/slice/types';
 import { useCallback } from 'react';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 
 export const useRecycleViz = (orgId: string, vizId: string, type: VizType) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const tg = useI18NPrefix('global');
   const redirect = useCallback(

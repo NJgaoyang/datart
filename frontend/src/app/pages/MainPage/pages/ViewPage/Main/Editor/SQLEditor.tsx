@@ -16,21 +16,16 @@
  * limitations under the License.
  */
 
+import CodeEditor, { monaco } from 'app/components/CodeEditor';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import classnames from 'classnames';
 import { CommonFormTypes } from 'globalConstants';
 import debounce from 'lodash/debounce';
 import { language } from 'monaco-editor/esm/vs/basic-languages/sql/sql';
-import React, {
-  memo,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-} from 'react';
+import { memo, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
-import MonacoEditor, { monaco } from 'react-monaco-editor';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { FONT_SIZE_BASE } from 'styles/StyleConstants';
 import { selectThemeKey } from 'styles/theme/slice/selectors';
@@ -56,7 +51,7 @@ import { isNewView } from '../../utils';
 
 export const SQLEditor = memo(() => {
   const { actions } = useViewSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const {
     editorInstance,
     editorCompletionItemProviderRef,
@@ -102,7 +97,7 @@ export const SQLEditor = memo(() => {
       if (isNewView(id)) {
         showSaveForm({
           type: CommonFormTypes.Edit,
-          visible: true,
+          open: true,
           parentIdLabel: t('folder'),
           initialValues: {
             name: '',
@@ -177,12 +172,16 @@ export const SQLEditor = memo(() => {
   );
 
   useEffect(() => {
+    // CodeEditor owns disposal. Disposing on every context update
+    // can destroy the live editor during React 19 StrictMode effects.
     editorInstance?.layout();
+  }, [editorInstance]);
+
+  useEffect(() => {
     return () => {
-      editorInstance?.dispose();
       editorCompletionItemProviderRef?.current?.dispose();
     };
-  }, [editorInstance, editorCompletionItemProviderRef]);
+  }, [editorCompletionItemProviderRef]);
 
   useEffect(() => {
     return () => {
@@ -235,18 +234,22 @@ export const SQLEditor = memo(() => {
         archived: status === ViewStatus.Archived,
       })}
     >
-      <MonacoEditor
+      <CodeEditor
+        width="100%"
+        height="100%"
         value={script}
         language="sql"
         theme={`vs-${theme}`}
         options={{
           fontSize: FONT_SIZE_BASE * 0.875,
           minimap: { enabled: false },
+          // Pane sizes are assigned asynchronously by split.js.
+          automaticLayout: true,
           readOnly: status === ViewStatus.Archived,
         }}
         onChange={debouncedEditorChange}
-        editorWillMount={editorWillMount}
-        editorDidMount={editorDidMount}
+        onBeforeMount={editorWillMount}
+        onMount={editorDidMount}
       />
     </EditorWrapper>
   );
@@ -255,7 +258,9 @@ export const SQLEditor = memo(() => {
 const EditorWrapper = styled.div`
   position: relative;
   flex: 1;
+  min-width: 0;
   min-height: 0;
+  overflow: hidden;
 
   &.archived {
     .view-lines {

@@ -3,11 +3,11 @@ import { useEffect } from 'react';
 import { vi } from 'vitest';
 import ChartComputedFieldSettingPanel from '../ChartComputedFieldSettingPanel';
 
-vi.mock('react-monaco-editor', () => ({
+vi.mock('app/components/CodeEditor', () => ({
   default: props => {
     useEffect(() => {
       const languages: Array<{ id: string }> = [];
-      props.editorWillMount({
+      props.onBeforeMount({
         languages: {
           getLanguages: () => languages,
           register: language => languages.push(language),
@@ -15,7 +15,7 @@ vi.mock('react-monaco-editor', () => ({
         },
         editor: { defineTheme: vi.fn() },
       });
-      props.editorDidMount(
+      props.onMount(
         {
           getModel: () => ({
             getEOL: () => '\n',
@@ -50,14 +50,16 @@ describe('ChartComputedFieldSettingPanel', () => {
     const { getByTestId } = render(
       <ChartComputedFieldSettingPanel
         viewType="STRUCT"
-        fields={[
-          {
-            title: 'report',
-            key: ['report'],
-            selectable: false,
-            children: [{ title: '城市', key: ['report', 'city'] }],
-          },
-        ] as any}
+        fields={
+          [
+            {
+              title: 'report',
+              key: ['report'],
+              selectable: false,
+              children: [{ title: '城市', key: ['report', 'city'] }],
+            },
+          ] as any
+        }
         variables={[]}
         onChange={vi.fn()}
       />,

@@ -41,8 +41,8 @@ const defaultBodyStyle: React.CSSProperties = {
 function useStateModal({ initState }: { initState?: any }) {
   const [form] = Form.useForm();
   const [modal, contextHolder] = Modal.useModal();
-  const okCallbackRef = useRef<Function>();
-  const cancelCallbackRef = useRef<Function>();
+  const okCallbackRef = useRef<Function>(undefined);
+  const cancelCallbackRef = useRef<Function>(undefined);
   const stateRef = useRef<any[]>(initState ? [initState] : []);
 
   const handleSaveCacheValue = (...args: any[]) => {
@@ -103,7 +103,7 @@ function useStateModal({ initState }: { initState?: any }) {
       cacheOnChangeValue: typeof handleSaveCacheValue,
       form?: FormInstance<any>,
     ) => React.ReactElement<IStateModalContentProps>;
-    bodyStyle?: React.CSSProperties;
+    styles?: ModalFuncProps['styles'];
     modalSize?: string | number | StateModalSize;
     onOk?: typeof handleClickOKButton;
     onCancel?: typeof handleClickCancelButton;
@@ -119,23 +119,20 @@ function useStateModal({ initState }: { initState?: any }) {
     return modal.confirm({
       title: props.title,
       width: getModalSize(props?.modalSize),
-      bodyStyle: props.bodyStyle || defaultBodyStyle,
+      styles: props.styles || { body: defaultBodyStyle },
       content: FormWrapper(
         props?.content?.call(Object.create(null), handleSaveCacheValue, form),
       ),
       onOk: handleClickOKButton,
       onCancel: handleClickCancelButton,
-      maskClosable: true,
+      mask: { closable: true },
       icon: null,
       centered: true,
       okButtonProps: props.okButtonProps,
     });
   };
 
-  return [showModal, contextHolder] as [
-    typeof showModal,
-    typeof contextHolder,
-  ];
+  return [showModal, contextHolder] as [typeof showModal, typeof contextHolder];
 }
 
 export default useStateModal;

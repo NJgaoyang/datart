@@ -22,8 +22,9 @@ import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import useResizeObserver from 'app/hooks/useResizeObserver';
 import { selectSystemInfo } from 'app/slice/selectors';
 import { transparentize } from 'polished';
-import React, { memo, useCallback } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { memo, useCallback } from 'react';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { SPACE_MD, SPACE_TIMES, SPACE_XS } from 'styles/StyleConstants';
 import { newIssueUrl } from 'utils/utils';
@@ -35,7 +36,7 @@ import { Results } from './Results';
 
 export const Outputs = memo(({ hidden = false }: { hidden?: boolean }) => {
   const { actions } = useViewSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const systemInfo = useSelector(selectSystemInfo);
   const t = useI18NPrefix('view');
 
@@ -50,8 +51,7 @@ export const Outputs = memo(({ hidden = false }: { hidden?: boolean }) => {
   ) as string[];
 
   const { width, height, ref } = useResizeObserver({
-    refreshMode: 'debounce',
-    refreshRate: 200,
+    debounceMs: 200,
   });
 
   const removeViewWarnings = useCallback(() => {
@@ -85,14 +85,14 @@ export const Outputs = memo(({ hidden = false }: { hidden?: boolean }) => {
       {warnings && (
         <Alert
           className="warningBox"
-          message=""
+          title=""
           description={
             <p>
               {t('sqlRunWraning')}
               <Popover
                 trigger={['click']}
                 placement="top"
-                overlayStyle={{ width: SPACE_TIMES(96) }}
+                styles={{ root: { width: SPACE_TIMES(96) } }}
                 content={t('warningDescription')}
               >
                 <Button className="detail" type="link" size="small">
@@ -135,7 +135,12 @@ export const Outputs = memo(({ hidden = false }: { hidden?: boolean }) => {
 const Wrapper = styled.div`
   position: relative;
   display: flex;
+  /* The height is controlled by the vertical split, not flex expansion. */
+  flex: none;
+  min-width: 0;
+  min-height: 0;
   flex-direction: column;
+  overflow: hidden;
   border-top: 1px solid ${p => p.theme.borderColorSplit};
 
   .warningBox {

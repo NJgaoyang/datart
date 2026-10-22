@@ -55,7 +55,8 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { BORDER_RADIUS, SPACE_LG } from 'styles/StyleConstants';
@@ -116,7 +117,7 @@ const ChartPreviewBoard: FC<{
     const { actions: vizAction } = useVizSlice();
     const { actions } = useMainSlice();
     const chartManager = ChartManager.instance();
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const { parse } = useQSLibUrlHelper();
     const [version, setVersion] = useState<string>();
     const previewCharts = useSelector(selectPreviewCharts);
@@ -129,7 +130,7 @@ const ChartPreviewBoard: FC<{
     const chartConfigRef = useRef(chartPreview?.chartConfig);
     const [chart, setChart] = useState<IChart>();
     const [loadingStatus, setLoadingStatus] = useState<boolean>(false);
-    const drillOptionRef = useRef<IChartDrillOption>();
+    const drillOptionRef = useRef<IChartDrillOption>(undefined);
     const t = useI18NPrefix('viz.main');
     const tg = useI18NPrefix('global');
     const saveAsViz = useSaveAsViz();
@@ -497,6 +498,7 @@ const ChartPreviewBoard: FC<{
 
       const builder = new ChartDataRequestBuilder(
         {
+          ...(chartPreview?.backendChart?.view || {}),
           id: chartPreview?.backendChart?.view?.id || '',
           config: chartPreview?.backendChart?.view.config || {},
           meta: chartPreview?.backendChart?.view?.meta,
@@ -580,19 +582,16 @@ const ChartPreviewBoard: FC<{
         );
 
         try {
-          navigate(
-            `/organizations/${orgId}/vizs/${dashboardId}/boardEditor`,
-            {
-              state: {
-                widgetInfo: JSON.stringify({
-                  chartType: '',
-                  dataChart: currentChartPreview?.backendChart,
-                  dataview: currentChartPreview?.backendChart?.view,
-                  dashboardType,
-                }),
-              },
+          navigate(`/organizations/${orgId}/vizs/${dashboardId}/boardEditor`, {
+            state: {
+              widgetInfo: JSON.stringify({
+                chartType: '',
+                dataChart: currentChartPreview?.backendChart,
+                dataview: currentChartPreview?.backendChart?.view,
+                dashboardType,
+              }),
             },
-          );
+          });
         } catch (error) {
           throw error;
         }
@@ -692,7 +691,10 @@ const ChartPreviewBoard: FC<{
               />
             </div>
             <ChartWrapper ref={ref}>
-              <Spin wrapperClassName="spinWrapper" spinning={loadingStatus}>
+              <Spin
+                classNames={{ root: 'spinWrapper' }}
+                spinning={loadingStatus}
+              >
                 <ChartDrillContextMenu
                   chartConfig={chartPreview?.chartConfig!}
                   metas={chartPreview?.backendChart?.view?.meta}

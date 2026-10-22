@@ -56,10 +56,10 @@ const ChartPresentWrapper: FC<{
     onCreateDownloadDataTask,
     selectedItems,
   }) => {
-    const { ref: ChartGraphPanelRef } = useResizeObserver<any>({
-      refreshMode: 'debounce',
-      refreshRate: 500,
-    });
+    const { ref: ChartGraphPanelRef, height: chartGraphPanelHeight } =
+      useResizeObserver<HTMLDivElement>({
+        debounceMs: 500,
+      });
 
     const borderWidth = useMemo(() => {
       return +SPACE_MD.replace('px', '');
@@ -77,9 +77,7 @@ const ChartPresentWrapper: FC<{
           </div>
           <ChartPresentPanel
             containerHeight={
-              (containerHeight || 0) -
-              borderWidth -
-              (ChartGraphPanelRef?.current?.offsetHeight || 0)
+              (containerHeight || 0) - borderWidth - chartGraphPanelHeight
             }
             containerWidth={(containerWidth || 0) - borderWidth}
             chart={chart}

@@ -29,8 +29,6 @@ import { groupLayoutComparer } from '../utils';
 import CollapseHeader from './CollapseHeader';
 import CollectionLayout from './CollectionLayout';
 
-const { Panel } = Collapse;
-
 const GroupLayout: FC<FormGeneratorLayoutProps<ChartStyleConfig>> = memo(
   ({
     ancestors,
@@ -93,19 +91,19 @@ const GroupLayout: FC<FormGeneratorLayoutProps<ChartStyleConfig>> = memo(
 
       return (
         <Collapse
-          expandIconPosition="right"
+          expandIconPlacement="end"
           defaultActiveKey={expand ? '1' : undefined}
-        >
-          <Panel
-            key="1"
-            header={<CollapseHeader title={t(data.label, true)} />}
-          >
-            {renderCollectionComponents(
-              data,
-              handleConfirmModalDialogOrDataUpdate,
-            )}
-          </Panel>
-        </Collapse>
+          items={[
+            {
+              key: String('1'),
+              label: <CollapseHeader title={t(data.label, true)} />,
+              children: renderCollectionComponents(
+                data,
+                handleConfirmModalDialogOrDataUpdate,
+              ),
+            },
+          ]}
+        />
       );
     };
 

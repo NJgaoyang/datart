@@ -32,7 +32,7 @@ import {
 } from '@ant-design/icons';
 import { List, Menu, Tooltip } from 'antd';
 import logo from 'app/assets/images/logo.png';
-import { Avatar, MenuListItem, Popup } from 'app/components';
+import { Avatar, MenuItemLabel, Popup } from 'app/components';
 import { TenantManagementMode } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import {
@@ -45,13 +45,13 @@ import {
 import { getOrganizations } from 'app/pages/MainPage/slice/thunks';
 import { selectLoggedInUser, selectSystemInfo } from 'app/slice/selectors';
 import { logout } from 'app/slice/thunks';
-import { downloadFile } from 'app/utils/fetch';
 import { BASE_RESOURCE_URL } from 'globalConstants';
 import { changeLang, getLang } from 'locales/i18n';
 import { cloneElement, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDispatch, useSelector } from 'react-redux';
-import { NavLink, useNavigate, useMatch } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
+import { NavLink, useMatch, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import {
   BLACK,
@@ -75,11 +75,9 @@ import {
   ResourceTypes,
 } from '../pages/PermissionPage/constants';
 import { useMainSlice } from '../slice';
-import { DownloadListPopup } from './DownloadListPopup';
 import { ModifyPassword } from './ModifyPassword';
 import { OrganizationList } from './OrganizationList';
 import { Profile } from './Profile';
-import { loadTasks } from './service';
 
 function MonitorIcon() {
   return (
@@ -121,7 +119,7 @@ export function Navbar() {
   const [profileVisible, setProfileVisible] = useState(false);
   const [modifyPasswordVisible, setModifyPasswordVisible] = useState(false);
   const lang = getLang();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { i18n } = useTranslation();
   const systemInfo = useSelector(selectSystemInfo);
@@ -132,9 +130,7 @@ export function Navbar() {
   const downloadPolling = useSelector(selectDownloadPolling);
   const themeKey = useSelector(selectThemeKey);
   const hideInNav = useSelector(selectHideInNav);
-  const matchModules = useMatch(
-    '/organizations/:orgId/:moduleName',
-  );
+  const matchModules = useMatch('/organizations/:orgId/:moduleName');
 
   const t = useI18NPrefix('main');
   const brandClick = useCallback(() => {
@@ -361,7 +357,7 @@ export function Navbar() {
               content={<OrganizationList />}
               trigger={['click']}
               placement="rightBottom"
-              onVisibleChange={organizationListVisibleChange}
+              onOpenChange={organizationListVisibleChange}
             >
               <li>
                 <Tooltip title={t('nav.organization.title')} placement="right">
@@ -381,52 +377,86 @@ export function Navbar() {
                 selectable={false}
                 selectedKeys={[lang!, themeKey]}
                 onClick={userMenuSelect}
-              >
-                <MenuListItem
-                  key="language"
-                  prefix={<GlobalOutlined className="icon" />}
-                  title={<p>{t('nav.account.switchLanguage.title')}</p>}
-                  sub
-                >
-                  <MenuListItem key="zh">中文</MenuListItem>
-                  <MenuListItem key="en">English</MenuListItem>
-                </MenuListItem>
-                <MenuListItem
-                  key="theme"
-                  prefix={<SkinOutlined className="icon" />}
-                  title={<p>{t('nav.account.switchTheme.title')}</p>}
-                  sub
-                >
-                  <MenuListItem key="light" prefix={<ThemeBadge />}>
-                    {t('nav.account.switchTheme.light')}
-                  </MenuListItem>
-                  <MenuListItem
-                    key="dark"
-                    prefix={<ThemeBadge background={BLACK} />}
-                  >
-                    {t('nav.account.switchTheme.dark')}
-                  </MenuListItem>
-                </MenuListItem>
-                <Menu.Divider />
-                <MenuListItem
-                  key="profile"
-                  prefix={<ProfileOutlined className="icon" />}
-                >
-                  <p>{t('nav.account.profile.title')}</p>
-                </MenuListItem>
-                <MenuListItem
-                  key="password"
-                  prefix={<FormOutlined className="icon" />}
-                >
-                  <p>{t('nav.account.changePassword.title')}</p>
-                </MenuListItem>
-                <MenuListItem
-                  key="logout"
-                  prefix={<ExportOutlined className="icon" />}
-                >
-                  <p>{t('nav.account.logout.title')}</p>
-                </MenuListItem>
-              </Menu>
+                items={[
+                  {
+                    key: String('language'),
+                    label: (
+                      <MenuItemLabel
+                        prefix={<GlobalOutlined className="icon" />}
+                      >
+                        {<p>{t('nav.account.switchLanguage.title')}</p>}
+                      </MenuItemLabel>
+                    ),
+                    children: [
+                      {
+                        key: String('zh'),
+                        label: <MenuItemLabel>{'中文'}</MenuItemLabel>,
+                      },
+                      {
+                        key: String('en'),
+                        label: <MenuItemLabel>{'English'}</MenuItemLabel>,
+                      },
+                    ],
+                  },
+                  {
+                    key: String('theme'),
+                    label: (
+                      <MenuItemLabel prefix={<SkinOutlined className="icon" />}>
+                        {<p>{t('nav.account.switchTheme.title')}</p>}
+                      </MenuItemLabel>
+                    ),
+                    children: [
+                      {
+                        key: String('light'),
+                        label: (
+                          <MenuItemLabel prefix={<ThemeBadge />}>
+                            {t('nav.account.switchTheme.light')}
+                          </MenuItemLabel>
+                        ),
+                      },
+                      {
+                        key: String('dark'),
+                        label: (
+                          <MenuItemLabel
+                            prefix={<ThemeBadge background={BLACK} />}
+                          >
+                            {t('nav.account.switchTheme.dark')}
+                          </MenuItemLabel>
+                        ),
+                      },
+                    ],
+                  },
+                  { type: 'divider' as const },
+                  {
+                    key: String('profile'),
+                    label: (
+                      <MenuItemLabel
+                        prefix={<ProfileOutlined className="icon" />}
+                      >
+                        {<p>{t('nav.account.profile.title')}</p>}
+                      </MenuItemLabel>
+                    ),
+                  },
+                  {
+                    key: String('password'),
+                    label: (
+                      <MenuItemLabel prefix={<FormOutlined className="icon" />}>
+                        {<p>{t('nav.account.changePassword.title')}</p>}
+                      </MenuItemLabel>
+                    ),
+                  },
+                  {
+                    key: String('logout'),
+                    label: (
+                      <MenuItemLabel
+                        prefix={<ExportOutlined className="icon" />}
+                      >
+                        {<p>{t('nav.account.logout.title')}</p>}
+                      </MenuItemLabel>
+                    ),
+                  },
+                ]}
+              />
             }
             trigger={['click']}
             placement="rightBottom"
@@ -438,9 +468,9 @@ export function Navbar() {
             </li>
           </Popup>
         </Toolbar>
-        <Profile visible={profileVisible} onCancel={hideProfile} />
+        <Profile open={profileVisible} onCancel={hideProfile} />
         <ModifyPassword
-          visible={modifyPasswordVisible}
+          open={modifyPasswordVisible}
           onCancel={hideModifyPassword}
         />
       </MainNav>
@@ -451,11 +481,7 @@ export function Navbar() {
               ({ module }) => !hideInNav.includes(module),
             )}
             renderItem={({ name, title, icon }) => (
-              <Tooltip
-                key={name}
-                title=""
-                placement="right"
-              >
+              <Tooltip key={name} title="" placement="right">
                 <SubNavTitle to={`/organizations/${orgId}/${name}`}>
                   {cloneElement(icon, { className: 'prefix' })}
                   <h4>{title}</h4>

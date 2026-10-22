@@ -23,8 +23,9 @@ import {
   DataViewFieldType,
   TimeFilterValueCategory,
 } from 'app/constants';
-import { migrateChartConfig } from 'app/migration';
+
 import { ChartDataRequestBuilder } from 'app/models/ChartDataRequestBuilder';
+import { assertStrictChartView } from 'app/utils/strictChartView';
 import { ChartDrillOption } from 'app/models/ChartDrillOption';
 import { RelatedView } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { ChartDataConfig, ChartDataSectionField } from 'app/types/ChartConfig';
@@ -41,6 +42,7 @@ import {
   getStyles,
 } from 'app/utils/chartHelper';
 import { getTime, splitRangerDateFilters } from 'app/utils/time';
+import dayjs from 'dayjs';
 import {
   DATE_FORMATTER,
   FilterSqlOperator,
@@ -48,7 +50,6 @@ import {
   TIME_FORMATTER,
 } from 'globalConstants';
 import startsWith from 'lodash/startsWith';
-import dayjs from 'dayjs';
 import { CloneValueDeep, isEqualObject } from 'utils/object';
 import { boardDrillManager } from '../components/BoardDrillManager/BoardDrillManager';
 import { BOARD_FILE_IMG_PREFIX } from '../constants';
@@ -122,12 +123,13 @@ export const getDataChartRequestParams = (obj: {
   option;
 }) => {
   const { dataChart, view, option, drillOption, tempFilters } = obj;
-  const migratedChartConfig = migrateChartConfig(
-    CloneValueDeep(dataChart?.config) as ChartDetailConfigDTO,
-  );
+  // Dashboard requests must never silently fall back to name/path matching
+  // when the backend has not supplied an explicit STRICT View.
+  assertStrictChartView(view);
+  const chartConfig = CloneValueDeep(dataChart?.config) as ChartDetailConfigDTO;
 
   const { datas, settings } = convertToChartConfigDTO(
-    migratedChartConfig as ChartDetailConfigDTO,
+    chartConfig as ChartDetailConfigDTO,
   );
 
   const builder = new ChartDataRequestBuilder(
@@ -149,7 +151,7 @@ export const getDataChartRequestParams = (obj: {
   return requestParams;
 };
 
-const getLegacyBoardLinkRuntimeFilters = ({
+const getBoardLinkRuntimeFilters = ({
   boardLinkFilters,
   widgetMap,
   view,
@@ -203,10 +205,12 @@ const getLegacyBoardLinkRuntimeFilters = ({
       return {
         column,
         sqlOperator: FilterSqlOperator.In,
-        values: [{
-          value: link.triggerValue,
-          valueType: DataViewFieldType.STRING,
-        }],
+        values: [
+          {
+            value: link.triggerValue,
+            valueType: DataViewFieldType.STRING,
+          },
+        ],
       };
     })
     .filter(Boolean) as PendingChartDataRequestFilter[];
@@ -504,20 +508,18 @@ export const getChartWidgetRequestParams = (obj: {
 
   const chartDataView = viewMap[dataChart?.viewId];
 
-  const legacyRuntimeFilters = getLegacyBoardLinkRuntimeFilters({
+  const linkRuntimeFilters = getBoardLinkRuntimeFilters({
     boardLinkFilters,
     widgetMap,
     view: chartDataView,
     widgetId: curWidget.id,
   });
-  const {
-    filterParams: controllerRuntimeFilters,
-    variableParams,
-  } = getTheWidgetFiltersAndParams<PendingChartDataRequestFilter>({
-    chartWidget: curWidget,
-    widgetMap,
-    params: undefined,
-  });
+  const { filterParams: controllerRuntimeFilters, variableParams } =
+    getTheWidgetFiltersAndParams<PendingChartDataRequestFilter>({
+      chartWidget: curWidget,
+      widgetMap,
+      params: undefined,
+    });
 
   let requestParams = getDataChartRequestParams({
     dataChart,
@@ -526,7 +528,7 @@ export const getChartWidgetRequestParams = (obj: {
     drillOption,
     tempFilters: [
       ...(widgetInfo?.linkInfo?.tempFilters || []),
-      ...legacyRuntimeFilters,
+      ...linkRuntimeFilters,
       ...controllerRuntimeFilters,
     ],
   });

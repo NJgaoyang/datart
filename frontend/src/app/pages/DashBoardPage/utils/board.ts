@@ -15,16 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { migrateBoardConfig } from 'app/migration/BoardConfig/migrateBoardConfig';
-import migrateChartConfig from 'app/migration/ChartConfig/migrateChartConfig';
-import migrationViewConfig from 'app/migration/ViewConfig/migrationViewConfig';
-import beginViewModelMigration from 'app/migration/ViewConfig/migrationViewModelConfig';
+
 import {
   BoardInfo,
   BoardType,
   ColsKeyType,
   Dashboard,
-  DashboardConfigBeta3,
   DataChart,
   DeviceType,
   ServerDashboard,
@@ -36,28 +32,17 @@ import {
   createDateLevelComputedFieldForConfigComputedFields,
   mergeChartAndViewComputedField,
 } from 'app/utils/chartHelper';
+import { parseBoardConfig, serializeConfig } from 'app/utils/configParser';
 import { transformMeta } from 'app/utils/internalChartHelper';
 import { adaptBoardImageUrl } from '.';
 import { BoardConfigValue } from '../components/BoardProvider/BoardConfigProvider';
-import {
-  AutoBoardBackgroundDefault,
-  AutoBoardWidgetBackgroundDefault,
-  AUTO_LAYOUT_VERSION,
-  BackgroundDefault,
-  LAYOUT_COLS_MAP,
-  MIN_MARGIN,
-  MIN_PADDING,
-  MOBILE_LAYOUT_VERSION,
-  MOBILE_MIN_MARGIN,
-  MOBILE_MIN_PADDING,
-  PC_ROW_LAYOUT_VERSION,
-} from '../constants';
+import { MOBILE_MIN_MARGIN, MOBILE_MIN_PADDING } from '../constants';
 import { BoardConfig } from '../types/boardTypes';
 import { Widget } from '../types/widgetTypes';
 import { initAutoBoardConfig } from './autoBoard';
 import { initFreeBoardConfig } from './freeBoard';
-import { ensureMobileBoardSettings } from './mobileBoardSettings';
 import { ensureGridEngineSettings } from './gridEngineSettings';
+import { ensureMobileBoardSettings } from './mobileBoardSettings';
 
 export const getDashBoardByResBoard = (data: ServerDashboard): Dashboard => {
   return {
@@ -69,7 +54,7 @@ export const getDashBoardByResBoard = (data: ServerDashboard): Dashboard => {
     status: data.status,
     thumbnail: data.thumbnail,
     index: data.index,
-    config: preprocessBoardConfig(migrateBoardConfig(data.config), data.id),
+    config: preprocessBoardConfig(parseBoardConfig(data.config), data.id),
     permissions: data.permissions,
   };
 };
@@ -140,38 +125,6 @@ export const getInitBoardInfo = (obj: {
   return boardInfo;
 };
 
-export const getInitBoardConfigBeta3 = (boardType?: BoardType) => {
-  const dashboardConfig: DashboardConfigBeta3 = {
-    type: boardType || 'auto',
-    version: '',
-    background: AutoBoardBackgroundDefault,
-    widgetDefaultSettings: {
-      background: AutoBoardWidgetBackgroundDefault,
-      boxShadow: true,
-    },
-    maxWidgetIndex: 0,
-    initialQuery: true,
-    hasQueryControl: false,
-    hasResetControl: false,
-
-    // auto
-    allowOverlap: false,
-    margin: [1, 1], //0-100
-    containerPadding: [1, 1], //0-100
-    layoutVersion: AUTO_LAYOUT_VERSION,
-    mobileLayoutVersion: MOBILE_LAYOUT_VERSION,
-    pcRowLayoutVersion: PC_ROW_LAYOUT_VERSION,
-    cols: LAYOUT_COLS_MAP,
-    mobileMargin: [MOBILE_MIN_MARGIN, MOBILE_MIN_MARGIN],
-    mobileContainerPadding: [MOBILE_MIN_PADDING, MOBILE_MIN_PADDING],
-    // free
-    width: 1920,
-    height: 1080,
-    gridStep: [10, 10],
-    scaleMode: 'scaleWidth',
-  };
-  return dashboardConfig;
-};
 export const getInitBoardConfig = (boardType?: BoardType) => {
   if (boardType === 'auto') {
     return initAutoBoardConfig();
@@ -185,8 +138,6 @@ export const getDataChartsByServer = (
   view: View[],
 ) => {
   const dataCharts: DataChart[] = serverDataCharts.map(item => {
-    item.config = migrateChartConfig(item.config);
-
     const config = JSON.parse(item.config || '{}');
     const viewComputerFields =
       JSON.parse(view.find(v => v.id === item.viewId)?.model || '{}')
@@ -216,33 +167,35 @@ export const getChartDataView = (
     ...dataCharts.map(dataChart => dataChart.viewId).filter(Boolean),
     ...additionalViewIds.filter(Boolean),
   ]);
-  views.filter(view => usedViewIds.has(view.id)).forEach(view => {
-    const dataChart = dataCharts.find(dc => dc.viewId === view.id);
+  views
+    .filter(view => usedViewIds.has(view.id))
+    .forEach(view => {
+      const dataChart = dataCharts.find(dc => dc.viewId === view.id);
 
-    if (view) {
-      view = migrationViewConfig(view);
-    }
-    if (view?.model) {
-      view.model = beginViewModelMigration(view.model, view.type);
-    }
-    const meta = transformMeta(view.model, view.fields, view.type);
-    const viewComputedFields =
-      JSON.parse(view.model || '{}').computedFields || [];
-    const computedFields = createDateLevelComputedFieldForConfigComputedFields(
-      meta,
-      mergeChartAndViewComputedField(
-        viewComputedFields,
-        dataChart?.config.computedFields,
-      ),
-    );
-    let viewView = {
-      ...view,
-      meta,
-      model: '',
-      computedFields,
-    };
-    viewViews.push(viewView);
-  });
+      if (view) {
+      }
+      if (view?.model) {
+        view.model = serializeConfig(view.model);
+      }
+      const meta = transformMeta(view.model, view.fields, view.type);
+      const viewComputedFields =
+        JSON.parse(view.model || '{}').computedFields || [];
+      const computedFields =
+        createDateLevelComputedFieldForConfigComputedFields(
+          meta,
+          mergeChartAndViewComputedField(
+            viewComputedFields,
+            dataChart?.config.computedFields,
+          ),
+        );
+      let viewView = {
+        ...view,
+        meta,
+        model: '',
+        computedFields,
+      };
+      viewViews.push(viewView);
+    });
   return viewViews;
 };
 
@@ -250,6 +203,11 @@ export const getBoardMarginPadding = (
   boardConfig: BoardConfigValue,
   colsKey: ColsKeyType,
 ): { curMargin: [number, number]; curPadding: [number, number] } => {
+  // Grid gutters are visual pixels, not persisted pRect/mRect coordinates.
+  // Opting out restores each board's existing configured margins and padding.
+  if (boardConfig.seamlessSpacing !== false) {
+    return { curMargin: [0, 0], curPadding: [0, 0] };
+  }
   const { margin, padding, mMargin, mPadding } = boardConfig;
   const isMobile = colsKey === 'sm';
   return isMobile
@@ -261,6 +219,26 @@ export const getBoardMarginPadding = (
         curMargin: margin,
         curPadding: padding,
       };
+};
+
+/**
+ * RGL item height = h * rowHeight + (h - 1) * verticalMargin.
+ * Removing a saved pixel gutter without changing rowHeight could shrink a
+ * table by hundreds of pixels. Preserve the original grid row pitch while
+ * allowing adjacent items to touch; persisted rectangles remain unchanged.
+ */
+export const getAutoBoardRowHeight = (
+  boardConfig: BoardConfigValue,
+  colsKey: ColsKeyType,
+  baseRowHeight: number,
+): number => {
+  if (boardConfig.seamlessSpacing === false) {
+    return baseRowHeight;
+  }
+  const oldMargin = colsKey === 'sm'
+    ? boardConfig.mMargin?.[1] ?? MOBILE_MIN_MARGIN
+    : boardConfig.margin?.[1] ?? 0;
+  return baseRowHeight + Math.max(0, Number(oldMargin) || 0);
 };
 
 export const isElView = (el, inTimer?: boolean) => {

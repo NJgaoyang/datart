@@ -23,9 +23,10 @@ import { User } from 'app/slice/types';
 import { fetchCheckName } from 'app/utils/fetch';
 import debounce from 'debounce-promise';
 import { CommonFormTypes, DEFAULT_DEBOUNCE_WAIT } from 'globalConstants';
-import React, { useCallback, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useMatch } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
+import { useMatch, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { BORDER_RADIUS, SPACE_LG, SPACE_MD } from 'styles/StyleConstants';
 import { selectOrgId } from '../../../../slice/selectors';
@@ -53,7 +54,7 @@ export function RoleDetailPage() {
     [],
   );
   const { actions } = useMemberSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const orgId = useSelector(selectOrgId);
   const roles = useSelector(selectRoles);
@@ -171,7 +172,7 @@ export function RoleDetailPage() {
         }
       />
       <Content>
-        <Card bordered={false}>
+        <Card variant="borderless">
           <Form
             name="role_form_"
             form={form}
@@ -220,7 +221,7 @@ export function RoleDetailPage() {
         </Card>
         <MemberForm
           title={t('addMember')}
-          visible={memberFormVisible}
+          open={memberFormVisible}
           width={992}
           onCancel={hideMemberForm}
           initialValues={memberTableDataSource}

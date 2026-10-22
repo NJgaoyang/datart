@@ -20,6 +20,7 @@ import { useEffect } from 'react';
 import { cancelQuery } from 'utils/queryCancellation';
 import { useSourceSlice } from '../SourcePage/slice';
 import { Container } from './Container';
+import ViewErrorBoundary from './ErrorBoundary';
 import { EditorContext, useEditorContext } from './EditorContext';
 import { SaveFormContext, useSaveFormContext } from './SaveFormContext';
 import { useViewSlice } from './slice';
@@ -35,7 +36,9 @@ export function ViewPage() {
   return (
     <EditorContext.Provider value={editorContextValue}>
       <SaveFormContext.Provider value={saveFormContextValue}>
-        <Container />
+        <ViewErrorBoundary>
+          <Container />
+        </ViewErrorBoundary>
       </SaveFormContext.Provider>
     </EditorContext.Provider>
   );

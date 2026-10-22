@@ -3,7 +3,7 @@ import { AuthorizationStatus } from 'app/constants';
 import { getUserInfoByToken } from 'app/slice/thunks';
 import { StorageKeys } from 'globalConstants';
 import { useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import persistence from 'utils/persistence';
 
@@ -12,7 +12,7 @@ export const AuthorizationPage = () => {
     AuthorizationStatus.Initialized,
   );
   const [errorMessage, setErrorMessage] = useState('');
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
   useEffect(() => {

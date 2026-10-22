@@ -23,7 +23,8 @@ import { useIsWeappEmbed } from 'app/hooks/useEmbedMode';
 import ChartManager from 'app/models/ChartManager';
 import { useAppSlice } from 'app/slice';
 import React, { useCallback, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import {
   Navigate,
   Route,
@@ -113,7 +114,7 @@ export function MainPage() {
   const { actions } = useMainSlice();
   const { actions: vizActions } = useVizSlice();
   const { actions: viewActions } = useViewSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
   const isWeappEmbed = useIsWeappEmbed();
   const shouldUseMobileViz = isMobile || isWeappEmbed;

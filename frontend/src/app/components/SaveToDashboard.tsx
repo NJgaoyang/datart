@@ -155,7 +155,7 @@ const SaveToDashboard: FC<SaveToDashboardTypes> = memo(
       addVizFn({
         vizType: 'DASHBOARD',
         type: CommonFormTypes.Add,
-        visible: true,
+        open: true,
         initialValues: undefined,
         onAfterClose: () => {
           handleOpen();
@@ -166,7 +166,7 @@ const SaveToDashboard: FC<SaveToDashboardTypes> = memo(
     return (
       <Modal
         title={title}
-        visible={isModalVisible}
+        open={isModalVisible}
         footer={
           <Space>
             <Button onClick={createDashboard}>{t('createDashboard')}</Button>

@@ -4,7 +4,7 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons';
 import { Menu, message, Popconfirm, TreeDataNode } from 'antd';
-import { MenuListItem, Popup, Tree, TreeTitle } from 'app/components';
+import { MenuItemLabel, Popup, Tree, TreeTitle } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import {
   selectIsOrgOwner,
@@ -12,7 +12,8 @@ import {
 } from 'app/pages/MainPage/slice/selectors';
 import { CommonFormTypes } from 'globalConstants';
 import { memo, useCallback, useContext, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import { getInsertedNodeIndex, stopPPG } from 'utils/utils';
 import { useToScheduleDetails } from '../hooks';
@@ -35,7 +36,7 @@ interface RecycleProps {
 }
 
 export const Recycle = memo(({ scheduleId, list }: RecycleProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const loading = useSelector(selectArchivedListLoading);
   const orgId = useSelector(selectOrgId);
@@ -56,7 +57,7 @@ export const Recycle = memo(({ scheduleId, list }: RecycleProps) => {
             showSaveForm({
               scheduleType: 'folder',
               type: CommonFormTypes.Edit,
-              visible: true,
+              open: true,
               simple: false,
               initialValues: { id, name, parentId: null },
               parentIdLabel: t('parent'),
@@ -112,22 +113,36 @@ export const Recycle = memo(({ scheduleId, list }: RecycleProps) => {
                   prefixCls="ant-dropdown-menu"
                   selectable={false}
                   onClick={moreMenuClick(key, title)}
-                >
-                  <MenuListItem
-                    key="reset"
-                    prefix={<ReloadOutlined className="icon" />}
-                  >
-                    {t('restore')}
-                  </MenuListItem>
-                  <MenuListItem
-                    key="delelte"
-                    prefix={<DeleteOutlined className="icon" />}
-                  >
-                    <Popconfirm title={t('sureToDelete')} onConfirm={del(key)}>
-                      {t('delete')}
-                    </Popconfirm>
-                  </MenuListItem>
-                </Menu>
+                  items={[
+                    {
+                      key: String('reset'),
+                      label: (
+                        <MenuItemLabel
+                          prefix={<ReloadOutlined className="icon" />}
+                        >
+                          {t('restore')}
+                        </MenuItemLabel>
+                      ),
+                    },
+                    {
+                      key: String('delelte'),
+                      label: (
+                        <MenuItemLabel
+                          prefix={<DeleteOutlined className="icon" />}
+                        >
+                          {
+                            <Popconfirm
+                              title={t('sureToDelete')}
+                              onConfirm={del(key)}
+                            >
+                              {t('delete')}
+                            </Popconfirm>
+                          }
+                        </MenuItemLabel>
+                      ),
+                    },
+                  ]}
+                />
               }
             >
               <span className="action" onClick={stopPPG}>

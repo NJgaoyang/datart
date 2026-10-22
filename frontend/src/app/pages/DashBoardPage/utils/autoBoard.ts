@@ -15,7 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { APP_CURRENT_VERSION } from 'app/migration/constants';
+
+import { APP_CURRENT_VERSION } from 'app/configVersion';
 import {
   AUTO_LAYOUT_VERSION,
   MOBILE_LAYOUT_VERSION,
@@ -72,6 +73,13 @@ export const initAutoBoardConfig = () => {
               key: 'showGrid',
               default: false,
               value: false,
+              comType: 'switch',
+            },
+            {
+              label: 'basic.seamlessSpacing',
+              key: 'seamlessSpacing',
+              default: true,
+              value: true,
               comType: 'switch',
             },
           ],
@@ -181,6 +189,7 @@ export const initAutoBoardConfig = () => {
               allowOverlap: '允许组件重叠',
               compactType: '组件压缩方向',
               showGrid: '显示栅格辅助线',
+              seamlessSpacing: '组件无缝排列',
             },
             space: {
               space: '间距',
@@ -210,6 +219,7 @@ export const initAutoBoardConfig = () => {
               allowOverlap: 'Allow Overlap',
               compactType: 'Grid Compaction',
               showGrid: 'Show Grid Guides',
+              seamlessSpacing: 'Seamless Widget Spacing',
             },
             space: {
               space: 'Space',

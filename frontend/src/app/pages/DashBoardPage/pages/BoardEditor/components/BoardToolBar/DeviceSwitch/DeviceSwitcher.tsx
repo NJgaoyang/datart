@@ -22,14 +22,15 @@ import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { DeviceType } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { dispatchResize } from 'app/utils/dispatchResize';
 import { useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { editDashBoardInfoActions } from '../../../slice';
 import { selectDeviceType } from '../../../slice/selectors';
 
 export const DeviceSwitcher = () => {
   const t = useI18NPrefix(`viz.board.action`);
   const curDeviceType = useSelector(selectDeviceType);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
 
   //why use async/await because: Wait until the state changes before triggering resize
   const onDeviceSwitch = async value => {
@@ -46,29 +47,31 @@ export const DeviceSwitcher = () => {
     );
   }, [curDeviceType]);
   const deviceItems = (
-    <Menu onClick={onDeviceSwitch}>
-      <Menu.Item
-        disabled={curDeviceType === DeviceType.Desktop}
-        key={DeviceType.Desktop}
-        icon={<DesktopOutlined />}
-      >
-        {DeviceType.Desktop}
-      </Menu.Item>
-      {/* <Menu.Item key={'tablet'} icon={<TabletOutlined />}>
-        {'tablet'}
-      </Menu.Item> */}
-      <Menu.Item
-        disabled={curDeviceType === DeviceType.Mobile}
-        key={DeviceType.Mobile}
-        icon={<MobileOutlined />}
-      >
-        {DeviceType.Mobile}
-      </Menu.Item>
-    </Menu>
+    <Menu
+      onClick={onDeviceSwitch}
+      items={[
+        {
+          disabled: curDeviceType === DeviceType.Desktop,
+          key: String(DeviceType.Desktop),
+          icon: <DesktopOutlined />,
+          label: DeviceType.Desktop,
+        },
+        {
+          disabled: curDeviceType === DeviceType.Mobile,
+          key: String(DeviceType.Mobile),
+          icon: <MobileOutlined />,
+          label: DeviceType.Mobile,
+        },
+      ]}
+    />
   );
 
   return (
-    <Dropdown overlay={deviceItems} placement="bottomLeft" trigger={['click']}>
+    <Dropdown
+      popupRender={() => deviceItems}
+      placement="bottomLeft"
+      trigger={['click']}
+    >
       <Tooltip title={t('deviceSwitch')}>
         <ToolbarButton icon={curIcon} />
       </Tooltip>

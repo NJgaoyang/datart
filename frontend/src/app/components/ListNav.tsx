@@ -18,7 +18,7 @@ interface ListNavProps {
 
 export const ListNav = memo(
   ({ className, defaultActiveKey, children }: ListNavProps) => {
-    const [panes, setPanes] = useState<{ [key: string]: ReactElement }>({});
+    const [panes, setPanes] = useState<{ [key: string]: ReactElement<any> }>({});
     const [keys, setKeys] = useState<string[]>([]);
     const [activeKey, setActiveKey] = useState(defaultActiveKey);
 
@@ -53,7 +53,7 @@ export const ListNav = memo(
     return (
       <Wrapper className={className}>
         {panes[activeKey] &&
-          cloneElement(panes[activeKey], {
+          cloneElement(panes[activeKey] as ReactElement<any>, {
             onPrevious: previous,
             onNext: next,
           })}
@@ -74,7 +74,7 @@ export const ListPane = memo(
     return (
       <>
         {Children.map(children, e =>
-          e.type === ListTitle ? cloneElement(e, { onPrevious, onNext }) : e,
+          e.type === ListTitle ? cloneElement(e as ReactElement<any>, { onPrevious, onNext }) : e,
         )}
       </>
     );

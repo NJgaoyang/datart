@@ -63,7 +63,8 @@ import React, {
 } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { SPACE } from 'styles/StyleConstants';
@@ -169,7 +170,7 @@ export const MobileBoard: FC<MobileBoardProps> = memo(
     embedded = false,
   }) => {
     const boardId = id;
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -283,7 +284,7 @@ interface MobileBoardContentProps {
   boardId: string;
   boardName: string;
   onBack: () => void;
-  wrapperRef: React.RefObject<HTMLDivElement>;
+  wrapperRef: React.RefObject<HTMLDivElement | null>;
   embedded: boolean;
   shareMode?: boolean;
   renderMode?: VizRenderMode;
@@ -302,7 +303,7 @@ const MobileBoardContent: FC<MobileBoardContentProps> = memo(
     shareMode = false,
     renderMode = 'read',
   }) => {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const widgetDataMap = useSelector(
       (state: { board: BoardState }) => state.board.widgetDataMap,
     );

@@ -157,7 +157,7 @@ export enum FilterConditionType {
     RecommendTime |
     Time |
     Tree,
-  Relation = 1 << 50,
+  Relation = 1 << 18, // preserves legacy 32-bit shift behavior (50 mod 32 = 18)
 }
 
 export const ChartDataSectionFieldActionType = {

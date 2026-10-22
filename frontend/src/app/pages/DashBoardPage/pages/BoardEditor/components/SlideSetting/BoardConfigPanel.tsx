@@ -25,7 +25,7 @@ import ChartI18NContext from 'app/pages/ChartWorkbenchPage/contexts/Chart18NCont
 import { BoardConfigContext } from 'app/pages/DashBoardPage/components/BoardProvider/BoardConfigProvider';
 import { ChartStyleConfig } from 'app/types/ChartConfig';
 import { FC, memo, useContext } from 'react';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { editBoardStackActions } from '../../slice';
 
@@ -35,7 +35,7 @@ const StyledWrapper = styled.div`
   overflow-y: auto;
 `;
 export const BoardConfigPanel: FC<{}> = memo(() => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const t = useI18NPrefix(`viz.board.setting`);
   const boardConfig = useContext(BoardConfigContext);
   const configs = boardConfig.jsonConfig.props;
@@ -69,28 +69,33 @@ export const BoardConfigCollapse: FC<{
 }> = memo(({ configs, onChange }) => {
   const t = useI18NPrefix();
   return (
-    <Collapse className="" ghost>
-      {configs
-        ?.filter(c => !Boolean(c.hidden))
-        .map((c, index) => (
-          <Collapse.Panel
-            header={<CollapseHeader title={t(c.label, true)} />}
-            key={c.key}
-          >
-            <GroupLayout
-              ancestors={[index]}
-              mode={
-                c.comType === 'group'
-                  ? FormGroupLayoutMode.INNER
-                  : FormGroupLayoutMode.OUTER
-              }
-              data={c}
-              translate={t}
-              dataConfigs={[]}
-              onChange={onChange}
-            />
-          </Collapse.Panel>
-        ))}
-    </Collapse>
+    <Collapse
+      className=""
+      ghost
+      items={[
+        ...(configs
+          ?.filter(c => !Boolean(c.hidden))
+          .flatMap((c, index) => [
+            {
+              label: <CollapseHeader title={t(c.label, true)} />,
+              key: String(c.key),
+              children: (
+                <GroupLayout
+                  ancestors={[index]}
+                  mode={
+                    c.comType === 'group'
+                      ? FormGroupLayoutMode.INNER
+                      : FormGroupLayoutMode.OUTER
+                  }
+                  data={c}
+                  translate={t}
+                  dataConfigs={[]}
+                  onChange={onChange}
+                />
+              ),
+            },
+          ]) || []),
+      ]}
+    />
   );
 });

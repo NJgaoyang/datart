@@ -159,30 +159,34 @@ const FilterFacadeConfiguration: FC<
       <StyledFilterFacadeConfiguration>
         <Row>
           <Space>
-            <Select value={currentFacade} onChange={handleFacadeChange}>
-              {facadeOptions.map(f => (
-                <Select.Option key={f} value={f}>
-                  {t2(f)}
-                </Select.Option>
-              ))}
-            </Select>
+            <Select
+              value={currentFacade}
+              onChange={handleFacadeChange}
+              options={[
+                ...(facadeOptions.flatMap(f => [
+                  { key: String(f), value: f, label: t2(f) },
+                ]) || []),
+              ]}
+            />
             {currentFacade === ControllerFacadeTypes.RadioGroup && (
               <Space>
                 {t('radioType')}
-                <Select value={radioType} onChange={handleRadioTypeChange}>
-                  <Select.Option
-                    key={ControllerRadioFacadeTypes.Default}
-                    value={ControllerRadioFacadeTypes.Default}
-                  >
-                    {t(ControllerRadioFacadeTypes.Default)}
-                  </Select.Option>
-                  <Select.Option
-                    key={ControllerRadioFacadeTypes.Button}
-                    value={ControllerRadioFacadeTypes.Button}
-                  >
-                    {t(ControllerRadioFacadeTypes.Button)}
-                  </Select.Option>
-                </Select>
+                <Select
+                  value={radioType}
+                  onChange={handleRadioTypeChange}
+                  options={[
+                    {
+                      key: String(ControllerRadioFacadeTypes.Default),
+                      value: ControllerRadioFacadeTypes.Default,
+                      label: t(ControllerRadioFacadeTypes.Default),
+                    },
+                    {
+                      key: String(ControllerRadioFacadeTypes.Button),
+                      value: ControllerRadioFacadeTypes.Button,
+                      label: t(ControllerRadioFacadeTypes.Button),
+                    },
+                  ]}
+                />
               </Space>
             )}
             {currentFacade === ControllerFacadeTypes.Slider && (

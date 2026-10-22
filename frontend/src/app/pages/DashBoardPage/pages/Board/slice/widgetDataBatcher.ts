@@ -193,38 +193,38 @@ async function flushBatch(batch: BatchEntry[]): Promise<void> {
 
     const resultMap: Record<string, any> = unwrapWidgetQueryResponse(response) || {};
 
-    batch.forEach(entry => {
+    // Some deployed server versions do not support batch execution for all
+    // views. The batch endpoint may return a per-item QUERY_FAILED object
+    // with HTTP 200; retry ONLY these failed entries using the ordinary
+    // execute endpoint. Successful widgets must never be re-queried.
+    await Promise.all(batch.map(async entry => {
       if (entry.cancelled) return;
-      const result = resultMap[entry.widgetId];
-      if (result !== undefined) {
-        if (result?.error) {
-          entry.reject(new Error(`Widget query failed: ${result.error}`));
-        } else {
-          entry.resolve(result);
-        }
-      } else {
-        // 尝试无 requestId 的降级查找
-        const fallback =
-          resultMap[
-            Object.keys(resultMap).find(
-              k => k === entry.requestParams?.vizId,
-            ) || ''
-          ];
-        if (fallback !== undefined) {
-          if (fallback?.error) {
-            entry.reject(new Error(`Widget query failed: ${fallback.error}`));
+      const result = resultMap[entry.widgetId] ??
+        resultMap[entry.requestParams?.vizId || ''];
+      if (result === undefined || result?.error === 'QUERY_FAILED') {
+        try {
+          const fallbackResponse = await request2<any>({
+            method: 'POST',
+            url: 'data-provider/execute',
+            data: { ...entry.requestParams, queryId: entry.queryId },
+          }, undefined, { onRejected: preserveHttpError });
+          if (entry.cancelled) return;
+          const fallbackData = unwrapWidgetQueryResponse(fallbackResponse);
+          if (fallbackData?.error) {
+            entry.reject(new Error('图表数据查询失败'));
           } else {
-            entry.resolve(fallback);
+            entry.resolve(fallbackData);
           }
-        } else {
-          entry.reject(
-            new Error(
-              `Batch response missing data for widget ${entry.widgetId}`,
-            ),
-          );
+        } catch (error) {
+          if (!entry.cancelled) entry.reject(error);
         }
+      } else if (result?.error) {
+        // Permission and other specific query errors should not be retried.
+        entry.reject(new Error('图表数据查询失败'));
+      } else {
+        entry.resolve(result);
       }
-    });
+    }));
   } catch (error) {
     // Single requests must NOT be re-sent after a permission/business error.
     // Only a multi-widget batch may fall back to separate requests.

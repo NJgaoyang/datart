@@ -21,8 +21,8 @@ import { TimeFilterValueCategory } from 'app/constants';
 import useI18NPrefix, { I18NComponentProps } from 'app/hooks/useI18NPrefix';
 import { TimeFilterConditionValue } from 'app/types/ChartConfig';
 import { formatTime } from 'app/utils/time';
-import { TIME_FORMATTER } from 'globalConstants';
 import dayjs from 'dayjs';
+import { TIME_FORMATTER } from 'globalConstants';
 import { FC, memo, useState } from 'react';
 import styled from 'styled-components';
 import ExactTimeSelector from './ExactTimeSelector';
@@ -76,14 +76,20 @@ const ManualSingleTimeSelector: FC<
 
   return (
     <StyledManualSingleTimeSelector>
-      <Select value={type} onChange={handleTimeCategoryChange}>
-        <Select.Option value={TimeFilterValueCategory.Exact}>
-          {t(TimeFilterValueCategory.Exact)}
-        </Select.Option>
-        <Select.Option value={TimeFilterValueCategory.Relative}>
-          {t(TimeFilterValueCategory.Relative)}
-        </Select.Option>
-      </Select>
+      <Select
+        value={type}
+        onChange={handleTimeCategoryChange}
+        options={[
+          {
+            value: TimeFilterValueCategory.Exact,
+            label: t(TimeFilterValueCategory.Exact),
+          },
+          {
+            value: TimeFilterValueCategory.Relative,
+            label: t(TimeFilterValueCategory.Relative),
+          },
+        ]}
+      />
       {isStart ? `${t('startTime')} : ` : `${t('endTime')} : `}
       {renderTimeSelector(type)}
     </StyledManualSingleTimeSelector>

@@ -27,7 +27,7 @@ import { scheduleWidgetRefresh } from '../utils/widgetRefreshScheduler';
 export default function useWidgetAutoFetch(
   widget: Widget,
   renderMode: VizRenderMode,
-  rectRef: React.RefObject<HTMLDivElement>,
+  rectRef: React.RefObject<HTMLDivElement | null>,
   rendered: boolean,
 ) {
   const { visible: boardVisible } = useContext(BoardInfoContext);

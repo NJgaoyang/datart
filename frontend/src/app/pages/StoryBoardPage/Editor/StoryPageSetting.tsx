@@ -25,7 +25,8 @@ import React, {
   useEffect,
   useMemo,
 } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { StoryContext } from '../contexts/StoryContext';
 import {
   makeSelectStoryPagesById,
@@ -44,7 +45,7 @@ export interface StoryPageSettingProps {}
 export const StoryPageSetting: React.FC<StoryPageSettingProps> = memo(() => {
   const t = useI18NPrefix(`viz.board.setting`);
   const { storyId } = useContext(StoryContext);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const selectedPageIds = useSelector(
     (state: { storyBoard: StoryBoardState }) =>
       selectSelectedPageIds(state, storyId),
@@ -94,31 +95,37 @@ export const StoryPageSetting: React.FC<StoryPageSettingProps> = memo(() => {
     >
       <>
         <Form.Item name="in" label={t('cutIn')}>
-          <Select style={{ width: '120px' }} placeholder="Select a option">
-            {EFFECT_IN_OPTIONS.map(ele => (
-              <Select.Option key={ele} value={ele}>
-                {ele}
-              </Select.Option>
-            ))}
-          </Select>
+          <Select
+            style={{ width: '120px' }}
+            placeholder="Select a option"
+            options={[
+              ...(EFFECT_IN_OPTIONS.flatMap(ele => [
+                { key: String(ele), value: ele, label: ele },
+              ]) || []),
+            ]}
+          />
         </Form.Item>
         <Form.Item name="out" label={t('cutOut')}>
-          <Select style={{ width: '120px' }} placeholder="Select a option ">
-            {EFFECT_OUT_OPTIONS.map(ele => (
-              <Select.Option key={ele} value={ele}>
-                {ele}
-              </Select.Option>
-            ))}
-          </Select>
+          <Select
+            style={{ width: '120px' }}
+            placeholder="Select a option "
+            options={[
+              ...(EFFECT_OUT_OPTIONS.flatMap(ele => [
+                { key: String(ele), value: ele, label: ele },
+              ]) || []),
+            ]}
+          />
         </Form.Item>
         <Form.Item name="speed" label={t('speed')}>
-          <Select style={{ width: '120px' }} placeholder="Select a option ">
-            {EFFECT_SPEED_OPTIONS.map(ele => (
-              <Select.Option key={ele} value={ele}>
-                {ele}
-              </Select.Option>
-            ))}
-          </Select>
+          <Select
+            style={{ width: '120px' }}
+            placeholder="Select a option "
+            options={[
+              ...(EFFECT_SPEED_OPTIONS.flatMap(ele => [
+                { key: String(ele), value: ele, label: ele },
+              ]) || []),
+            ]}
+          />
         </Form.Item>
       </>
     </Form>

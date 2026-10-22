@@ -35,14 +35,14 @@ import { PermissionLevels, ResourceTypes } from '../PermissionPage/constants';
 import { SaveFormContext } from './SaveFormContext';
 import { makeSelectSourceFolderTree } from './slice/selectors';
 
-type SaveFormProps = Omit<ModalFormProps, 'type' | 'visible' | 'onSave'>;
+type SaveFormProps = Omit<ModalFormProps, 'type' | 'open' | 'onSave'>;
 
 export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
   const selectSourceFolderTree = useMemo(makeSelectSourceFolderTree, []);
   const {
     sourceType,
     type,
-    visible,
+    open,
     simple,
     parentIdLabel,
     initialValues,
@@ -70,7 +70,7 @@ export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
     selectSourceFolderTree(state, { id: initialValues?.id, getDisabled }),
   );
   const orgId = useSelector(selectOrgId);
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<FormInstance>(undefined);
   const t = useI18NPrefix('source.saveForm');
   const tg = useI18NPrefix('global');
 
@@ -105,7 +105,7 @@ export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
       {...modalProps}
       title={t(sourceType)}
       type={type}
-      visible={visible}
+      open={open}
       onSave={save}
       onCancel={onCancel}
       afterClose={afterClose}

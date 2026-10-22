@@ -30,14 +30,13 @@ import {
   PendingChartDataRequestFilter,
 } from 'app/types/ChartDataRequest';
 import ChartDataView from 'app/types/ChartDataView';
-import { fetchChartDataSet } from 'app/utils/fetch';
 import { getColumnRenderName } from 'app/utils/chartHelper';
+import { findChartFieldByResultColumn } from 'app/utils/internalChartHelper';
+import { fetchChartDataSet } from 'app/utils/fetch';
 import { FC, memo, useState } from 'react';
 import styled from 'styled-components';
 import { SPACE_XS } from 'styles/StyleConstants';
 import { errorHandle } from 'utils/utils';
-
-const { TabPane } = Tabs;
 
 const filterTableColumnsByViewDetailSetting = (
   datas?: ChartDataConfig[],
@@ -75,8 +74,9 @@ const TemplateTable: FC<{
     const allConfigFields = chartConfig?.datas?.flatMap(d => d.rows || []);
     return (columns || []).map((col, index) => {
       const renderName = getRenderTitle(col);
-      const currentConfig = allConfigFields?.find(
-        f => f.colName === renderName,
+      const currentConfig = findChartFieldByResultColumn(
+        allConfigFields,
+        renderName,
       );
       return {
         title: currentConfig ? getColumnRenderName(currentConfig) : renderName,
@@ -161,22 +161,33 @@ const useDisplayViewDetail = () => {
       modalSize: StateModalSize.MIDDLE,
       content: () => {
         return (
-          <StyledTabs defaultActiveKey="summary">
-            <TabPane tab={t('summary')} key="summary">
-              <TemplateTable
-                chartConfig={props?.chartConfig}
-                token={props.authToken}
-                requestParams={getSummaryTableRequestParams(props)}
-              />
-            </TabPane>
-            <TabPane tab={t('details')} key="details">
-              <TemplateTable
-                chartConfig={props?.chartConfig}
-                token={props.authToken}
-                requestParams={getDetailsTableRequestParams(props)}
-              />
-            </TabPane>
-          </StyledTabs>
+          <StyledTabs
+            defaultActiveKey="summary"
+            items={[
+              {
+                label: t('summary'),
+                key: String('summary'),
+                children: (
+                  <TemplateTable
+                    chartConfig={props?.chartConfig}
+                    token={props.authToken}
+                    requestParams={getSummaryTableRequestParams(props)}
+                  />
+                ),
+              },
+              {
+                label: t('details'),
+                key: String('details'),
+                children: (
+                  <TemplateTable
+                    chartConfig={props?.chartConfig}
+                    token={props.authToken}
+                    requestParams={getDetailsTableRequestParams(props)}
+                  />
+                ),
+              },
+            ]}
+          />
         );
       },
     });

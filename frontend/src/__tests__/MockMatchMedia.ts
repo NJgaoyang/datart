@@ -16,13 +16,20 @@
  * limitations under the License.
  */
 
+// Monaco and Ant Design 6 use the modern MediaQueryList EventTarget API.
 global.matchMedia =
   global.matchMedia ||
-  function () {
+  function (query: string): MediaQueryList {
     return {
+      matches: false,
+      media: query,
+      onchange: null,
       addListener: jest.fn(),
       removeListener: jest.fn(),
-    };
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(() => false),
+    } as MediaQueryList;
   };
 
 export {};

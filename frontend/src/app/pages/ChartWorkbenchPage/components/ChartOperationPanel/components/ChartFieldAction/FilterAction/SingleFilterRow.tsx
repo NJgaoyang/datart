@@ -110,13 +110,12 @@ const SingleFilter: FC<{
             onChange={value => {
               handleOnChange(value, []);
             }}
-          >
-            {operators.map(o => (
-              <Select.Option key={o} value={o}>
-                {t(o)}
-              </Select.Option>
-            ))}
-          </Select>
+            options={[
+              ...(operators.flatMap(o => [
+                { key: String(o), value: o, label: t(o) },
+              ]) || []),
+            ]}
+          />
           {renderInputNumber(operator)}
           {/* <PlusCircleOutlined onClick={() => onAddBrotherFilter()} />
           <BranchesOutlined onClick={handleChangeFromSingleRowToMultiRow} />

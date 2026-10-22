@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { ProColumnType } from '@ant-design/pro-table';
+import { ProColumnType } from '@ant-design/pro-components';
 import { Button } from 'antd';
 import { Configuration } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';

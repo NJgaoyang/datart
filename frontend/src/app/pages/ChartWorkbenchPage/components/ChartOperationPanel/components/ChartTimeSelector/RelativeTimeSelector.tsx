@@ -32,9 +32,7 @@ const RelativeTimeSelector: FC<
 > = memo(({ time, i18nPrefix, onChange }) => {
   const t = useI18NPrefix(i18nPrefix);
   const [amount, setAmount] = useState(() => (time as any)?.amount || 1);
-  const [unit, setUnit] = useState<string>(
-    () => (time as any)?.unit || 'd',
-  );
+  const [unit, setUnit] = useState<string>(() => (time as any)?.unit || 'd');
   const [direction, setDirection] = useState(
     () => (time as any)?.direction || '-',
   );
@@ -68,11 +66,15 @@ const RelativeTimeSelector: FC<
 
   return (
     <StyledRelativeTimeSelector>
-      <Select defaultValue={direction} onChange={handleDirectionChange}>
-        {TIME_DIRECTION.map(item => (
-          <Select.Option value={item.value}>{t(item.name)}</Select.Option>
-        ))}
-      </Select>
+      <Select
+        defaultValue={direction}
+        onChange={handleDirectionChange}
+        options={[
+          ...(TIME_DIRECTION.flatMap(item => [
+            { value: item.value, label: t(item.name) },
+          ]) || []),
+        ]}
+      />
       {TIME_DIRECTION.filter(d => d.name !== 'current').find(
         d => d.value === direction,
       ) && (
@@ -83,11 +85,15 @@ const RelativeTimeSelector: FC<
           onChange={handleAmountChange}
         />
       )}
-      <Select defaultValue={unit} onChange={handleUnitChange}>
-        {TIME_UNIT_OPTIONS.map(item => (
-          <Select.Option value={item.value}>{t(item.name)}</Select.Option>
-        ))}
-      </Select>
+      <Select
+        defaultValue={unit}
+        onChange={handleUnitChange}
+        options={[
+          ...(TIME_UNIT_OPTIONS.flatMap(item => [
+            { value: item.value, label: t(item.name) },
+          ]) || []),
+        ]}
+      />
     </StyledRelativeTimeSelector>
   );
 });

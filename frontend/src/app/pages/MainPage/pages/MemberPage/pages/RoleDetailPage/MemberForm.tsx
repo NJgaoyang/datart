@@ -21,7 +21,8 @@ import { LoadingMask, ModalForm } from 'app/components';
 import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
 import { User } from 'app/slice/types';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { SPACE_TIMES, SPACE_XS } from 'styles/StyleConstants';
 import { selectMemberListLoading, selectMembers } from '../../slice/selectors';
@@ -35,8 +36,8 @@ interface MemberFormProps extends ModalProps {
 export const MemberForm = memo(
   ({ initialValues, onChange, onCancel, ...modalProps }: MemberFormProps) => {
     const [targetKeys, setTargetKeys] = useState<string[]>([]);
-    const dispatch = useDispatch();
-    const formRef = useRef<FormInstance>();
+    const dispatch = useAppDispatch();
+    const formRef = useRef<FormInstance>(undefined);
     const members = useSelector(selectMembers);
     const memberListLoading = useSelector(selectMemberListLoading);
     const orgId = useSelector(selectOrgId);
@@ -46,10 +47,10 @@ export const MemberForm = memo(
     );
 
     useEffect(() => {
-      if (modalProps.visible) {
+      if (modalProps.open) {
         dispatch(getMembers(orgId));
       }
-    }, [dispatch, orgId, modalProps.visible]);
+    }, [dispatch, orgId, modalProps.open]);
 
     useEffect(() => {
       setTargetKeys(initialValues.map(({ id }) => id));

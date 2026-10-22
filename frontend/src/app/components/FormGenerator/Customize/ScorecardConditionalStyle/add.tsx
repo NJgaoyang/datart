@@ -34,7 +34,7 @@ interface AddProps {
   context?: any;
   allItems?: any[];
   translate?: (title: string, options?: any) => string;
-  visible: boolean;
+  open: boolean;
   values: ScorecardConditionalStyleFormValues;
   onOk: (values: ScorecardConditionalStyleFormValues) => void;
   onCancel: () => void;
@@ -43,7 +43,7 @@ interface AddProps {
 export default function Add({
   translate: t = title => title,
   values,
-  visible,
+  open,
   onOk,
   onCancel,
   context,
@@ -85,7 +85,7 @@ export default function Add({
 
   useEffect(() => {
     // !重置form
-    if (visible) {
+    if (open) {
       const result: Partial<ScorecardConditionalStyleFormValues> =
         Object.keys(values).length === 0
           ? {
@@ -100,7 +100,7 @@ export default function Add({
       form.setFieldsValue(result);
       setOperatorValue(result.operator ?? OperatorTypes.Equal);
     }
-  }, [form, visible, values, allItems]);
+  }, [form, open, values, allItems]);
 
   const modalOk = () => {
     form.validateFields().then(values => {
@@ -149,9 +149,9 @@ export default function Add({
 
   return (
     <Modal
-      destroyOnClose
+      destroyOnHidden
       title={t('conditionalStyleTable.modal.title')}
-      visible={visible}
+      open={open}
       onOk={modalOk}
       onCancel={onCancel}
     >
@@ -173,18 +173,16 @@ export default function Add({
           name="metricKey"
           rules={[{ required: true }]}
         >
-          <Select>
-            {allItems?.map((o, index) => {
-              const label = isEmpty(o['label']) ? o : o.label;
-              const key = isEmpty(o['key']) ? index : o.key;
-              const value = isEmpty(o['value']) ? o : o.value;
-              return (
-                <Select.Option key={key} value={value}>
-                  {label}
-                </Select.Option>
-              );
-            })}
-          </Select>
+          <Select
+            options={[
+              ...(allItems?.flatMap((o, index) => {
+                const label = isEmpty(o['label']) ? o : o.label;
+                const key = isEmpty(o['key']) ? index : o.key;
+                const value = isEmpty(o['value']) ? o : o.value;
+                return [{ key: String(key), value: value, label: label }];
+              }) || []),
+            ]}
+          />
         </Form.Item>
 
         <Form.Item
@@ -278,8 +276,10 @@ const InputNumberScope = memo(
       }
     };
 
-    const minChange = (value: number | null) => inputNumberScopeChange([value, max]);
-    const maxChange = (value: number | null) => inputNumberScopeChange([min, value]);
+    const minChange = (value: number | null) =>
+      inputNumberScopeChange([value, max]);
+    const maxChange = (value: number | null) =>
+      inputNumberScopeChange([min, value]);
 
     return (
       <Row gutter={24} align="middle" key={index}>

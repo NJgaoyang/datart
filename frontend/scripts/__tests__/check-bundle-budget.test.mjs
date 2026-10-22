@@ -36,6 +36,13 @@ test('fails if any entry crosses its own initial budget', () => {
     }), /Initial JS budget exceeded for share.ts/);
 });
 
+test('enforces the tighter login entry budget separately', () => {
+  assert.throws(() => evaluateBundleBudget(manifest(), size, {
+    initialBytes: 2000, allJsBytes: 2000, largestChunkBytes: 1000,
+    entryBudgets: { 'main.ts': 999 },
+  }), /Initial JS budget exceeded for main.ts/);
+});
+
 test('counts lazy bundles against full site JS total', () => {
   assert.throws(() =>
     evaluateBundleBudget(manifest(), size, {

@@ -41,9 +41,10 @@ import useResizeObserver from 'app/hooks/useResizeObserver';
 import { useSearchAndExpand } from 'app/hooks/useSearchAndExpand';
 import { updateBy } from 'app/utils/mutation';
 import { DEFAULT_DEBOUNCE_WAIT } from 'globalConstants';
+import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import { memo, useCallback, useContext, useEffect, useState } from 'react';
-import { monaco } from 'react-monaco-editor';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { SPACE_MD, SPACE_XS } from 'styles/StyleConstants';
 import { RootState } from 'types';
@@ -61,7 +62,7 @@ import Container from './Container';
 
 export const Resource = memo(() => {
   const t = useI18NPrefix('view.resource');
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const { editorCompletionItemProviderRef } = useContext(EditorContext);
   const isDatabaseSchemaLoading = useSelector(selectDatabaseSchemaLoading);
   const sourceId = useSelector<RootState>(state =>
@@ -75,8 +76,7 @@ export const Resource = memo(() => {
   );
 
   const { height, ref: treeWrapperRef } = useResizeObserver({
-    refreshMode: 'debounce',
-    refreshRate: 200,
+    debounceMs: 200,
   });
 
   const buildTableNode = useCallback((database: DatabaseSchema) => {
@@ -188,12 +188,19 @@ export const Resource = memo(() => {
 
   const getOverlays = useCallback(() => {
     return (
-      <Menu onClick={handleMenuClick}>
-        <Menu.SubMenu key="sort" title={t('sortType')}>
-          <Menu.Item key="byNameSort">{t('byName')}</Menu.Item>
-          <Menu.Item key="byOriginalFieldSort">{t('byField')}</Menu.Item>
-        </Menu.SubMenu>
-      </Menu>
+      <Menu
+        onClick={handleMenuClick}
+        items={[
+          {
+            key: String('sort'),
+            label: t('sortType'),
+            children: [
+              { key: String('byNameSort'), label: t('byName') },
+              { key: String('byOriginalFieldSort'), label: t('byField') },
+            ],
+          },
+        ]}
+      />
     );
   }, [handleMenuClick, t]);
 
@@ -206,10 +213,14 @@ export const Resource = memo(() => {
               prefix={<SearchOutlined className="icon" />}
               placeholder={t('search')}
               className="input"
-              bordered={false}
+              variant="borderless"
               onChange={debouncedSearch}
             />
-            <Dropdown key="more" trigger={['click']} overlay={getOverlays()}>
+            <Dropdown
+              key="more"
+              trigger={['click']}
+              popupRender={() => getOverlays()}
+            >
               <Button type="text" icon={<MoreOutlined />} />
             </Dropdown>
           </StyleSpace>

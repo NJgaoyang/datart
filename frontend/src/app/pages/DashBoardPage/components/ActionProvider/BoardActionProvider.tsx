@@ -19,7 +19,7 @@
 import { DownloadFileType } from 'app/constants';
 import { generateShareLinkAsync } from 'app/utils/fetch';
 import { createContext, FC, memo, ReactNode, useMemo } from 'react';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { BOARD_UNDO } from '../../constants';
 import { boardDownLoadAction } from '../../pages/Board/slice/asyncActions';
@@ -57,7 +57,7 @@ export const BoardActionProvider: FC<{
   boardId: string;
   children?: ReactNode;
 }> = memo(({ boardId, children }) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const location = useLocation();
 

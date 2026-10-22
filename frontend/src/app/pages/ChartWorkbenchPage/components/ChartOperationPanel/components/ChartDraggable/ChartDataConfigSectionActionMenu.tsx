@@ -16,23 +16,23 @@
  * limitations under the License.
  */
 
+import { CheckOutlined } from '@ant-design/icons';
 import { Menu } from 'antd';
-import SubMenu from 'antd/lib/menu/SubMenu';
 import {
+  AggregateFieldActionType,
+  AggregateFieldSubAggregateType,
   ChartDataSectionFieldActionType,
   ChartDataViewFieldCategory,
-  AggregateFieldActionType,
   DataViewFieldType,
+  SortActionType,
 } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { ChartDataSectionField } from 'app/types/ChartConfig';
 import { ChartDataConfigSectionProps } from 'app/types/ChartDataConfigSection';
 import { ChartDataViewMeta } from 'app/types/ChartDataViewMeta';
 import { FC } from 'react';
-import AggregationAction from '../ChartFieldAction/AggregationAction';
-import AggregationLimitAction from '../ChartFieldAction/AggregationLimitAction';
-import DateLevelAction from '../ChartFieldAction/DateLevelAction/DateLevelAction';
-import SortAction from '../ChartFieldAction/SortAction';
+import { isEmpty } from 'utils/object';
+import { buildDateLevelMenuItems } from '../ChartFieldAction/DateLevelAction/DateLevelMenuItems';
 import { updateDataConfigByField } from './utils';
 
 const ChartDataConfigSectionActionMenu: FC<
@@ -126,97 +126,99 @@ const ChartDataConfigSectionActionMenu: FC<
     return modalActions;
   };
 
-  const getSubMenuActionComponent = (actionName, uid) => {
-    const fieldConfig = config.rows?.find(c => c.uid === uid);
-    if (!fieldConfig) {
-      return;
-    }
-    const options = config?.options?.[actionName];
-    if (actionName === ChartDataSectionFieldActionType.Sortable) {
-      return (
-        <SortAction
-          config={fieldConfig}
-          onConfigChange={(config, needRefresh) => {
-            handleFieldConfigChanged(uid, config, needRefresh);
-          }}
-          options={options}
-          mode="menu"
-        />
-      );
-    }
-    if (actionName === ChartDataSectionFieldActionType.Aggregate) {
-      return (
-        <AggregationAction
-          config={fieldConfig}
-          onConfigChange={(config, needRefresh) => {
-            handleFieldConfigChanged(uid, config, needRefresh);
-          }}
-          mode="menu"
-        />
-      );
-    }
-    if (actionName === ChartDataSectionFieldActionType.AggregateLimit) {
-      return (
-        <AggregationLimitAction
-          config={fieldConfig}
-          onConfigChange={(config, needRefresh) => {
-            handleFieldConfigChanged(uid, config, needRefresh);
-          }}
-          mode="menu"
-        />
-      );
-    }
+  const sortT = useI18NPrefix('viz.palette.data.actions');
+  const aggregateT = useI18NPrefix('viz.common.enum.aggregateTypes');
+  const dateT = useI18NPrefix('viz.workbench.dataview');
+  const getSubMenuItems = actionName => {
+    const field = config.rows?.find(row => row.uid === uid);
+    if (!field) return [];
+    const update = (value, refresh = true) =>
+      handleFieldConfigChanged(uid, value, refresh);
     if (actionName === ChartDataSectionFieldActionType.DateLevel) {
-      return (
-        <DateLevelAction
-          metas={metas}
-          availableSourceFunctions={availableSourceFunctions}
-          config={fieldConfig}
-          onConfigChange={(config, needRefresh, replacedConfig) => {
-            handleFieldConfigChanged(uid, config, needRefresh, replacedConfig);
-          }}
-          mode="menu"
-        />
+      return buildDateLevelMenuItems(
+        {
+          config: field,
+          metas,
+          availableSourceFunctions,
+          onChange: value => handleFieldConfigChanged(uid, value, true, field),
+        },
+        dateT,
       );
     }
+    if (actionName === ChartDataSectionFieldActionType.Sortable) {
+      const backendSort = config.options?.[actionName]?.backendSort;
+      return [SortActionType.None, SortActionType.ASC, SortActionType.DESC].map(
+        direction => ({
+          key: direction,
+          label: sortT(`sort.${direction.toLowerCase()}`),
+          icon:
+            (field.sort?.type || SortActionType.None) === direction ? (
+              <CheckOutlined />
+            ) : undefined,
+          onClick: () =>
+            update(
+              { ...field, sort: { type: direction } },
+              isEmpty(backendSort) ? true : Boolean(backendSort),
+            ),
+        }),
+      );
+    }
+    return (AggregateFieldSubAggregateType[actionName] || []).map(
+      aggregate => ({
+        key: aggregate,
+        label: aggregateT(aggregate),
+        icon:
+          actionName === ChartDataSectionFieldActionType.Aggregate &&
+          field.aggregate === aggregate ? (
+            <CheckOutlined />
+          ) : undefined,
+        onClick: () => update({ ...field, aggregate }),
+      }),
+    );
   };
 
   const metric = config.rows?.find(row => row.uid === uid);
   // Persisted chart fields commonly omit the computed expression text:
   // it lives in dataView.computedFields. Do not hide the explicit metric
   // option merely because the chart copy only carries its stable fieldId.
-  const canConfigureRatio = type === DataViewFieldType.NUMERIC
-    && metric?.aggregate === AggregateFieldActionType.Sum
-    && category === ChartDataViewFieldCategory.ComputedField.toLowerCase();
+  const canConfigureRatio =
+    type === DataViewFieldType.NUMERIC &&
+    metric?.aggregate === AggregateFieldActionType.Sum &&
+    category === ChartDataViewFieldCategory.ComputedField.toLowerCase();
 
   return (
-    <Menu>
-      {canConfigureRatio && metric && (
-        <Menu.Item
-          key="ratioOfSums"
-          onClick={() => handleFieldConfigChanged(uid, {
-            ...metric, ratioOfSums: !metric.ratioOfSums,
-          }, true)}
-        >
-          {metric.ratioOfSums
-            ? '✓ 汇总比率：先求和后相除'
-            : '汇总比率：先求和后相除'}
-        </Menu.Item>
-      )}
-      {getModalActions(config?.actions, type, category).map(actionName => (
-        <Menu.Item
-          key={actionName}
-          onClick={() => onOpenModal(uid)(actionName)}
-        >
-          {t(actionName)}
-        </Menu.Item>
-      ))}
-      {getSubMenuActions(config?.actions, type, category).map(actionName => (
-        <SubMenu key={actionName} title={t(actionName)}>
-          {getSubMenuActionComponent(actionName, uid)}
-        </SubMenu>
-      ))}
-    </Menu>
+    <Menu
+      items={[
+        ...(canConfigureRatio && metric
+          ? [
+              {
+                key: 'ratioOfSums',
+                onClick: () =>
+                  handleFieldConfigChanged(
+                    uid,
+                    { ...metric, ratioOfSums: !metric.ratioOfSums },
+                    true,
+                  ),
+                label: metric.ratioOfSums
+                  ? '✓ 汇总比率：先求和后相除'
+                  : '汇总比率：先求和后相除',
+              },
+            ]
+          : []),
+        ...getModalActions(config?.actions, type, category).map(actionName => ({
+          key: actionName,
+          onClick: () => onOpenModal(uid)(actionName),
+          label: t(actionName),
+        })),
+        ...getSubMenuActions(config?.actions, type, category).map(
+          actionName => ({
+            key: actionName,
+            label: t(actionName),
+            children: getSubMenuItems(actionName),
+          }),
+        ),
+      ]}
+    />
   );
 };
 

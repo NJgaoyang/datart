@@ -19,6 +19,7 @@
 import { WidgetMapper } from 'app/pages/DashBoardPage/components/WidgetMapper/WidgetMapper';
 import { WidgetContext } from 'app/pages/DashBoardPage/components/WidgetProvider/WidgetProvider';
 import { WIDGET_DRAG_HANDLE } from 'app/pages/DashBoardPage/constants';
+import { CONTROLLER_TYPES } from 'app/pages/DashBoardPage/hooks/useGridLayoutMap';
 import { fillPx } from 'app/pages/DashBoardPage/utils';
 import { getFreeWidgetStyle } from 'app/pages/DashBoardPage/utils/widget';
 import React, {
@@ -70,6 +71,7 @@ export const WidgetOfFreeEdit: React.FC<{}> = () => {
     widget.config.rect.y,
   ]);
   const curXYRef = useRef<[number, number]>([0, 0]);
+  const nodeRef = useRef<HTMLDivElement>(null);
   const [curW, setCurW] = useState(widget.config.rect.width);
   const [curH, setCurH] = useState(widget.config.rect.height);
   useEffect(() => {
@@ -193,6 +195,7 @@ export const WidgetOfFreeEdit: React.FC<{}> = () => {
 
   return (
     <DraggableCoreTyped
+      nodeRef={nodeRef}
       allowAnyClick
       grid={[1, 1]}
       scale={scale[0]}
@@ -209,13 +212,13 @@ export const WidgetOfFreeEdit: React.FC<{}> = () => {
         onResize={resize}
         onResizeStop={resizeStop}
         draggableOpts={{ grid: [1, 1], scale: scale[0], disabled: lock }}
-        minConstraints={[50, 50]}
+        minConstraints={[CONTROLLER_TYPES.has(widget.config.originalType) ? 1 : 50, 50]}
         handleSize={undefined}
         // handleSize={[20, 20]}
         resizeHandles={['n', 'e', 's', 'w', 'ne', 'nw', 'se', 'sw']}
         lockAspectRatio={false}
       >
-        <ItemWrap style={style} onClick={ssp} hideHandle={hideHandle}>
+        <ItemWrap ref={nodeRef} style={style} onClick={ssp} hideHandle={hideHandle}>
           <WidgetMapper boardEditing={true} hideTitle={false} />
         </ItemWrap>
       </Resizable>

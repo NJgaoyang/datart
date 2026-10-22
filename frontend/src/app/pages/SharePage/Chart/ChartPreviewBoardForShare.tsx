@@ -39,7 +39,8 @@ import {
 } from 'app/utils/ChartEventListenerHelper';
 import { getChartDrillOption } from 'app/utils/internalChartHelper';
 import { FC, memo, useCallback, useMemo, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { isEmptyArray } from 'utils/object';
 import ChartDrillContext from '../../../contexts/ChartDrillContext';
@@ -70,8 +71,8 @@ const ChartPreviewBoardForShare: FC<{
   availableSourceFunctions?: string[];
 }> = memo(
   ({ chartPreview, orgId, filterSearchParams, availableSourceFunctions }) => {
-    const dispatch = useDispatch();
-    const drillOptionRef = useRef<IChartDrillOption>();
+    const dispatch = useAppDispatch();
+    const drillOptionRef = useRef<IChartDrillOption>(undefined);
     const [chart] = useState<IChart | undefined>(() => {
       const currentChart = ChartManager.instance().getById(
         chartPreview?.backendChart?.config?.chartGraphId,
@@ -83,13 +84,11 @@ const ChartPreviewBoardForShare: FC<{
       width = 0,
       height = 0,
     } = useResizeObserver<HTMLDivElement>({
-      refreshMode: 'debounce',
-      refreshRate: 500,
+      debounceMs: 500,
     });
     const { ref: controlRef, height: controlH = 0 } =
       useResizeObserver<HTMLDivElement>({
-        refreshMode: 'debounce',
-        refreshRate: 500,
+        debounceMs: 500,
       });
     const headlessBrowserRenderSign = useSelector(
       selectHeadlessBrowserRenderSign,

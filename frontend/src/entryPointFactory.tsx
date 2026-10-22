@@ -17,17 +17,17 @@
  */
 
 import 'app/assets/fonts/iconfont.css';
-import 'core-js/features/string/replace-all';
 import React, { Fragment } from 'react';
 import { Inspector } from 'react-dev-inspector';
 import { createRoot } from 'react-dom/client';
 import { HelmetProvider } from 'react-helmet-async';
 import { Provider } from 'react-redux';
-import { configureAppStore } from './redux/configureStore';
 import { ThemeProvider } from 'styles/theme/ThemeProvider';
 import { Debugger } from 'utils/debugger';
+import AppErrorBoundary from './app/AppErrorBoundary';
 import './locales/i18n';
 import './monacoSetup';
+import { configureAppStore } from './redux/configureStore';
 
 export const generateEntryPoint = EntryPointComponent => {
   const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
@@ -43,7 +43,9 @@ export const generateEntryPoint = EntryPointComponent => {
         <ThemeProvider>
           <HelmetProvider>
             <React.StrictMode>
-              <EntryPointComponent />
+              <AppErrorBoundary>
+                <EntryPointComponent />
+              </AppErrorBoundary>
             </React.StrictMode>
           </HelmetProvider>
         </ThemeProvider>

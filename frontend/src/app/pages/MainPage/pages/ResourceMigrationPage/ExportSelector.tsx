@@ -19,7 +19,7 @@ import { Button, Card, message, TreeSelect } from 'antd';
 import { DataNode } from 'antd/lib/tree';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { FC, memo, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { BORDER_RADIUS, SPACE_LG } from 'styles/StyleConstants';
 import { mainActions } from '../../slice';
@@ -31,7 +31,7 @@ export const ExportSelector: FC<{
   folders: Folder[];
 }> = memo(({ treeData, folders }) => {
   const t = useI18NPrefix('main.subNavs');
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const [selectedIds, setIds] = useState<string[]>();
   const onChange = (ids: string[], label, extra) => {
     setIds(ids);
@@ -64,18 +64,17 @@ export const ExportSelector: FC<{
       <Card title={t('export.title')}>
         <div className="export-box">
           <TreeSelect
-            showSearch
-            autoClearSearchValue
             className="export-tree"
             treeCheckable={true}
             value={selectedIds}
-            dropdownStyle={{ maxHeight: 1000, overflow: 'auto' }}
+            styles={{ popup: { root: { maxHeight: 1000, overflow: 'auto' } } }}
             placeholder={t('export.selectText')}
             allowClear
             multiple
             treeData={treeData}
             treeDefaultExpandAll
             onChange={onChange}
+            showSearch={{ autoClearSearchValue: true }}
           ></TreeSelect>
           <Button
             className="export-btn"

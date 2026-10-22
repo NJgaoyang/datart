@@ -71,7 +71,7 @@ const DrillThroughPanel: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
     };
 
     return (
-      <StyledDrillThroughPanel direction="vertical">
+      <StyledDrillThroughPanel orientation="vertical">
         <Form
           labelCol={{ offset: 2, span: 2 }}
           wrapperCol={{ span: 18 }}

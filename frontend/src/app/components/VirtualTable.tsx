@@ -73,7 +73,7 @@ export function stabilizeVirtualGridWidth(
  */
 export const VirtualTable = memo((props: VirtualTableProps) => {
   const { columns, scroll, width: boxWidth, dataSource } = props;
-  const gridRef: any = useRef();
+  const gridRef: any = useRef(undefined);
   const [connectObject] = useState(() => {
     const obj = {};
     Object.defineProperty(obj, 'scrollLeft', {

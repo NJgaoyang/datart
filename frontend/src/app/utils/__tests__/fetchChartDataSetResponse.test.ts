@@ -41,3 +41,16 @@ describe('shared/regular chart data envelope processing', () => {
       .rejects.toThrow('数据查询失败，请重试');
   });
 });
+describe('undefined report query API response', () => {
+  it('rejects missing HTTP response instead of returning undefined data', async () => {
+    request.mockResolvedValueOnce(undefined as any);
+    await expect(fetchChartDataSet({ vizId: 'daily-detail' }))
+      .rejects.toThrow('数据查询失败，请重试');
+  });
+
+  it('rejects success without data instead of displaying empty results', async () => {
+    request.mockResolvedValueOnce({ success: true } as any);
+    await expect(fetchChartDataSet({ vizId: 'daily-detail' }))
+      .rejects.toThrow('数据查询失败，请重试');
+  });
+});

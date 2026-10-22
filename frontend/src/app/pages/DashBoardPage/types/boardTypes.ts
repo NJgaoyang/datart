@@ -7,11 +7,11 @@ import { BoardType } from '../pages/Board/slice/types';
 export interface BoardConfig {
   version: string;
   type: BoardType;
-  /** Layout schema version. Missing/1 means the legacy 12-column auto grid. */
+  /** PC horizontal layout schema version. */
   layoutVersion?: number;
-  /** Mobile layout schema version. Missing/1 means the legacy 6-column grid. */
+  /** Mobile layout schema version. */
   mobileLayoutVersion?: number;
-  /** PC row schema version. Missing/1 uses the legacy coarse vertical grid. */
+  /** PC vertical layout schema version. */
   pcRowLayoutVersion?: number;
   jsonConfig: {
     props: ChartStyleConfig[];

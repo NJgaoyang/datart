@@ -121,7 +121,7 @@ export const MemberTable = memo(
             <Input
               placeholder={t('searchMember')}
               prefix={<SearchOutlined className="icon" />}
-              bordered={false}
+              variant="borderless"
               onChange={debouncedSearch}
             />
           </Col>

@@ -55,26 +55,24 @@ export const AssistViewFields: React.FC<AssistViewFieldsProps> = memo(
     return (
       <StyleSpace style={style}>
         <Select
-          optionFilterProp={'label'}
-          showSearch
           placeholder={tc('selectView')}
           value={val?.[0]}
           onChange={value => {
             handleOnChange([value], 'view');
           }}
           options={viewList}
+          showSearch={{ optionFilterProp: 'label' }}
         ></Select>
         {!isHierarchyTree && (
           <Select
-            optionFilterProp={'label'}
             onChange={value => {
               handleOnChange([val?.[0] || '', value], 'viewField');
             }}
             placeholder={tc('selectViewField')}
-            showSearch
             value={val?.[1]}
             loading={!viewFieldList}
             options={viewFieldList}
+            showSearch={{ optionFilterProp: 'label' }}
           ></Select>
         )}
       </StyleSpace>

@@ -91,7 +91,9 @@ const FilterControlPanel: FC<
         return config.aggregate;
       } else if (
         config.type === DataViewFieldType.STRING ||
-        [DataViewFieldType.DATE, DataViewFieldType.DATETIME].includes(config.type)
+        [DataViewFieldType.DATE, DataViewFieldType.DATETIME].includes(
+          config.type,
+        )
       ) {
         return AggregateFieldActionType.None;
       } else if (config.type === DataViewFieldType.NUMERIC) {
@@ -221,7 +223,9 @@ const FilterControlPanel: FC<
           />
         );
       } else if (
-        [DataViewFieldType.DATE, DataViewFieldType.DATETIME].includes(config.type)
+        [DataViewFieldType.DATE, DataViewFieldType.DATETIME].includes(
+          config.type,
+        )
       ) {
         return (
           <DateConditionConfiguration
@@ -313,13 +317,15 @@ const FilterControlPanel: FC<
               rules={[{ required: true }]}
               initialValue={filter?.width}
             >
-              <Select value={filter?.width} onChange={handleWidthOptionChange}>
-                {CONTROLLER_WIDTH_OPTIONS.map(({ label, value }) => (
-                  <Select.Option key={value} value={value}>
-                    {label}
-                  </Select.Option>
-                ))}
-              </Select>
+              <Select
+                value={filter?.width}
+                onChange={handleWidthOptionChange}
+                options={[
+                  ...(CONTROLLER_WIDTH_OPTIONS.flatMap(({ label, value }) => [
+                    { key: String(value), value: value, label: label },
+                  ]) || []),
+                ]}
+              />
             </FormItemEx>
           </>
         )}

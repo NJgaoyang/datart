@@ -32,9 +32,7 @@ export const AutoGroupWidget: React.FC<{}> = memo(() => {
   const { editing, boardType } = useContext(BoardContext);
   const { onChangeGroupRect } = useContext(WidgetActionContext);
 
-  const { cacheWhRef, cacheW, cacheH } = useCacheWidthHeight({
-    refreshRate: 60,
-  });
+  const { cacheWhRef, cacheW, cacheH } = useCacheWidthHeight();
   useEffect(() => {
     if (cacheW > 1 && cacheH > 1) {
       onChangeGroupRect({

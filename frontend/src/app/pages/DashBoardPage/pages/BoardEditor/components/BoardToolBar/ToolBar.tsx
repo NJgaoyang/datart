@@ -15,19 +15,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import {
+  CopyOutlined,
+  DeleteOutlined,
+  MoreOutlined,
+  SnippetsOutlined,
+  VerticalAlignBottomOutlined,
+  VerticalAlignTopOutlined,
+} from '@ant-design/icons';
 import { Divider, Dropdown, Menu, Space } from 'antd';
-import { CopyOutlined, DeleteOutlined, MoreOutlined, SnippetsOutlined, VerticalAlignBottomOutlined, VerticalAlignTopOutlined } from '@ant-design/icons';
 import { ToolbarButton } from 'app/components';
-import { useSelector } from 'react-redux';
-import { selectClipboardWidgets, selectSelectedIds } from '../../slice/selectors';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { BoardActionContext } from 'app/pages/DashBoardPage/components/ActionProvider/BoardActionProvider';
 import useBoardEditorHotkeys from 'app/pages/DashBoardPage/hooks/useBoardEditorHotkeys';
-import React, { useContext } from 'react';
-import styled from 'styled-components';
-import { DASHBOARD_UI_TOKENS as T } from 'app/pages/DashBoardPage/styles/dashboardUiTokens';
 import { DASHBOARD_DESIGN_TOKENS as D } from 'app/pages/DashBoardPage/styles/dashboardDesignTokens';
+import { DASHBOARD_UI_TOKENS as T } from 'app/pages/DashBoardPage/styles/dashboardUiTokens';
+import { useContext } from 'react';
+import { useSelector } from 'react-redux';
+import styled from 'styled-components';
 import { WidgetActionContext } from '../../../../components/ActionProvider/WidgetActionProvider';
+import {
+  selectClipboardWidgets,
+  selectSelectedIds,
+} from '../../slice/selectors';
 import { AddChart } from './AddChart/AddChart';
 import { AddContainer } from './AddContainer/AddContainer';
 import { AddController } from './AddControler/AddControler';
@@ -62,21 +72,60 @@ export const ToolBar = () => {
 
   const t = useI18NPrefix(`viz.board.action`);
   const compactActions = (
-    <Menu onClick={({ key }) => {
-      switch (key) {
-        case 'delete': onEditDeleteActiveWidgets(); break;
-        case 'top': onEditLayerToTop(); break;
-        case 'bottom': onEditLayerToBottom(); break;
-        case 'copy': onEditCopyWidgets(); break;
-        case 'paste': onEditPasteWidgets(); break;
-      }
-    }}>
-      <Menu.Item key="delete" disabled={!hasSelection} icon={<DeleteOutlined />} danger>{t('delete')}</Menu.Item>
-      <Menu.Item key="top" disabled={!hasSelection} icon={<VerticalAlignTopOutlined />}>{t('toTop')}</Menu.Item>
-      <Menu.Item key="bottom" disabled={!hasSelection} icon={<VerticalAlignBottomOutlined />}>{t('toBottom')}</Menu.Item>
-      <Menu.Item key="copy" disabled={!hasSelection} icon={<CopyOutlined />}>{t('copy')}</Menu.Item>
-      <Menu.Item key="paste" disabled={!hasClipboard} icon={<SnippetsOutlined />}>{t('paste')}</Menu.Item>
-    </Menu>
+    <Menu
+      onClick={({ key }) => {
+        switch (key) {
+          case 'delete':
+            onEditDeleteActiveWidgets();
+            break;
+          case 'top':
+            onEditLayerToTop();
+            break;
+          case 'bottom':
+            onEditLayerToBottom();
+            break;
+          case 'copy':
+            onEditCopyWidgets();
+            break;
+          case 'paste':
+            onEditPasteWidgets();
+            break;
+        }
+      }}
+      items={[
+        {
+          key: String('delete'),
+          disabled: !hasSelection,
+          icon: <DeleteOutlined />,
+          danger: true,
+          label: t('delete'),
+        },
+        {
+          key: String('top'),
+          disabled: !hasSelection,
+          icon: <VerticalAlignTopOutlined />,
+          label: t('toTop'),
+        },
+        {
+          key: String('bottom'),
+          disabled: !hasSelection,
+          icon: <VerticalAlignBottomOutlined />,
+          label: t('toBottom'),
+        },
+        {
+          key: String('copy'),
+          disabled: !hasSelection,
+          icon: <CopyOutlined />,
+          label: t('copy'),
+        },
+        {
+          key: String('paste'),
+          disabled: !hasClipboard,
+          icon: <SnippetsOutlined />,
+          label: t('paste'),
+        },
+      ]}
+    />
   );
   return (
     <Wrapper onClick={ssp}>
@@ -89,29 +138,37 @@ export const ToolBar = () => {
 
         <AddContainer />
 
-        <Divider type="vertical" />
+        <Divider orientation="vertical" />
 
         <UndoBtn fn={undo} title={t('undo')} />
         <RedoBtn fn={redo} title={t('redo')} />
 
         <span className="toolbar-secondary-desktop">
-          <Divider type="vertical" />
+          <Divider orientation="vertical" />
           <DelWidgetsBtn fn={onEditDeleteActiveWidgets} title={t('delete')} />
-          <Divider type="vertical" />
+          <Divider orientation="vertical" />
           <ToTopBtn fn={onEditLayerToTop} title={t('toTop')} />
           <ToBottomBtn fn={onEditLayerToBottom} title={t('toBottom')} />
           <CopyBtn fn={onEditCopyWidgets} title={t('copy')} />
           <PasteBtn fn={onEditPasteWidgets} title={t('paste')} />
         </span>
         <span className="toolbar-secondary-compact">
-          <Dropdown overlay={compactActions} placement="bottomRight" trigger={['click']}>
-            <ToolbarButton icon={<MoreOutlined />} title="更多编辑操作" aria-label="更多编辑操作" />
+          <Dropdown
+            popupRender={() => compactActions}
+            placement="bottomRight"
+            trigger={['click']}
+          >
+            <ToolbarButton
+              icon={<MoreOutlined />}
+              title="更多编辑操作"
+              aria-label="更多编辑操作"
+            />
           </Dropdown>
         </span>
 
         {boardType === 'auto' && (
           <>
-            <Divider type="vertical" />
+            <Divider orientation="vertical" />
 
             <DeviceSwitcher />
           </>

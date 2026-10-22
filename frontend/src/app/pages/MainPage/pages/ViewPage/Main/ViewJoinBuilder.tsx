@@ -4,7 +4,8 @@ import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { ViewFieldMeta } from 'app/types/View';
 import { CommonFormTypes } from 'globalConstants';
 import { memo, useCallback, useContext, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { SPACE_LG, SPACE_MD, SPACE_XS } from 'styles/StyleConstants';
 import { request2 } from 'utils/request';
@@ -38,33 +39,31 @@ const parseColumns = (view?: ViewDetail) => {
   try {
     const model =
       typeof view.model === 'string' ? JSON.parse(view.model) : view.model;
-    return Object.entries<any>(model?.columns || {}).map(
-      ([name, column]) => {
-        const field = findViewFieldMeta(
-          {
-            fieldId: column.fieldId,
-            name,
-            path:
-              column.path ||
-              (Array.isArray(column.name) ? column.name : undefined),
-          },
-          view.fields,
-        );
-        return {
-          value: name,
-          label: field
-            ? getDatasetFieldDisplayName(field)
-            : getFieldDisplayName({ ...column, name }),
-        };
-      },
-    );
+    return Object.entries<any>(model?.columns || {}).map(([name, column]) => {
+      const field = findViewFieldMeta(
+        {
+          fieldId: column.fieldId,
+          name,
+          path:
+            column.path ||
+            (Array.isArray(column.name) ? column.name : undefined),
+        },
+        view.fields,
+      );
+      return {
+        value: name,
+        label: field
+          ? getDatasetFieldDisplayName(field)
+          : getFieldDisplayName({ ...column, name }),
+      };
+    });
   } catch {
     return [];
   }
 };
 
 export const ViewJoinBuilder = memo(() => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const views = useSelector(selectViews);
   const currentViewId = useSelector(state =>
     selectCurrentEditingViewAttr(state, { name: 'id' }),
@@ -157,7 +156,7 @@ export const ViewJoinBuilder = memo(() => {
     setPreviewVisible(false);
     showSaveForm({
       type: CommonFormTypes.Edit,
-      visible: true,
+      open: true,
       parentIdLabel: t('folder'),
       initialValues: {
         name: '',
@@ -184,7 +183,7 @@ export const ViewJoinBuilder = memo(() => {
   return (
     <Wrapper>
       <h2>{t('title')}</h2>
-      <Alert message={t('description')} type="info" showIcon />
+      <Alert title={t('description')} type="info" showIcon />
       <Form
         form={form}
         layout="vertical"
@@ -197,7 +196,6 @@ export const ViewJoinBuilder = memo(() => {
             rules={[{ required: true }]}
           >
             <Select
-              showSearch
               options={options.filter(option => {
                 const rightSourceId = views?.find(
                   view => view.id === rightId,
@@ -221,7 +219,7 @@ export const ViewJoinBuilder = memo(() => {
                   }),
                 );
               }}
-              optionFilterProp="label"
+              showSearch={{ optionFilterProp: 'label' }}
             />
           </Form.Item>
           <Form.Item
@@ -242,7 +240,6 @@ export const ViewJoinBuilder = memo(() => {
             rules={[{ required: true }]}
           >
             <Select
-              showSearch
               options={options.filter(option => {
                 const leftSourceId = views?.find(
                   view => view.id === leftId,
@@ -266,7 +263,7 @@ export const ViewJoinBuilder = memo(() => {
                   }),
                 );
               }}
-              optionFilterProp="label"
+              showSearch={{ optionFilterProp: 'label' }}
             />
           </Form.Item>
         </ViewRow>
@@ -319,7 +316,7 @@ export const ViewJoinBuilder = memo(() => {
       </Form>
       <Modal
         title={t('previewTitle')}
-        visible={previewVisible}
+        open={previewVisible}
         width="80%"
         onCancel={() => setPreviewVisible(false)}
         footer={[

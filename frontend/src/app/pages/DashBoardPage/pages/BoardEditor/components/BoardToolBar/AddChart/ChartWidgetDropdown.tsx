@@ -51,15 +51,18 @@ export const ChartWidgetDropdown: React.FC<{
   ];
 
   const chartWidgetItems = (
-    <Menu onClick={onChartWidget}>
-      {addChartTypes.map(({ name, icon, type }) => (
-        <Menu.Item key={type}>{name}</Menu.Item>
-      ))}
-    </Menu>
+    <Menu
+      onClick={onChartWidget}
+      items={[
+        ...(addChartTypes.flatMap(({ name, icon, type }) => [
+          { key: String(type), label: name },
+        ]) || []),
+      ]}
+    />
   );
   return (
     <Dropdown
-      overlay={chartWidgetItems}
+      popupRender={() => chartWidgetItems}
       placement="bottomLeft"
       trigger={['click']}
     >

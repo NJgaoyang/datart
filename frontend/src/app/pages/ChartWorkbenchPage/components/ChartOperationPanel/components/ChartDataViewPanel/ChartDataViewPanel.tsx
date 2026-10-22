@@ -32,7 +32,7 @@ import {
   Tooltip,
   TreeSelect,
 } from 'antd';
-import { MenuListItem, ToolbarButton } from 'app/components';
+import { MenuItemLabel, ToolbarButton } from 'app/components';
 import { Confirm, ConfirmProps } from 'app/components/Confirm';
 import { ChartDataViewFieldCategory } from 'app/constants';
 import { useDebouncedSearch } from 'app/hooks/useDebouncedSearch';
@@ -67,10 +67,10 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { getDatasetFieldDisplayName } from 'utils/utils';
 import {
   ORANGE,
   SPACE,
@@ -78,7 +78,11 @@ import {
   SPACE_TIMES,
   SPACE_XS,
 } from 'styles/StyleConstants';
-import { getPath, modelListFormsTreeByTableName } from 'utils/utils';
+import {
+  getDatasetFieldDisplayName,
+  getPath,
+  modelListFormsTreeByTableName,
+} from 'utils/utils';
 import { getAllFieldsOfEachType } from '../../utils';
 import { ChartDraggableSourceGroupContainer } from '../ChartDraggable';
 import ChartComputedFieldSettingPanel from './components/ChartComputedFieldSettingPanel';
@@ -91,7 +95,7 @@ const ChartDataViewPanel: FC<{
 }> = memo(({ dataView, defaultViewId, chartConfig, onDataViewChange }) => {
   const t = useI18NPrefix(`viz.workbench.dataview`);
   const tView = useI18NPrefix('view');
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [showModal, modalContextHolder] = useStateModal({});
   const { availableSourceFunctions } = useContext(ChartDataViewContext);
@@ -153,19 +157,19 @@ const ChartDataViewPanel: FC<{
       let Data = chartConfig?.datas?.filter(v => v.rows && v.rows.length);
       if (Data?.length) {
         setConfirmProps({
-          visible: true,
+          open: true,
           title: t('toggleViewTip'),
           width: 500,
           icon: <InfoCircleOutlined style={{ color: ORANGE }} />,
           footer: (
             <Space>
-              <Button onClick={() => setConfirmProps({ visible: false })}>
+              <Button onClick={() => setConfirmProps({ open: false })}>
                 {t('cancel')}
               </Button>
               <Button
                 onClick={() => {
                   onDataViewChange?.(true);
-                  setConfirmProps({ visible: false });
+                  setConfirmProps({ open: false });
                   dispatch(fetchViewDetailAction(value));
                 }}
               >
@@ -174,7 +178,7 @@ const ChartDataViewPanel: FC<{
               <Button
                 onClick={() => {
                   onDataViewChange?.();
-                  setConfirmProps({ visible: false });
+                  setConfirmProps({ open: false });
                   dispatch(fetchViewDetailAction(value));
                 }}
                 type="primary"
@@ -304,7 +308,6 @@ const ChartDataViewPanel: FC<{
               path: v.path,
               displayName: v.displayName,
               comment: v.comment,
-              isDisplayNameCustom: v.isDisplayNameCustom,
             });
             const columnNameArr = columnNameObj[tableName];
             columnNameObj[tableName] = columnNameArr
@@ -515,21 +518,20 @@ const ChartDataViewPanel: FC<{
           />
         </Tooltip>
         <TreeSelect
-          showSearch
           placeholder={t('plsSelectDataView')}
           className="view-selector"
           treeData={dataviewTreeData}
           value={dataView?.id}
           onChange={handleDataViewChange}
-          filterTreeNode={filterDateViewTreeNode}
-          bordered={false}
+          variant="borderless"
+          showSearch={{ filterTreeNode: filterDateViewTreeNode }}
         />
         <Popover
           placement="bottomRight"
-          visible={isDisplayAddNewModal}
-          onVisibleChange={() => setIsDisplayAddNewModal()}
+          open={isDisplayAddNewModal}
+          onOpenChange={() => setIsDisplayAddNewModal()}
           trigger="click"
-          overlayClassName="datart-popup"
+          classNames={{ root: 'datart-popup' }}
           content={
             <Menu
               onClick={handleClickMenu}
@@ -537,29 +539,50 @@ const ChartDataViewPanel: FC<{
                 'byNameSort',
                 isGroup ? 'byGroup' : 'byNoGroup',
               ]}
-            >
-              <MenuListItem key="searchField">{t('searchField')}</MenuListItem>
-              <MenuListItem key="createComputedFields">
-                {t('createComputedFields')}
-              </MenuListItem>
-              <MenuListItem
-                disabled={dataView?.type !== 'STRUCT'}
-                title={t('Group')}
-                key="group"
-                sub
-              >
-                <MenuListItem key="byGroup">
-                  {t('byDataBaseGroup')}
-                </MenuListItem>
-                <MenuListItem key="byNoGroup">{t('noGroup')}</MenuListItem>
-              </MenuListItem>
-              <MenuListItem title={t('Sort')} key="sort" sub>
-                <MenuListItem key="byNameSort">{t('byNameSort')}</MenuListItem>
-                <MenuListItem key="byOriginalFieldSort">
-                  {t('noSort')}
-                </MenuListItem>
-              </MenuListItem>
-            </Menu>
+              items={[
+                {
+                  key: String('searchField'),
+                  label: <MenuItemLabel>{t('searchField')}</MenuItemLabel>,
+                },
+                {
+                  key: String('createComputedFields'),
+                  label: (
+                    <MenuItemLabel>{t('createComputedFields')}</MenuItemLabel>
+                  ),
+                },
+                {
+                  disabled: dataView?.type !== 'STRUCT',
+                  key: String('group'),
+                  label: <MenuItemLabel>{t('Group')}</MenuItemLabel>,
+                  children: [
+                    {
+                      key: String('byGroup'),
+                      label: (
+                        <MenuItemLabel>{t('byDataBaseGroup')}</MenuItemLabel>
+                      ),
+                    },
+                    {
+                      key: String('byNoGroup'),
+                      label: <MenuItemLabel>{t('noGroup')}</MenuItemLabel>,
+                    },
+                  ],
+                },
+                {
+                  key: String('sort'),
+                  label: <MenuItemLabel>{t('Sort')}</MenuItemLabel>,
+                  children: [
+                    {
+                      key: String('byNameSort'),
+                      label: <MenuItemLabel>{t('byNameSort')}</MenuItemLabel>,
+                    },
+                    {
+                      key: String('byOriginalFieldSort'),
+                      label: <MenuItemLabel>{t('noSort')}</MenuItemLabel>,
+                    },
+                  ],
+                },
+              ]}
+            />
           }
         >
           <ToolbarButton icon={<MoreOutlined />} size="small" />
@@ -572,7 +595,7 @@ const ChartDataViewPanel: FC<{
           className="search-input"
           prefix={<SearchOutlined className="icon" />}
           placeholder={t('searchField')}
-          bordered={false}
+          variant="borderless"
           onChange={treeSearch}
         />
       </StyleSearchbar>

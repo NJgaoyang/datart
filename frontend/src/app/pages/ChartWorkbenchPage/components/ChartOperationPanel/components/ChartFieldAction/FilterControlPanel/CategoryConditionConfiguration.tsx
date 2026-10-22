@@ -26,7 +26,6 @@ import ChartFilterCondition, {
 import { RelationFilterValue } from 'app/types/ChartConfig';
 import ChartDataView from 'app/types/ChartDataView';
 import { getDistinctFields } from 'app/utils/fetch';
-import { getFieldDisplayName } from 'utils/utils';
 import { FilterSqlOperator } from 'globalConstants';
 import {
   forwardRef,
@@ -45,6 +44,7 @@ import {
   IsKeyIn,
   isTreeModel,
 } from 'utils/object';
+import { getFieldDisplayName } from 'utils/utils';
 import { FilterOptionForwardRef } from '.';
 import CategoryConditionEditableTable from './CategoryConditionEditableTable';
 import CategoryConditionRelationSelector from './CategoryConditionRelationSelector';
@@ -260,112 +260,121 @@ const CategoryConditionConfiguration: ForwardRefRenderFunction<
   };
 
   return (
-    <StyledTabs activeKey={curTab.toString()} onChange={handleTabChange}>
-      <Tabs.TabPane
-        tab={t('general')}
-        key={FilterConditionType.List.toString()}
-      >
-        <Row>
-          <Space>
-            <Button type="primary" onClick={handleFetchData}>
-              {t('load')}
-            </Button>
-            {/* <Checkbox
+    <StyledTabs
+      activeKey={curTab.toString()}
+      onChange={handleTabChange}
+      items={[
+        {
+          label: t('general'),
+          key: String(FilterConditionType.List.toString()),
+          children: (
+            <>
+              <Row>
+                <Space>
+                  <Button type="primary" onClick={handleFetchData}>
+                    {t('load')}
+                  </Button>
+                  {/* <Checkbox
                 checked={isTree}
                 disabled
                 onChange={e => setIsTree(e.target.checked)}
               >
                 {t('useTree')}
               </Checkbox> */}
-          </Space>
-        </Row>
-        <Row>
-          <Space>
-            {isTree && (
-              <>
-                {t('associateField')}
-                <Select
-                  value={treeOptions?.[0]}
-                  options={getDataOptionFields()?.map(f => ({
-                    label: getFieldDisplayName(f),
-                    value: f.name,
-                  }))}
-                  onChange={value =>
-                    handleTreeOptionChange(value, treeOptions?.[1])
-                  }
+                </Space>
+              </Row>
+              <Row>
+                <Space>
+                  {isTree && (
+                    <>
+                      {t('associateField')}
+                      <Select
+                        value={treeOptions?.[0]}
+                        options={getDataOptionFields()?.map(f => ({
+                          label: getFieldDisplayName(f),
+                          value: f.name,
+                        }))}
+                        onChange={value =>
+                          handleTreeOptionChange(value, treeOptions?.[1])
+                        }
+                      />
+                      {t('labelField')}
+                      <Select
+                        value={treeOptions?.[1]}
+                        options={getDataOptionFields()?.map(f => ({
+                          label: getFieldDisplayName(f),
+                          value: f.name,
+                        }))}
+                        onChange={value =>
+                          handleTreeOptionChange(treeOptions?.[0], value)
+                        }
+                      />
+                    </>
+                  )}
+                </Space>
+              </Row>
+              {isTree && (
+                <Tree
+                  blockNode
+                  checkable
+                  checkStrictly
+                  defaultExpandAll
+                  checkedKeys={targetKeys}
+                  treeData={treeDatas}
+                  onCheck={handleGeneralTreeChange}
+                  onSelect={handleGeneralTreeChange}
                 />
-                {t('labelField')}
-                <Select
-                  value={treeOptions?.[1]}
-                  options={getDataOptionFields()?.map(f => ({
-                    label: getFieldDisplayName(f),
-                    value: f.name,
-                  }))}
-                  onChange={value =>
-                    handleTreeOptionChange(treeOptions?.[0], value)
-                  }
+              )}
+              {!isTree && (
+                <Transfer
+                  actions={[t('moveToRight'), t('moveToLeft')]}
+                  dataSource={listDatas}
+                  titles={[`${t('sourceList')}`, `${t('targetList')}`]}
+                  targetKeys={targetKeys}
+                  selectedKeys={selectedKeys}
+                  onChange={handleGeneralListChange}
+                  onSelectChange={onSelectChange}
+                  render={item => item.label}
+                  filterOption={filterGeneralListOptions}
+                  showSearch
+                  pagination
                 />
-              </>
-            )}
-          </Space>
-        </Row>
-        {isTree && (
-          <Tree
-            blockNode
-            checkable
-            checkStrictly
-            defaultExpandAll
-            checkedKeys={targetKeys}
-            treeData={treeDatas}
-            onCheck={handleGeneralTreeChange}
-            onSelect={handleGeneralTreeChange}
-          />
-        )}
-        {!isTree && (
-          <Transfer
-            operations={[t('moveToRight'), t('moveToLeft')]}
-            dataSource={listDatas}
-            titles={[`${t('sourceList')}`, `${t('targetList')}`]}
-            targetKeys={targetKeys}
-            selectedKeys={selectedKeys}
-            onChange={handleGeneralListChange}
-            onSelectChange={onSelectChange}
-            render={item => item.label}
-            filterOption={filterGeneralListOptions}
-            showSearch
-            pagination
-          />
-        )}
-      </Tabs.TabPane>
-      <Tabs.TabPane
-        tab={t('customize')}
-        key={FilterConditionType.Customize.toString()}
-      >
-        <CategoryConditionEditableTable
-          dataView={dataView}
-          i18nPrefix={i18nPrefix}
-          condition={condition}
-          onConditionChange={onConditionChange}
-          fetchDataByField={fetchDataByField}
-        />
-      </Tabs.TabPane>
-      <Tabs.TabPane
-        tab={t('condition')}
-        key={FilterConditionType.Condition.toString()}
-      >
-        <CategoryConditionRelationSelector
-          condition={condition}
-          onConditionChange={onConditionChange}
-        />
-      </Tabs.TabPane>
-    </StyledTabs>
+              )}
+            </>
+          ),
+        },
+        {
+          label: t('customize'),
+          key: String(FilterConditionType.Customize.toString()),
+          children: (
+            <CategoryConditionEditableTable
+              dataView={dataView}
+              i18nPrefix={i18nPrefix}
+              condition={condition}
+              onConditionChange={onConditionChange}
+              fetchDataByField={fetchDataByField}
+            />
+          ),
+        },
+        {
+          label: t('condition'),
+          key: String(FilterConditionType.Condition.toString()),
+          children: (
+            <CategoryConditionRelationSelector
+              condition={condition}
+              onConditionChange={onConditionChange}
+            />
+          ),
+        },
+      ]}
+    />
   );
 };
 
 export default forwardRef(CategoryConditionConfiguration);
 
 const StyledTabs = styled(Tabs)`
-  & .ant-tabs-content-holder {
+  & .ant-tabs-body-holder {
     max-height: 600px;
     margin-top: 10px;
     overflow-y: auto;

@@ -21,7 +21,8 @@ import { ToolbarButton } from 'app/components';
 import { ControllerFacadeTypes } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import React, { useContext } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { G60 } from 'styles/StyleConstants';
 import { ORIGINAL_TYPE_MAP } from '../../../../../constants';
 import { addControllerAction } from '../../../slice/actions/controlActions';
@@ -41,7 +42,7 @@ export const AddController: React.FC<AddControlBtnProps> = () => {
   const tType = useI18NPrefix(`viz.board.controlTypes`);
   const tWt = useI18NPrefix(`viz.widget.type`);
   const { boardId, boardType } = useContext(BoardToolBarContext);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const hasQueryBtn = useSelector(selectHasQueryBtn);
   const hasResetBtn = useSelector(selectHasResetBtn);
   const onAddController = (info: { key: any }) => {
@@ -130,46 +131,65 @@ export const AddController: React.FC<AddControlBtnProps> = () => {
     return <span style={{ color: G60, fontWeight: 500 }}>{text}</span>;
   };
   const controlerItems = (
-    <Menu onClick={onAddController}>
-      <Menu.ItemGroup
-        key="conventionalControllers"
-        title={renderTitle(tType('common'))}
-      >
-        {conventionalControllers.map(({ icon, type }) => (
-          <Menu.Item key={type} icon={icon}>
-            {tFilterName(type)}
-          </Menu.Item>
-        ))}
-      </Menu.ItemGroup>
-      <Menu.ItemGroup key="dateControllers" title={renderTitle(tType('date'))}>
-        {dateControllers.map(({ icon, type }) => (
-          <Menu.Item key={type} icon={icon}>
-            {tFilterName(type)}
-          </Menu.Item>
-        ))}
-      </Menu.ItemGroup>
-      <Menu.ItemGroup
-        key="numericalControllers"
-        title={renderTitle(tType('numeric'))}
-      >
-        {numericalControllers.map(({ icon, type, disabled }) => (
-          <Menu.Item key={type} icon={icon} disabled={disabled}>
-            {tFilterName(type)}
-          </Menu.Item>
-        ))}
-      </Menu.ItemGroup>
-      <Menu.ItemGroup key="buttons" title={renderTitle(tType('button'))}>
-        {buttons.map(({ icon, type, disabled }) => (
-          <Menu.Item key={type} icon={icon} disabled={disabled}>
-            {tWt(type)}
-          </Menu.Item>
-        ))}
-      </Menu.ItemGroup>
-    </Menu>
+    <Menu
+      onClick={onAddController}
+      items={[
+        {
+          type: 'group',
+          key: String('conventionalControllers'),
+          label: renderTitle(tType('common')),
+          children: [
+            ...(conventionalControllers.flatMap(({ icon, type }) => [
+              { key: String(type), icon: icon, label: tFilterName(type) },
+            ]) || []),
+          ],
+        },
+        {
+          type: 'group',
+          key: String('dateControllers'),
+          label: renderTitle(tType('date')),
+          children: [
+            ...(dateControllers.flatMap(({ icon, type }) => [
+              { key: String(type), icon: icon, label: tFilterName(type) },
+            ]) || []),
+          ],
+        },
+        {
+          type: 'group',
+          key: String('numericalControllers'),
+          label: renderTitle(tType('numeric')),
+          children: [
+            ...(numericalControllers.flatMap(({ icon, type, disabled }) => [
+              {
+                key: String(type),
+                icon: icon,
+                disabled: disabled,
+                label: tFilterName(type),
+              },
+            ]) || []),
+          ],
+        },
+        {
+          type: 'group',
+          key: String('buttons'),
+          label: renderTitle(tType('button')),
+          children: [
+            ...(buttons.flatMap(({ icon, type, disabled }) => [
+              {
+                key: String(type),
+                icon: icon,
+                disabled: disabled,
+                label: tWt(type),
+              },
+            ]) || []),
+          ],
+        },
+      ]}
+    />
   );
   return (
     <Dropdown
-      overlay={controlerItems}
+      popupRender={() => controlerItems}
       placement="bottomLeft"
       trigger={['click']}
     >

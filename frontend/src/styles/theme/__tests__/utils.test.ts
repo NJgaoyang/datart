@@ -6,6 +6,6 @@ describe('theme utils', () => {
     expect(utils.getThemeFromStorage()).toBe('system');
   });
   it('should check system theme', () => {
-    expect(utils.isSystemDark).toBeUndefined();
+    expect(utils.isSystemDark).toBe(false);
   });
 });

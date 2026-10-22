@@ -22,7 +22,8 @@ import { ListItem, ListTitle } from 'app/components';
 import { useDebouncedSearch } from 'app/hooks/useDebouncedSearch';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { memo, useCallback, useEffect, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate, useMatch } from 'react-router-dom';
 import styled from 'styled-components';
 import { selectOrgId } from '../../../slice/selectors';
@@ -30,7 +31,7 @@ import { selectRoleListLoading, selectRoles } from '../slice/selectors';
 import { getRoles } from '../slice/thunks';
 
 export const RoleList = memo(() => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const list = useSelector(selectRoles);
   const listLoading = useSelector(selectRoleListLoading);

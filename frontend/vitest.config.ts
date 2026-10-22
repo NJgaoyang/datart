@@ -1,4 +1,5 @@
 import react from '@vitejs/plugin-react';
+import babel from '@rolldown/plugin-babel';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { defineConfig } from 'vitest/config';
 
@@ -6,17 +7,25 @@ import { defineConfig } from 'vitest/config';
 // globals: true 注入 describe/it/expect/vi 运行时全局（类型由 @types/jest 提供）。
 export default defineConfig({
   plugins: [
-    react({
-      babel: { plugins: ['babel-plugin-styled-components'] },
-    }),
+    react(),
+    babel({ plugins: ['babel-plugin-styled-components'] }),
     tsconfigPaths(),
   ],
   test: {
     globals: true,
+    // Vitest 5 defaults clearMocks to true; retain existing test isolation semantics.
+    clearMocks: false,
     environment: 'jsdom',
-    setupFiles: ['src/test/jestShim.ts', 'jest-canvas-mock', 'src/setupTests.ts'],
+    setupFiles: [
+      'src/test/jestShim.ts',
+      'jest-canvas-mock',
+      'src/setupTests.ts',
+    ],
     css: false,
-    include: ['src/**/__tests__/**/*.{spec,test}.{js,jsx,ts,tsx}'],
+    include: [
+      'src/**/__tests__/**/*.{spec,test}.{js,jsx,ts,tsx}',
+      'scripts/legacy-upgrade/**/__tests__/**/*.test.{ts,tsx}',
+    ],
     testTimeout: 20000,
   },
 });

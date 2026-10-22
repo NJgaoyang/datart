@@ -241,19 +241,35 @@ export function AuditLogPage() {
               placeholder={t('resourceType')}
               style={{ width: 120 }}
               allowClear
-            >
-              <Select.Option value="SOURCE">{t('resourceTypes.SOURCE') || '数据源'}</Select.Option>
-              <Select.Option value="VIEW">{t('resourceTypes.VIEW') || '数据视图'}</Select.Option>
-              <Select.Option value="DATACHART">{t('resourceTypes.DATACHART') || '数据图表'}</Select.Option>
-              <Select.Option value="WIDGET">{t('resourceTypes.WIDGET') || '组件'}</Select.Option>
-              <Select.Option value="DASHBOARD">{t('resourceTypes.DASHBOARD') || '仪表板'}</Select.Option>
-              <Select.Option value="FOLDER">{t('resourceTypes.FOLDER') || '目录'}</Select.Option>
-              <Select.Option value="STORYBOARD">{t('resourceTypes.STORYBOARD') || '故事板'}</Select.Option>
-              <Select.Option value="VIZ">{t('resourceTypes.VIZ') || '可视化'}</Select.Option>
-              <Select.Option value="SCHEDULE">{t('resourceTypes.SCHEDULE') || '定时任务'}</Select.Option>
-              <Select.Option value="ROLE">{t('resourceTypes.ROLE') || '角色'}</Select.Option>
-              <Select.Option value="USER">{t('resourceTypes.USER') || '用户'}</Select.Option>
-            </Select>
+              options={[
+                {
+                  value: 'SOURCE',
+                  label: t('resourceTypes.SOURCE') || '数据源',
+                },
+                { value: 'VIEW', label: t('resourceTypes.VIEW') || '数据视图' },
+                {
+                  value: 'DATACHART',
+                  label: t('resourceTypes.DATACHART') || '数据图表',
+                },
+                { value: 'WIDGET', label: t('resourceTypes.WIDGET') || '组件' },
+                {
+                  value: 'DASHBOARD',
+                  label: t('resourceTypes.DASHBOARD') || '仪表板',
+                },
+                { value: 'FOLDER', label: t('resourceTypes.FOLDER') || '目录' },
+                {
+                  value: 'STORYBOARD',
+                  label: t('resourceTypes.STORYBOARD') || '故事板',
+                },
+                { value: 'VIZ', label: t('resourceTypes.VIZ') || '可视化' },
+                {
+                  value: 'SCHEDULE',
+                  label: t('resourceTypes.SCHEDULE') || '定时任务',
+                },
+                { value: 'ROLE', label: t('resourceTypes.ROLE') || '角色' },
+                { value: 'USER', label: t('resourceTypes.USER') || '用户' },
+              ]}
+            />
             <Button
               type="primary"
               icon={<SearchOutlined />}

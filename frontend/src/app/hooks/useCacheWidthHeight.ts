@@ -1,50 +1,72 @@
 /**
- * Datart
+ * Datart dashboard element size tracking.
  *
- * Copyright 2021
+ * Track chart dimensions with the browser ResizeObserver, including hidden panes.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * The ref shape intentionally stays compatible with useRenderWidget (which
+ * inspects cacheWhRef.current) and existing grid/auto-group callers.
  */
-
-import { useLayoutEffect, useState } from 'react';
-import useResizeObserver from './useResizeObserver';
+import { useLayoutEffect, useRef, useState } from 'react';
 
 export const useCacheWidthHeight = (arg?: {
   initW?: number;
   initH?: number;
-  refreshMode?: 'throttle' | 'debounce';
-  refreshRate?: number;
 }) => {
-  const { initW, initH, refreshMode, refreshRate } = arg || {};
-  const [cacheW, setCacheW] = useState(initW ?? 1);
-  const [cacheH, setCacheH] = useState(initH ?? 1);
-  const {
-    ref,
-    width = initW ?? 1,
-    height = initH ?? 1,
-  } = useResizeObserver<HTMLDivElement>({
-    refreshMode: refreshMode ?? 'debounce',
-    refreshRate: refreshRate ?? 20,
+  const { initW, initH } = arg || {};
+  const cacheWhRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({
+    width: initW ?? 1,
+    height: initH ?? 1,
   });
+
   useLayoutEffect(() => {
-    if (width > 0) {
-      setCacheW(width);
-      setCacheH(height);
-    }
-  }, [width, height]);
+    const element = cacheWhRef.current;
+    if (!element) return;
+
+    let frame: number | undefined;
+    let disposed = false;
+    const measure = () => {
+      if (disposed) return;
+      // clientWidth/clientHeight preserve grid coordinates under CSS scale;
+      // bounding rect is a fallback for special flex/layout containers.
+      const rect = element.getBoundingClientRect();
+      const width = element.clientWidth || rect.width;
+      const height = element.clientHeight || rect.height;
+      if (!Number.isFinite(width) || !Number.isFinite(height)) return;
+      setSize(previous =>
+        previous.width === width && previous.height === height
+          ? previous
+          : { width, height },
+      );
+    };
+    const scheduleMeasurement = () => {
+      if (frame !== undefined) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        frame = undefined;
+        measure();
+      });
+    };
+
+    // A pane can be mounted as hidden under AntD Tabs; the observer must
+    // measure it AGAIN once it becomes visible instead of caching 1px forever.
+    measure();
+    const observer =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(scheduleMeasurement)
+        : undefined;
+    observer?.observe(element);
+    window.addEventListener('resize', scheduleMeasurement);
+    return () => {
+      disposed = true;
+      observer?.disconnect();
+      window.removeEventListener('resize', scheduleMeasurement);
+      if (frame !== undefined) cancelAnimationFrame(frame);
+    };
+  }, []);
+
   return {
-    cacheWhRef: ref,
-    cacheW,
-    cacheH,
+    cacheWhRef,
+    cacheW: size.width,
+    cacheH: size.height,
   };
 };

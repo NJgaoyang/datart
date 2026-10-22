@@ -71,7 +71,8 @@ import {
 import { updateBy } from 'app/utils/mutation';
 import { CommonFormTypes } from 'globalConstants';
 import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { LEVEL_100 } from 'styles/StyleConstants';
@@ -127,7 +128,7 @@ export const ChartEditor: FC<ChartEditorProps> = ({
 }) => {
   const saveFormContextValue = useSaveFormContext();
   const { actions } = useWorkbenchSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const dataset = useSelector(datasetsSelector);
   const dataview = useSelector(currentDataViewSelector);
   const chartConfig = useSelector(chartConfigSelector);
@@ -137,7 +138,7 @@ export const ChartEditor: FC<ChartEditorProps> = ({
   const availableSourceFunctions = useSelector(selectAvailableSourceFunctions);
   const selectedItems = useSelector(selectSelectedItems);
   const [chart, setChart] = useState<IChart>();
-  const drillOptionRef = useRef<IChartDrillOption>();
+  const drillOptionRef = useRef<IChartDrillOption>(undefined);
   const [allowQuery, setAllowQuery] = useState<boolean>(false);
   const navigate = useNavigate();
   const addVizFn = useAddViz({
@@ -476,7 +477,7 @@ export const ChartEditor: FC<ChartEditorProps> = ({
           addVizFn({
             vizType: 'DATACHART',
             type: CommonFormTypes.Add,
-            visible: true,
+            open: true,
             initialValues: {
               config: JSON.stringify({
                 aggregation,
@@ -547,19 +548,16 @@ export const ChartEditor: FC<ChartEditorProps> = ({
     (dashboardId, dashboardType) => {
       const dataChart = buildDataChart();
       try {
-        navigate(
-          `/organizations/${orgId}/vizs/${dashboardId}/boardEditor`,
-          {
-            state: {
-              widgetInfo: JSON.stringify({
-                chartType,
-                dataChart,
-                dataview,
-                dashboardType,
-              }),
-            },
+        navigate(`/organizations/${orgId}/vizs/${dashboardId}/boardEditor`, {
+          state: {
+            widgetInfo: JSON.stringify({
+              chartType,
+              dataChart,
+              dataview,
+              dashboardType,
+            }),
           },
-        );
+        });
       } catch (error) {
         throw error;
       }

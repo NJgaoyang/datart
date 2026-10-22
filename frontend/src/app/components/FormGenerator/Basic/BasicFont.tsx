@@ -55,30 +55,33 @@ const BasicFont: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
             className="datart-ant-select"
             placeholder={t('select')}
             value={data.value?.fontFamily}
-            dropdownMatchSelectWidth={false}
+            popupMatchSelectWidth={false}
             onChange={handleSettingChange('fontFamily')}
-          >
-            {(options?.fontFamilies || FONT_FAMILIES).map(o => (
-              <Select.Option
-                key={typeof o === 'string' ? o : o.value}
-                value={typeof o === 'string' ? o : o.value}
-              >
-                {typeof o === 'string' ? o : t(o.name, true)}
-              </Select.Option>
-            ))}
-          </Select>
+            options={[
+              ...((options?.fontFamilies || FONT_FAMILIES).flatMap(o => [
+                {
+                  key: String(typeof o === 'string' ? o : o.value),
+                  value: typeof o === 'string' ? o : o.value,
+                  label: typeof o === 'string' ? o : t(o.name, true),
+                },
+              ]) || []),
+            ]}
+          />
           <Select
             className="datart-ant-select"
             placeholder={t('select')}
             value={data.value?.fontWeight}
             onChange={handleSettingChange('fontWeight')}
-          >
-            {FONT_WEIGHT.map(o => (
-              <Select.Option key={o.value} value={o.value}>
-                {t(o.name, true)}
-              </Select.Option>
-            ))}
-          </Select>
+            options={[
+              ...(FONT_WEIGHT.flatMap(o => [
+                {
+                  key: String(o.value),
+                  value: o.value,
+                  label: t(o.name, true),
+                },
+              ]) || []),
+            ]}
+          />
         </Group>
         <WithColorPicker>
           <Group>
@@ -88,13 +91,12 @@ const BasicFont: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
                 placeholder={t('select')}
                 value={data.value?.fontSize}
                 onChange={handleSettingChange('fontSize')}
-              >
-                {FONT_SIZES.map(o => (
-                  <Select.Option key={o} value={o}>
-                    {o}
-                  </Select.Option>
-                ))}
-              </Select>
+                options={[
+                  ...(FONT_SIZES.flatMap(o => [
+                    { key: String(o), value: o, label: o },
+                  ]) || []),
+                ]}
+              />
             )}
             {options?.showLineHeight && (
               <Select
@@ -102,16 +104,16 @@ const BasicFont: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
                 placeholder={t('select')}
                 value={data.value?.lineHeight}
                 onChange={handleSettingChange('lineHeight')}
-              >
-                {FONT_LINE_HEIGHT.map(o => (
-                  <Select.Option
-                    key={typeof o === 'number' ? o : o.value}
-                    value={typeof o === 'number' ? o : o.value}
-                  >
-                    {typeof o === 'number' ? o : t(o.name, true)}
-                  </Select.Option>
-                ))}
-              </Select>
+                options={[
+                  ...(FONT_LINE_HEIGHT.flatMap(o => [
+                    {
+                      key: String(typeof o === 'number' ? o : o.value),
+                      value: typeof o === 'number' ? o : o.value,
+                      label: typeof o === 'number' ? o : t(o.name, true),
+                    },
+                  ]) || []),
+                ]}
+              />
             )}
             {(isUndefined(options?.showFontStyle) ||
               options?.showFontStyle) && (
@@ -120,13 +122,16 @@ const BasicFont: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
                 placeholder={t('select')}
                 value={data.value?.fontStyle}
                 onChange={handleSettingChange('fontStyle')}
-              >
-                {FONT_STYLE.map(o => (
-                  <Select.Option key={o.value} value={o.value}>
-                    {t(o.name, true)}
-                  </Select.Option>
-                ))}
-              </Select>
+                options={[
+                  ...(FONT_STYLE.flatMap(o => [
+                    {
+                      key: String(o.value),
+                      value: o.value,
+                      label: t(o.name, true),
+                    },
+                  ]) || []),
+                ]}
+              />
             )}
           </Group>
           {(isUndefined(options?.showFontColor) || options?.showFontColor) && (

@@ -29,18 +29,11 @@ import {
   selectSaveStoryboardLoading,
 } from './slice/selectors';
 
-type SaveFormProps = Omit<ModalFormProps, 'type' | 'visible' | 'onSave'>;
+type SaveFormProps = Omit<ModalFormProps, 'type' | 'open' | 'onSave'>;
 
 export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
-  const {
-    vizType,
-    type,
-    visible,
-    initialValues,
-    onSave,
-    onCancel,
-    onAfterClose,
-  } = useContext(SaveFormContext);
+  const { vizType, type, open, initialValues, onSave, onCancel, onAfterClose } =
+    useContext(SaveFormContext);
   const selectVizFolderTree = useMemo(makeSelectVizFolderTree, []);
   const selectStoryboradFolderTree = useMemo(
     makeSelectStoryboradFolderTree,
@@ -52,7 +45,7 @@ export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
   const isOwner = useSelector(selectIsOrgOwner);
   const permissionMap = useSelector(selectPermissionMap);
   const moduleAccessMap = useSelector(selectModuleAccessMap);
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<FormInstance>(undefined);
   const t = useI18NPrefix('viz.saveForm');
   const tg = useI18NPrefix('global');
 
@@ -110,7 +103,7 @@ export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
       {...modalProps}
       title={t(`vizType.${vizType.toLowerCase()}`)}
       type={type}
-      visible={visible}
+      open={open}
       confirmLoading={saveFolderLoading || saveStoryboardLoading}
       onSave={save}
       onCancel={onCancel}

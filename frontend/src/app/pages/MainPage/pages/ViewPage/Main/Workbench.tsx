@@ -27,7 +27,8 @@ import React, {
   useEffect,
   useMemo,
 } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { getPath } from 'utils/utils';
 import {
@@ -48,7 +49,7 @@ import { StructView } from './StructView';
 import { ViewJoinBuilder } from './ViewJoinBuilder';
 
 export const Workbench = memo(() => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const { editorInstance } = useContext(EditorContext);
   const { actions } = useViewSlice();
 
@@ -82,7 +83,9 @@ export const Workbench = memo(() => {
     path,
     level: PermissionLevels.Manage,
   });
-  const unpersistedNewView = id.includes(UNPERSISTED_ID_PREFIX);
+  // Saving a newly-created view can briefly leave no active editor while
+  // the server ID replaces the local temporary ID.
+  const unpersistedNewView = Boolean(id?.includes(UNPERSISTED_ID_PREFIX));
   const allowManage = managePermission(true) || unpersistedNewView;
   const allowEnableViz = useAccess({
     type: 'module',
@@ -146,6 +149,8 @@ export const Workbench = memo(() => {
     <Wrapper>
       <Development
         direction="vertical"
+        sizes={[55, 45]}
+        minSize={[160, 120]}
         gutterSize={0}
         className="datart-split"
         onDrag={editorResize}
@@ -186,17 +191,26 @@ export const Workbench = memo(() => {
 const Wrapper = styled.div`
   display: flex;
   flex: 1;
+  min-width: 0;
   min-height: 0;
+  overflow: hidden;
 `;
 const EditorWrap = styled.div`
   display: flex;
-  flex: 1;
+  /* split.js sets the pane height: flex-grow would override it. */
+  flex: none;
+  min-width: 0;
+  min-height: 0;
   flex-direction: column;
+  overflow: hidden;
 `;
 const Development = styled(Split)`
   display: flex;
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   flex-direction: column;
+  overflow: hidden;
 `;
 
 const LoadingWrap = styled.div`

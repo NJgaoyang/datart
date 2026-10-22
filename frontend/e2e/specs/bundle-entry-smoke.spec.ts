@@ -4,7 +4,7 @@ const fatalRuntimeError = (message: string) =>
   /Cannot access .+ before initialization|ReferenceError:.*(initialization|undefined)|ChunkLoadError|Failed to fetch dynamically imported module/i.test(message);
 
 test.describe('built entry points do not crash on first navigation', () => {
-  for (const route of ['/login', '/shareDashboard.html']) {
+  for (const route of ['/login', '/shareDashboard.html', '/shareChart.html', '/shareStoryPlayer.html']) {
     test(`production entry ${route} starts without a JS initialization crash`, async ({ page }) => {
       const runtimeErrors: string[] = [];
       const applicationScripts: string[] = [];
@@ -21,7 +21,7 @@ test.describe('built entry points do not crash on first navigation', () => {
       // Wait for the module entrypoint to execute, not only the HTML shell.
       await page.waitForFunction(() =>
         [...document.scripts].some(script =>
-          /\/static\/js\/(main|shareDashboard)\.[^/]+\.js/.test(script.src)),
+          /\/static\/js\/(main|shareDashboard|shareChart|shareStoryPlayer)\.[^/]+\.js/.test(script.src)),
       );
       await page.waitForTimeout(900);
       expect(runtimeErrors.filter(fatalRuntimeError)).toEqual([]);

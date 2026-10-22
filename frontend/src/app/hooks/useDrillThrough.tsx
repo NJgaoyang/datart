@@ -76,7 +76,7 @@ const useDrillThrough = () => {
     const finalUrl = appendUrlParams(url, params);
     return {
       width: '80%',
-      bodyStyle: defaultBodyStyle,
+      styles: { body: defaultBodyStyle },
       content: (
         <iframe
           title="Datart Iframe Window"

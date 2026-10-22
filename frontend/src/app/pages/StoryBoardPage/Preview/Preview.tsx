@@ -25,7 +25,8 @@ import { dispatchResize } from 'app/utils/dispatchResize';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import 'reveal.js/dist/reveal.css';
 import styled from 'styled-components';
@@ -49,7 +50,7 @@ export const StoryPagePreview: React.FC<{
   allowShare?: boolean;
   allowManage?: boolean;
 }> = memo(({ orgId, storyId, allowShare, allowManage }) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const publishLoading = useSelector(selectPublishLoading);

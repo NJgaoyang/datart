@@ -15,10 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import useModal from 'antd/lib/modal/useModal';
-import { Button, Empty } from 'antd';
-import { getChartViewState } from './chartViewState';
-import { WIDGET_QUERY_FORBIDDEN } from 'app/pages/DashBoardPage/utils/widgetQueryError';
+import { Button, Empty, Modal } from 'antd';
 import ChartDrillContextMenu from 'app/components/ChartDrill/ChartDrillContextMenu';
 import ChartDrillPaths from 'app/components/ChartDrill/ChartDrillPaths';
 import { ChartIFrameContainer } from 'app/components/ChartIFrameContainer';
@@ -31,7 +28,9 @@ import {
 import ChartDrillContext from 'app/contexts/ChartDrillContext';
 import { useCacheWidthHeight } from 'app/hooks/useCacheWidthHeight';
 import useChartInteractions from 'app/hooks/useChartInteractions';
-import { migrateChartConfig } from 'app/migration';
+import { WIDGET_QUERY_FORBIDDEN } from 'app/pages/DashBoardPage/utils/widgetQueryError';
+import { getChartViewState } from './chartViewState';
+
 import { ChartDrillOption } from 'app/models/ChartDrillOption';
 import ChartManager from 'app/models/ChartManager';
 import { Widget } from 'app/pages/DashBoardPage/types/widgetTypes';
@@ -66,7 +65,8 @@ import React, {
   useMemo,
   useRef,
 } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { isEmptyArray } from 'utils/object';
 import { uuidv4 } from 'utils/utils';
@@ -87,7 +87,7 @@ import { WidgetSelectionContext } from '../../WidgetProvider/WidgetSelectionProv
 export const DataChartWidgetCore: React.FC<{}> = memo(() => {
   const { dataChart, availableSourceFunctions, chartDataView } =
     useContext(WidgetChartContext);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const scale = useContext(BoardScaleContext);
   const { data: dataset } = useContext(WidgetDataContext);
   const { loading, rendered, errInfo } = useContext(WidgetInfoContext);
@@ -95,7 +95,9 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
     loading,
     rendered,
     rows: dataset?.rows,
-    failed: Boolean(dataset?.error || Object.values(errInfo || {}).some(Boolean)),
+    failed: Boolean(
+      dataset?.error || Object.values(errInfo || {}).some(Boolean),
+    ),
     forbidden: errInfo?.request === WIDGET_QUERY_FORBIDDEN,
   });
   const { boardId, renderMode, orgId, queryVariables, isMobile, isEmbedded } =
@@ -122,12 +124,12 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
   } = useContext(WidgetActionContext);
   const { cacheWhRef, cacheW, cacheH } = useCacheWidthHeight();
   const widgetRef = useRef<Widget>(widget);
-  const drillOptionRef = useRef<IChartDrillOption>();
+  const drillOptionRef = useRef<IChartDrillOption>(undefined);
   const [openViewDetailPanel, viewDetailPanelContextHolder] =
     useDisplayViewDetail();
   const [openJumpVizDialogModal, openJumpVizDialogModalContextHolder] =
     useDisplayJumpVizDialog();
-  const [jumpDialogModal, jumpDialogContextHolder] = useModal();
+  const [jumpDialogModal, jumpDialogContextHolder] = Modal.useModal();
   const {
     getDrillThroughSetting,
     getCrossFilteringSetting,
@@ -549,7 +551,7 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
       mergeToChartConfig(
         draft,
         produce(dataChart?.config, draft => {
-          migrateChartConfig(draft as ChartDetailConfigDTO);
+          draft as ChartDetailConfigDTO;
         }) as ChartDetailConfigDTO,
       );
     });
@@ -589,22 +591,32 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
   }, [chart, dataChart]);
 
   const chartFrame = useMemo(() => {
-    if (!config) return null;
-    if (cacheH <= 1 || cacheW <= 1) return null;
-    if (errText) return <Empty description="图表配置不可用，请联系管理员检查" />;
+    // Show meaningful diagnostics even before resize observers determine
+    // the chart dimensions; otherwise a zero-size container hides errors.
+    if (errText || !config) {
+      return <Empty description="图表配置不可用，请检查图表类型和字段配置" />;
+    }
     if (dataState === 'forbidden') {
       return <Empty description="无权访问该图表的数据，请联系管理员申请权限" />;
     }
     if (dataState === 'error') {
       return (
         <Empty description="图表查询失败，请稍后重试或检查数据源">
-          <Button loading={loading} disabled={loading} onClick={() => onWidgetGetData(widgetRef.current)}>
+          <Button
+            loading={loading}
+            disabled={loading}
+            onClick={() => onWidgetGetData(widgetRef.current)}
+          >
             重新查询
           </Button>
         </Empty>
       );
     }
-    if (dataState === 'empty') return <Empty description="当前筛选条件下暂无数据" />;
+    if (dataState === 'empty')
+      return <Empty description="当前筛选条件下暂无数据" />;
+    if (cacheH <= 1 || cacheW <= 1) {
+      return <Empty description="图表容器尚未完成布局，请检查仪表板图表尺寸" />;
+    }
     const drillOption = drillOptionRef.current;
 
     return (
@@ -672,15 +684,16 @@ const StyledWrapper = styled.div`
   display: flex;
   flex: 1;
   flex-direction: column;
+  min-width: 0;
+  min-height: 0;
   width: 100%;
   height: 100%;
-  .chart-drill-menu-container {
-    height: 100%;
-  }
 `;
 const ChartFrameBox = styled.div`
   display: flex;
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   flex-direction: column;
   overflow: hidden;
 `;

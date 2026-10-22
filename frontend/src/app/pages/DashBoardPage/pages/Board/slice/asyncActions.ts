@@ -15,9 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import { DownloadFileType } from 'app/constants';
-import migrateWidgetChartConfig from 'app/migration/BoardConfig/migrateWidgetChartConfig';
-import { migrateWidgets } from 'app/migration/BoardConfig/migrateWidgets';
+import { parseWidgets } from 'app/utils/configParser';
+
 import { FilterSearchParamsWithMatch } from 'app/pages/MainPage/pages/VizPage/slice/types';
 import { mainActions } from 'app/pages/MainPage/slice';
 import { ExecuteToken } from 'app/pages/SharePage/slice/types';
@@ -65,17 +66,10 @@ export const handleServerBoardAction =
       datacharts,
       serverViews,
     );
-    let migratedWidgets = migrateWidgets(
-      serverWidgets,
-      dashboard.config.type,
-      dashboard.config.layoutVersion,
-      dashboard.config.mobileLayoutVersion,
-      dashboard.config.pcRowLayoutVersion,
-    );
-    migratedWidgets = migrateWidgetChartConfig(migratedWidgets);
+    let parsedWidgets = parseWidgets(serverWidgets);
 
     const { widgetMap, wrappedDataCharts, controllerWidgets } = getWidgetMap(
-      migratedWidgets,
+      parsedWidgets,
       dataCharts,
       dashboard.config.type,
       serverViews,

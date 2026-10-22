@@ -136,14 +136,11 @@ function useFieldActionModal({ i18nPrefix }: I18NComponentProps) {
           from,
         ),
       onOk: handleOk(onConfigChange, columnUid, currentConfig!),
-      maskClosable: true,
+      mask: { closable: true },
     });
   };
 
-  return [showModal, contextHolder] as [
-    typeof showModal,
-    typeof contextHolder,
-  ];
+  return [showModal, contextHolder] as [typeof showModal, typeof contextHolder];
 }
 
 export default useFieldActionModal;

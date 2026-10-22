@@ -110,25 +110,28 @@ const FilterVisibilityConfiguration: FC<
               <Select
                 value={fieldUid}
                 onChange={uid => handleConditionChange(uid, relation, value)}
-              >
-                {(otherFilters || []).map(f => (
-                  <Select.Option key={f.uid} value={f.uid || f.colName}>
-                    {getColumnRenderName(f)}
-                  </Select.Option>
-                ))}
-              </Select>
+                options={[
+                  ...((otherFilters || []).flatMap(f => [
+                    {
+                      key: String(f.uid),
+                      value: f.uid || f.colName,
+                      label: getColumnRenderName(f),
+                    },
+                  ]) || []),
+                ]}
+              />
               <Select
                 value={relation}
                 onChange={r => handleConditionChange(fieldUid, r, value)}
-              >
-                {[FilterSqlOperator.Equal, FilterSqlOperator.NotEqual].map(
-                  f => (
-                    <Select.Option key={f} value={f}>
-                      {t2(f)}
-                    </Select.Option>
-                  ),
-                )}
-              </Select>
+                options={[
+                  ...([
+                    FilterSqlOperator.Equal,
+                    FilterSqlOperator.NotEqual,
+                  ].flatMap(f => [
+                    { key: String(f), value: f, label: t2(f) },
+                  ]) || []),
+                ]}
+              />
               <Input
                 value={value}
                 onChange={e =>

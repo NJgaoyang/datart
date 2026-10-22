@@ -29,7 +29,7 @@ interface ChronographProps {
 
 export function Chronograph({ running, status }: ChronographProps) {
   const [label, setLabel] = useState('00:00:00.00');
-  const intervalRef = useRef<ReturnType<typeof setInterval>>();
+  const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
   const clear = useCallback(() => {
     if (intervalRef.current) {

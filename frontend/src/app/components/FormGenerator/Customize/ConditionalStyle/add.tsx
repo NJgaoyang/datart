@@ -32,7 +32,7 @@ import {
 interface AddProps {
   context?: any;
   translate?: (title: string, options?: any) => string;
-  visible: boolean;
+  open: boolean;
   values: ConditionalStyleFormValues;
   onOk: (values: ConditionalStyleFormValues) => void;
   onCancel: () => void;
@@ -41,7 +41,7 @@ interface AddProps {
 export default function Add({
   translate: t = title => title,
   values,
-  visible,
+  open,
   onOk,
   onCancel,
   context: { label, type },
@@ -81,7 +81,7 @@ export default function Add({
 
   useEffect(() => {
     // !重置form
-    if (visible) {
+    if (open) {
       const result: Partial<ConditionalStyleFormValues> =
         Object.keys(values).length === 0
           ? {
@@ -93,7 +93,7 @@ export default function Add({
       form.setFieldsValue(result);
       setOperatorValue(result.operator ?? OperatorTypes.Equal);
     }
-  }, [form, visible, values, label]);
+  }, [form, open, values, label]);
 
   const modalOk = () => {
     form.validateFields().then(values => {
@@ -142,9 +142,9 @@ export default function Add({
 
   return (
     <Modal
-      destroyOnClose
+      destroyOnHidden
       title={t('conditionalStyleTable.modal.title')}
-      visible={visible}
+      open={open}
       onOk={modalOk}
       onCancel={onCancel}
     >
@@ -267,8 +267,10 @@ const InputNumberScope = memo(
       }
     };
 
-    const minChange = (value: number | null) => inputNumberScopeChange([value, max]);
-    const maxChange = (value: number | null) => inputNumberScopeChange([min, value]);
+    const minChange = (value: number | null) =>
+      inputNumberScopeChange([value, max]);
+    const maxChange = (value: number | null) =>
+      inputNumberScopeChange([min, value]);
 
     return (
       <Row gutter={24} align="middle" key={index}>

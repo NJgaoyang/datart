@@ -12,7 +12,8 @@ import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
 import { useStoryBoardSlice } from 'app/pages/StoryBoardPage/slice';
 import { useIsWeappEmbed } from 'app/hooks/useEmbedMode';
 import { FC, useCallback, useEffect, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { SPACE_MD, SPACE_SM, SPACE_XS, SPACE_LG } from 'styles/StyleConstants';
@@ -43,7 +44,7 @@ export const MobileVizPage: FC = () => {
 
 /* ================== 报表列表 ================== */
 const MobileDashboardList: FC = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const orgId = useSelector(selectOrgId);
   const vizs = useSelector(selectVizs);

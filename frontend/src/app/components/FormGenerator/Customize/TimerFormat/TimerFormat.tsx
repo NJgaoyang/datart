@@ -73,8 +73,8 @@ export const TimerFormat: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
     const { value } = data;
 
     const gt = useI18NPrefix(`viz.board.setting`);
-    const valRef = useRef<ITimeDefault>();
-    const selectRef = useRef<any>();
+    const valRef = useRef<ITimeDefault>(undefined);
+    const selectRef = useRef<any>(undefined);
     useEffect(() => {
       valRef.current = value;
     }, [value]);
@@ -109,13 +109,12 @@ export const TimerFormat: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
               maxTagCount={1}
               value={value.format}
               onChange={changeF}
-            >
-              {TIME_FORMATS.map(item => (
-                <Select.Option key={item} value={item}>
-                  {item}
-                </Select.Option>
-              ))}
-            </Select>
+              options={[
+                ...(TIME_FORMATS.flatMap(item => [
+                  { key: String(item), value: item, label: item },
+                ]) || []),
+              ]}
+            />
           </Group>
         </BW>
         <BW label={gt('interval')}>

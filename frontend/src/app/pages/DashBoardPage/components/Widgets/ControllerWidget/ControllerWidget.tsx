@@ -45,16 +45,22 @@ export const ControllerWidget: React.FC<{}> = memo(() => {
     widget.config.customConfig.props,
   );
   return (
-    <WidgetWrapper className="controller-widget" background={background} border={border} padding={padding}>
+    <WidgetWrapper
+      className={boardType === 'auto' ? 'controller-widget dashboard-auto-filter' : 'controller-widget'}
+      background={background}
+      border={border}
+      padding={padding}
+    >
       <div
         ref={cacheWhRef}
         className="controller-widget-content"
         style={{
           ...ZIndexStyle,
-          // The sibling action toolbar occupies its own flex width.
-          width: 'auto',
+          // Reserve only the toolbar's real width; the form gets all remaining
+          // space when a dashboard widget is stretched in the editor.
+          width: 0,
           minWidth: 0,
-          flex: '1 1 auto',
+          flex: '1 1 0',
         }}
       >
         <div style={FlexStyle}>

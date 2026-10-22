@@ -29,7 +29,8 @@ import React, {
 } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useParams } from 'react-router-dom';
 import Reveal from 'reveal.js';
 import 'reveal.js/dist/reveal.css';
@@ -52,15 +53,15 @@ export const StoryPlayer: React.FC<{}> = memo(() => {
   useBoardSlice();
   useEditBoardSlice();
   useStoryBoardSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const { storyId = '' } = useParams<{ storyId: string }>();
   useEffect(() => {
     dispatch(getStoryDetail(storyId));
   }, [dispatch, storyId]);
   const domId = useMemo(() => uuidv4(), []);
-  const revealRef = useRef<any>();
+  const revealRef = useRef<any>(undefined);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
-  const fullRef: RefObject<HTMLDivElement> = useRef(null);
+  const fullRef: RefObject<HTMLDivElement | null> = useRef(null);
 
   const storyBoard = useSelector((state: { storyBoard: StoryBoardState }) =>
     makeSelectStoryBoardById(state, storyId),

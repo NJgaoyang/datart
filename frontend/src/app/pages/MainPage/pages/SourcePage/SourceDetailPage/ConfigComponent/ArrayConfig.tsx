@@ -72,7 +72,7 @@ export function ArrayConfig({
   const [formVisible, setFormVisible] = useState(false);
   const [editingRowKey, setEditingRowKey] = useState('');
   const [schemaDataSource, setSchemaDataSource] = useState<object[]>([]);
-  const formRef = useRef<FormInstance<SourceFormModel>>();
+  const formRef = useRef<FormInstance<SourceFormModel>>(undefined);
   const t = useI18NPrefix('source');
   const tg = useI18NPrefix('global');
 
@@ -238,7 +238,7 @@ export function ArrayConfig({
       />
       <ModalForm
         title={t('form.editConfig')}
-        visible={formVisible}
+        open={formVisible}
         width={SPACE_TIMES(240)}
         formProps={{
           labelAlign: 'left',

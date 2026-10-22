@@ -32,7 +32,7 @@ export const WidgetBorder: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
     const { value, options } = data;
     const gt = useI18NPrefix(`viz.board.setting`);
     const tLine = useI18NPrefix(`viz.lineOptions`);
-    const valRef = useRef<BorderConfig>();
+    const valRef = useRef<BorderConfig>(undefined);
     useEffect(() => {
       valRef.current = value;
     }, [value]);
@@ -86,13 +86,12 @@ export const WidgetBorder: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
               className="datart-ant-select"
               value={data.value?.style}
               onChange={changeS}
-            >
-              {BORDER_STYLES.map(item => (
-                <Select.Option key={item} value={item}>
-                  {tLine(item)}
-                </Select.Option>
-              ))}
-            </Select>
+              options={[
+                ...(BORDER_STYLES.flatMap(item => [
+                  { key: String(item), value: item, label: tLine(item) },
+                ]) || []),
+              ]}
+            />
           </Group>
         </BW>
       </Wrap>

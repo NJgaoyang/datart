@@ -27,7 +27,7 @@ import {
   isConfigRow as isChartConfigRow,
   isFunc,
 } from 'utils/object';
-import { GroupLayout } from '.';
+import GroupLayout from './GroupLayout';
 import {
   BasicCheckbox,
   BasicColorSelector,

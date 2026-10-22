@@ -91,13 +91,19 @@ export const ImportPage: FC<{}> = memo(() => {
             initialValue={'NEW'}
             tooltip={descStrategy()}
           >
-            <Select showSearch style={{ width: '200px' }}>
-              {options.map(o => (
-                <Select.Option key={o} value={o}>
-                  {t(`import.${o.toLocaleLowerCase()}`)}
-                </Select.Option>
-              ))}
-            </Select>
+            <Select
+              showSearch
+              style={{ width: '200px' }}
+              options={[
+                ...(options.flatMap(o => [
+                  {
+                    key: String(o),
+                    value: o,
+                    label: t(`import.${o.toLocaleLowerCase()}`),
+                  },
+                ]) || []),
+              ]}
+            />
           </Form.Item>
           <Form.Item label=" " colon={false}>
             <Button type="primary" htmlType="submit">

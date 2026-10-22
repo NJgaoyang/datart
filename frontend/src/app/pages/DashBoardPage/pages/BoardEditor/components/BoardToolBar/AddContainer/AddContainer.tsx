@@ -22,14 +22,14 @@ import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import widgetManagerInstance from 'app/pages/DashBoardPage/components/WidgetManager';
 import { LightWidgetType } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import React, { useCallback, useContext } from 'react';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { ORIGINAL_TYPE_MAP } from '../../../../../constants';
 import { addWidgetsToEditBoard } from '../../../slice/thunk';
 import { BoardToolBarContext } from '../context/BoardToolBarContext';
 
 export const AddContainer: React.FC<{}> = () => {
   const t = useI18NPrefix(`viz.board.action`);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const { boardType } = useContext(BoardToolBarContext);
   const onSelectContainerWidget = useCallback(
     ({ keyPath }) => {
@@ -61,17 +61,18 @@ export const AddContainer: React.FC<{}> = () => {
   ];
 
   const containerWidgetItems = (
-    <Menu onClick={onSelectContainerWidget}>
-      {containerWidgetTypes.map(({ name, type, disabled }) => (
-        <Menu.Item disabled={disabled} key={type}>
-          {name}
-        </Menu.Item>
-      ))}
-    </Menu>
+    <Menu
+      onClick={onSelectContainerWidget}
+      items={[
+        ...(containerWidgetTypes.flatMap(({ name, type, disabled }) => [
+          { disabled: disabled, key: String(type), label: name },
+        ]) || []),
+      ]}
+    />
   );
   return (
     <Dropdown
-      overlay={containerWidgetItems}
+      popupRender={() => containerWidgetItems}
       placement="bottomLeft"
       trigger={['click']}
     >

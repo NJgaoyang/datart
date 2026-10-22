@@ -23,9 +23,10 @@ import { TenantManagementMode } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { selectSystemInfo } from 'app/slice/selectors';
 import { CommonFormTypes } from 'globalConstants';
-import React, { useCallback, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useMatch } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
+import { useMatch, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { BORDER_RADIUS, SPACE_LG } from 'styles/StyleConstants';
 import { getPasswordValidator } from 'utils/validators';
@@ -55,7 +56,7 @@ export function MemberDetailPage() {
   const [formType, setFormType] = useState(CommonFormTypes.Add);
   const [passwordVisible, setPasswordVisible] = useState(true);
   const { actions } = useMemberSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const systemInfo = useSelector(selectSystemInfo);
   const orgId = useSelector(selectOrgId);
@@ -243,7 +244,7 @@ export function MemberDetailPage() {
         }
       />
       <Content>
-        <Card bordered={false}>
+        <Card variant="borderless">
           <Form
             name="member_form_"
             form={form}
@@ -347,16 +348,15 @@ export function MemberDetailPage() {
                 <Select
                   placeholder={t('assignRole')}
                   mode="multiple"
-                  optionFilterProp="children"
                   loading={roleListLoading}
-                  onDropdownVisibleChange={roleListVisibleChange}
-                >
-                  {roles?.map(({ id, name }) => (
-                    <Select.Option key={id} value={id}>
-                      {name}
-                    </Select.Option>
-                  ))}
-                </Select>
+                  onOpenChange={roleListVisibleChange}
+                  options={[
+                    ...(roles?.flatMap(({ id, name }) => [
+                      { key: String(id), value: id, label: name },
+                    ]) || []),
+                  ]}
+                  showSearch={{ optionFilterProp: 'label' }}
+                />
               )}
             </Form.Item>
           </Form>

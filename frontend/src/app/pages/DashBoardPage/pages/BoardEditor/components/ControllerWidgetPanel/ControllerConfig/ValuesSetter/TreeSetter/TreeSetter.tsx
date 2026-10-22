@@ -41,14 +41,13 @@ function TreeSetter({
       <Select
         style={style}
         mode={mode}
-        optionFilterProp={'label'}
         onChange={onChange}
         placeholder={mode ? tc('parentFieldsHierarchy') : tc('parentFields')}
-        showSearch
         allowClear
         options={viewFieldList}
         value={val}
         loading={!viewFieldList}
+        showSearch={{ optionFilterProp: 'label' }}
       />
     </TreeSetterWrapper>
   );

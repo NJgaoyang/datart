@@ -25,21 +25,19 @@ import {
 import { modifyAccountPassword } from 'app/slice/thunks';
 import { ModifyUserPassword } from 'app/slice/types';
 import { FC, useCallback, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import {
   getConfirmPasswordValidator,
   getPasswordValidator,
 } from 'utils/validators';
 const FormItem = Form.Item;
 interface ModifyPasswordProps {
-  visible: boolean;
+  open: boolean;
   onCancel: () => void;
 }
-export const ModifyPassword: FC<ModifyPasswordProps> = ({
-  visible,
-  onCancel,
-}) => {
-  const dispatch = useDispatch();
+export const ModifyPassword: FC<ModifyPasswordProps> = ({ open, onCancel }) => {
+  const dispatch = useAppDispatch();
   const loggedInUser = useSelector(selectLoggedInUser);
   const loading = useSelector(selectModifyPasswordLoading);
   const [form] = Form.useForm();
@@ -51,10 +49,10 @@ export const ModifyPassword: FC<ModifyPasswordProps> = ({
   }, [form]);
 
   useEffect(() => {
-    if (visible) {
+    if (open) {
       reset();
     }
-  }, [visible, reset]);
+  }, [open, reset]);
 
   const formSubmit = useCallback(
     ({ confirmPassword, ...params }: ModifyUserPassword) => {
@@ -75,7 +73,7 @@ export const ModifyPassword: FC<ModifyPasswordProps> = ({
     <Modal
       title={t('title')}
       footer={false}
-      visible={visible}
+      open={open}
       onCancel={onCancel}
       afterClose={reset}
     >

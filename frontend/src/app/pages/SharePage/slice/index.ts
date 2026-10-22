@@ -17,7 +17,7 @@
  */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { ChartDataSectionType } from 'app/constants';
-import { migrateChartConfig } from 'app/migration';
+
 import ChartManager from 'app/models/ChartManager';
 import {
   FilterSearchParams,
@@ -28,6 +28,7 @@ import { ChartConfig, SelectedItem } from 'app/types/ChartConfig';
 import { PendingChartDataRequestFilter } from 'app/types/ChartDataRequest';
 import { ChartDTO } from 'app/types/ChartDTO';
 import { mergeToChartConfig } from 'app/utils/ChartDtoHelper';
+import { reconcileChartConfigFieldMeta } from 'app/utils/internalChartHelper';
 import { FilterSqlOperator } from 'globalConstants';
 import { useInjectReducer } from 'utils/@reduxjs/injectReducer';
 import { Omit } from 'utils/object';
@@ -120,14 +121,17 @@ export const slice = createSlice({
       });
       if (currentChart) {
         chartConfig = transferChartConfig(
-          mergeToChartConfig(
-            currentChart?.config,
-            migrateChartConfig(chartConfigDTO),
-          ),
+          mergeToChartConfig(currentChart?.config, chartConfigDTO),
           filterSearchParams,
           isMatchByName,
           jumpFilters,
         );
+      }
+      if (chartConfig) {
+        chartConfig = reconcileChartConfigFieldMeta(chartConfig, [
+          ...(vizDetail?.view?.meta || []),
+          ...(vizDetail?.config?.computedFields || []),
+        ]);
       }
       const executeToken = data.executeToken;
       const executeKey = vizDetail?.viewId;

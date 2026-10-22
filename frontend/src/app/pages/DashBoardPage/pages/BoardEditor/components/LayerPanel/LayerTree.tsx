@@ -22,7 +22,8 @@ import useResizeObserver from 'app/hooks/useResizeObserver';
 import { WidgetActionContext } from 'app/pages/DashBoardPage/components/ActionProvider/WidgetActionProvider';
 import widgetManager from 'app/pages/DashBoardPage/components/WidgetManager';
 import { FC, memo, useCallback, useContext } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { stopPPG } from 'utils/utils';
 import { dropLayerNodeAction } from '../../slice/actions/actions';
 import {
@@ -33,7 +34,7 @@ import {
 import { EventLayerNode, LayerTreeItem } from './LayerTreeItem';
 
 export const LayerTree: FC<{}> = memo(() => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const treeData = useSelector(selectLayerTree);
   const renderTreeItem = useCallback(n => <LayerTreeItem node={n} />, []);
   const { onEditSelectWidget } = useContext(WidgetActionContext);
@@ -41,8 +42,7 @@ export const LayerTree: FC<{}> = memo(() => {
   const selectedIds = useSelector(selectSelectedIds);
 
   const { height, ref } = useResizeObserver({
-    refreshMode: 'debounce',
-    refreshRate: 200,
+    debounceMs: 200,
   });
 
   const treeSelect = useCallback(

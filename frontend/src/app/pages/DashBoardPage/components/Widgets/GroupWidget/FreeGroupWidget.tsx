@@ -32,9 +32,7 @@ export const FreeGroupWidget: React.FC<{}> = memo(() => {
   const { editing, boardType } = useContext(BoardContext);
   const rect = widget.config.rect;
   const { onChangeGroupRect } = useContext(WidgetActionContext);
-  const { cacheWhRef, cacheW, cacheH } = useCacheWidthHeight({
-    refreshRate: 60,
-  });
+  const { cacheWhRef, cacheW, cacheH } = useCacheWidthHeight();
   useEffect(() => {
     if (cacheW > 1 && cacheH > 1) {
       onChangeGroupRect({

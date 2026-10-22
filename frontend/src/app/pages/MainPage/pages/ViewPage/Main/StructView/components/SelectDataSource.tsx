@@ -22,14 +22,15 @@ import {
   TableOutlined,
 } from '@ant-design/icons';
 import { Button, Checkbox, Divider, Empty, Input, Menu, Popover } from 'antd';
-import { MenuListItem, Tree } from 'app/components';
+import { MenuItemLabel, Tree } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { useSearchAndExpand } from 'app/hooks/useSearchAndExpand';
 import classnames from 'classnames';
 import { DEFAULT_DEBOUNCE_WAIT } from 'globalConstants';
 import { darken, getLuminance, lighten } from 'polished';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import {
   FONT_WEIGHT_MEDIUM,
@@ -70,7 +71,7 @@ const SelectDataSource = memo(
     allowManage,
     onChange,
   }: SelectDataSourceProps) => {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const propsSources = useSelector(selectSources);
     const allDatabaseSchemas = useSelector(selectAllSourceDatabaseSchemas);
     const t = useI18NPrefix(`view.structView`);
@@ -283,9 +284,9 @@ const SelectDataSource = memo(
         <Popover
           trigger={['click']}
           placement="bottomLeft"
-          overlayClassName="datart-popup"
-          visible={allowManage && visible}
-          onVisibleChange={
+          classNames={{ root: 'datart-popup' }}
+          open={allowManage && visible}
+          onOpenChange={
             renderType === 'MANAGE' ? handleVisibleChange : undefined
           }
           content={
@@ -329,22 +330,35 @@ const SelectDataSource = memo(
                   <Menu
                     prefixCls="ant-dropdown-menu"
                     onClick={handleCurrentSources}
-                  >
-                    {sources && sources.length > 0 ? (
-                      sources.map((v, i) => {
-                        return (
-                          <MenuListItem
-                            key={i}
-                            prefix={<DatabaseOutlined className="list-icon" />}
-                          >
-                            {v.name}
-                          </MenuListItem>
-                        );
-                      })
-                    ) : (
-                      <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                    )}
-                  </Menu>
+                    items={[
+                      ...(sources && sources.length > 0
+                        ? sources.flatMap((v, i) => {
+                            return [
+                              {
+                                key: String(i),
+                                label: (
+                                  <MenuItemLabel
+                                    prefix={
+                                      <DatabaseOutlined className="list-icon" />
+                                    }
+                                  >
+                                    {v.name}
+                                  </MenuItemLabel>
+                                ),
+                              },
+                            ];
+                          }) || []
+                        : [
+                            {
+                              key: 'Empty',
+                              label: (
+                                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                              ),
+                              style: { padding: 0 },
+                            },
+                          ]),
+                    ]}
+                  />
                 </SourceList>
               </PopoverBody>
             )
@@ -357,9 +371,7 @@ const SelectDataSource = memo(
             })}
           >
             {selectedTableSchema?.table?.length
-              ? selectedTableSchema.table[
-                  selectedTableSchema.table.length - 1
-                ]
+              ? selectedTableSchema.table[selectedTableSchema.table.length - 1]
               : t('selectTable')}
           </TableButton>
         </Popover>

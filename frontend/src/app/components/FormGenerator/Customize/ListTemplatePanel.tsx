@@ -150,21 +150,18 @@ const ListTemplatePanel: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
           <Col span={8}>
             <Select
               style={{ width: '100%' }}
-              dropdownMatchSelectWidth
+              popupMatchSelectWidth
               placeholder={t('select')}
               value={currentSelectedItem?.label}
               onChange={handleColumnChange}
-            >
-              {unSelectedItems?.map((o, index) => {
-                const label = isEmpty(o['label']) ? o : o.label;
-                const key = isEmpty(o['key']) ? index : o.key;
-                return (
-                  <Select.Option key={key} value={key}>
-                    {label}
-                  </Select.Option>
-                );
-              })}
-            </Select>
+              options={[
+                ...(unSelectedItems?.flatMap((o, index) => {
+                  const label = isEmpty(o['label']) ? o : o.label;
+                  const key = isEmpty(o['key']) ? index : o.key;
+                  return [{ key: String(key), value: key, label: label }];
+                }) || []),
+              ]}
+            />
           </Col>
         </Row>
         <Divider />

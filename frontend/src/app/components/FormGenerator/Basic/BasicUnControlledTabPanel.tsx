@@ -39,7 +39,6 @@ import GroupLayout from '../Layout/GroupLayout';
 import { ItemLayoutProps } from '../types';
 import { itemLayoutComparer } from '../utils';
 
-const { TabPane } = Tabs;
 const { Search } = Input;
 
 const reducer = (state, action) => {
@@ -165,37 +164,40 @@ const BasicUnControlledTabPanel: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
         activeKey={activeTabKey}
         type={editable ? 'editable-card' : undefined}
         onEdit={handleEdit}
-      >
-        {myData.rows?.map((p, index) => {
-          const rowKey = p.key;
-          return (
-            <StyledTabPanel
-              key={rowKey}
-              tab={
-                <EditableTabHeader
-                  editable={editable}
-                  label={p.label}
-                  rowKey={rowKey}
-                  onChange={(key, value) => {
-                    const updatedRowIndex = myData.rows?.findIndex(
-                      r => r.key === key,
-                    );
-                    if (updatedRowIndex !== undefined && updatedRowIndex > -1) {
-                      const newAncestors = [updatedRowIndex];
-                      handleDataChange(newAncestors, {
-                        ...p,
-                        ...{ label: value },
-                      });
-                    }
-                  }}
-                />
-              }
-            >
-              {renderTabPaneContent(p, index)}
-            </StyledTabPanel>
-          );
-        })}
-      </StyledBasicUnControlledTabPanel>
+        items={[
+          ...(myData.rows?.flatMap((p, index) => {
+            const rowKey = p.key;
+            return [
+              {
+                key: String(rowKey),
+                label: (
+                  <EditableTabHeader
+                    editable={editable}
+                    label={p.label}
+                    rowKey={rowKey}
+                    onChange={(key, value) => {
+                      const updatedRowIndex = myData.rows?.findIndex(
+                        r => r.key === key,
+                      );
+                      if (
+                        updatedRowIndex !== undefined &&
+                        updatedRowIndex > -1
+                      ) {
+                        const newAncestors = [updatedRowIndex];
+                        handleDataChange(newAncestors, {
+                          ...p,
+                          ...{ label: value },
+                        });
+                      }
+                    }}
+                  />
+                ),
+                children: renderTabPaneContent(p, index),
+              },
+            ];
+          }) || []),
+        ]}
+      />
     );
   },
   itemLayoutComparer,
@@ -242,13 +244,10 @@ const EditableTabHeader: FC<{
 
 export default BasicUnControlledTabPanel;
 
-const StyledTabPanel = styled(TabPane)`
+const StyledBasicUnControlledTabPanel = styled(Tabs)`
   & .chart-config-group-layout {
     padding: 0;
   }
-`;
-
-const StyledBasicUnControlledTabPanel = styled(Tabs)`
   & .ant-tabs-nav {
     margin-bottom: 0;
   }

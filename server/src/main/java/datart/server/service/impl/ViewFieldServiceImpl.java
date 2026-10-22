@@ -174,6 +174,13 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
                 if (!persisted && upstream != null && trimToNull(upstream.getCustomName()) != null) {
                     field.setCustomName(trimToNull(upstream.getCustomName()));
                 }
+                if (!persisted) {
+                    refs.nodes().stream()
+                            .map(node -> trimToNull(node.path("customName").asText(null)))
+                            .filter(Objects::nonNull)
+                            .findFirst()
+                            .ifPresent(field::setCustomName);
+                }
                 if (sourceComment != null) {
                     field.setSourceComment(sourceComment);
                 } else if (shouldClearMissingComment(formerSourcePath, nextSourcePath,

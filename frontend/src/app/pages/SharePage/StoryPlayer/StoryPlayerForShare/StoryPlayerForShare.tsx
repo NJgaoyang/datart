@@ -27,7 +27,8 @@ import React, {
 } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import Reveal from 'reveal.js';
 import 'reveal.js/dist/reveal.css';
 import RevealZoom from 'reveal.js/plugin/zoom/plugin';
@@ -52,10 +53,10 @@ export const StoryPlayerForShare: React.FC<{
 }> = memo(({ storyBoard, shareToken }) => {
   const { id: storyId } = storyBoard;
   const domId = useMemo(() => uuidv4(), []);
-  const revealRef = useRef<any>();
-  const dispatch = useDispatch();
+  const revealRef = useRef<any>(undefined);
+  const dispatch = useAppDispatch();
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
-  const fullRef: RefObject<HTMLDivElement> = useRef(null);
+  const fullRef: RefObject<HTMLDivElement | null> = useRef(null);
   const pageMap = useSelector((state: { storyBoard: StoryBoardState }) =>
     makeSelectStoryPagesById(state, storyId),
   );

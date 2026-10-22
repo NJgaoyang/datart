@@ -16,9 +16,6 @@
  * limitations under the License.
  */
 
-import migrateChartConfig from 'app/migration/ChartConfig/migrateChartConfig';
-import migrationViewConfig from 'app/migration/ViewConfig/migrationViewConfig';
-import beginViewModelMigration from 'app/migration/ViewConfig/migrationViewModelConfig';
 import {
   ChartConfig,
   ChartDataConfig,
@@ -30,6 +27,7 @@ import {
   createDateLevelComputedFieldForConfigComputedFields,
   mergeChartAndViewComputedField,
 } from 'app/utils/chartHelper';
+import { serializeConfig } from 'app/utils/configParser';
 import {
   mergeChartDataConfigs,
   mergeChartStyleConfigs,
@@ -38,13 +36,9 @@ import {
 import { Omit } from 'utils/object';
 
 export function convertToChartDto(data): ChartDTO {
-  if (data?.view) {
-    data.view = migrationViewConfig(data.view);
-  }
   if (data?.view?.model) {
-    data.view.model = beginViewModelMigration(data.view.model, data.view.type);
+    data.view.model = serializeConfig(data.view.model);
   }
-  data.config = migrateChartConfig(data?.config);
 
   const config = JSON.parse(data?.config || '{}');
   const meta = transformHierarchyMeta(

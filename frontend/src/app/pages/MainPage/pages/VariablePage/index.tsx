@@ -34,10 +34,11 @@ import {
   Tooltip,
 } from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
-import { CommonFormTypes, TIME_FORMATTER } from 'globalConstants';
 import { Dayjs } from 'dayjs';
+import { CommonFormTypes, TIME_FORMATTER } from 'globalConstants';
 import { Key, useCallback, useEffect, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import {
   BORDER_RADIUS,
@@ -94,7 +95,7 @@ export function VariablePage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
   const [updateRowPermissionLoading, setUpdateRowPermissionLoading] =
     useState(false);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const variables = useSelector(selectVariables);
   const listLoading = useSelector(selectVariableListLoading);
   const saveLoading = useSelector(selectSaveVariableLoading);
@@ -382,7 +383,7 @@ export function VariablePage() {
           scope={VariableScopes.Public}
           orgId={orgId}
           editingVariable={editingVariable}
-          visible={formVisible}
+          open={formVisible}
           title={t('public')}
           type={formType}
           confirmLoading={saveLoading}
@@ -390,20 +391,20 @@ export function VariablePage() {
           onCancel={hideForm}
           afterClose={afterFormClose}
           keyboard={false}
-          maskClosable={false}
+          mask={{ closable: false }}
         />
         <SubjectForm
           scope={VariableScopes.Public}
           editingVariable={editingVariable}
           loading={rowPermissionLoading}
           rowPermissions={rowPermissions}
-          visible={subjectFormVisible}
+          open={subjectFormVisible}
           confirmLoading={updateRowPermissionLoading}
           onSave={saveRelations}
           onCancel={hideSubjectForm}
           afterClose={afterFormClose}
           keyboard={false}
-          maskClosable={false}
+          mask={{ closable: false }}
         />
       </Card>
     </Wrapper>

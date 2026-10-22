@@ -25,8 +25,9 @@ import {
 } from 'app/slice/selectors';
 import { saveProfile, updateUser } from 'app/slice/thunks';
 import { BASE_API_URL, BASE_RESOURCE_URL } from 'globalConstants';
-import React, { useCallback, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useCallback, useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { SPACE_LG, SPACE_MD, SPACE_UNIT } from 'styles/StyleConstants';
 import { APIResponse } from 'types';
@@ -34,9 +35,9 @@ import { getToken } from 'utils/auth';
 
 const FormItem = Form.Item;
 
-export function Profile({ visible, onCancel }: ModalProps) {
+export function Profile({ open, onCancel }: ModalProps) {
   const [avatarLoading, setAvatarLoading] = useState(false);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const loggedInUser = useSelector(selectLoggedInUser);
   const loading = useSelector(selectSaveProfileLoading);
   const [saveDisabled, setSaveDisabled] = useState(true);
@@ -50,10 +51,10 @@ export function Profile({ visible, onCancel }: ModalProps) {
   }, [form]);
 
   useEffect(() => {
-    if (visible) {
+    if (open) {
       reset();
     }
-  }, [visible, reset, loggedInUser]);
+  }, [open, reset, loggedInUser]);
 
   const avatarChange = useCallback(
     ({ file }) => {
@@ -104,7 +105,7 @@ export function Profile({ visible, onCancel }: ModalProps) {
     <Modal
       title={t('title')}
       footer={false}
-      visible={visible}
+      open={open}
       onCancel={onCancel}
       afterClose={reset}
     >

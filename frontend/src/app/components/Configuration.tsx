@@ -1,4 +1,4 @@
-import { EditableProTable, ProColumns } from '@ant-design/pro-table';
+import { EditableProTable, ProColumns } from '@ant-design/pro-components';
 import { useCallback, useMemo, useState } from 'react';
 import { css } from 'styled-components';
 import { uuidv4 } from 'utils/utils';

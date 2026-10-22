@@ -20,7 +20,8 @@ import { BOARD_SELF_CHART_PREFIX } from 'globalConstants';
 import React, { memo, useCallback, useEffect, useMemo } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { LEVEL_10 } from 'styles/StyleConstants';
@@ -60,7 +61,7 @@ export const BoardEditor: React.FC<{
   boardId: string;
 }> = memo(({ boardId }) => {
   useEditBoardSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   const board = useSelector(selectEditBoard);

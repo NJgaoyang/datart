@@ -150,7 +150,7 @@ const ConditionalStyle: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
     };
 
     return (
-      <StyledConditionalStylePanel direction="vertical">
+      <StyledConditionalStylePanel orientation="vertical">
         <Button type="primary" onClick={openConditionalStyle}>
           {t('conditionalStyleTable.btn.add')}
         </Button>
@@ -168,7 +168,7 @@ const ConditionalStyle: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
         </Row>
         <AddModal
           context={context}
-          visible={visible}
+          open={visible}
           translate={t}
           values={currentItem}
           onOk={submitConditionalStyleModal}

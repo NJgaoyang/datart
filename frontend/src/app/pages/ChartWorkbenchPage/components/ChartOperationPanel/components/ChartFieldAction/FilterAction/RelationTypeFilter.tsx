@@ -134,13 +134,12 @@ const ConditionCol: FC<{
         <Select
           value={condition?.value as string}
           onChange={handleConditionChange}
-        >
-          {fields.map(c => (
-            <Select.Option value={c.colName}>
-              {getColumnRenderName(c)}
-            </Select.Option>
-          ))}
-        </Select>
+          options={[
+            ...(fields.flatMap(c => [
+              { value: c.colName, label: getColumnRenderName(c) },
+            ]) || []),
+          ]}
+        />
         <BranchesOutlined onClick={onAddSubRelation} />
       </Row>
     </StyledRelationCol>

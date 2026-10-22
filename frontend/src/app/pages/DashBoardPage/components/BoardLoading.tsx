@@ -23,7 +23,7 @@ export const BoardLoading: React.FC<{ tip?: string }> = ({
 }) => {
   return (
     <Wrapper>
-      <Spin size="large" tip={tip} />
+      <Spin size="large" description={tip} />
     </Wrapper>
   );
 };

@@ -58,8 +58,6 @@ import {
 import { renderMataProps } from '../../../../slice/types';
 import DateLevelFieldContainer from './DateLevelFieldContainer';
 
-const { Panel } = Collapse;
-
 export const ChartDraggableSourceContainer: FC<
   {
     isActive?: boolean;
@@ -93,7 +91,6 @@ export const ChartDraggableSourceContainer: FC<
   customName,
   displayName,
   comment,
-  isDisplayNameCustom,
   folderRole,
   dateFormat,
   onDeleteComputedField,
@@ -115,14 +112,13 @@ export const ChartDraggableSourceContainer: FC<
         path,
         displayName,
         comment,
-        isDisplayNameCustom,
       })
     : getFieldDisplayName({
         name: colName,
+        customName,
         path,
         displayName,
         comment,
-        isDisplayNameCustom,
       });
   const [showChild, setShowChild] = useToggle(false);
   const isHierarchyFieldOrTable =
@@ -150,7 +146,6 @@ export const ChartDraggableSourceContainer: FC<
               dateFormat,
               displayName,
               comment,
-              isDisplayNameCustom,
             },
             children,
           ),
@@ -167,7 +162,6 @@ export const ChartDraggableSourceContainer: FC<
       dateFormat,
       displayName,
       fieldId,
-      isDisplayNameCustom,
       originName,
       sourceComment,
       customName,
@@ -223,12 +217,17 @@ export const ChartDraggableSourceContainer: FC<
 
     const _getExtraActionMenus = () => {
       return (
-        <Menu onClick={e => _handleMenuClick(e, colName)}>
-          <Menu.Item key="edit">{t('editField')}</Menu.Item>
-          <Menu.Item disabled={isViewComputedFields} key="delete">
-            {t('deleteField')}
-          </Menu.Item>
-        </Menu>
+        <Menu
+          onClick={e => _handleMenuClick(e, colName)}
+          items={[
+            { key: String('edit'), label: t('editField') },
+            {
+              disabled: isViewComputedFields,
+              key: String('delete'),
+              label: t('deleteField'),
+            },
+          ]}
+        />
       );
     };
 
@@ -291,34 +290,38 @@ export const ChartDraggableSourceContainer: FC<
           <CollapseWrapper
             defaultActiveKey={[colName]}
             ghost
-            expandIconPosition="right"
+            expandIconPlacement="end"
             expandIcon={({ isActive }) => {
               return <DownOutlined rotate={isActive ? -180 : 0} />;
             }}
-          >
-            <Panel
-              key={colName}
-              header={
-                <DateFieldHeader ref={drag}>
-                  <IW fontSize={FONT_SIZE_TITLE}>{icon}</IW>
-                  <StyledDateFieldContent>
-                    {fieldDisplayName}
-                  </StyledDateFieldContent>
-                </DateFieldHeader>
-              }
-            >
-              {(children || []).map((item, i) => {
-                return (
-                  <DateLevelFieldContainer
-                    key={i}
-                    item={item as any}
-                    parentDisplayName={fieldDisplayName}
-                    onClearCheckedList={onClearCheckedList}
-                  />
-                );
-              })}
-            </Panel>
-          </CollapseWrapper>
+            items={[
+              {
+                key: String(colName),
+                label: (
+                  <DateFieldHeader
+                    ref={node => {
+                      drag(node);
+                    }}
+                  >
+                    <IW fontSize={FONT_SIZE_TITLE}>{icon}</IW>
+                    <StyledDateFieldContent>
+                      {fieldDisplayName}
+                    </StyledDateFieldContent>
+                  </DateFieldHeader>
+                ),
+                children: (children || []).map((item, i) => {
+                  return (
+                    <DateLevelFieldContainer
+                      key={i}
+                      item={item as any}
+                      parentDisplayName={fieldDisplayName}
+                      onClearCheckedList={onClearCheckedList}
+                    />
+                  );
+                }),
+              },
+            ]}
+          />
         </Row>
       );
     } else {
@@ -336,7 +339,7 @@ export const ChartDraggableSourceContainer: FC<
           <div onClick={stopPPG}>
             <Dropdown
               disabled={_isAllowMoreAction()}
-              overlay={_getExtraActionMenus()}
+              popupRender={() => _getExtraActionMenus()}
               trigger={['click']}
             >
               <ToolbarButton
@@ -360,7 +363,6 @@ export const ChartDraggableSourceContainer: FC<
     comment,
     sourceComment,
     customName,
-    isDisplayNameCustom,
     path,
     fieldDisplayName,
     children,
@@ -395,7 +397,6 @@ export const ChartDraggableSourceContainer: FC<
           path={item.path}
           displayName={item.displayName}
           comment={item.comment}
-          isDisplayNameCustom={item.isDisplayNameCustom}
           category={item.category}
           expression={item.expression}
           type={item.type}
@@ -438,7 +439,9 @@ export const ChartDraggableSourceContainer: FC<
         }
         onSelectionChange?.(colName, e.metaKey || e.ctrlKey, e.shiftKey);
       }}
-      ref={type === 'DATE' && category === 'field' ? null : drag}
+      ref={node => {
+        if (type !== 'DATE' || category !== 'field') drag(node);
+      }}
       className={
         type === 'DATE' && category === 'field' ? '' : styleClasses.join(' ')
       }

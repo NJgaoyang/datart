@@ -1,73 +1,57 @@
 /**
- * Datart
- *
- * Copyright 2021
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * React 19 uses createRoot instead of the removed ReactDOM.render API.
+ * Preserve a single root for each chart container over its mount/update/resize lifecycle.
  */
-
 import React from 'react';
-import ReactDom from 'react-dom';
+import * as ReactDom from 'react-dom';
+import { createRoot, type Root } from 'react-dom/client';
 
-interface ReactLifecycleAdapterProps {
-  mounted: (container, options?, context?) => any;
-  updated: (options: any, context?) => any;
-  unmount: () => void;
-  resize: (opt: any) => void;
-}
+export default class ReactLifecycleAdapter {
+  private root: Root | null = null;
+  private domContainer: Element | null = null;
+  private reactComponent: any;
+  private externalLibs: Record<string, unknown> = {};
 
-export default class ReactLifecycleAdapter
-  implements ReactLifecycleAdapterProps
-{
-  private domContainer;
-  private reactComponent;
-  private externalLibs;
-
-  constructor(componentWrapper) {
+  constructor(componentWrapper: any) {
     this.reactComponent = componentWrapper;
   }
 
-  public registerImportDependencies(dependencies) {
-    this.externalLibs = dependencies;
+  public registerImportDependencies(dependencies: Record<string, unknown> | string[]) {
+    this.externalLibs = { ...dependencies };
   }
 
-  public mounted(container, options?, context?) {
+  public mounted(container: Element | null, options?: any, context?: any) {
+    if (!container) return;
+    // A chart instance may be remounted into a fresh frame container.
+    if (this.domContainer !== container) {
+      this.root?.unmount();
+      this.root = null;
+    }
     this.domContainer = container;
-    return ReactDom.render(
-      React.createElement(this.getComponent(), options, context),
-      this.domContainer,
-    );
+    this.root ??= createRoot(container);
+    this.render(options, context);
   }
 
-  public updated(options, context?) {
-    return ReactDom.render(
-      React.createElement(this.getComponent(), options, context),
-      this.domContainer,
-    );
+  public updated(options: any, context?: any) {
+    this.render(options, context);
+  }
+
+  public resize(options: any, context?: any) {
+    this.render(options, context);
   }
 
   public unmount() {
-    ReactDom.unmountComponentAtNode(this.domContainer);
+    this.root?.unmount();
+    this.root = null;
+    this.domContainer = null;
   }
 
-  public resize(options, context?) {
-    return ReactDom.render(
-      React.createElement(this.getComponent(), options, context),
-      this.domContainer,
-    );
+  private render(options?: any, context?: any) {
+    if (!this.root) return;
+    this.root.render(React.createElement(this.getComponent(), options, context));
   }
 
-  private getComponent() {
+  private getComponent(): React.ComponentType<any> {
     if (typeof this.reactComponent === 'function') {
       return this.reactComponent({
         React,

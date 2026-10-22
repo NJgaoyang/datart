@@ -18,7 +18,8 @@
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { CommonFormTypes } from 'globalConstants';
 import { useCallback, useContext } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { request2 } from 'utils/request';
 import { getInsertedNodeIndex } from 'utils/utils';
 import { SaveFormContext, SaveFormModel } from '../SaveFormContext';
@@ -29,7 +30,7 @@ import { VizType } from '../slice/types';
 export function useSaveAsViz() {
   const { showSaveForm } = useContext(SaveFormContext);
   const vizsData = useSelector(selectVizs);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const tg = useI18NPrefix('global');
 
   const getVizDetail = useCallback(
@@ -61,7 +62,7 @@ export function useSaveAsViz() {
       showSaveForm({
         vizType: type,
         type: CommonFormTypes.SaveAs,
-        visible: true,
+        open: true,
         initialValues: {
           ...vizData,
           parentId: vizData.parentId || void 0,

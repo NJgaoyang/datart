@@ -28,8 +28,8 @@ import {
 } from 'antd';
 import { DateFormat } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
-import { TIME_FORMATTER } from 'globalConstants';
 import dayjs from 'dayjs';
+import { TIME_FORMATTER } from 'globalConstants';
 import { memo, useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { SPACE, SPACE_TIMES } from 'styles/StyleConstants';
@@ -165,7 +165,7 @@ export const DefaultValue = memo(
     }
 
     return (
-      <Wrapper direction="vertical">
+      <Wrapper orientation="vertical">
         {expression || type === VariableValueTypes.Expression ? (
           <Input.TextArea
             placeholder={t('enterExpression')}
@@ -215,15 +215,12 @@ export const DefaultValue = memo(
             className="input"
             value={dateFormat}
             onChange={onChangeDateFormat}
-          >
-            {Object.values(DateFormat).map(format => {
-              return (
-                <Select.Option value={format} key={format}>
-                  {format}
-                </Select.Option>
-              );
-            })}
-          </Select>
+            options={[
+              ...(Object.values(DateFormat).flatMap(format => {
+                return [{ value: format, key: String(format), label: format }];
+              }) || []),
+            ]}
+          />
         )}
       </Wrapper>
     );

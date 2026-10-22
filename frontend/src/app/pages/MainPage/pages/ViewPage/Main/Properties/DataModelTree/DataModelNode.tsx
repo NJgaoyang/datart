@@ -124,7 +124,7 @@ const DataModelNode: FC<{
           <DatasetCommentLabel
               label={getFieldDisplayName(node)}
               comment={node.sourceComment || node.comment}
-              hasCustomName={Boolean(node.customName || node.isDisplayNameCustom)}
+              hasCustomName={Boolean(node.customName)}
             />
           <div className="action">
             {isHover && !isDragging && onEditDisplayName && (

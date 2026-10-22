@@ -17,16 +17,17 @@
  */
 
 import { LoginFormLight } from 'app/pages/LoginPage/LoginFormLight';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { selectLoginLoading } from '../slice/selectors';
 
-function ShareLoginModal({ visible, onChange }) {
-  const dispatch = useDispatch();
+function ShareLoginModal({ open, onChange }) {
+  const dispatch = useAppDispatch();
   const loading = useSelector(selectLoginLoading);
 
   return (
-    visible && (
+    open && (
       <LoginWrapper>
         <LoginFormLight loading={loading} inShare={true} onLogin={onChange} />
       </LoginWrapper>

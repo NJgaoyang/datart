@@ -19,7 +19,7 @@ import throttle from 'lodash/throttle';
 import { RefObject, useCallback, useEffect, useMemo, useRef } from 'react';
 import { boardScroll } from '../pages/BoardEditor/slice/events';
 export default function useBoardScroll(boardId: string) {
-  const gridWrapRef: RefObject<HTMLDivElement> = useRef(null);
+  const gridWrapRef: RefObject<HTMLDivElement | null> = useRef(null);
 
   const onEmitScroll = useCallback(() => {
     if (boardId) {

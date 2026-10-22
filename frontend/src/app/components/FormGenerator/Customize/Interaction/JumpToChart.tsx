@@ -50,44 +50,43 @@ const JumpToChart: FC<
     <Space>
       <Select
         virtual
-        showSearch
-        optionFilterProp="children"
         style={{ minWidth: 100, maxWidth: 200 }}
-        dropdownMatchSelectWidth={false}
+        popupMatchSelectWidth={false}
         value={value?.relId}
         placeholder={t('drillThrough.rule.reference.title')}
         onChange={relId => onValueChange({ ...value, ...{ relId } })}
-      >
-        {vizs
-          ?.filter(v => v.relType === 'DATACHART')
-          ?.map(c => {
-            return (
-              <Select.Option key={c.relId} value={c.relId}>
-                {c.name}
-              </Select.Option>
-            );
-          })}
-      </Select>
+        options={[
+          ...(vizs
+            ?.filter(v => v.relType === 'DATACHART')
+            ?.flatMap(c => {
+              return [{ key: String(c.relId), value: c.relId, label: c.name }];
+            }) || []),
+        ]}
+        showSearch={{ optionFilterProp: 'label' }}
+      />
       <Select
         value={value?.relation}
         placeholder={t('drillThrough.rule.relation.title')}
         onChange={relation => onValueChange({ ...value, ...{ relation } })}
-      >
-        <Select.Option value={InteractionFieldRelation.Auto}>
-          {t('drillThrough.rule.relation.auto')}
-        </Select.Option>
-        <Select.Option value={InteractionFieldRelation.Customize}>
-          {t('drillThrough.rule.relation.customize')}
-        </Select.Option>
-      </Select>
+        options={[
+          {
+            value: InteractionFieldRelation.Auto,
+            label: t('drillThrough.rule.relation.auto'),
+          },
+          {
+            value: InteractionFieldRelation.Customize,
+            label: t('drillThrough.rule.relation.customize'),
+          },
+        ]}
+      />
       <Dropdown
-        destroyPopupOnHide
-        overlayStyle={{ margin: 4 }}
+        destroyOnHidden
+        styles={{ root: { margin: 4 } }}
         disabled={
           value?.relation !== InteractionFieldRelation.Customize ||
           isEmpty(value?.relId)
         }
-        overlay={() => (
+        popupRender={() => (
           <ChartRelationList
             translate={t}
             targetRelId={value?.relId}

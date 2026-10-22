@@ -23,7 +23,7 @@ import {
   MoreOutlined,
 } from '@ant-design/icons';
 import { Menu, message, Popconfirm, TreeDataNode } from 'antd';
-import { MenuListItem, Popup, Tree, TreeTitle } from 'app/components';
+import { MenuItemLabel, Popup, Tree, TreeTitle } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import {
   selectIsOrgOwner,
@@ -33,7 +33,8 @@ import {
 } from 'app/pages/MainPage/slice/selectors';
 import { CommonFormTypes } from 'globalConstants';
 import { memo, useCallback, useContext, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import { onDropTreeFn, stopPPG, uuidv4 } from 'utils/utils';
 import { CascadeAccess, getCascadeAccess } from '../../../Access';
@@ -55,7 +56,7 @@ interface SourceListProps {
 }
 
 export const SourceList = memo(({ sourceId, list }: SourceListProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const orgId = useSelector(selectOrgId);
   const deleteLoading = useSelector(selectDeleteSourceLoading);
@@ -88,7 +89,7 @@ export const SourceList = memo(({ sourceId, list }: SourceListProps) => {
             showSaveForm({
               sourceType: 'folder',
               type: CommonFormTypes.Edit,
-              visible: true,
+              open: true,
               simple: false,
               initialValues: {
                 id,
@@ -182,49 +183,70 @@ export const SourceList = memo(({ sourceId, list }: SourceListProps) => {
                   prefixCls="ant-dropdown-menu"
                   selectable={false}
                   onClick={moreMenuClick(node)}
-                >
-                  {isAuthorized && (
-                    <MenuListItem
-                      key="info"
-                      prefix={<EditOutlined className="icon" />}
-                    >
-                      {tg('button.info')}
-                    </MenuListItem>
-                  )}
-
-                  {isAuthorized && type !== 'FOLDER' && (
-                    <MenuListItem
-                      key="addNewView"
-                      prefix={<EditOutlined className="icon" />}
-                    >
-                      {t('creatView')}
-                    </MenuListItem>
-                  )}
-
-                  {isAuthorized && (
-                    <MenuListItem
-                      key="delete"
-                      prefix={
-                        deleteLoading ? (
-                          <LoadingOutlined className="icon" />
-                        ) : (
-                          <DeleteOutlined className="icon" />
-                        )
-                      }
-                    >
-                      <Popconfirm
-                        title={
-                          isFolder
-                            ? tg('operation.deleteConfirm')
-                            : tg('operation.archiveConfirm')
-                        }
-                        onConfirm={del(id, isFolder)}
-                      >
-                        {isFolder ? tg('button.delete') : tg('button.archive')}
-                      </Popconfirm>
-                    </MenuListItem>
-                  )}
-                </Menu>
+                  items={[
+                    ...(isAuthorized
+                      ? [
+                          {
+                            key: String('info'),
+                            label: (
+                              <MenuItemLabel
+                                prefix={<EditOutlined className="icon" />}
+                              >
+                                {tg('button.info')}
+                              </MenuItemLabel>
+                            ),
+                          },
+                        ]
+                      : []),
+                    ...(isAuthorized && type !== 'FOLDER'
+                      ? [
+                          {
+                            key: String('addNewView'),
+                            label: (
+                              <MenuItemLabel
+                                prefix={<EditOutlined className="icon" />}
+                              >
+                                {t('creatView')}
+                              </MenuItemLabel>
+                            ),
+                          },
+                        ]
+                      : []),
+                    ...(isAuthorized
+                      ? [
+                          {
+                            key: String('delete'),
+                            label: (
+                              <MenuItemLabel
+                                prefix={
+                                  deleteLoading ? (
+                                    <LoadingOutlined className="icon" />
+                                  ) : (
+                                    <DeleteOutlined className="icon" />
+                                  )
+                                }
+                              >
+                                {
+                                  <Popconfirm
+                                    title={
+                                      isFolder
+                                        ? tg('operation.deleteConfirm')
+                                        : tg('operation.archiveConfirm')
+                                    }
+                                    onConfirm={del(id, isFolder)}
+                                  >
+                                    {isFolder
+                                      ? tg('button.delete')
+                                      : tg('button.archive')}
+                                  </Popconfirm>
+                                }
+                              </MenuItemLabel>
+                            ),
+                          },
+                        ]
+                      : []),
+                  ]}
+                />
               }
             >
               <span className="action" onClick={stopPPG}>

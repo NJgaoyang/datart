@@ -19,7 +19,6 @@ import { Tabs } from 'antd';
 import { FC, memo, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { MockDataEditor } from './MockDataEditor';
-const { TabPane } = Tabs;
 export interface MockDataPanelProps {
   onClose: () => void;
 }
@@ -59,11 +58,15 @@ export const MockDataTab: FC<{
   }
   return (
     <StyledWrapper className="tab">
-      <Tabs centered onChange={onChange}>
-        {dataList.map(t => {
-          return <TabPane tab={t.name} key={t.id}></TabPane>;
-        })}
-      </Tabs>
+      <Tabs
+        centered
+        onChange={onChange}
+        items={[
+          ...(dataList.flatMap(t => {
+            return [{ label: t.name, key: String(t.id), children: null }];
+          }) || []),
+        ]}
+      />
       <MockDataEditor originalData={curDataVal} onDataChange={onDataChange} />
     </StyledWrapper>
   );

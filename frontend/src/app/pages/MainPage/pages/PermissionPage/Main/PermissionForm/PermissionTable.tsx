@@ -166,7 +166,7 @@ export const PermissionTable = memo(
             <Input
               placeholder={t('searchResources')}
               prefix={<SearchOutlined className="icon" />}
-              bordered={false}
+              variant="borderless"
               onChange={debouncedSearch}
             />
           </Col>

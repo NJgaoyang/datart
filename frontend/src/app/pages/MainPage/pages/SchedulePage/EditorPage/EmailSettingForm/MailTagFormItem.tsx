@@ -115,9 +115,9 @@ export const MailTagFormItem: FC<MailTagFormItemProps> = ({
         value={keyword}
         onChange={setKeyword}
         options={autoCompleteOptions}
-        onSearch={onDebouncedSearch}
         onSelect={onSelectOrRemoveEmail}
         onBlur={() => onSearch('')}
+        showSearch={{ onSearch: onDebouncedSearch }}
       >
         <Input suffix={<SearchOutlined />} placeholder={t('placeholder')} />
       </AutoComplete>

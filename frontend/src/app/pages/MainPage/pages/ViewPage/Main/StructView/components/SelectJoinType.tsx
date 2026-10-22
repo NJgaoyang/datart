@@ -35,19 +35,26 @@ const SelectJoinType = memo(({ type, onChange }: SelectJoinTypeProps) => {
     <Dropdown
       trigger={['click']}
       placement="bottomLeft"
-      overlay={
-        <Menu selectedKeys={[type]} onClick={e => onChange(e.key)}>
-          <Menu.Item key={StructViewJoinType.LeftJoin}>
-            {t(StructViewJoinType.LeftJoin)}
-          </Menu.Item>
-          <Menu.Item key={StructViewJoinType.RightJoin}>
-            {t(StructViewJoinType.RightJoin)}
-          </Menu.Item>
-          <Menu.Item key={StructViewJoinType.InnerJoin}>
-            {t(StructViewJoinType.InnerJoin)}
-          </Menu.Item>
-        </Menu>
-      }
+      popupRender={() => (
+        <Menu
+          selectedKeys={[type]}
+          onClick={e => onChange(e.key)}
+          items={[
+            {
+              key: String(StructViewJoinType.LeftJoin),
+              label: t(StructViewJoinType.LeftJoin),
+            },
+            {
+              key: String(StructViewJoinType.RightJoin),
+              label: t(StructViewJoinType.RightJoin),
+            },
+            {
+              key: String(StructViewJoinType.InnerJoin),
+              label: t(StructViewJoinType.InnerJoin),
+            },
+          ]}
+        />
+      )}
     >
       <Icon
         className={classnames('iconfont', {

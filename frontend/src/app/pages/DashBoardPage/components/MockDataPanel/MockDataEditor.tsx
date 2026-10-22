@@ -17,10 +17,10 @@
  */
 // import JSONFormatter from 'json-formatter-js';
 // import {languages} from 'monaco-editor/esm/vs/language/json/fillers/monaco-editor-core.js';
+import CodeEditor, { monaco } from 'app/components/CodeEditor';
 import debounce from 'lodash/debounce';
 import 'monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution';
 import { FC, memo, useCallback, useMemo } from 'react';
-import MonacoEditor, { monaco } from 'react-monaco-editor';
 import { useSelector } from 'react-redux';
 import styled from 'styled-components';
 import { FONT_SIZE_BASE } from 'styles/StyleConstants';
@@ -57,7 +57,7 @@ export const MockDataEditor: FC<{ originalData: object; onDataChange: any }> =
     }, [onDataChange]);
     return (
       <StyledWrapper>
-        <MonacoEditor
+        <CodeEditor
           value={editorValue}
           language="javascript"
           theme={`vs-${theme}`}
@@ -74,8 +74,8 @@ export const MockDataEditor: FC<{ originalData: object; onDataChange: any }> =
             readOnly: false,
           }}
           onChange={debouncedEditorChange}
-          editorWillMount={editorWillMount}
-          editorDidMount={editorDidMount}
+          onBeforeMount={editorWillMount}
+          onMount={editorDidMount}
         />
       </StyledWrapper>
     );

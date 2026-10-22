@@ -187,10 +187,22 @@ export const SubjectForm = memo(
         title={
           scope === VariableScopes.Public ? (
             <>
-              <StyledTabs defaultActiveKey={tab} onChange={setTab}>
-                <Tabs.TabPane key="role" tab={t('relatedRole')} />
-                <Tabs.TabPane key="member" tab={t('relatedMember')} />
-              </StyledTabs>
+              <StyledTabs
+                defaultActiveKey={tab}
+                onChange={setTab}
+                items={[
+                  {
+                    key: String('role'),
+                    label: t('relatedRole'),
+                    children: null,
+                  },
+                  {
+                    key: String('member'),
+                    label: t('relatedMember'),
+                    children: null,
+                  },
+                ]}
+              />
             </>
           ) : (
             t('relatedRole')
@@ -198,7 +210,7 @@ export const SubjectForm = memo(
         }
         onOk={save}
         afterClose={onAfterClose}
-        destroyOnClose
+        destroyOnHidden
       >
         <RowPermissionTable
           type="role"

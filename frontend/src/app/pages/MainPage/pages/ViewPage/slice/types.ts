@@ -146,11 +146,12 @@ export interface Column extends Schema {
   path?: string[];
   displayName?: string;
   comment?: string;
-  isDisplayNameCustom?: boolean;
 }
 
 export interface ColumnsProps {
   fieldId?: string;
+  sourceComment?: string;
+  customName?: string;
   category?: ColumnCategories;
   index?: number;
   name: string[];
@@ -159,7 +160,6 @@ export interface ColumnsProps {
   role?: ColumnRole;
   displayName?: string;
   comment?: string;
-  isDisplayNameCustom?: boolean;
 }
 
 export interface Model {

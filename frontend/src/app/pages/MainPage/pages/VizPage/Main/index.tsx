@@ -1,11 +1,12 @@
 import { CloseOutlined } from '@ant-design/icons';
 import { Dropdown, Menu } from 'antd';
-import { EmptyFiller, TabPane, Tabs } from 'app/components';
+import { EmptyFiller, Tabs } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import BoardEditor from 'app/pages/DashBoardPage/pages/BoardEditor';
 import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
 import { useCallback, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useLocation, useMatch, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { LEVEL_1 } from 'styles/StyleConstants';
@@ -25,7 +26,7 @@ import { VizContainer } from './VizContainer';
 
 export function Main({ sliderVisible }: { sliderVisible: boolean }) {
   const { actions } = useVizSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const vizMatch = useMatch('/organizations/:orgId/vizs/:vizId');
   const boardEditorMatch = useMatch(
@@ -184,19 +185,18 @@ export function Main({ sliderVisible }: { sliderVisible: boolean }) {
   };
 
   const menu = (id: string) => (
-    <Menu onClick={e => handleClickMenu(e, id)}>
-      <Menu.Item key="CLOSE_OTHER">
-        <span>{t('closeOther')}</span>
-      </Menu.Item>
-      <Menu.Item key="CLOSE_ALL">
-        <span>{t('closeAll')}</span>
-      </Menu.Item>
-    </Menu>
+    <Menu
+      onClick={e => handleClickMenu(e, id)}
+      items={[
+        { key: String('CLOSE_OTHER'), label: <span>{t('closeOther')}</span> },
+        { key: String('CLOSE_ALL'), label: <span>{t('closeAll')}</span> },
+      ]}
+    />
   );
 
   const Tab = (id: string, name: string) => (
     <span>
-      <Dropdown overlay={menu(id)} trigger={['contextMenu']}>
+      <Dropdown popupRender={() => menu(id)} trigger={['contextMenu']}>
         <span className="ant-dropdown-link">{name}</span>
       </Dropdown>
     </span>
@@ -212,19 +212,21 @@ export function Main({ sliderVisible }: { sliderVisible: boolean }) {
           activeKey={selectedTab?.id}
           onChange={tabChange}
           onEdit={tabEdit}
-        >
-          {tabs.map(({ id, name }) => (
-            <TabPane
-              key={id}
-              tab={Tab(id, name)}
-              closeIcon={
-                <CloseIconWrapper>
-                  <CloseOutlined />
-                </CloseIconWrapper>
-              }
-            />
-          ))}
-        </Tabs>
+          items={[
+            ...(tabs.flatMap(({ id, name }) => [
+              {
+                key: String(id),
+                label: Tab(id, name),
+                removeIcon: (
+                  <CloseIconWrapper>
+                    <CloseOutlined />
+                  </CloseIconWrapper>
+                ),
+                children: null,
+              },
+            ]) || []),
+          ]}
+        />
       </TabsWrapper>
       {selectedTab && (
         <VizContainer

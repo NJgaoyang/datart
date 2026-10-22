@@ -49,3 +49,5 @@ expect.extend({
     }
   },
 });
+
+// Registered at runtime; TypeScript callsites use structural matcher assertions.\n

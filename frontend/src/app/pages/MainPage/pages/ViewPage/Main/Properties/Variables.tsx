@@ -43,8 +43,9 @@ import { VariableFormModel } from 'app/pages/MainPage/pages/VariablePage/types';
 import { VariableForm } from 'app/pages/MainPage/pages/VariablePage/VariableForm';
 import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
 import classnames from 'classnames';
-import { CommonFormTypes, TIME_FORMATTER } from 'globalConstants';
 import { Dayjs } from 'dayjs';
+import { CommonFormTypes, TIME_FORMATTER } from 'globalConstants';
+import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import {
   memo,
   ReactElement,
@@ -54,8 +55,8 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { monaco } from 'react-monaco-editor';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { SPACE_MD, SPACE_XS } from 'styles/StyleConstants';
 import { errorHandle, uuidv4 } from 'utils/utils';
@@ -72,7 +73,7 @@ import Container from './Container';
 
 export const Variables = memo(() => {
   const { actions } = useViewSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const [formType, setFormType] = useState(CommonFormTypes.Add);
   const [formVisible, setFormVisible] = useState(false);
   const [editingVariable, setEditingVariable] = useState<
@@ -386,25 +387,25 @@ export const Variables = memo(() => {
         orgId={orgId}
         editingVariable={editingVariable}
         variables={variables}
-        visible={formVisible}
+        open={formVisible}
         title={t('formTitle')}
         type={formType}
         onSave={save}
         onCancel={hideForm}
         afterClose={afterFormClose}
         keyboard={false}
-        maskClosable={false}
+        mask={{ closable: false }}
       />
       <SubjectForm
         scope={VariableScopes.Private}
         editingVariable={editingVariable}
-        visible={subjectFormVisible}
+        open={subjectFormVisible}
         rowPermissions={rowPermissions}
         onSave={saveRelations}
         onCancel={hideSubjectForm}
         afterClose={afterFormClose}
         keyboard={false}
-        maskClosable={false}
+        mask={{ closable: false }}
       />
     </Container>
   );

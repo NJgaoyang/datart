@@ -80,22 +80,19 @@ export const StoryOverLay: React.FC<BoardOverLayProps> = memo(
       () =>
         renderList
           .filter(item => item.render)
-          .map(item => {
-            return (
-              <>
-                <Menu.Item
-                  key={item.key}
-                  icon={item.icon}
-                  onClick={item.onClick}
-                >
-                  {item.content}
-                </Menu.Item>
-                {item.className && <Menu.Divider />}
-              </>
-            );
+          .flatMap(item => {
+            return [
+              {
+                key: String(item.key),
+                icon: item.icon,
+                onClick: item.onClick,
+                label: item.content,
+              },
+              ...(item.className ? [{ type: 'divider' as const }] : []),
+            ];
           }),
       [renderList],
     );
-    return <Menu>{actionItems}</Menu>;
+    return <Menu items={[...actionItems]} />;
   },
 );

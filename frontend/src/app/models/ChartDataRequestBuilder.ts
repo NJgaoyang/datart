@@ -204,7 +204,6 @@ export class ChartDataRequestBuilder {
               sourceComment: c.sourceComment,
               displayName: c.displayName,
               comment: c.comment,
-              isDisplayNameCustom: c.isDisplayNameCustom,
             }
           : undefined,
       )

@@ -1,5 +1,5 @@
 import { Modal, ModalProps } from 'antd';
-import React, { cloneElement, ReactElement, ReactNode } from 'react';
+import { cloneElement, ReactElement, ReactNode } from 'react';
 import styled from 'styled-components';
 import {
   FONT_SIZE_HEADING,
@@ -9,15 +9,21 @@ import {
 import { mergeClassNames } from 'utils/utils';
 
 export interface ConfirmProps extends ModalProps {
-  icon?: ReactElement;
+  icon?: ReactElement<{ className?: string }>;
   title?: ReactNode;
   content?: ReactNode;
   footer?: ReactNode;
 }
 
-export function Confirm({ title, content, icon, ...modalProps }: ConfirmProps) {
+export function Confirm({
+  title,
+  content,
+  icon,
+  open,
+  ...modalProps
+}: ConfirmProps) {
   return (
-    <Modal width={400} closable={false} {...modalProps}>
+    <Modal width={400} closable={false} {...modalProps} open={open}>
       <ConfirmBody>
         {icon &&
           cloneElement(icon, {

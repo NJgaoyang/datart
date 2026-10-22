@@ -1,12 +1,13 @@
 import { DeleteOutlined, EditOutlined, MoreOutlined } from '@ant-design/icons';
 import { Menu, message, Popconfirm } from 'antd';
-import { MenuListItem, Popup, Tree, TreeTitle } from 'app/components';
+import { MenuItemLabel, Popup, Tree, TreeTitle } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { CascadeAccess } from 'app/pages/MainPage/Access';
 import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
 import { CommonFormTypes } from 'globalConstants';
 import { memo, useCallback, useContext, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import { onDropTreeFn, stopPPG } from 'utils/utils';
 import { LocalTreeDataNode } from '../../../../slice/types';
@@ -29,7 +30,7 @@ interface StoryboardListProps {
 }
 
 export const List = memo(({ list, selectedId }: StoryboardListProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const loading = useSelector(selectStoryboardListLoading);
   const orgId = useSelector(selectOrgId);
@@ -81,7 +82,7 @@ export const List = memo(({ list, selectedId }: StoryboardListProps) => {
             showSaveForm({
               vizType: 'STORYBOARD',
               type: CommonFormTypes.Edit,
-              visible: true,
+              open: true,
               initialValues: {
                 ...storyboard,
                 parentId: storyboard.parentId || void 0,
@@ -125,29 +126,42 @@ export const List = memo(({ list, selectedId }: StoryboardListProps) => {
                   prefixCls="ant-dropdown-menu"
                   selectable={false}
                   onClick={moreMenuClick(node)}
-                >
-                  <MenuListItem
-                    key="info"
-                    prefix={<EditOutlined className="icon" />}
-                  >
-                    {tg('button.info')}
-                  </MenuListItem>
-                  <MenuListItem
-                    key="delete"
-                    prefix={<DeleteOutlined className="icon" />}
-                  >
-                    <Popconfirm
-                      title={`${
-                        isFolder
-                          ? tg('operation.deleteConfirm')
-                          : tg('operation.archiveConfirm')
-                      }`}
-                      onConfirm={archiveStoryboard(isFolder, id)}
-                    >
-                      {isFolder ? tg('button.delete') : tg('button.archive')}
-                    </Popconfirm>
-                  </MenuListItem>
-                </Menu>
+                  items={[
+                    {
+                      key: String('info'),
+                      label: (
+                        <MenuItemLabel
+                          prefix={<EditOutlined className="icon" />}
+                        >
+                          {tg('button.info')}
+                        </MenuItemLabel>
+                      ),
+                    },
+                    {
+                      key: String('delete'),
+                      label: (
+                        <MenuItemLabel
+                          prefix={<DeleteOutlined className="icon" />}
+                        >
+                          {
+                            <Popconfirm
+                              title={`${
+                                isFolder
+                                  ? tg('operation.deleteConfirm')
+                                  : tg('operation.archiveConfirm')
+                              }`}
+                              onConfirm={archiveStoryboard(isFolder, id)}
+                            >
+                              {isFolder
+                                ? tg('button.delete')
+                                : tg('button.archive')}
+                            </Popconfirm>
+                          }
+                        </MenuItemLabel>
+                      ),
+                    },
+                  ]}
+                />
               }
             >
               <span className="action" onClick={stopPPG}>

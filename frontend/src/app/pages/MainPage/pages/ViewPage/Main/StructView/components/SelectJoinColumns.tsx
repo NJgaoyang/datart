@@ -116,7 +116,7 @@ const SelectJoinColumns = memo(
         >
           <ColumnSelect
             $contentWidth={columnWidths.left}
-            dropdownMatchSelectWidth={false}
+            popupMatchSelectWidth={false}
             allowClear
             placeholder={t('selectField')}
             treeDefaultExpandAll={true}
@@ -138,7 +138,7 @@ const SelectJoinColumns = memo(
         >
           <ColumnSelect
             $contentWidth={columnWidths.right}
-            dropdownMatchSelectWidth={false}
+            popupMatchSelectWidth={false}
             allowClear
             placeholder={t('selectField')}
             treeDefaultExpandAll={true}

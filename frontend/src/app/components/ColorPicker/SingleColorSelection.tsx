@@ -84,9 +84,9 @@ function SingleColorSelection({ color, onChange }: colorSelectionPropTypes) {
         })}
       </ColorPalette>
       <Popover
-        destroyTooltipOnHide
-        onVisibleChange={setMoreStatus}
-        visible={moreStatus}
+        destroyOnHidden
+        onOpenChange={setMoreStatus}
+        open={moreStatus}
         trigger="click"
         placement="bottom"
         autoAdjustOverflow

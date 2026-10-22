@@ -1,13 +1,7 @@
 import { LeftOutlined, MoreOutlined, SearchOutlined } from '@ant-design/icons';
 import { Input, Space, Tooltip } from 'antd';
-import {
-  MenuListItem,
-  MenuWrapper,
-  Popup,
-  ToolbarButton,
-} from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
-import React, { ReactElement, useCallback, useState } from 'react';
+import { ReactElement, useCallback, useState } from 'react';
 import styled from 'styled-components';
 import {
   FONT_SIZE_SUBTITLE,
@@ -21,6 +15,8 @@ import {
   SPACE_UNIT,
   SPACE_XS,
 } from 'styles/StyleConstants';
+import { MenuItemLabel, MenuWrapper, Popup } from '../Popup';
+import { ToolbarButton } from '../ToolbarButton';
 import { AddButton } from './AddButton';
 
 export interface ListTitleProps {
@@ -113,17 +109,17 @@ export function ListTitle({
                   prefixCls="ant-dropdown-menu"
                   selectable={false}
                   onClick={moreMenuClick}
-                >
-                  {more.items.map(({ key, text, prefix, suffix }) => (
-                    <MenuListItem
-                      key={key}
-                      {...(prefix && { prefix })}
-                      {...(suffix && { suffix })}
-                    >
-                      {text}
-                    </MenuListItem>
-                  ))}
-                </MenuWrapper>
+                  items={[
+                    ...(more.items.flatMap(({ key, text, prefix, suffix }) => [
+                      {
+                        key: String(key),
+                        ...(prefix && { prefix }),
+                        ...(suffix && { suffix }),
+                        label: <MenuItemLabel>{text}</MenuItemLabel>,
+                      },
+                    ]) || []),
+                  ]}
+                />
               }
             >
               <ToolbarButton size="small" icon={<MoreOutlined />} />
@@ -136,7 +132,7 @@ export function ListTitle({
           className="search-input"
           prefix={<SearchOutlined className="icon" />}
           placeholder={t('searchValue')}
-          bordered={false}
+          variant="borderless"
           onChange={onSearch}
         />
       </Searchbar>

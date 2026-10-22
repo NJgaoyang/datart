@@ -79,3 +79,4 @@ export type TableCellEvents =
       [key: string]: (e) => any;
     }
   | undefined;
+import type { JSX } from 'react';

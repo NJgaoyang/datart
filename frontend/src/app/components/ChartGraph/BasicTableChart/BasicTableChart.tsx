@@ -158,6 +158,8 @@ class BasicTableChart extends ReactChart {
     this.cachedDatartConfig = {};
     this.cacheContext = null;
     this.selectionManager?.removeWindowListeners(context.window);
+    // React 19 roots must be torn down when switching/reopening table charts.
+    this.adapter?.unmount();
   }
 
   public onResize(options: BrokerOption, context: BrokerContext) {
@@ -1146,16 +1148,10 @@ class BasicTableChart extends ReactChart {
       ['tableHeaderStyle'],
       ['font'],
     );
-    const [summaryFont] = getStyles(
-      settingConfigs || [],
-      ['summary'],
-      ['summaryFont'],
-    );
     const [tableSize] = getStyles(styleConfigs || [], ['style'], ['tableSize']);
     const HEADER_PADDING = { default: 32, middle: 24, small: 16 };
     const TABLE_LINE_HEIGHT = 1.5715;
     const PAGINATION_HEIGHT = { default: 30, middle: 28, small: 26 };
-    const SUMMRAY_ROW_HEIGHT = { default: 34, middle: 26, small: 18 };
     const _getMaxHeaderHierarchy = (headerStyles: Array<{ children: [] }>) => {
       const _maxDeeps = (arr: Array<{ children: [] }> = [], deeps: number) => {
         if (!isEmptyArray(arr) && arr?.length > 0) {
@@ -1175,14 +1171,13 @@ class BasicTableChart extends ReactChart {
       scroll: Object.assign({
         scrollToFirstRowOnChange: true,
         x: this.totalWidth || '100%',
+        // Summary is now INSIDE the body's scroll area (tfoot) and
+        // its sticky row already consumes body height. Do not subtract the
+        // summary a second time or the visible table will shrink again.
         y: !enableFixedHeader
           ? '100%'
           : context?.height
-          ? context?.height -
-            (this.showSummaryRow
-              ? SUMMRAY_ROW_HEIGHT[tableSize || 'default'] +
-                (summaryFont?.fontSize || 0) * TABLE_LINE_HEIGHT
-              : 0) -
+          ? context.height -
             headerHeight -
             (enablePaging ? PAGINATION_HEIGHT[tableSize || 'default'] : 0)
           : 0,

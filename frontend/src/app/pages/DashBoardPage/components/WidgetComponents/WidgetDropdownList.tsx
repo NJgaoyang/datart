@@ -58,23 +58,20 @@ export const WidgetDropdownList: React.FC<{
         }
         return true;
       })
-      .map(item => {
-        return (
-          <React.Fragment key={item.key}>
-            {item.divider && <Menu.Divider />}
-            <Menu.Item
-              danger={item.danger}
-              icon={item.icon}
-              disabled={item.disabled}
-              key={item.key}
-            >
-              {t(item.label || '')}
-            </Menu.Item>
-          </React.Fragment>
-        );
+      .flatMap(item => {
+        return [
+          ...(item.divider ? [{ type: 'divider' as const }] : []),
+          {
+            danger: item.danger,
+            icon: item.icon,
+            disabled: item.disabled,
+            key: String(item.key),
+            label: t(item.label || ''),
+          },
+        ];
       });
 
-    return <Menu onClick={menuClick}>{menuItems}</Menu>;
+    return <Menu onClick={menuClick} items={[...menuItems]} />;
   }, [actionList, widget?.config?.lock, menuClick, t]);
 
   if (actionList.length === 0) {
@@ -83,7 +80,7 @@ export const WidgetDropdownList: React.FC<{
   return (
     <Dropdown
       className="widget-tool-dropdown"
-      overlay={dropdownList}
+      popupRender={() => dropdownList}
       placement="bottomRight"
       trigger={['click']}
       arrow

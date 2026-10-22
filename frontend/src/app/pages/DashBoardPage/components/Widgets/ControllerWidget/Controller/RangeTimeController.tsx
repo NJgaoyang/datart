@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 import { DatePicker, Form, FormItemProps } from 'antd';
+import { BoardContext } from 'app/pages/DashBoardPage/components/BoardProvider/BoardProvider';
 import { PickerType } from 'app/pages/DashBoardPage/pages/BoardEditor/components/ControllerWidgetPanel/types';
 import { formatDateByPickType } from 'app/pages/DashBoardPage/pages/BoardEditor/components/ControllerWidgetPanel/utils';
 import dayjs from 'dayjs';
-import { BoardContext } from 'app/pages/DashBoardPage/components/BoardProvider/BoardProvider';
 import React, { memo, useContext, useMemo } from 'react';
 import styled from 'styled-components';
 const { RangePicker } = DatePicker;
@@ -88,8 +88,12 @@ export const RangeTimeController: React.FC<TimeSetProps> = memo(
             value={_values as any}
             onChange={_onChange}
             className="control-datePicker"
-            classNames={{ popup: { root: isMobile ? 'datart-mobile-date-popup' : undefined } }}
-            bordered={false}
+            classNames={{
+              popup: {
+                root: isMobile ? 'datart-mobile-date-popup' : undefined,
+              },
+            }}
+            variant="borderless"
           />
         ) : (
           <RangePicker
@@ -99,8 +103,12 @@ export const RangeTimeController: React.FC<TimeSetProps> = memo(
             value={_values as any}
             picker={pickerType as any}
             className="control-datePicker"
-            classNames={{ popup: { root: isMobile ? 'datart-mobile-date-popup' : undefined } }}
-            bordered={false}
+            classNames={{
+              popup: {
+                root: isMobile ? 'datart-mobile-date-popup' : undefined,
+              },
+            }}
+            variant="borderless"
           />
         )}
       </StyledWrap>

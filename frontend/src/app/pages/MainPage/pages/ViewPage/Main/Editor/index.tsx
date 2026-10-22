@@ -42,5 +42,8 @@ export const Editor = memo(({ allowManage, allowEnableViz }: EditorProps) => {
 const Wrapper = styled.div`
   display: flex;
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   flex-direction: column;
+  overflow: hidden;
 `;

@@ -23,11 +23,13 @@ import {
 } from '@ant-design/icons';
 import { Tooltip } from 'antd';
 import { Popup, ToolbarButton, Tree } from 'app/components';
+import { APP_CURRENT_VERSION } from 'app/configVersion';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
-import { APP_CURRENT_VERSION } from 'app/migration/constants';
+
 import classnames from 'classnames';
 import { memo, useCallback, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { FONT_FAMILY, FONT_SIZE_BASE } from 'styles/StyleConstants';
 import { CloneValueDeep, isEmptyArray } from 'utils/object';
@@ -57,7 +59,7 @@ interface ResultsProps {
 
 export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
   const { actions } = useViewSlice();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const viewId = useSelector(state =>
     selectCurrentEditingViewAttr(state, { name: 'id' }),
   ) as string;
@@ -158,7 +160,9 @@ export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
               if (permission) {
                 if (checkOnCurrentRole) {
                   const updatedColumnPermission = Array.from(
-                    new Set((permission.columnPermission || []).concat(columnName)),
+                    new Set(
+                      (permission.columnPermission || []).concat(columnName),
+                    ),
                   );
                   return fullPermissions.sort().join(',') !==
                     updatedColumnPermission.sort().join(',')
@@ -170,9 +174,9 @@ export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
                 } else {
                   return updated.concat({
                     ...permission,
-                    columnPermission: (permission.columnPermission || []).filter(
-                      c => c !== columnName,
-                    ),
+                    columnPermission: (
+                      permission.columnPermission || []
+                    ).filter(c => c !== columnName),
                   });
                 }
               } else {

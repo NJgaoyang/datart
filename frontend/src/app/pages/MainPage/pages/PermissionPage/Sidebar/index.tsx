@@ -21,7 +21,8 @@ import { ListSwitch } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
 import { memo, useCallback, useEffect, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { SPACE_XS } from 'styles/StyleConstants';
@@ -38,7 +39,7 @@ interface SidebarProps {
 
 export const Sidebar = memo(
   ({ viewpoint, viewpointType, viewpointId }: SidebarProps) => {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const orgId = useSelector(selectOrgId);
     const t = useI18NPrefix('permission');

@@ -1,7 +1,7 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { Empty, Tree as AntTree, TreeProps as AntTreeProps } from 'antd';
 import classnames from 'classnames';
-import { MutableRefObject } from 'react';
+import { Ref } from 'react';
 import styled from 'styled-components';
 import {
   FONT_SIZE_BODY,
@@ -15,7 +15,7 @@ import {
 
 interface TreeProps extends AntTreeProps {
   loading: boolean;
-  wrapperRef?: MutableRefObject<HTMLDivElement> | null;
+  wrapperRef?: Ref<HTMLDivElement>;
 }
 
 export function Tree({

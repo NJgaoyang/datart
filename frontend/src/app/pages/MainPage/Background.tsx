@@ -22,7 +22,7 @@ import {
   SettingOutlined,
 } from '@ant-design/icons';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useSelector } from 'react-redux';
 import styled, { keyframes } from 'styled-components';
 import {
@@ -85,7 +85,7 @@ export function Background() {
           <AppstoreAddOutlined className="img" />
           <p>{t('createOrg')}</p>
         </Hint>
-        <OrganizationForm visible={formVisible} onCancel={hideForm} />
+        <OrganizationForm open={formVisible} onCancel={hideForm} />
       </>
     );
   } else {

@@ -47,29 +47,31 @@ const BasicLine: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
           <Group>
             <Select
               className="datart-ant-select"
-              dropdownMatchSelectWidth
+              popupMatchSelectWidth
               placeholder={t('select')}
               value={data.value?.type}
               onChange={handleSettingChange('type')}
-            >
-              {CHART_LINE_STYLES.map(o => (
-                <Select.Option key={o.value} value={o.value}>
-                  {t(o.name, true)}
-                </Select.Option>
-              ))}
-            </Select>
+              options={[
+                ...(CHART_LINE_STYLES.flatMap(o => [
+                  {
+                    key: String(o.value),
+                    value: o.value,
+                    label: t(o.name, true),
+                  },
+                ]) || []),
+              ]}
+            />
             <Select
               className="datart-ant-select"
               placeholder={t('select')}
               value={data.value?.width}
               onChange={handleSettingChange('width')}
-            >
-              {CHART_LINE_WIDTH.map(o => (
-                <Select.Option key={o} value={o}>
-                  {o}
-                </Select.Option>
-              ))}
-            </Select>
+              options={[
+                ...(CHART_LINE_WIDTH.flatMap(o => [
+                  { key: String(o), value: o, label: o },
+                ]) || []),
+              ]}
+            />
           </Group>
           <ColorPickerPopover
             {...rest}

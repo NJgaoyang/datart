@@ -21,7 +21,8 @@ import useRouteQuery from 'app/hooks/useRouteQuery';
 import ChartManager from 'app/models/ChartManager';
 import { login } from 'app/slice/thunks';
 import { useCallback, useEffect, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useLocation, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { getToken } from 'utils/auth';
@@ -49,7 +50,7 @@ import ChartPreviewBoardForShare from './ChartPreviewBoardForShare';
 export function ShareChartPage() {
   const { shareActions: actions } = useShareSlice();
 
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const location = useLocation();
 
   const params = useParams<{ token: string }>();
@@ -172,11 +173,11 @@ export function ShareChartPage() {
   return (
     <StyledWrapper className="datart-viz">
       <ShareLoginModal
-        visible={shareType === 'LOGIN' && Boolean(needVerify)}
+        open={shareType === 'LOGIN' && Boolean(needVerify)}
         onChange={handleLogin}
       />
       <PasswordModal
-        visible={Boolean(needVerify) && shareType === 'CODE'}
+        open={Boolean(needVerify) && shareType === 'CODE'}
         onChange={sharePassword => {
           fetchShareVizInfoImpl(shareToken, sharePassword, searchParams);
         }}

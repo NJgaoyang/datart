@@ -123,7 +123,7 @@ const NumberFormatAction: FC<{
       return null;
     } else {
       return (
-        <Space direction="vertical">
+        <Space orientation="vertical">
           <FormItemEx {...formItemLayout} label={t('format.decimalPlace')}>
             <InputNumber
               min={0}
@@ -148,16 +148,21 @@ const NumberFormatAction: FC<{
                       Object.assign({}, formatDetail, { unitKey }),
                     );
                   }}
-                >
-                  {Array.from(NumericUnitDescriptions.keys()).map(k => {
-                    const values = NumericUnitDescriptions.get(k);
-                    return (
-                      <Select.Option key={k} value={k}>
-                        {values?.[1] || '  '}
-                      </Select.Option>
-                    );
-                  })}
-                </Select>
+                  options={[
+                    ...(Array.from(NumericUnitDescriptions.keys()).flatMap(
+                      k => {
+                        const values = NumericUnitDescriptions.get(k);
+                        return [
+                          {
+                            key: String(k),
+                            value: k,
+                            label: values?.[1] || '  ',
+                          },
+                        ];
+                      },
+                    ) || []),
+                  ]}
+                />
               </FormItemEx>
               <FormItemEx {...formItemLayout} label={t('format.currency')}>
                 <Select
@@ -167,15 +172,14 @@ const NumberFormatAction: FC<{
                       Object.assign({}, formatDetail, { currency }),
                     );
                   }}
-                >
-                  {CURRENCIES.map(c => {
-                    return (
-                      <Select.Option key={c.code} value={c.code}>
-                        {c.code}
-                      </Select.Option>
-                    );
-                  })}
-                </Select>
+                  options={[
+                    ...(CURRENCIES.flatMap(c => {
+                      return [
+                        { key: String(c.code), value: c.code, label: c.code },
+                      ];
+                    }) || []),
+                  ]}
+                />
               </FormItemEx>
             </>
           )}
@@ -189,16 +193,21 @@ const NumberFormatAction: FC<{
                       Object.assign({}, formatDetail, { unitKey }),
                     );
                   }}
-                >
-                  {Array.from(NumericUnitDescriptions.keys()).map(k => {
-                    const values = NumericUnitDescriptions.get(k);
-                    return (
-                      <Select.Option key={k} value={k}>
-                        {values?.[1] || '  '}
-                      </Select.Option>
-                    );
-                  })}
-                </Select>
+                  options={[
+                    ...(Array.from(NumericUnitDescriptions.keys()).flatMap(
+                      k => {
+                        const values = NumericUnitDescriptions.get(k);
+                        return [
+                          {
+                            key: String(k),
+                            value: k,
+                            label: values?.[1] || '  ',
+                          },
+                        ];
+                      },
+                    ) || []),
+                  ]}
+                />
               </FormItemEx>
               <FormItemEx {...formItemLayout} label={t('format.useSeparator')}>
                 <Checkbox
@@ -250,7 +259,7 @@ const NumberFormatAction: FC<{
           onChange={e => handleFormatTypeChanged(e.target.value)}
           value={type}
         >
-          <Space direction="vertical">
+          <Space orientation="vertical">
             <Radio value={FieldFormatType.Default}>{t('format.default')}</Radio>
             <Radio value={FieldFormatType.Numeric}>{t('format.numeric')}</Radio>
             <Radio value={FieldFormatType.Currency}>

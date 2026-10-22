@@ -20,7 +20,8 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useMatch } from 'react-router-dom';
 import styled from 'styled-components';
 import { BORDER_RADIUS, SPACE_LG, SPACE_SM } from 'styles/StyleConstants';
@@ -62,16 +63,14 @@ import { WeChatSettingForm } from './WeChatSettingForm';
 export const EditorPage: FC = () => {
   const [form] = Form.useForm();
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const [jobType, setJobType] = useState(JobTypes.Email);
   const [fileType, setFileType] = useState<FileTypes[]>(
     DEFAULT_VALUES.type || [],
   );
   const [periodUnit, setPeriodUnit] = useState<TimeModes>(TimeModes.Minute);
   const [periodInput, setPeriodInput] = useState(false);
-  const editorMatch = useMatch(
-    '/organizations/:orgId/schedules/:scheduleId',
-  );
+  const editorMatch = useMatch('/organizations/:orgId/schedules/:scheduleId');
   const params = (editorMatch?.params ?? {}) as {
     orgId: string;
     scheduleId: string;
@@ -113,7 +112,7 @@ export const EditorPage: FC = () => {
         showSaveForm({
           scheduleType: 'title',
           type: CommonFormTypes.Add,
-          visible: true,
+          open: true,
           simple: true,
           parentIdLabel: t('parent'),
           onSave: (val, onClose) => {
@@ -243,7 +242,7 @@ export const EditorPage: FC = () => {
     showSaveForm({
       scheduleType: 'folder',
       type: CommonFormTypes.Edit,
-      visible: true,
+      open: true,
       simple: false,
       initialValues: { id, name, parentId: null },
       parentIdLabel: t('parent'),

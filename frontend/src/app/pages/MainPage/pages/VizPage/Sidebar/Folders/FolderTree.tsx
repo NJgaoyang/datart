@@ -5,14 +5,15 @@ import {
   MoreOutlined,
 } from '@ant-design/icons';
 import { Menu, message, Popconfirm } from 'antd';
-import { MenuListItem, Popup, Tree, TreeTitle } from 'app/components';
+import { MenuItemLabel, Popup, Tree, TreeTitle } from 'app/components';
 import useI18NPrefix, { I18NComponentProps } from 'app/hooks/useI18NPrefix';
 import { CascadeAccess } from 'app/pages/MainPage/Access';
 import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
 import { LocalTreeDataNode } from 'app/pages/MainPage/slice/types';
 import { CommonFormTypes } from 'globalConstants';
-import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useCallback, useContext, useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import { getInsertedNodeIndex, onDropTreeFn, stopPPG } from 'utils/utils';
 import { isParentIdEqual } from '../../../../slice/utils';
@@ -41,7 +42,7 @@ export function FolderTree({
   i18nPrefix,
 }: FolderTreeProps) {
   const tg = useI18NPrefix('global');
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
   const orgId = useSelector(selectOrgId);
@@ -115,7 +116,7 @@ export function FolderTree({
             showSaveForm({
               vizType: node.relType,
               type: CommonFormTypes.Edit,
-              visible: true,
+              open: true,
               initialValues: { ...node, parentId: node.parentId || void 0 },
               onSave: (values, onClose) => {
                 let index = node.index;
@@ -168,41 +169,56 @@ export function FolderTree({
                   prefixCls="ant-dropdown-menu"
                   selectable={false}
                   onClick={moreMenuClick(node)}
-                >
-                  <MenuListItem
-                    key="info"
-                    prefix={<EditOutlined className="icon" />}
-                  >
-                    {tg('button.info')}
-                  </MenuListItem>
-
-                  {!isFolder && (
-                    <MenuListItem
-                      key="saveAs"
-                      prefix={<CopyFilled className="icon" />}
-                    >
-                      {tg('button.saveAs')}
-                    </MenuListItem>
-                  )}
-
-                  <MenuListItem
-                    key="delete"
-                    prefix={<DeleteOutlined className="icon" />}
-                  >
-                    <Popconfirm
-                      title={`${
-                        relType === 'FOLDER'
-                          ? tg('operation.deleteConfirm')
-                          : tg('operation.archiveConfirm')
-                      }`}
-                      onConfirm={archiveViz(node)}
-                    >
-                      {relType === 'FOLDER'
-                        ? tg('button.delete')
-                        : tg('button.archive')}
-                    </Popconfirm>
-                  </MenuListItem>
-                </Menu>
+                  items={[
+                    {
+                      key: String('info'),
+                      label: (
+                        <MenuItemLabel
+                          prefix={<EditOutlined className="icon" />}
+                        >
+                          {tg('button.info')}
+                        </MenuItemLabel>
+                      ),
+                    },
+                    ...(!isFolder
+                      ? [
+                          {
+                            key: String('saveAs'),
+                            label: (
+                              <MenuItemLabel
+                                prefix={<CopyFilled className="icon" />}
+                              >
+                                {tg('button.saveAs')}
+                              </MenuItemLabel>
+                            ),
+                          },
+                        ]
+                      : []),
+                    {
+                      key: String('delete'),
+                      label: (
+                        <MenuItemLabel
+                          prefix={<DeleteOutlined className="icon" />}
+                        >
+                          {
+                            <Popconfirm
+                              title={`${
+                                relType === 'FOLDER'
+                                  ? tg('operation.deleteConfirm')
+                                  : tg('operation.archiveConfirm')
+                              }`}
+                              onConfirm={archiveViz(node)}
+                            >
+                              {relType === 'FOLDER'
+                                ? tg('button.delete')
+                                : tg('button.archive')}
+                            </Popconfirm>
+                          }
+                        </MenuItemLabel>
+                      ),
+                    },
+                  ]}
+                />
               }
             >
               <span className="action" onClick={stopPPG}>

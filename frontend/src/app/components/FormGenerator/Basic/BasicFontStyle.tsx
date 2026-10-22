@@ -32,18 +32,17 @@ const BasicFontStyle: FC<ItemLayoutProps<ChartStyleConfig>> = memo(
       <BW label={!options?.hideLabel ? t(row.label, true) : ''}>
         <Select
           className="datart-ant-select"
-          dropdownMatchSelectWidth
+          popupMatchSelectWidth
           {...rest}
           {...options}
           placeholder={t('select')}
           onChange={value => onChange?.(ancestors, value)}
-        >
-          {FONT_STYLE.map(o => (
-            <Select.Option key={o.value} value={o.value}>
-              {t(o.name, true)}
-            </Select.Option>
-          ))}
-        </Select>
+          options={[
+            ...(FONT_STYLE.flatMap(o => [
+              { key: String(o.value), value: o.value, label: t(o.name, true) },
+            ]) || []),
+          ]}
+        />
       </BW>
     );
   },

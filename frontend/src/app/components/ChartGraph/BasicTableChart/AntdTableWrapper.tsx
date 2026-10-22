@@ -78,14 +78,18 @@ export const getExplicitTableWidth = (
   return addWidths(columns) && leaves ? Math.ceil(total) : undefined;
 };
 
-const AntdTableWrapper: FC<{
-  dataSource: [];
-  columns: [];
+type AntdTableWrapperProps = {
+  dataSource?: any[];
+  columns?: any[];
   widgetId?: string;
   children?: ReactNode;
   tableStyleConfig?: TableStyleConfigProps | undefined;
-  summaryFn?: (data) => { total: number; summarys: [] };
-}> = memo(
+  summaryFn?: (data: any) => { total?: number; summarys?: any[] };
+  // Accept the remaining Ant Design table props (scroll, pagination, ...).
+  [key: string]: any;
+};
+
+const AntdTableWrapper: FC<AntdTableWrapperProps> = memo(
   ({
     dataSource,
     columns,
@@ -96,15 +100,17 @@ const AntdTableWrapper: FC<{
     ...rest
   }) => {
     const { i18n } = useTranslation();
-    const explicitTableWidth = getExplicitTableWidth(columns);
+    const explicitTableWidth = getExplicitTableWidth(columns || []);
 
     const getTableSummaryRow = pageData => {
       if (!summaryFn) {
         return undefined;
       }
       const summaryData = summaryFn?.(pageData);
+      // Keep totals inside the body's horizontal scroller, with the scrollbar
+      // below the footer. CSS pins the footer during vertical scrolling.
       return (
-        <Table.Summary fixed>
+        <Table.Summary>
           <Table.Summary.Row>
             {(summaryData?.summarys || []).map((data, index) => {
               return (
@@ -178,6 +184,24 @@ const StyledTable = styled(Table)<{
   .ant-table-body {
     overflow: ${p =>
       p?.tableStyleConfig?.isFixedColumns ? 'auto scroll' : 'auto !important'};
+  }
+
+  /* Non-fixed AntD Summary lives in the same table as tbody. Its native
+     horizontal scrollbar now follows the summary rather than separating
+     detail rows and totals. Sticky positioning retains the visible footer
+     during vertical scrolling without duplicating totals or scroll controls. */
+  .ant-table-body > table > tfoot.ant-table-summary,
+  .ant-table-content > table > tfoot.ant-table-summary {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+  }
+
+  .ant-table-body > table > tfoot.ant-table-summary > tr > td,
+  .ant-table-content > table > tfoot.ant-table-summary > tr > td {
+    background-color: ${p =>
+      p?.tableStyleConfig?.summaryStyle?.backgroundColor ||
+      p.theme.componentBackground || '#fff'};
   }
 
   .datart-mobile-board & {

@@ -21,9 +21,9 @@ import { ModalForm, ModalFormProps } from 'app/components';
 import { DateFormat } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { fetchCheckName } from 'app/utils/fetch';
+import dayjs from 'dayjs';
 import debounce from 'debounce-promise';
 import { DEFAULT_DEBOUNCE_WAIT } from 'globalConstants';
-import dayjs from 'dayjs';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SPACE_XS } from 'styles/StyleConstants';
 import { errorHandle } from 'utils/utils';
@@ -46,7 +46,7 @@ export const VariableForm = memo(
     orgId,
     editingVariable,
     variables,
-    visible,
+    open,
     formProps,
     onSave,
     afterClose,
@@ -62,12 +62,12 @@ export const VariableForm = memo(
     );
     const [expression, setExpression] = useState(false);
     const [dateFormat, setDateFormat] = useState<DateFormat | undefined>();
-    const formRef = useRef<FormInstance<VariableFormModel>>();
+    const formRef = useRef<FormInstance<VariableFormModel>>(undefined);
     const t = useI18NPrefix('variable');
     const tg = useI18NPrefix('global');
 
     useEffect(() => {
-      if (visible && editingVariable) {
+      if (open && editingVariable) {
         try {
           const { type, valueType, expression, dateFormat } = editingVariable;
           let defaultValue = editingVariable.defaultValue
@@ -89,7 +89,7 @@ export const VariableForm = memo(
           throw error;
         }
       }
-    }, [visible, editingVariable, formRef]);
+    }, [open, editingVariable, formRef]);
 
     const onAfterClose = useCallback(() => {
       setType(
@@ -160,7 +160,7 @@ export const VariableForm = memo(
     return (
       <ModalForm
         {...modalProps}
-        visible={visible}
+        open={open}
         formProps={{
           labelAlign: 'left',
           labelCol: { offset: 1, span: 6 },
@@ -170,7 +170,7 @@ export const VariableForm = memo(
         onSave={save}
         afterClose={onAfterClose}
         ref={formRef}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form.Item
           name="name"

@@ -47,7 +47,8 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
 import { SPACE_XS } from 'styles/StyleConstants';
 import { WidgetActionContext } from '../../../../components/ActionProvider/WidgetActionProvider';
@@ -68,7 +69,7 @@ import {
 
 const ControllerWidgetPanel: React.FC<WidgetControllerPanelParams> = memo(
   ({ type, widgetId, controllerType }) => {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const t = useI18NPrefix('viz.common.enum.controllerFacadeTypes');
     const tGMT = useI18NPrefix(`global.modal.title`);
 
@@ -305,10 +306,10 @@ const ControllerWidgetPanel: React.FC<WidgetControllerPanelParams> = memo(
     return (
       <Modal
         title={`${tGMT(type)}${t(controllerType || '')}`}
-        visible={visible}
+        open={visible}
         onOk={onSubmit}
         centered
-        destroyOnClose
+        destroyOnHidden
         width={1160}
         afterClose={afterClose}
         onCancel={() => setVisible(false)}

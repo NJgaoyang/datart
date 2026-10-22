@@ -16,6 +16,44 @@
  * limitations under the License.
  */
 
-import { useResizeDetector as useResizeObserver } from 'react-resize-detector';
+import { useLayoutEffect, useState } from 'react';
 
-export default useResizeObserver;
+export default function useResizeObserver<
+  T extends HTMLElement = HTMLDivElement,
+>({ debounceMs = 0 }: { debounceMs?: number } = {}) {
+  const [element, ref] = useState<T | null>(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+
+  useLayoutEffect(() => {
+    if (!element) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let disposed = false;
+    const measure = () => {
+      if (disposed) return;
+      const rect = element.getBoundingClientRect();
+      const width = element.clientWidth || rect.width;
+      const height = element.clientHeight || rect.height;
+      setSize(previous =>
+        previous.width === width && previous.height === height
+          ? previous
+          : { width, height },
+      );
+    };
+    const schedule = () => {
+      clearTimeout(timer);
+      timer = setTimeout(measure, debounceMs);
+    };
+    measure();
+    const observer = new ResizeObserver(schedule);
+    observer.observe(element);
+    window.addEventListener('resize', schedule);
+    return () => {
+      disposed = true;
+      clearTimeout(timer);
+      observer.disconnect();
+      window.removeEventListener('resize', schedule);
+    };
+  }, [element, debounceMs]);
+
+  return { ref, ...size };
+}

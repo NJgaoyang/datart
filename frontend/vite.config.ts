@@ -1,4 +1,5 @@
 import react from '@vitejs/plugin-react';
+import babel from '@rolldown/plugin-babel';
 import fs from 'fs';
 import path from 'path';
 import { defineConfig } from 'vite';
@@ -8,22 +9,9 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 // 兼容 CRA 的 PUBLIC_URL（默认空，资源从站点根提供）
 const publicUrl = process.env.PUBLIC_URL || '';
 
-// Conservative split: one app chunk and one vendor chunk. Forced source-level
-// admin-tools splitting caused a browser TDZ before the login page rendered.
+// Keep interdependent third-party modules together; let Vite defer page code.
 const manualChunks = (id: string): string | undefined => {
   if (!id.includes('node_modules/')) {
-    // Do not force admin-only pages into a separate shared chunk:
-    // admin-tools <-> app circular imports caused a startup TDZ
-    // ("Cannot access 'v' before initialization") and a blank login page.
-    // Prefer reliable startup to this speculative first-screen split.
-    if (id.includes('/src/')) {
-      // 入口模块（含 React 挂载副作用）保持独立 chunk，避免多入口副作用相互污染。
-      if (id.endsWith('/src/index.tsx') || id.includes('.entry.ts')) return undefined;
-      // 其余应用源码归入单一 'app' chunk：避免 barrel 循环依赖（如 components/index.tsx ↔
-      // ListTitle/ListNav、FormGenerator/index.ts ↔ ItemLayout）被多入口代码分割拆到不同共享
-      // chunk，导致跨 chunk 初始化顺序错乱报 TDZ（Cannot access 'X' before initialization）而白屏。
-      return 'app';
-    }
     return undefined;
   }
   // 所有 node_modules 归入单一 vendor chunk：datart 依赖的众多库存在相互读取内部属性
@@ -45,10 +33,10 @@ export default defineConfig({
     },
   },
   plugins: [
-    react({
-      // 保留 styled-components 的 css prop 与 displayName
-      babel: { plugins: ['babel-plugin-styled-components'] },
-    }),
+    react(),
+    // @vitejs/plugin-react v6 no longer accepts Babel options.
+    // Keep styled-components css prop and displayName transforms through Rolldown.
+    babel({ plugins: ['babel-plugin-styled-components'] }),
     svgr(),
     tsconfigPaths(),
     {
@@ -95,7 +83,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 4096,
     // 关闭产物 gzip 体积报告（纯 CPU 开销，对产物无影响，可缩短构建时间）
     reportCompressedSize: false,
-    rollupOptions: {
+    rolldownOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
         shareChart: path.resolve(__dirname, 'shareChart.html'),

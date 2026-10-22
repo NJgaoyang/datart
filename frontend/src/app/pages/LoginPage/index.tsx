@@ -24,7 +24,8 @@ import {
 } from 'app/slice/selectors';
 import { getOauth2Clients, login } from 'app/slice/thunks';
 import React, { useCallback, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { LoginForm } from './LoginForm';
@@ -68,7 +69,7 @@ const barGrow = keyframes`
 `;
 
 export function LoginPage() {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const systemInfo = useSelector(selectSystemInfo);
   const loading = useSelector(selectLoginLoading);

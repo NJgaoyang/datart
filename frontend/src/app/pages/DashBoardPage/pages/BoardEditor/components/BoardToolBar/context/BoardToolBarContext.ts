@@ -1,4 +1,3 @@
-import { ButtonType } from 'antd/lib/button';
 /**
  * Datart
  *
@@ -16,6 +15,8 @@ import { ButtonType } from 'antd/lib/button';
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import { ButtonType } from 'antd/lib/button';
 import { createContext } from 'react';
 import { BoardType } from './../../../../Board/slice/types';
 export interface BoardToolBarContextProps {

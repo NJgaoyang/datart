@@ -233,4 +233,40 @@ describe('dashboard batch query request lifecycle', () => {
     complete({ data: { rows: ['new'] } });
     expect(await fresh).toEqual({ rows: ['new'] });
   });
+  it('recovers only failed batch results using the normal execute endpoint', async () => {
+    request.mockImplementation(async (config: any) => {
+      if (config.url === 'data-provider/execute/batch') {
+        return {
+          data: {
+            'healthy-widget': { rows: [['healthy']] },
+            'failed-widget': { error: 'QUERY_FAILED', rows: [] },
+          },
+        } as any;
+      }
+      return { data: { rows: [['recovered']] } } as any;
+    });
+    const good = enqueueWidgetFetch('board-one', 'healthy-widget', { vizId: 'view-A' });
+    const bad = enqueueWidgetFetch('board-one', 'failed-widget', { vizId: 'view-B' });
+    await vi.advanceTimersByTimeAsync(151);
+    expect(await good).toEqual({ rows: [['healthy']] });
+    expect(await bad).toEqual({ rows: [['recovered']] });
+    expect(request).toHaveBeenCalledTimes(2);
+    expect((request.mock.calls[1][0] as any).url).toBe('data-provider/execute');
+  });
+
+  it('recovers when an older backend response omits a batch widget key', async () => {
+    request.mockImplementation(async (config: any) => {
+      if (config.url === 'data-provider/execute/batch') {
+        return { data: { known: { rows: [['present']] } } } as any;
+      }
+      return { data: { rows: [['retried']] } } as any;
+    });
+    const first = enqueueWidgetFetch('board-one', 'known', { vizId: 'view-A' });
+    const second = enqueueWidgetFetch('board-one', 'missing', { vizId: 'view-B' });
+    await vi.advanceTimersByTimeAsync(151);
+    expect(await first).toEqual({ rows: [['present']] });
+    expect(await second).toEqual({ rows: [['retried']] });
+    expect(request).toHaveBeenCalledTimes(2);
+  });
+
 });

@@ -5,7 +5,7 @@ import { useGridWidgetHeight } from '../useGridWidgetHeight';
 
 const measurement = vi.hoisted(() => ({ width: 1000, height: 600 }));
 
-vi.mock('react-redux', () => ({ useDispatch: () => vi.fn() }));
+vi.mock('redux/hooks', () => ({ useAppDispatch: () => vi.fn() }));
 vi.mock('../useResizeObserver', () => ({
   default: () => ({ ref: { current: null }, ...measurement }),
 }));

@@ -5,13 +5,14 @@ import {
   selectDeleteOrganizationLoading,
 } from 'app/pages/MainPage/slice/selectors';
 import { useCallback, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import { deleteOrganization } from '../../slice/thunks';
 
 export const DeleteConfirm = (props: ModalProps) => {
   const [inputValue, setInputValue] = useState('');
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const currentOrganization = useSelector(selectCurrentOrganization);
   const loading = useSelector(selectDeleteOrganizationLoading);
@@ -36,7 +37,12 @@ export const DeleteConfirm = (props: ModalProps) => {
     <Modal
       {...props}
       footer={[
-        <Button key="cancel" onClick={props.onCancel}>
+        <Button
+          key="cancel"
+          onClick={e =>
+            props.onCancel?.(e as React.MouseEvent<HTMLButtonElement>)
+          }
+        >
           {t('cancel')}
         </Button>,
         <Button

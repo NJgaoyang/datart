@@ -36,6 +36,7 @@ export interface BoardConfigValue {
   allowOverlap: boolean;
   compactType: 'vertical' | 'horizontal' | 'none';
   showGrid: boolean;
+  seamlessSpacing: boolean;
   margin: [number, number];
   padding: [number, number];
   mMargin: [number, number];
@@ -52,10 +53,10 @@ export const BoardConfigProvider: FC<{
   children?: ReactNode;
 }> = memo(({ config, boardId, children }) => {
   const props = config.jsonConfig.props;
-  const [initialQuery, allowOverlap, scaleMode, rawCompactType, rawShowGrid] = getJsonConfigs(
+  const [initialQuery, allowOverlap, scaleMode, rawCompactType, rawShowGrid, rawSeamlessSpacing] = getJsonConfigs(
     props,
     ['basic'],
-    ['initialQuery', 'allowOverlap', 'scaleMode', 'compactType', 'showGrid'],
+    ['initialQuery', 'allowOverlap', 'scaleMode', 'compactType', 'showGrid', 'seamlessSpacing'],
   );
   const [background] = getJsonConfigs(props, ['background'], ['background']);
   const [width, height] = getJsonConfigs(props, ['size'], ['width', 'height']);
@@ -83,6 +84,7 @@ export const BoardConfigProvider: FC<{
     allowOverlap,
     compactType: rawCompactType === 'horizontal' || rawCompactType === 'none' ? rawCompactType : 'vertical',
     showGrid: rawShowGrid === true,
+    seamlessSpacing: rawSeamlessSpacing !== false,
     margin: [marginLR, marginTB],
     padding: [paddingLR, paddingTB],
     mMargin: [mMarginLR, mMarginTB],

@@ -16,11 +16,7 @@
  * limitations under the License.
  */
 
-import {
-  EditOutlined,
-  MoreOutlined,
-  SendOutlined,
-} from '@ant-design/icons';
+import { EditOutlined, MoreOutlined, SendOutlined } from '@ant-design/icons';
 import { Button, Dropdown, Space } from 'antd';
 import { ShareManageModal } from 'app/components/VizOperationMenu';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
@@ -53,7 +49,7 @@ export const TitleHeader: FC = memo(() => {
   const [showShareLinkModal, setShowShareLinkModal] = useState(false);
   const [mockDataModal, setMockDataModal] = useState(false);
   const [showSaveToStory, setShowSaveToStory] = useState<boolean>(false);
-  const { name, status, allowManage, allowShare, boardId, orgId } =
+  const { name, status, allowManage, allowShare, boardId, orgId, boardType } =
     useContext(BoardContext);
   const title = useStatusTitle(name, status);
   const { onGenerateShareLink } = useContext(BoardActionContext);
@@ -77,21 +73,18 @@ export const TitleHeader: FC = memo(() => {
 
   const saveToStoryOk = useCallback(
     (storyId: string) => {
-      navigate(
-        `/organizations/${orgId}/vizs/storyEditor/${storyId}`,
-        {
-          state: {
-            addDashboardId: boardId,
-          },
+      navigate(`/organizations/${orgId}/vizs/storyEditor/${storyId}`, {
+        state: {
+          addDashboardId: boardId,
         },
-      );
+      });
       setShowSaveToStory(false);
     },
     [boardId, navigate, orgId],
   );
 
   return (
-    <Wrapper>
+    <Wrapper className={boardType === 'auto' ? 'compact-auto-board-title' : undefined}>
       <h1 className={classnames({ disabled: status < 2 })}>{title}</h1>
       <Space>
         {!isArchived && allowManage && (
@@ -113,13 +106,13 @@ export const TitleHeader: FC = memo(() => {
         )}
         {!isArchived && (
           <Dropdown
-            overlay={
+            popupRender={() => (
               <BoardDropdownList
                 onOpenShareLink={onOpenShareLink}
                 openStoryList={() => setShowSaveToStory(true)}
                 openMockData={() => setMockDataModal(true)}
               />
-            }
+            )}
             placement="bottomRight"
             arrow
           >
@@ -158,18 +151,39 @@ const Wrapper = styled.div`
   display: flex;
   flex-shrink: 0;
   align-items: center;
+  min-height: 64px;
   padding: ${SPACE_SM} ${SPACE_LG};
   background-color: ${p => p.theme.componentBackground};
-  box-shadow: ${p => p.theme.shadowSider};
+  border-bottom: 1px solid ${p => p.theme.borderColorSplit};
 
   h1 {
     flex: 1;
     font-size: ${FONT_SIZE_ICON_SM};
     font-weight: ${FONT_WEIGHT_MEDIUM};
     line-height: ${LINE_HEIGHT_ICON_SM};
+    margin: 0;
 
     &.disabled {
       color: ${p => p.theme.textColorLight};
     }
+  }
+
+  /* Only the automatic dashboard's read header becomes a compact row.
+     It occupies a fixed height instead of growing into an empty panel. */
+  &.compact-auto-board-title {
+    box-sizing: border-box;
+    flex: 0 0 44px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    padding: 0 16px;
+
+    h1 {
+      margin: 0;
+    }
+  }
+
+  .ant-btn {
+    border-radius: 8px;
   }
 `;

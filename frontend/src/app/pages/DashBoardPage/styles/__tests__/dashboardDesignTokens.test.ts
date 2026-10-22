@@ -6,7 +6,7 @@ describe('dashboard semantic visual tokens', () => {
     expect(T.spacing.card).toBe(6);
     expect(T.spacing.page).toBe(8);
     expect(T.typography.caption).toBe(12);
-    expect(MOBILE_BOARD_THEME.gridGap).toBe(4);
+    expect(MOBILE_BOARD_THEME.gridGap).toBe(1);
     expect(MOBILE_BOARD_THEME.pagePadding).toBe(8);
     expect(MOBILE_BOARD_THEME.cardRadius).toBe(12);
     expect(MOBILE_BOARD_THEME.cardBackground).toBe('#fff');

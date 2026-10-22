@@ -30,8 +30,9 @@ import { ToolbarButton } from 'app/components';
 import { Chronograph } from 'app/components/Chronograph';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { CommonFormTypes } from 'globalConstants';
-import React, { memo, useCallback, useContext, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { memo, useCallback, useContext, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { format } from 'sql-formatter';
 import styled from 'styled-components';
@@ -71,7 +72,7 @@ interface ToolbarProps {
 export const Toolbar = memo(
   ({ allowManage, allowEnableViz, type }: ToolbarProps) => {
     const { actions } = useViewSlice();
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const { onRun, onSave } = useContext(EditorContext);
     const { showSaveForm } = useContext(SaveFormContext);
     const sources = useSelector(selectSources);
@@ -134,7 +135,7 @@ export const Toolbar = memo(
     const showEdit = useCallback(() => {
       showSaveForm({
         type: CommonFormTypes.Edit,
-        visible: true,
+        open: true,
         initialValues: {
           name,
           parentId,
@@ -193,24 +194,25 @@ export const Toolbar = memo(
     return (
       <Container>
         <Operates>
-          <Space split={<Divider type="vertical" className="divider" />}>
+          <Space
+            separator={<Divider orientation="vertical" className="divider" />}
+          >
             {type === 'SQL' && (
               <>
                 {allowManage && (
                   <Select
                     placeholder={t('source')}
                     value={sourceId}
-                    bordered={false}
+                    variant="borderless"
                     disabled={isArchived}
                     onChange={sourceChange}
                     className="source"
-                  >
-                    {sources.map(({ id, name }) => (
-                      <Select.Option key={id} value={id}>
-                        {name}
-                      </Select.Option>
-                    ))}
-                  </Select>
+                    options={[
+                      ...(sources.flatMap(({ id, name }) => [
+                        { key: String(id), value: id, label: name },
+                      ]) || []),
+                    ]}
+                  />
                 )}
                 <Space>
                   <Tooltip
@@ -249,13 +251,16 @@ export const Toolbar = memo(
             )}
             <Dropdown
               trigger={['click']}
-              overlay={
-                <Menu onClick={sizeMenuClick}>
-                  {PREVIEW_SIZE_LIST.map(s => (
-                    <Menu.Item key={s}>{s}</Menu.Item>
-                  ))}
-                </Menu>
-              }
+              popupRender={() => (
+                <Menu
+                  onClick={sizeMenuClick}
+                  items={[
+                    ...(PREVIEW_SIZE_LIST.flatMap(s => [
+                      { key: String(s), label: s },
+                    ]) || []),
+                  ]}
+                />
+              )}
             >
               <ToolbarButton size="small">{`Limit: ${size}`}</ToolbarButton>
             </Dropdown>

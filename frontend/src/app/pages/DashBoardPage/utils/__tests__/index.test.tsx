@@ -117,6 +117,7 @@ describe('should getDataChartRequestParams', () => {
     createTime: '2022-02-18 18:34:31',
     description: null,
     id: 'viewId123',
+    migrationMode: 'STRICT',
     index: 2,
     isFolder: false,
     model: '',
@@ -238,6 +239,7 @@ describe('should getDataChartRequestParams', () => {
     return {
       ...v,
       name: v.id,
+      fieldId: v.id,
       path: [v.id],
     };
   });
@@ -266,6 +268,7 @@ describe('should getDataChartRequestParams', () => {
                   index: 0,
                   uid: '665bc9f0-355c-442b-87be-efb39b0d47b5',
                   colName: 'total',
+                  fieldId: 'total',
                   category: 'field',
                   type: 'NUMERIC',
                   aggregate: 'SUM',
@@ -273,6 +276,7 @@ describe('should getDataChartRequestParams', () => {
                 {
                   uid: 'e4a13a2f-3984-4eea-ba38-34b80b83c63c',
                   colName: 'actor',
+                  fieldId: 'actor',
                   category: 'field',
                   type: 'STRING',
                 },
@@ -356,6 +360,7 @@ describe('should getDataChartRequestParams', () => {
                   index: 0,
                   uid: '665bc9f0-355c-442b-87be-efb39b0d47b5',
                   colName: 'total',
+                  fieldId: 'total',
                   category: 'field',
                   type: 'NUMERIC',
                   aggregate: 'SUM',
@@ -363,6 +368,7 @@ describe('should getDataChartRequestParams', () => {
                 {
                   uid: 'e4a13a2f-3984-4eea-ba38-34b80b83c63c',
                   colName: 'actor',
+                  fieldId: 'actor',
                   category: 'field',
                   type: 'STRING',
                 },
@@ -383,6 +389,7 @@ describe('should getDataChartRequestParams', () => {
                 {
                   uid: 'fd58a4af-cc81-42c9-9255-fd9a7865f03e',
                   colName: 'actor',
+                  fieldId: 'actor',
                   category: 'field',
                   type: 'STRING',
                   aggregate: 'NONE',
@@ -440,6 +447,15 @@ describe('should getDataChartRequestParams', () => {
     });
     expect(res.viewId).toBe(dataChart.viewId);
     expect(res.filters).toEqual(targetFilter);
+  });
+  it('rejects missing or COMPAT view modes before constructing a dashboard query', () => {
+    for (const migrationMode of [undefined, 'COMPAT']) {
+      expect(() => getDataChartRequestParams({
+        dataChart: {} as any,
+        view: { ...view, migrationMode } as any,
+        option: undefined,
+      })).toThrow('STRICT_ONLY_CHART_VIEW_REQUIRED');
+    }
   });
 });
 
@@ -499,6 +515,7 @@ describe('getChartWidgetRequestParams legacy board links', () => {
       viewMap: {
         [viewId]: {
           id: viewId,
+          migrationMode: 'STRICT',
           meta: [
             {
               name: 'snapshot_dt',
@@ -743,9 +760,11 @@ describe('getTheWidgetFiltersAndParams', () => {
     };
     const view = {
       id: 'computed-view',
+      migrationMode: 'STRICT',
       meta: [
         {
           name: 'region_code',
+          fieldId: 'region_code',
           path: ['DATART_VTABLE', 'region_code'],
           type: DataViewFieldType.STRING,
         },

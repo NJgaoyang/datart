@@ -49,28 +49,24 @@ const JumpToDashboard: FC<
     <Space>
       <Select
         virtual
-        showSearch
-        optionFilterProp="children"
         style={{ minWidth: 100, maxWidth: 200 }}
-        dropdownMatchSelectWidth={false}
+        popupMatchSelectWidth={false}
         value={value?.relId}
         placeholder={t('drillThrough.rule.reference.title')}
         onChange={relId => onValueChange({ ...value, ...{ relId } })}
-      >
-        {vizs
-          ?.filter(v => v.relType === 'DASHBOARD')
-          ?.map(c => {
-            return (
-              <Select.Option key={c.relId} value={c.relId}>
-                {c.name}
-              </Select.Option>
-            );
-          })}
-      </Select>
+        options={[
+          ...(vizs
+            ?.filter(v => v.relType === 'DASHBOARD')
+            ?.flatMap(c => {
+              return [{ key: String(c.relId), value: c.relId, label: c.name }];
+            }) || []),
+        ]}
+        showSearch={{ optionFilterProp: 'label' }}
+      />
       <Dropdown
-        destroyPopupOnHide
-        overlayStyle={{ margin: 4 }}
-        overlay={() => (
+        destroyOnHidden
+        styles={{ root: { margin: 4 } }}
+        popupRender={() => (
           <ControllerList
             translate={t}
             targetRelId={value?.relId}

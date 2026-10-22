@@ -17,22 +17,21 @@
  */
 import useResizeObserver from 'app/hooks/useResizeObserver';
 import { useContext, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from 'redux/hooks';
 import { BoardContext } from '../components/BoardProvider/BoardProvider';
 import { boardActions } from '../pages/Board/slice';
 
 export default function useBoardWidthHeight() {
   const { boardId, renderMode } = useContext(BoardContext);
 
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
 
   const {
     ref: gridRef,
     width: gridWidth = 800,
     height: gridHeight = 200,
   } = useResizeObserver<HTMLDivElement>({
-    refreshMode: 'debounce',
-    refreshRate: 100,
+    debounceMs: 100,
   });
 
   useEffect(() => {

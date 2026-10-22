@@ -49,13 +49,28 @@ const Wrapper = styled.div`
      DatePicker suffix. Its width automatically includes status/lock icons. */
   &.controller-widget {
     align-items: center;
+    border-radius: 8px;
+    box-shadow: inset 0 0 0 1px ${p => p.theme.borderColorSplit};
 
     .controller-widget-content {
-      flex: 1 1 auto;
+      flex: 1 1 0;
+      width: 0;
       min-width: 0;
       max-width: 100%;
-      width: auto;
       height: 100%;
+    }
+
+    .controller-widget-content > div {
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      align-items: center;
+    }
+
+    /* Stored widget padding must not create a large empty strip ABOVE the
+       filter row. Only automatic-board filters opt into compact padding. */
+    &.dashboard-auto-filter {
+      padding: 0 4px !important;
     }
 
     .widget-action-toolbar {
@@ -73,6 +88,10 @@ const Wrapper = styled.div`
       opacity: 1;
       pointer-events: auto;
     }
+  }
+
+  &.dashboard-action-widget {
+    border-radius: 8px;
   }
 
   &:hover .widget-tool-dropdown,

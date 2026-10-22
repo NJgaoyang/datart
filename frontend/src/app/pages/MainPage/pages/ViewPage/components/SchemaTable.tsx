@@ -37,7 +37,6 @@ import {
 } from 'styles/StyleConstants';
 import {
   getDatasetFieldDisplayName,
-  getFieldCustomDisplayName,
   getFieldDisplayName,
   uuidv4,
 } from 'utils/utils';
@@ -146,17 +145,9 @@ export const SchemaTable = memo(
         };
         const viewField = findViewFieldMeta(fieldIdentity, viewFields);
         const previewField = findViewFieldMeta(fieldIdentity, previewFields);
-        const customDisplayName = getFieldCustomDisplayName({
-          fieldId: hierarchyMeta.fieldId || column.fieldId,
-          name,
-          path: hierarchyMeta.path,
-          displayName: hierarchyColumn.displayName,
-          comment: hierarchyColumn.comment,
-          isDisplayNameCustom: hierarchyMeta.isDisplayNameCustom,
-        });
         const displayText =
-          customDisplayName ||
           viewField?.customName ||
+          hierarchyMeta.customName ||
           (previewField
             ? getDatasetFieldDisplayName(previewField)
             : viewField
@@ -166,6 +157,7 @@ export const SchemaTable = memo(
                 name,
                 path: hierarchyMeta.path,
                 displayName: hierarchyColumn.displayName,
+                customName: hierarchyMeta.customName,
                 comment:
                   resolveSchemaColumnComment(databaseSchemas, {
                     name,
@@ -173,7 +165,6 @@ export const SchemaTable = memo(
                   }) ||
                   column.comment ||
                   hierarchyMeta.comment,
-                isDisplayNameCustom: hierarchyMeta.isDisplayNameCustom,
               }));
 
         const title = (
@@ -188,9 +179,9 @@ export const SchemaTable = memo(
                   column.comment
                 }
                 hasCustomName={Boolean(
-                  customDisplayName ||
-                  viewField?.customName ||
-                  previewField?.customName
+                  hierarchyMeta.customName ||
+                    viewField?.customName ||
+                    previewField?.customName,
                 )}
               />
             </span>

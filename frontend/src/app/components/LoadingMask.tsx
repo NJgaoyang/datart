@@ -16,7 +16,7 @@ export function LoadingMask({ loading, children }: LoadingMaskProps) {
           <LoadingOutlined />
         </SpinWrapper>
       )}
-      {cloneElement(children, loading ? { className: 'blur' } : void 0)}
+      {cloneElement(children as ReactElement<{ className?: string }>, loading ? { className: 'blur' } : undefined)}
       <LoadingMaskStyle />
     </>
   );
