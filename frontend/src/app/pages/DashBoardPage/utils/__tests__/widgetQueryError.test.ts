@@ -52,3 +52,25 @@ describe('successful HTTP with a Datart business failure', () => {
     }
   });
 });
+describe('missing chart query envelope', () => {
+  it('rejects null and undefined responses', () => {
+    expect(() => unwrapWidgetQueryResponse(undefined)).toThrow('数据查询失败');
+    expect(() => unwrapWidgetQueryResponse(null)).toThrow('数据查询失败');
+    expect(() => unwrapWidgetQueryResponse({ success: true, data: null }))
+      .toThrow('数据查询失败');
+  });
+
+  it('treats an explicit empty rows array as valid data', () => {
+    expect(unwrapWidgetQueryResponse({ success: true, data: { rows: [] } }))
+      .toEqual({ rows: [] });
+  });
+
+  it('preserves business 403 information', () => {
+    try {
+      unwrapWidgetQueryResponse({ success: false, errCode: 403, data: null });
+      throw new Error('not rejected');
+    } catch (error) {
+      expect(getWidgetQueryErrorMessage(error)).toBe(WIDGET_QUERY_FORBIDDEN);
+    }
+  });
+});

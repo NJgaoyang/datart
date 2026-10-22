@@ -34,7 +34,7 @@ import { BASE_RESOURCE_URL } from 'globalConstants';
 import i18next from 'i18next';
 import qs from 'qs';
 import { request2, requestWithHeader } from 'utils/request';
-import { unwrapWidgetQueryResponse } from './queryResponse';
+import { unwrapRequiredApiData, unwrapWidgetQueryResponse } from './queryResponse';
 import { convertToChartDto } from './ChartDtoHelper';
 import { getAllColumnInMeta } from './chartHelper';
 
@@ -352,6 +352,6 @@ export async function fetchChartDataSet(
 }
 
 export async function fetchDashboardDetail(boardId: string) {
-  const { data } = await request2(`/viz/dashboards/${boardId}`);
-  return data;
+  const response = await request2(`/viz/dashboards/${boardId}`);
+  return unwrapRequiredApiData(response, '报表详情加载失败，请检查接口响应');
 }

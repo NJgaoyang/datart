@@ -33,6 +33,7 @@ import {
   fetchChartDataSet,
 } from 'app/utils/fetch';
 import { filterSqlOperatorName } from 'app/utils/internalChartHelper';
+import { unwrapRequiredApiData, unwrapWidgetQueryResponse } from 'app/utils/queryResponse';
 import { RootState } from 'types';
 import { request2 } from 'utils/request';
 import { getWidgetQueryErrorMessage } from 'app/pages/DashBoardPage/utils/widgetQueryError';
@@ -92,9 +93,10 @@ export const fetchBoardDetail = createAsyncThunk<
     filterSearchParams?: FilterSearchParams;
   }
 >('board/fetchBoardDetail', async (params, { dispatch, rejectWithValue }) => {
-  const { data } = await request2<ServerDashboard>(
+  const response = await request2<ServerDashboard>(
     `/viz/dashboards/${params?.dashboardRelId}`,
   );
+  const data = unwrapRequiredApiData(response, '报表详情加载失败，请检查接口响应');
 
   dispatch(
     handleServerBoardAction({
@@ -139,13 +141,14 @@ export const fetchBoardDetailInShare = createAsyncThunk<
   'board/fetchBoardDetailInShare',
   async (params, { dispatch, rejectWithValue }) => {
     const { vizToken, shareToken } = params;
-    const { data } = await request2<ShareVizInfo>({
+    const response = await request2<ShareVizInfo>({
       url: `shares/${shareToken}/viz`,
       method: 'POST',
       data: {
         authorizedToken: vizToken.authorizedToken,
       },
     });
+    const data = unwrapRequiredApiData(response, '分享报表加载失败，请检查接口响应');
     dispatch(
       shareActions.setExecuteTokenMap({
         executeToken: data.executeToken,
@@ -262,6 +265,7 @@ export const syncBoardWidgetChartDataAsync = createAsyncThunk<
     });
     const dataChart = dataChartMap[boardId][curWidget.datachartId];
     const chartDataView = viewMap?.[dataChart?.viewId];
+    try {
     // Direct widget refreshes also require an explicitly STRICT View.
     assertStrictChartView(chartDataView);
     const requestParams = new ChartDataRequestBuilder(
@@ -284,7 +288,6 @@ export const syncBoardWidgetChartDataAsync = createAsyncThunk<
       .addDrillOption(drillOption)
       .build();
 
-    try {
       const data = executeToken
         ? await fetchChartDataSet(requestParams, executeToken)
         : await enqueueWidgetFetch(boardId, widgetId, requestParams);
@@ -382,6 +385,7 @@ export const getChartWidgetDataAsync = createAsyncThunk<
       bid: curWidget.dashboardId,
       wid: widgetId,
     });
+    try {
     let requestParams = getChartWidgetRequestParams({
       widgetId,
       widgetMap,
@@ -407,7 +411,6 @@ export const getChartWidgetDataAsync = createAsyncThunk<
       return null;
     }
     let widgetData;
-    try {
       if (renderMode === 'read') {
         // 使用批量请求调度器: 合并同一渲染周期内多个 Widget 的数据请求
         widgetData = await enqueueWidgetFetch(boardId, widgetId, requestParams);
@@ -418,7 +421,7 @@ export const getChartWidgetDataAsync = createAsyncThunk<
         const dataChart = dataChartMap[boardId][curWidget.datachartId];
         const viewId = viewMap[dataChart.viewId].id;
         const executeToken = executeTokenMap?.[viewId];
-        const { data } = await request2<WidgetData>({
+        const response = await request2<WidgetData>({
           method: 'POST',
           url: `shares/execute`,
           params: {
@@ -426,7 +429,7 @@ export const getChartWidgetDataAsync = createAsyncThunk<
           },
           data: requestParams,
         }, undefined, { onRejected: error => { throw error; } });
-        widgetData = data;
+        widgetData = unwrapWidgetQueryResponse(response);
       }
       dispatch(
         boardActions.setWidgetData({
@@ -535,7 +538,7 @@ export const getControllerOptions = createAsyncThunk<
     let widgetData;
     try {
       if (executeToken && renderMode !== 'read') {
-        const { data } = await request2<ChartDataSetDTO>({
+        const response = await request2<ChartDataSetDTO>({
           method: 'POST',
           url: `shares/execute`,
           params: {
@@ -543,7 +546,7 @@ export const getControllerOptions = createAsyncThunk<
           },
           data: requestParams,
         }, undefined, { onRejected: error => { throw error; } });
-        widgetData = data;
+        widgetData = unwrapWidgetQueryResponse(response);
       } else {
         // 使用批量请求调度器
         widgetData = await enqueueWidgetFetch(boardId, widgetId, requestParams);
