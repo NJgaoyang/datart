@@ -130,18 +130,27 @@ export const dashboardModernStyles = css`
     background: #f5f9ff !important;
   }
 
-  /* Filter title remains inline, shrink-wrapped, with no phantom blank area. */
+  /* Grid cells retain their saved height, but the visible filter surface
+     is centred at a compact height instead of filling the entire cell. */
   .controller-widget {
+    box-sizing: border-box;
+    flex: 0 1 auto !important;
+    width: 100%;
+    height: 100% !important;
+    max-height: 56px;
+    min-height: 0;
+    margin-block: auto;
+    padding: 3px 7px !important;
     background: #fff !important;
-    border: 1px solid #e2eafa !important;
-    border-radius: 11px !important;
-    box-shadow: 0 2px 9px rgba(37, 73, 130, 0.055) !important;
+    border: 1px solid #e6edf9 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 1px 3px rgba(37, 73, 130, 0.035) !important;
   }
 
   .controller-widget:hover,
   .controller-widget:focus-within {
-    border-color: #bad1f9 !important;
-    box-shadow: 0 3px 12px rgba(37, 73, 130, 0.09) !important;
+    border-color: #bcd2f7 !important;
+    box-shadow: 0 2px 7px rgba(37, 73, 130, 0.065) !important;
   }
 
   .controller-widget .ant-form-item-row {
@@ -152,6 +161,19 @@ export const dashboardModernStyles = css`
     flex: 0 0 auto;
     width: fit-content;
     max-width: 40%;
+  }
+
+  /* Keep the widget menu available. A smaller desktop hit area returns a
+     few pixels to the dropdown without overlaying its arrow or contents. */
+  .controller-widget .widget-action-toolbar {
+    margin-left: 2px;
+  }
+
+  @media (pointer: fine) {
+    .controller-widget .widget-tool-dropdown {
+      width: 30px;
+      min-width: 30px;
+    }
   }
 
   .controller-widget .ant-select-selector,
@@ -172,9 +194,20 @@ export const dashboardModernStyles = css`
     box-shadow: 0 0 0 3px rgba(23, 107, 250, 0.12) !important;
   }
 
+  /* The action grid cells may be tall; centre 44px buttons in them. */
   .dashboard-query-action,
   .dashboard-reset-action {
-    padding: 5px 0 !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-modern-query-button,
+  .dashboard-modern-reset-button {
+    box-sizing: border-box;
+    flex: 0 0 auto !important;
+    align-self: center;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px;
   }
 
   .dashboard-modern-query-button {
@@ -221,6 +254,18 @@ export const dashboardModernStyles = css`
 
     .dashboard-modern-card {
       border-radius: 11px !important;
+    }
+
+    /* Small widgets retain their actual grid height rather than overflowing. */
+    .controller-widget {
+      max-height: 50px;
+      padding: 3px 5px !important;
+    }
+
+    .dashboard-modern-query-button,
+    .dashboard-modern-reset-button {
+      height: min(44px, 100%) !important;
+      min-height: 32px !important;
     }
   }
 
