@@ -66,6 +66,41 @@ describe('AntdTableWrapper', () => {
     ).toBe(true);
   });
 
+  it('keeps summary totals inside the horizontal scroller, above its scrollbar', () => {
+    const columns = [
+      { key: 'city', dataIndex: 'city', title: '城市', width: 180 },
+      { key: 'orders', dataIndex: 'orders', title: '总订单数', width: 180 },
+      { key: 'income', dataIndex: 'income', title: '租金收入', width: 180 },
+    ];
+    const { container } = render(
+      <AntdTableWrapper
+        dataSource={[{ id: 1, city: '苏州市', orders: 3, income: 100 }] as any}
+        columns={columns as any}
+        scroll={{ x: 540, y: 120 }}
+        summaryFn={() => ({ summarys: ['汇总', '3', '100'] } as any)}
+      />,
+    );
+
+    const body = container.querySelector('.ant-table-body');
+    const footer = body?.querySelector('table > tfoot.ant-table-summary');
+    expect(footer).not.toBeNull();
+    expect(footer?.textContent).toContain('汇总');
+    expect(body?.querySelector('table > tbody')).not.toBeNull();
+    // A separately fixed summary would appear AFTER the scrollable body and
+    // strand the horizontal scrollbar between data and the total row.
+    expect(
+      container.querySelector('.ant-table-container > .ant-table-summary'),
+    ).toBeNull();
+    expect(
+      Array.from(document.styleSheets).flatMap(sheet =>
+        Array.from(sheet.cssRules || []),
+      ).some(rule =>
+        rule.cssText.includes('tfoot.ant-table-summary') &&
+        rule.cssText.includes('position: sticky'),
+      ),
+    ).toBe(true);
+  });
+
   it('does not shrink a fixed header in the mobile flex layout', () => {
     const tableProps = {
       dataSource: [{ key: '1', value: 'data' }],

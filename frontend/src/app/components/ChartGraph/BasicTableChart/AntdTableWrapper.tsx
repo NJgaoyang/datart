@@ -104,7 +104,10 @@ const AntdTableWrapper: FC<{
       }
       const summaryData = summaryFn?.(pageData);
       return (
-        <Table.Summary fixed>
+        {/* Keep the total within the table body's horizontal scroller so the
+            scrollbar is BELOW the total, not between the data and total.
+            CSS below pins the row to the visible bottom during Y scroll. */}
+        <Table.Summary>
           <Table.Summary.Row>
             {(summaryData?.summarys || []).map((data, index) => {
               return (
@@ -178,6 +181,24 @@ const StyledTable = styled(Table)<{
   .ant-table-body {
     overflow: ${p =>
       p?.tableStyleConfig?.isFixedColumns ? 'auto scroll' : 'auto !important'};
+  }
+
+  /* Non-fixed AntD Summary lives in the same table as tbody. Its native
+     horizontal scrollbar now follows the summary rather than separating
+     detail rows and totals. Sticky positioning retains the visible footer
+     during vertical scrolling without duplicating totals or scroll controls. */
+  .ant-table-body > table > tfoot.ant-table-summary,
+  .ant-table-content > table > tfoot.ant-table-summary {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+  }
+
+  .ant-table-body > table > tfoot.ant-table-summary > tr > td,
+  .ant-table-content > table > tfoot.ant-table-summary > tr > td {
+    background-color: ${p =>
+      p?.tableStyleConfig?.summaryStyle?.backgroundColor ||
+      p.theme.componentBackground || '#fff'};
   }
 
   .datart-mobile-board & {
