@@ -440,15 +440,21 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
       display: flex;
       flex-wrap: nowrap;
       align-items: center;
+      gap: 6px;
       min-width: 0;
     }
 
     .ant-form-item-label {
+      /* Use the label's text width instead of reserving a percentage of
+         the widget. This must be identical in editor and viewer. */
       flex: 0 1 auto;
+      width: fit-content;
       min-width: 0;
       max-width: 40%;
+      padding: 0;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .ant-form-item-control {
@@ -497,11 +503,31 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
 
   /* Long custom labels must not consume the entire picker/selection area.
      Full text remains available through the widget title, when present. */
-  .control-form .ant-form-item-label label {
+  .control-form .ant-form-item-label > label {
+    display: inline-flex;
+    align-items: center;
+    width: auto;
     max-width: 100%;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* WidgetTitle normally declares width: 100%. Inside a Form.Item label
+     it should size to its text, not occupy a phantom full-width column. */
+  .control-form .ant-form-item-label > label > div {
+    flex: 0 1 auto;
+    width: auto !important;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .control-form .ant-form-item-label .widget-name {
+    display: inline-block;
+    max-width: 100%;
     white-space: nowrap;
   }
 
@@ -511,11 +537,12 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
     .control-form .ant-form-item-row {
       flex-direction: row;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
     }
 
     .control-form .ant-form-item-label {
-      flex: 0 1 38%;
+      flex: 0 1 auto;
+      width: fit-content;
       max-width: 38%;
       padding: 0;
       line-height: 18px;
