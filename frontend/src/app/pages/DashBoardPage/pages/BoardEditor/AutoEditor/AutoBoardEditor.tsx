@@ -32,7 +32,7 @@ import useEditAutoLayoutMap from 'app/pages/DashBoardPage/hooks/useEditAutoLayou
 import useGridLayoutMap from 'app/pages/DashBoardPage/hooks/useGridLayoutMap';
 import { DeviceType } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { MOBILE_BOARD_THEME } from 'app/pages/DashBoardPage/pages/Board/mobileTheme';
-import { getBoardMarginPadding } from 'app/pages/DashBoardPage/utils/board';
+import { getAutoBoardRowHeight, getBoardMarginPadding } from 'app/pages/DashBoardPage/utils/board';
 import { isMobileWidgetVisible } from 'app/pages/DashBoardPage/utils/autoLayout';
 import { hasGridGeometryChanged } from 'app/pages/DashBoardPage/utils/gridLayout';
 import { memo, useCallback, useContext, useMemo } from 'react';
@@ -68,6 +68,12 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
     return getBoardMarginPadding(boardConfig, activeColsKey);
   }, [activeColsKey, boardConfig, mobilePreview]);
 
+  // Use the same row pitch in editor and viewer, including mobile preview.
+  const gridRowHeight = getAutoBoardRowHeight(
+    boardConfig,
+    activeColsKey,
+    activeColsKey === 'sm' ? MOBILE_ROW_HEIGHT : widgetRowHeight,
+  );
   const { gridWrapRef, thEmitScroll } = useBoardScroll(boardId);
 
   const sortedLayoutWidgets = useEditAutoLayoutMap(boardId);
@@ -163,9 +169,7 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
                 cols={LAYOUT_COLS_MAP[activeColsKey]}
                 margin={curMargin}
                 containerPadding={curPadding}
-                rowHeight={
-                  activeColsKey === 'sm' ? MOBILE_ROW_HEIGHT : widgetRowHeight
-                }
+                rowHeight={gridRowHeight}
                 editable={true}
                 allowOverlap={allowOverlap}
                 compactType={compactType}

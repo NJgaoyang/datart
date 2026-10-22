@@ -25,7 +25,7 @@ import { LAYOUT_COLS_MAP } from 'app/pages/DashBoardPage/constants';
 import useBoardScroll from 'app/pages/DashBoardPage/hooks/useBoardScroll';
 import useGridLayoutMap from 'app/pages/DashBoardPage/hooks/useGridLayoutMap';
 import useLayoutMap from 'app/pages/DashBoardPage/hooks/useLayoutMap';
-import { getBoardMarginPadding } from 'app/pages/DashBoardPage/utils/board';
+import { getAutoBoardRowHeight, getBoardMarginPadding } from 'app/pages/DashBoardPage/utils/board';
 import { isMobileWidgetVisible } from 'app/pages/DashBoardPage/utils/autoLayout';
 import { memo, useCallback, useContext, useMemo } from 'react';
 import { DashboardGridLayout } from 'app/pages/DashBoardPage/components/GridLayout/DashboardGridLayout';
@@ -44,6 +44,8 @@ export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
       return getBoardMarginPadding(boardConfig, colsKey);
     }, [boardConfig, colsKey]);
 
+    // Retain existing table heights after zeroing grid gutters.
+    const gridRowHeight = getAutoBoardRowHeight(boardConfig, colsKey, widgetRowHeight);
     const { gridWrapRef, thEmitScroll } = useBoardScroll(boardId);
 
     const sortedLayoutWidgets = useLayoutMap(boardId);
@@ -85,7 +87,7 @@ export const AutoBoardCore: React.FC<{ boardId: string }> = memo(
                 measuredWidth={canvasWidth}
                 layout={layoutMap[colsKey] || []}
                 cols={LAYOUT_COLS_MAP[colsKey]}
-                rowHeight={widgetRowHeight}
+                rowHeight={gridRowHeight}
                 margin={curMargin}
                 containerPadding={curPadding}
                 editable={false}

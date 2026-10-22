@@ -221,6 +221,26 @@ export const getBoardMarginPadding = (
       };
 };
 
+/**
+ * RGL item height = h * rowHeight + (h - 1) * verticalMargin.
+ * Removing a saved pixel gutter without changing rowHeight could shrink a
+ * table by hundreds of pixels. Preserve the original grid row pitch while
+ * allowing adjacent items to touch; persisted rectangles remain unchanged.
+ */
+export const getAutoBoardRowHeight = (
+  boardConfig: BoardConfigValue,
+  colsKey: ColsKeyType,
+  baseRowHeight: number,
+): number => {
+  if (boardConfig.seamlessSpacing === false) {
+    return baseRowHeight;
+  }
+  const oldMargin = colsKey === 'sm'
+    ? boardConfig.mMargin?.[1] ?? MOBILE_MIN_MARGIN
+    : boardConfig.margin?.[1] ?? 0;
+  return baseRowHeight + Math.max(0, Number(oldMargin) || 0);
+};
+
 export const isElView = (el, inTimer?: boolean) => {
   let bool = false;
   if (!el) return false;

@@ -19,7 +19,7 @@
 import { BoardConfigValue } from '../../components/BoardProvider/BoardConfigProvider';
 import { MOBILE_MIN_MARGIN, MOBILE_MIN_PADDING } from '../../constants';
 import { initAutoBoardConfig } from '../autoBoard';
-import { getBoardMarginPadding } from '../board';
+import { getAutoBoardRowHeight, getBoardMarginPadding } from '../board';
 
 describe('test getBoardMarginPadding', () => {
   const boardConfig = {
@@ -104,5 +104,39 @@ describe('one-pixel saved defaults for newly created dashboards', () => {
     } as BoardConfigValue;
     expect(getBoardMarginPadding(zero, 'lg').curMargin).toEqual([0, 0]);
     expect(getBoardMarginPadding(zero, 'sm').curPadding).toEqual([0, 0]);
+  });
+});
+
+describe('seamless automatic-grid preserves table height', () => {
+  const base = {
+    margin: [8, 8],
+    padding: [16, 16],
+    mMargin: [3, 5],
+    mPadding: [2, 2],
+  } as BoardConfigValue;
+
+  it('preserves the saved desktop row pitch instead of shrinking tables', () => {
+    const config = { ...base, seamlessSpacing: true };
+    const oldHeight = 10 * 8 + 9 * 8;
+    const newRowHeight = getAutoBoardRowHeight(config, 'lg', 8);
+    expect(newRowHeight).toBe(16);
+    expect(10 * newRowHeight - oldHeight).toBe(8);
+    expect(getBoardMarginPadding(config, 'lg').curMargin).toEqual([0, 0]);
+  });
+
+  it('compensates mobile spacing too', () => {
+    expect(getAutoBoardRowHeight({ ...base, seamlessSpacing: true }, 'sm', 24)).toBe(29);
+  });
+
+  it('does not change row height when seamless is off', () => {
+    const config = { ...base, seamlessSpacing: false };
+    expect(getAutoBoardRowHeight(config, 'lg', 8)).toBe(8);
+    expect(getAutoBoardRowHeight(config, 'sm', 24)).toBe(24);
+  });
+
+  it('does not inflate a zero-gutter grid', () => {
+    const config = { ...base, seamlessSpacing: true, margin: [0, 0], mMargin: [0, 0] };
+    expect(getAutoBoardRowHeight(config, 'lg', 8)).toBe(8);
+    expect(getAutoBoardRowHeight(config, 'sm', 24)).toBe(24);
   });
 });
