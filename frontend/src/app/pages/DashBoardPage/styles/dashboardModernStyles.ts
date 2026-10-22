@@ -1,22 +1,21 @@
 /**
- * Modern BI skin for the read-only automatic dashboard surface.
+ * Lightweight, borderless BI presentation for read-only auto dashboards.
  *
- * Dashboard layout coordinates, widget styles persisted by the user, query
- * actions, navigation tabs and editor behavior remain unchanged. All selectors
- * are nested below .dashboard-modern-auto in the Board view wrapper.
+ * This is intentionally visual-only. Grid coordinates, widget data, query
+ * handlers, tab order, navigation structure and editor layout stay intact.
+ * All selectors are scoped to .dashboard-modern-auto in the Board wrapper.
  */
 import { css } from 'styled-components';
 
 export const dashboardModernStyles = css`
   --bi-primary: #176bfa;
   --bi-primary-hover: #095ce8;
-  --bi-page: #f3f7ff;
+  --bi-page: #fff;
   --bi-surface: #fff;
-  --bi-ink: #182641;
-  --bi-muted: #657794;
-  --bi-line: #e4ebf7;
-  --bi-shadow: 0 3px 18px rgba(42, 83, 151, 0.055);
-  --bi-radius: 14px;
+  --bi-ink: #202b3d;
+  --bi-muted: #697588;
+  --bi-line: #e9edf2;
+  --bi-radius: 8px;
 
   min-width: 0;
   color: var(--bi-ink);
@@ -26,43 +25,45 @@ export const dashboardModernStyles = css`
     background-color: var(--bi-page);
   }
 
-  /* Visual-only treatment: the dashboard heading and actions keep their DOM. */
+  /* A restrained page heading, not a large empty title card.
+     The top report directory (日报/月报) is outside this scoped selector. */
   .dashboard-modern-title {
     box-sizing: border-box;
-    min-height: 88px;
-    margin: 16px 18px 10px;
-    padding: 16px 24px;
-    background: var(--bi-surface);
-    border: 1px solid var(--bi-line);
-    border-radius: var(--bi-radius);
-    box-shadow: var(--bi-shadow);
+    min-height: 58px;
+    margin: 0 12px 4px;
+    padding: 8px 10px;
+    background: #fff;
+    border: 0;
+    border-bottom: 1px solid #edf0f4;
+    border-radius: 0;
+    box-shadow: none;
   }
 
   .dashboard-modern-title h1 {
     min-width: 0;
-    font-size: 24px;
-    line-height: 34px;
-    font-weight: 700;
+    font-size: 21px;
+    line-height: 30px;
+    font-weight: 600;
     color: var(--bi-ink);
   }
 
   .dashboard-modern-title .ant-btn {
-    min-height: 36px;
-    border: 1px solid #dce5f3;
-    border-radius: 9px;
+    min-height: 34px;
+    border: 1px solid #e1e6ef;
+    border-radius: 7px;
     background: #fff;
-    color: var(--bi-ink);
-    box-shadow: 0 2px 5px rgba(23, 54, 102, 0.04);
+    color: #39475a;
+    box-shadow: none;
   }
 
   .dashboard-modern-title .ant-btn:hover {
-    border-color: #b6ccf0;
+    border-color: #bacff0;
     color: var(--bi-primary);
   }
 
-  /* Do not add layout padding here: RGL measures this exact canvas width. */
+  /* Keep RGL canvas dimensions unchanged. Eliminate blue page fills. */
   .dashboard-modern-canvas {
-    background: linear-gradient(180deg, #f6f9ff 0%, #f1f5fc 100%) !important;
+    background-color: #fff !important;
     background-image: none !important;
   }
 
@@ -71,30 +72,30 @@ export const dashboardModernStyles = css`
     scrollbar-color: #c7d5ec transparent;
   }
 
-  /* The card outline is inset: existing widget dimensions stay intact. */
+  /* One continuous report canvas; no second layer of widget cards. */
   .dashboard-modern-card {
     box-sizing: border-box;
     min-width: 0;
-    border: 1px solid var(--bi-line) !important;
-    border-radius: var(--bi-radius) !important;
-    background-color: var(--bi-surface) !important;
-    box-shadow: var(--bi-shadow) !important;
-    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background-color: #fff !important;
+    box-shadow: none !important;
   }
 
   .dashboard-modern-card:hover {
-    border-color: #d4e2f9 !important;
-    box-shadow: 0 5px 22px rgba(42, 83, 151, 0.085) !important;
+    border: 0 !important;
+    box-shadow: none !important;
   }
 
   .dashboard-modern-card .widget-name {
     color: var(--bi-ink) !important;
-    font-weight: 650 !important;
+    font-weight: 600 !important;
   }
 
   /* Refine widget-owned report tabs, not the outer 日报/月报 navigation. */
   .dashboard-modern-tabs-card .ant-tabs-nav {
-    border-bottom-color: #e8eef8;
+    margin-bottom: 4px;
+    border-bottom-color: #edf0f4;
   }
 
   .dashboard-modern-tabs-card .ant-tabs-tab-btn {
@@ -113,44 +114,45 @@ export const dashboardModernStyles = css`
     background: var(--bi-primary);
   }
 
-  /* Data table styling only inside automatic dashboard report cards. */
+  /* Flat tables, with quiet header emphasis and row dividers. */
   .dashboard-modern-card .ant-table-container {
-    border: 1px solid #eaf0fa;
-    border-radius: 10px;
+    border: 0;
+    border-radius: 0;
   }
 
   .dashboard-modern-card .ant-table-thead > tr > th {
-    color: #334767;
-    background: #eff5ff !important;
-    border-bottom-color: #e1e9f7 !important;
+    color: #425167;
+    background: #f7f9fc !important;
+    border-bottom-color: #e9edf3 !important;
     font-weight: 600;
   }
 
   .dashboard-modern-card .ant-table-tbody > tr:hover > td {
-    background: #f5f9ff !important;
+    background: #f6f9ff !important;
   }
 
-  /* Grid cells retain their saved height, but the visible filter surface
-     is centred at a compact height instead of filling the entire cell. */
+  /* Each filter is an inline label and input, not a nested card.
+     Preserve menu/status affordances at the trailing edge of each widget. */
   .controller-widget {
     box-sizing: border-box;
     flex: 0 1 auto !important;
     width: 100%;
     height: 100% !important;
-    max-height: 56px;
+    max-height: 46px;
     min-height: 0;
     margin-block: auto;
-    padding: 3px 7px !important;
-    background: #fff !important;
-    border: 1px solid #e6edf9 !important;
-    border-radius: 10px !important;
-    box-shadow: 0 1px 3px rgba(37, 73, 130, 0.035) !important;
+    padding: 1px 4px !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
   }
 
   .controller-widget:hover,
   .controller-widget:focus-within {
-    border-color: #bcd2f7 !important;
-    box-shadow: 0 2px 7px rgba(37, 73, 130, 0.065) !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
   }
 
   .controller-widget .ant-form-item-row {
@@ -163,38 +165,39 @@ export const dashboardModernStyles = css`
     max-width: 40%;
   }
 
-  /* Keep the widget menu available. A smaller desktop hit area returns a
-     few pixels to the dropdown without overlaying its arrow or contents. */
+  /* Keep the action menu accessible, but do not reserve extra card gutter. */
   .controller-widget .widget-action-toolbar {
-    margin-left: 2px;
+    margin-left: 0;
   }
 
   @media (pointer: fine) {
     .controller-widget .widget-tool-dropdown {
-      width: 30px;
-      min-width: 30px;
+      width: 28px;
+      min-width: 28px;
     }
   }
 
+  /* Only the native inputs retain a thin operation boundary. */
   .controller-widget .ant-select-selector,
   .controller-widget .ant-picker {
-    border-color: #dbe5f5 !important;
-    border-radius: 8px !important;
+    border-color: #dde3eb !important;
+    border-radius: 7px !important;
     background: #fff !important;
+    box-shadow: none !important;
   }
 
   .controller-widget .ant-select:hover .ant-select-selector,
   .controller-widget .ant-picker:hover {
-    border-color: #9cbef5 !important;
+    border-color: #aebfd5 !important;
   }
 
   .controller-widget .ant-select-focused .ant-select-selector,
   .controller-widget .ant-picker:focus-within {
     border-color: var(--bi-primary) !important;
-    box-shadow: 0 0 0 3px rgba(23, 107, 250, 0.12) !important;
+    box-shadow: 0 0 0 2px rgba(23, 107, 250, 0.10) !important;
   }
 
-  /* The action grid cells may be tall; centre 44px buttons in them. */
+  /* Buttons align with the inputs instead of expanding into bulky blocks. */
   .dashboard-query-action,
   .dashboard-reset-action {
     padding: 0 !important;
@@ -205,16 +208,17 @@ export const dashboardModernStyles = css`
     box-sizing: border-box;
     flex: 0 0 auto !important;
     align-self: center;
-    height: 44px !important;
-    min-height: 44px !important;
-    max-height: 44px;
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px;
+    border-radius: 7px;
+    box-shadow: none !important;
   }
 
   .dashboard-modern-query-button {
     color: #fff;
-    border-radius: 9px;
-    background: linear-gradient(120deg, #3183ff 0%, #176bfa 100%) !important;
-    box-shadow: 0 4px 12px rgba(23, 107, 250, 0.20) !important;
+    background: #176bfa !important;
+    box-shadow: none !important;
   }
 
   .dashboard-modern-query-button span {
@@ -222,29 +226,28 @@ export const dashboardModernStyles = css`
   }
 
   .dashboard-modern-query-button:hover {
-    background: linear-gradient(120deg, #2477f7 0%, #095ce8 100%) !important;
-    box-shadow: 0 5px 14px rgba(23, 107, 250, 0.27) !important;
+    background: #095ce8 !important;
+    box-shadow: none !important;
   }
 
   .dashboard-modern-reset-button {
-    border-radius: 9px;
-    border-color: #d6e2f5 !important;
+    border-color: #dfe5ed !important;
     background: #fff !important;
     color: var(--bi-ink);
-    box-shadow: 0 2px 6px rgba(23, 54, 102, 0.055);
+    box-shadow: none !important;
   }
 
   .dashboard-modern-reset-button:hover {
-    border-color: #b6cef4 !important;
-    background: #f7faff !important;
+    border-color: #b6c7dd !important;
+    background: #fafcff !important;
   }
 
   @media (max-width: 767px) {
     .dashboard-modern-title {
-      min-height: 64px;
-      margin: 8px 8px 6px;
-      padding: 10px 12px;
-      border-radius: 11px;
+      min-height: 52px;
+      margin: 0 8px 4px;
+      padding: 6px 8px;
+      border-radius: 0;
     }
 
     .dashboard-modern-title h1 {
@@ -252,19 +255,14 @@ export const dashboardModernStyles = css`
       line-height: 28px;
     }
 
-    .dashboard-modern-card {
-      border-radius: 11px !important;
-    }
-
-    /* Small widgets retain their actual grid height rather than overflowing. */
     .controller-widget {
-      max-height: 50px;
-      padding: 3px 5px !important;
+      max-height: 42px;
+      padding: 0 2px !important;
     }
 
     .dashboard-modern-query-button,
     .dashboard-modern-reset-button {
-      height: min(44px, 100%) !important;
+      height: min(40px, 100%) !important;
       min-height: 32px !important;
     }
   }
