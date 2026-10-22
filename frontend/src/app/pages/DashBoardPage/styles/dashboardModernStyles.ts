@@ -1,9 +1,9 @@
 /**
  * Lightweight BI presentation for read-only auto dashboards.
  *
- * The shared auto-board controller and button surfaces live in WidgetWrapper
- * so that the editor and read-only viewer render the same UI. This file is
- * only responsible for read-side page chrome, inputs and table appearance. 
+ * Shared Datart filters and action surfaces live in WidgetWrapper, and
+ * their select/date input styles stay in ControllerWidgetCore. This file
+ * only defines read-side typography, page chrome, buttons and tables.
  * Grid geometry, navigation structure and query behavior are unchanged.
  */
 import { css } from 'styled-components';
@@ -135,37 +135,8 @@ export const dashboardModernStyles = css`
     background: #f6f9ff !important;
   }
 
-  /* Labels and inputs stay inline. The shared WidgetWrapper styles
-     remove outer filter cards in BOTH the editor and read-only viewer. */
-  .controller-widget .ant-form-item-row {
-    gap: 6px;
-  }
-
-  .controller-widget .ant-form-item-label {
-    flex: 0 0 auto;
-    width: fit-content;
-    max-width: 40%;
-  }
-
-  /* Only the native inputs retain a thin operation boundary. */
-  .controller-widget .ant-select-selector,
-  .controller-widget .ant-picker {
-    border-color: #dde3eb !important;
-    border-radius: 7px !important;
-    background: #fff !important;
-    box-shadow: none !important;
-  }
-
-  .controller-widget .ant-select:hover .ant-select-selector,
-  .controller-widget .ant-picker:hover {
-    border-color: #aebfd5 !important;
-  }
-
-  .controller-widget .ant-select-focused .ant-select-selector,
-  .controller-widget .ant-picker:focus-within {
-    border-color: var(--bi-primary) !important;
-    box-shadow: 0 0 0 2px rgba(23, 107, 250, 0.10) !important;
-  }
+  /* Deliberately no filter-input rules here: keep the earlier Datart
+     outlined select/date controls unchanged across editor and viewer. */
 
   /* Buttons align with the inputs instead of expanding into bulky blocks. */
   .dashboard-query-action,

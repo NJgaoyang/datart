@@ -88,11 +88,11 @@ const Wrapper = styled.div`
     }
   }
 
-  /* Auto dashboards share the exact same flat filters in edit and view
-     modes. Keep the full grid hit area for editor selection/drag behavior,
-     but remove the old oversized card decoration from the actual widget. */
+  /* Datart's original inline controls appear identically in automatic
+     dashboard edit and view modes. Remove only the OUTER card decoration.
+     Preserve the RGL grid cell and the widget menu hit area. */
   &.controller-widget.dashboard-inline-filter {
-    padding: 1px 4px !important;
+    padding: 0 2px !important;
     border: 0 !important;
     border-radius: 0 !important;
     background: transparent !important;
@@ -152,7 +152,7 @@ const Wrapper = styled.div`
     }
 
     &.controller-widget.dashboard-inline-filter {
-      padding: 1px 2px !important;
+      padding: 0 2px !important;
     }
   }
 
