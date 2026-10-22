@@ -172,11 +172,11 @@ const Wrapper = styled.div`
      It occupies a fixed height instead of growing into an empty panel. */
   &.compact-auto-board-title {
     box-sizing: border-box;
-    flex: 0 0 56px;
-    height: 56px;
-    min-height: 56px;
-    max-height: 56px;
-    padding: 0 20px;
+    flex: 0 0 44px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    padding: 0 16px;
 
     h1 {
       margin: 0;

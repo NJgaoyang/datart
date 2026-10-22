@@ -432,11 +432,23 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
   container-type: inline-size;
 
   .control-form {
-    flex: 1;
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
     width: 100%;
+    height: 100%;
     min-width: 0;
 
+    /* AntD Form.Item and both intermediate wrappers must grow too. A
+       width:100% Select alone cannot fill a fixed-width form-item child. */
+    .ant-form-item {
+      flex: 1 1 0;
+      width: 100%;
+      min-width: 0;
+    }
+
     .ant-form-item-row {
+      width: 100%;
       display: flex;
       flex-wrap: nowrap;
       align-items: center;
@@ -459,6 +471,24 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
 
     .ant-form-item-control {
       flex: 1 1 0;
+      width: 0;
+      min-width: 0;
+    }
+
+    .ant-form-item-control-input,
+    .ant-form-item-control-input-content {
+      display: flex;
+      flex: 1 1 0;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .ant-picker,
+    .ant-select,
+    .ant-tree-select,
+    .ant-input,
+    .ant-input-number {
+      width: 100%;
       min-width: 0;
     }
 

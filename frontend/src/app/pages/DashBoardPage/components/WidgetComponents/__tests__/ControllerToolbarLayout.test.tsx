@@ -50,4 +50,27 @@ describe('controller widget action hit areas', () => {
     expect(openActions).toHaveBeenCalledTimes(1);
     expect(openCalendar).toHaveBeenCalledTimes(1);
   });
+  it('keeps the auto filter content stretchable beside the action menu', () => {
+    const { container } = render(
+      <WidgetWrapper
+        className="controller-widget dashboard-auto-filter"
+        background={{} as any}
+        padding={{ top: 20, right: 20, bottom: 20, left: 20 } as any}
+        border={{} as any}
+      >
+        <div className="controller-widget-content">
+          <div><input aria-label="Filter value" /></div>
+        </div>
+        <StyledWidgetToolBar>
+          <button className="widget-tool-dropdown">Widget actions</button>
+        </StyledWidgetToolBar>
+      </WidgetWrapper>,
+    );
+    const outer = container.querySelector('.dashboard-auto-filter');
+    const content = outer?.querySelector('.controller-widget-content');
+    expect(outer).not.toBeNull();
+    expect(content?.parentElement).toBe(outer);
+    expect(outer?.querySelector('.widget-action-toolbar')?.parentElement).toBe(outer);
+  });
+
 });
