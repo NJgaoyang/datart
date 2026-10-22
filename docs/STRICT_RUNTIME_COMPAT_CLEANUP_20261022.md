@@ -4,10 +4,13 @@ Branch: `dev202610221` (derived from `dev202610212`).
 
 ## Completed in this change
 
-- Added an explicit STRICT gate in the live dashboard chart query entry
-  (`getDataChartRequestParams`). A missing `migrationMode` is rejected,
-  just like COMPAT, instead of allowing field-name fallback in the lower-level
-  builder.
+- Added explicit STRICT gates to both dashboard query paths:
+  `getDataChartRequestParams` and the direct widget refresh in
+  `pages/Board/slice/thunk.ts`. Missing modes and COMPAT are rejected
+  before falling through to name/path matching.
+- Preserved the source View's `migrationMode` while building partial inputs
+  in chart interactions, preview, share, export, and widget refresh paths.
+  This is pass-through, not a fabricated STRICT default.
 - Added focused tests for STRICT, COMPAT, undefined and invalid modes.
 - **No UI, widget rectangles, grid sizing, schema or persisted resource data
   is modified.** Existing `bin/install-env.sh` remains intact.
@@ -29,11 +32,11 @@ Branch: `dev202610221` (derived from `dev202610212`).
 ## Still to audit before removal
 
 1. **Other request builder callers.** `ChartDataRequestBuilder` still permits
-   an absent mode because preview, share, download, drill-through and
-   `frontend/src/task.ts` pass partial View payloads. First propagate a
-   verified `migrationMode: 'STRICT'` from the server through each caller,
-   add end-to-end tests for its path, then tighten the builder constructor.
-   Do not simply remove that allowance yet.
+   an absent mode for remaining direct callers and legacy test fixtures.
+   Preview/share/download/drill-through wrappers now forward the original
+   View mode where available; verify each API actually returns STRICT mode
+   (including `frontend/src/task.ts`) and cover share/download with
+   integration tests before making the builder constructor strict-only.
 2. **Chart display reconciliation.** `internalChartHelper.ts` has an
    originName/path/colName lookup for display metadata when a row has no
    `fieldId`. It currently avoids rebinding the saved `fieldId`; distinguish
