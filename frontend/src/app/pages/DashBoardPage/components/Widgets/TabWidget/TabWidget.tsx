@@ -37,7 +37,7 @@ export const TabWidget: React.FC<{ hideTitle: boolean }> = memo(
   ({ hideTitle }) => {
     const widget = useContext(WidgetContext);
 
-    const { editing, boardType } = useContext(BoardContext);
+    const { editing } = useContext(BoardContext);
     const widgetInfo = useContext(WidgetInfoContext);
 
     /**
@@ -52,16 +52,7 @@ export const TabWidget: React.FC<{ hideTitle: boolean }> = memo(
     const title = getWidgetTitle(widget.config.customConfig.props);
     title.title = widget.config.name;
     return (
-      <WidgetWrapper
-        className={
-          boardType === 'auto' && !editing && !hideTitle
-            ? 'dashboard-modern-card dashboard-modern-tabs-card'
-            : undefined
-        }
-        background={background}
-        border={border}
-        padding={padding}
-      >
+      <WidgetWrapper background={background} border={border} padding={padding}>
         <div style={ZIndexStyle}>
           {hideTitle ? null : <WidgetTitle title={title} />}
           <div style={FlexStyle}>

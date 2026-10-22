@@ -16,10 +16,14 @@
  * limitations under the License.
  */
 
+import { darken, getLuminance, lighten } from 'polished';
 import React, { useContext } from 'react';
 import styled from 'styled-components';
 import { WidgetActionContext } from '../../ActionProvider/WidgetActionProvider';
-import { getWidgetTitle } from '../../WidgetManager/utils/utils';
+import {
+  getWidgetBaseStyle,
+  getWidgetTitle,
+} from '../../WidgetManager/utils/utils';
 import { WidgetContext } from '../../WidgetProvider/WidgetProvider';
 
 export const ResetBtnWidgetCore: React.FC<{}> = () => {
@@ -33,8 +37,9 @@ export const ResetBtnWidgetCore: React.FC<{}> = () => {
 
   const title = getWidgetTitle(widget.config.customConfig.props);
   title.title = widget.config.name;
+  const { background } = getWidgetBaseStyle(widget.config.customConfig.props);
   return (
-    <Wrapper className="dashboard-modern-reset-button" onClick={onQuery}>
+    <Wrapper color={background.color} onClick={onQuery}>
       <span
         style={{
           color: title.font.color,
@@ -49,33 +54,19 @@ export const ResetBtnWidgetCore: React.FC<{}> = () => {
   );
 };
 
-const Wrapper = styled.div`
+const Wrapper = styled.div<{ color: string }>`
   display: flex;
   flex: 1;
   align-items: center;
   justify-content: center;
   width: 100%;
   height: 100%;
-  min-height: 32px;
-  border: 1px solid #dce4ef;
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.035);
-  transition: background 0.18s ease, border-color 0.18s ease;
+
   cursor: pointer;
-
-  span {
-    font-size: 14px !important;
-    font-weight: 500 !important;
-  }
-
   &:hover {
-    border-color: #bdd0ed;
-    background: #f8fbff;
-  }
-
-  &:focus-within {
-    outline: 2px solid rgba(22, 119, 255, 0.3);
-    outline-offset: 2px;
+    background: ${p =>
+      getLuminance(p.color) > 0.5
+        ? darken(0.05, p.color)
+        : lighten(0.05, p.color)};
   }
 `;

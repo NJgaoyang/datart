@@ -31,7 +31,7 @@ import { QueryBtnWidgetCore } from './QueryBtnWidgetCore';
 export const QueryBtnWidget: React.FC<{}> = memo(() => {
   const widget = useContext(WidgetContext);
 
-  const { editing, boardType } = useContext(BoardContext);
+  const { editing } = useContext(BoardContext);
 
   // 自动更新
   const { background, border } = getWidgetBaseStyle(
@@ -39,11 +39,7 @@ export const QueryBtnWidget: React.FC<{}> = memo(() => {
   );
   return (
     <WidgetWrapper
-      className={
-        boardType === 'auto'
-          ? 'dashboard-action-widget dashboard-query-action dashboard-auto-action'
-          : 'dashboard-action-widget dashboard-query-action'
-      }
+      className="dashboard-action-widget"
       background={background}
       border={border}
       padding={{ top: 0, right: 0, bottom: 0, left: 0 }}

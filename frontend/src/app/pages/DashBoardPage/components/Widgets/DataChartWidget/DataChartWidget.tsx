@@ -61,16 +61,7 @@ export const DataChartWidget: React.FC<{ hideTitle: boolean }> = memo(
       widget.config.customConfig.props,
     );
     return (
-      <WidgetWrapper
-        className={
-          boardType === 'auto' && renderMode !== 'edit' && !hideTitle
-            ? 'dashboard-modern-card dashboard-modern-chart-card'
-            : undefined
-        }
-        background={background}
-        border={border}
-        padding={padding}
-      >
+      <WidgetWrapper background={background} border={border} padding={padding}>
         <div ref={cacheWhRef} style={ZIndexStyle}>
           {!hideTitle && <WidgetTitle title={title} />}
 

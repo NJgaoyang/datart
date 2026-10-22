@@ -93,7 +93,7 @@ export const RangeTimeController: React.FC<TimeSetProps> = memo(
                 root: isMobile ? 'datart-mobile-date-popup' : undefined,
               },
             }}
-            variant="outlined"
+            variant="borderless"
           />
         ) : (
           <RangePicker
@@ -108,7 +108,7 @@ export const RangeTimeController: React.FC<TimeSetProps> = memo(
                 root: isMobile ? 'datart-mobile-date-popup' : undefined,
               },
             }}
-            variant="outlined"
+            variant="borderless"
           />
         )}
       </StyledWrap>
@@ -123,10 +123,10 @@ const StyledWrap = styled.div`
 
   & .control-datePicker {
     width: 100%;
-    background-color: #fff !important;
+    background-color: transparent !important;
 
     & .ant-input {
-      background-color: #fff !important;
+      background-color: transparent !important;
     }
   }
 `;

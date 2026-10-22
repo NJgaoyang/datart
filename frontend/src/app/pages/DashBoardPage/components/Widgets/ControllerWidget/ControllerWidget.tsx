@@ -45,16 +45,7 @@ export const ControllerWidget: React.FC<{}> = memo(() => {
     widget.config.customConfig.props,
   );
   return (
-    <WidgetWrapper
-      className={
-        boardType === 'auto'
-          ? 'controller-widget dashboard-inline-filter'
-          : 'controller-widget'
-      }
-      background={background}
-      border={border}
-      padding={padding}
-    >
+    <WidgetWrapper className="controller-widget" background={background} border={border} padding={padding}>
       <div
         ref={cacheWhRef}
         className="controller-widget-content"

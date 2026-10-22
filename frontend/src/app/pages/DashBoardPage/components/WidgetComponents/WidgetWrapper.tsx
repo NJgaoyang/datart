@@ -49,19 +49,8 @@ const Wrapper = styled.div`
      DatePicker suffix. Its width automatically includes status/lock icons. */
   &.controller-widget {
     align-items: center;
-    /* Refined light filter card, scoped to dashboard controllers only. */
-    padding: 5px 10px !important;
-    border: 1px solid #e6ebf3 !important;
-    border-radius: 9px !important;
-    background: #f8fafc !important;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.045) !important;
-    transition: border-color 0.18s ease, box-shadow 0.18s ease;
-
-    &:hover,
-    &:focus-within {
-      border-color: #d0def2 !important;
-      box-shadow: 0 2px 8px rgba(23, 55, 103, 0.07) !important;
-    }
+    border-radius: 8px;
+    box-shadow: inset 0 0 0 1px ${p => p.theme.borderColorSplit};
 
     .controller-widget-content {
       flex: 1 1 auto;
@@ -88,72 +77,8 @@ const Wrapper = styled.div`
     }
   }
 
-  /* Datart's original inline controls appear identically in automatic
-     dashboard edit and view modes. Remove only the OUTER card decoration.
-     Preserve the RGL grid cell and the widget menu hit area. */
-  &.controller-widget.dashboard-inline-filter {
-    padding: 0 2px !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    background-image: none !important;
-    box-shadow: none !important;
-    transition: none;
-
-    &:hover,
-    &:focus-within {
-      border: 0 !important;
-      background: transparent !important;
-      box-shadow: none !important;
-    }
-
-    .widget-action-toolbar {
-      margin-left: 0;
-    }
-
-    @media (pointer: fine) {
-      .widget-tool-dropdown {
-        width: 28px;
-        min-width: 28px;
-      }
-    }
-  }
-
   &.dashboard-action-widget {
     border-radius: 8px;
-  }
-
-  /* Action widgets retain their grid positions; only their surfaces change. */
-  &.dashboard-query-action,
-  &.dashboard-reset-action {
-    padding: 6px 0 !important;
-    border: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-
-  /* Auto-board action buttons are compact in BOTH editor and viewer.
-     The grid cells remain unchanged; the buttons are vertically centered. */
-  &.dashboard-auto-action .dashboard-modern-query-button,
-  &.dashboard-auto-action .dashboard-modern-reset-button {
-    flex: 0 0 auto !important;
-    align-self: center;
-    box-sizing: border-box;
-    height: min(40px, 100%) !important;
-    min-height: 0 !important;
-    max-height: 40px;
-    border-radius: 7px;
-    box-shadow: none !important;
-  }
-
-  @media (pointer: coarse) {
-    &.controller-widget {
-      padding: 4px 6px !important;
-    }
-
-    &.controller-widget.dashboard-inline-filter {
-      padding: 0 2px !important;
-    }
   }
 
   &:hover .widget-tool-dropdown,

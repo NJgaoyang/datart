@@ -67,7 +67,7 @@ export const SelectController: React.FC<SelectControllerProps> = ({
       style={{ width: '100%' }}
       placeholder={t('selectController')}
       onChange={onChange}
-      variant="outlined"
+      variant="borderless"
       options={[
         ...((options || []).flatMap(item => {
           //  ##659
@@ -99,6 +99,6 @@ const StyledSelect = styled(Select)`
   min-width: 0;
 
   &.ant-select .ant-select-selector {
-    background-color: #fff !important;
+    background-color: transparent !important;
   }
 `;

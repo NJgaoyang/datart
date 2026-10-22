@@ -436,90 +436,46 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
     width: 100%;
     min-width: 0;
 
-    /* Keep the title and value on the same line at all dashboard widths. */
     .ant-form-item-row {
       display: flex;
       flex-wrap: nowrap;
       align-items: center;
-      gap: 6px;
       min-width: 0;
     }
 
     .ant-form-item-label {
-      /* Use the actual text width instead of reserving unused label space. */
-      flex: 0 0 auto;
-      width: fit-content;
-      max-width: 40%;
+      flex: 0 1 auto;
       min-width: 0;
-      padding: 0;
+      max-width: 40%;
       overflow: hidden;
       text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .ant-form-item-label .widget-name {
-      font-size: 14px !important;
-      font-weight: 500 !important;
-      line-height: 20px;
     }
 
     .ant-form-item-control {
       flex: 1 1 0;
-      width: 0;
-      min-width: 0;
-    }
-
-    .ant-form-item-control-input,
-    .ant-form-item-control-input-content {
       min-width: 0;
     }
 
     .ant-picker,
-    .ant-select {
-      width: 100%;
+    .ant-picker-input,
+    .ant-select,
+    .ant-select-selector {
       min-width: 0;
       max-width: 100%;
     }
 
-    /* Subtle input outline, white surface and consistent compact height. */
     .ant-picker,
-    .ant-select .ant-select-selector,
+    .ant-select-selector,
     .ant-input,
     .ant-input-number {
-      min-height: 40px;
-      border: 1px solid #dce4f0 !important;
-      border-radius: 8px !important;
-      background: #fff !important;
-      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.025);
-      transition: border-color 0.18s ease, box-shadow 0.18s ease;
-    }
-
-    .ant-picker {
-      padding-inline: 12px;
-    }
-
-    .ant-select .ant-select-selector {
-      padding-inline: 12px !important;
-    }
-
-    .ant-picker:hover,
-    .ant-select:hover .ant-select-selector,
-    .ant-input:hover,
-    .ant-input-number:hover {
-      border-color: #aac3ec !important;
+      border-radius: 6px;
     }
 
     .ant-picker:focus-within,
     .ant-select-focused .ant-select-selector,
     .ant-input:focus,
     .ant-input-number-focused {
-      border-color: #1677ff !important;
-      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.13) !important;
-    }
-
-    .ant-select-selection-placeholder,
-    .ant-picker-input > input::placeholder {
-      color: #98a4b7;
+      box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.2);
     }
 
     .ant-select,
@@ -541,31 +497,11 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
 
   /* Long custom labels must not consume the entire picker/selection area.
      Full text remains available through the widget title, when present. */
-  .control-form .ant-form-item-label > label {
-    display: inline-flex;
-    align-items: center;
-    width: auto;
+  .control-form .ant-form-item-label label {
     max-width: 100%;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  /* WidgetTitle normally uses width: 100%; inside Form.Item labels it can
-     stretch the label and leave a large blank gap before the input. */
-  .control-form .ant-form-item-label > label > div {
-    flex: 0 1 auto;
-    width: auto !important;
-    max-width: 100%;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .control-form .ant-form-item-label .widget-name {
-    display: inline-block;
-    max-width: 100%;
     white-space: nowrap;
   }
 
@@ -579,8 +515,7 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
     }
 
     .control-form .ant-form-item-label {
-      flex: 0 1 auto;
-      width: fit-content;
+      flex: 0 1 38%;
       max-width: 38%;
       padding: 0;
       line-height: 18px;
@@ -593,19 +528,10 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
       min-width: 0;
     }
 
-    /* Keep the legacy narrow/mobile controls compact without wrapping. */
-    .control-form .ant-picker,
-    .control-form .ant-select .ant-select-selector {
+    /* Fit the stacked label + picker in a compact 6-row legacy widget. */
+    .control-form .ant-picker {
       height: 28px;
       min-height: 28px;
-    }
-
-    .control-form .ant-select .ant-select-selector {
-      padding-inline: 6px !important;
-    }
-
-    .control-form .ant-form-item-label .widget-name {
-      font-size: 12px !important;
     }
   }
 

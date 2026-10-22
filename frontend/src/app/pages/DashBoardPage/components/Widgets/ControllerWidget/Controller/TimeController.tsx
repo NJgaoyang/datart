@@ -80,7 +80,7 @@ export const TimeController: React.FC<SingleTimeSetProps> = memo(
                 root: isMobile ? 'datart-mobile-date-popup' : undefined,
               },
             }}
-            variant="outlined"
+            variant="borderless"
           />
         ) : (
           <DatePicker
@@ -95,7 +95,7 @@ export const TimeController: React.FC<SingleTimeSetProps> = memo(
                 root: isMobile ? 'datart-mobile-date-popup' : undefined,
               },
             }}
-            variant="outlined"
+            variant="borderless"
           />
         )}
       </StyledWrap>
@@ -110,10 +110,10 @@ const StyledWrap = styled.div`
 
   & .control-datePicker {
     width: 100%;
-    background-color: #fff !important;
+    background-color: transparent !important;
 
     & .ant-input {
-      background-color: #fff !important;
+      background-color: transparent !important;
     }
   }
 `;

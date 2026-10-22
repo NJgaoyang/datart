@@ -84,7 +84,7 @@ export const TitleHeader: FC = memo(() => {
   );
 
   return (
-    <Wrapper className="dashboard-modern-title">
+    <Wrapper>
       <h1 className={classnames({ disabled: status < 2 })}>{title}</h1>
       <Space>
         {!isArchived && allowManage && (

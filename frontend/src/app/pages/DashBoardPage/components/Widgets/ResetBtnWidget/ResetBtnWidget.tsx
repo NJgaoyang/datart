@@ -30,17 +30,13 @@ import { ResetBtnWidgetCore } from './ResetBtnWidgetCore';
 
 export const ResetBtnWidget: React.FC<{}> = memo(() => {
   const widget = useContext(WidgetContext);
-  const { editing, boardType } = useContext(BoardContext);
+  const { editing } = useContext(BoardContext);
   const { background, border } = getWidgetBaseStyle(
     widget.config.customConfig.props,
   );
   return (
     <WidgetWrapper
-      className={
-        boardType === 'auto'
-          ? 'dashboard-action-widget dashboard-reset-action dashboard-auto-action'
-          : 'dashboard-action-widget dashboard-reset-action'
-      }
+      className="dashboard-action-widget"
       background={background}
       border={border}
       padding={{ top: 0, right: 0, bottom: 0, left: 0 }}
