@@ -17,6 +17,7 @@
  */
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { ChartDataRequestBuilder } from 'app/models/ChartDataRequestBuilder';
+import { assertStrictChartView } from 'app/utils/strictChartView';
 import { boardDrillManager } from 'app/pages/DashBoardPage/components/BoardDrillManager/BoardDrillManager';
 import { getControlOptionQueryParams } from 'app/pages/DashBoardPage/components/Widgets/ControllerWidget/config';
 import { Widget } from 'app/pages/DashBoardPage/types/widgetTypes';
@@ -261,8 +262,11 @@ export const syncBoardWidgetChartDataAsync = createAsyncThunk<
     });
     const dataChart = dataChartMap[boardId][curWidget.datachartId];
     const chartDataView = viewMap?.[dataChart?.viewId];
+    // Direct widget refreshes also require an explicitly STRICT View.
+    assertStrictChartView(chartDataView);
     const requestParams = new ChartDataRequestBuilder(
       {
+        ...(chartDataView || {}),
         id: chartDataView?.id || '',
         config: chartDataView?.config || {},
         meta: chartDataView?.meta,

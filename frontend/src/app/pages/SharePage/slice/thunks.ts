@@ -165,6 +165,7 @@ export const fetchShareDataSetByPreviewChartAction = createAsyncThunk(
     }
     const builder = new ChartDataRequestBuilder(
       {
+        ...(args.preview?.backendChart?.view || {}),
         id: args.preview?.backendChart?.view.id || '',
         config: args.preview?.backendChart?.view.config || {},
         meta: args?.preview?.backendChart?.view?.meta,

@@ -498,6 +498,7 @@ const ChartPreviewBoard: FC<{
 
       const builder = new ChartDataRequestBuilder(
         {
+          ...(chartPreview?.backendChart?.view || {}),
           id: chartPreview?.backendChart?.view?.id || '',
           config: chartPreview?.backendChart?.view.config || {},
           meta: chartPreview?.backendChart?.view?.meta,

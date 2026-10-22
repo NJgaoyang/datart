@@ -361,6 +361,7 @@ export const fetchDataSetByPreviewChartAction = createAsyncThunk(
     }
     const builder = new ChartDataRequestBuilder(
       {
+        ...(currentChartPreview?.backendChart?.view || {}),
         id: currentChartPreview?.backendChart?.view.id || '',
         config: currentChartPreview?.backendChart?.view.config || {},
         meta: currentChartPreview?.backendChart?.view.meta,

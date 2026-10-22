@@ -158,6 +158,7 @@ const useChartInteractions = (props: {
       if (drillThroughSetting) {
         const sourceChartFilters = new ChartDataRequestBuilder(
           {
+            ...(view || {}),
             id: view?.id || '',
             config: view?.config || {},
             meta: view?.meta,
@@ -318,6 +319,7 @@ const useChartInteractions = (props: {
       }
       let nonAggChartFilters = new ChartDataRequestBuilder(
         {
+          ...(view || {}),
           id: view?.id || '',
           config: view?.config || {},
           meta: view?.meta,
