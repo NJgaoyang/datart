@@ -36,6 +36,17 @@ export const ensureGridEngineSettings = (config: BoardConfig): BoardConfig => {
       comType: 'switch',
     });
   }
+  // Keep persisted per-board margins as an opt-out, but make the default
+  // grid spacing consistent across old and new automatic dashboards.
+  if (!group.rows.some(row => row.key === 'seamlessSpacing')) {
+    group.rows.push({
+      label: 'basic.seamlessSpacing',
+      key: 'seamlessSpacing',
+      default: true,
+      value: true,
+      comType: 'switch',
+    });
+  }
   config.jsonConfig.i18ns?.forEach(i18n => {
     const translation = i18n.translation as Record<string, any>;
     translation.basic ||= {};
@@ -43,6 +54,8 @@ export const ensureGridEngineSettings = (config: BoardConfig): BoardConfig => {
       ? '组件压缩方向' : 'Grid Compaction';
     translation.basic.showGrid ??= i18n.lang === 'zh-CN'
       ? '显示栅格辅助线' : 'Show Grid Guides';
+    translation.basic.seamlessSpacing ??= i18n.lang === 'zh-CN'
+      ? '组件无缝排列' : 'Seamless Widget Spacing';
   });
   return config;
 };

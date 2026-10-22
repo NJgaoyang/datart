@@ -75,6 +75,13 @@ export const initAutoBoardConfig = () => {
               value: false,
               comType: 'switch',
             },
+            {
+              label: 'basic.seamlessSpacing',
+              key: 'seamlessSpacing',
+              default: true,
+              value: true,
+              comType: 'switch',
+            },
           ],
         },
         {
@@ -182,6 +189,7 @@ export const initAutoBoardConfig = () => {
               allowOverlap: '允许组件重叠',
               compactType: '组件压缩方向',
               showGrid: '显示栅格辅助线',
+              seamlessSpacing: '组件无缝排列',
             },
             space: {
               space: '间距',
@@ -211,6 +219,7 @@ export const initAutoBoardConfig = () => {
               allowOverlap: 'Allow Overlap',
               compactType: 'Grid Compaction',
               showGrid: 'Show Grid Guides',
+              seamlessSpacing: 'Seamless Widget Spacing',
             },
             space: {
               space: 'Space',

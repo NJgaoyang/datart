@@ -27,6 +27,7 @@ describe('test getBoardMarginPadding', () => {
     padding: [20, 20],
     mMargin: [12, 12],
     mPadding: [13, 13],
+    seamlessSpacing: false,
   };
   it('should colsKey=lg ', () => {
     expect(
@@ -57,9 +58,23 @@ describe('test getBoardMarginPadding', () => {
   });
 });
 
-describe('one-pixel default spacing for newly created dashboards', () => {
+describe('one-pixel saved defaults for newly created dashboards', () => {
+  it('removes all pixel gutters by default, without changing stored spacing', () => {
+    const old = { margin: [12, 16], padding: [8, 24],
+      mMargin: [3, 6], mPadding: [5, 9] } as BoardConfigValue;
+    expect(getBoardMarginPadding(old, 'lg')).toEqual({
+      curMargin: [0, 0], curPadding: [0, 0],
+    });
+    expect(getBoardMarginPadding(old, 'sm')).toEqual({
+      curMargin: [0, 0], curPadding: [0, 0],
+    });
+    expect(getBoardMarginPadding({ ...old, seamlessSpacing: false }, 'lg'))
+      .toEqual({ curMargin: [12, 16], curPadding: [8, 24] });
+  });
   it('initializes all auto-dashboard desktop and mobile spacing to one', () => {
     const config = initAutoBoardConfig();
+    expect(config.jsonConfig.props.find(item => item.key === 'basic')
+      ?.rows?.find(row => row.key === 'seamlessSpacing')?.value).toBe(true);
     for (const key of ['space', 'mSpace']) {
       const group = config.jsonConfig.props.find(item => item.key === key);
       expect(group?.rows).toHaveLength(4);
@@ -72,6 +87,7 @@ describe('one-pixel default spacing for newly created dashboards', () => {
 
   it('preserves explicit existing spacing and supports zeros', () => {
     const custom = {
+      seamlessSpacing: false,
       margin: [9, 5],
       padding: [6, 8],
       mMargin: [3, 1],

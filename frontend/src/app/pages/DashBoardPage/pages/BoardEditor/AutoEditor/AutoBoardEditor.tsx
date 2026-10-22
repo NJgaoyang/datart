@@ -60,7 +60,7 @@ export const AutoBoardEditor: React.FC<{}> = memo(() => {
     useGridWidgetHeight(mobilePreview);
   const layoutDeviceType = deviceType;
   const { curMargin, curPadding } = useMemo(() => {
-    if (mobilePreview) {
+    if (mobilePreview && boardConfig.seamlessSpacing === false) {
       const gap = MOBILE_BOARD_THEME.gridGap;
       const padding = MOBILE_BOARD_THEME.pagePadding;
       return { curMargin: [gap, gap] as [number, number], curPadding: [padding, padding] as [number, number] };

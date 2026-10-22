@@ -203,6 +203,11 @@ export const getBoardMarginPadding = (
   boardConfig: BoardConfigValue,
   colsKey: ColsKeyType,
 ): { curMargin: [number, number]; curPadding: [number, number] } => {
+  // Grid gutters are visual pixels, not persisted pRect/mRect coordinates.
+  // Opting out restores each board's existing configured margins and padding.
+  if (boardConfig.seamlessSpacing !== false) {
+    return { curMargin: [0, 0], curPadding: [0, 0] };
+  }
   const { margin, padding, mMargin, mPadding } = boardConfig;
   const isMobile = colsKey === 'sm';
   return isMobile
