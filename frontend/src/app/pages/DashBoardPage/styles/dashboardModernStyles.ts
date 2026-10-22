@@ -1,9 +1,10 @@
 /**
- * Lightweight, borderless BI presentation for read-only auto dashboards.
+ * Lightweight BI presentation for read-only auto dashboards.
  *
- * This is intentionally visual-only. Grid coordinates, widget data, query
- * handlers, tab order, navigation structure and editor layout stay intact.
- * All selectors are scoped to .dashboard-modern-auto in the Board wrapper.
+ * The shared auto-board controller and button surfaces live in WidgetWrapper
+ * so that the editor and read-only viewer render the same UI. This file is
+ * only responsible for read-side page chrome, inputs and table appearance. 
+ * Grid geometry, navigation structure and query behavior are unchanged.
  */
 import { css } from 'styled-components';
 
@@ -25,24 +26,27 @@ export const dashboardModernStyles = css`
     background-color: var(--bi-page);
   }
 
-  /* A restrained page heading, not a large empty title card.
-     The top report directory (日报/月报) is outside this scoped selector. */
+  /* The viewer's title is one compact toolbar row, not another
+     page-spanning card. The upstream report directory stays unchanged. */
   .dashboard-modern-title {
     box-sizing: border-box;
-    min-height: 58px;
-    margin: 0 12px 4px;
-    padding: 8px 10px;
-    background: #fff;
+    flex-shrink: 0;
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
+    margin: 0 10px 2px;
+    padding: 4px 10px;
+    background: transparent;
     border: 0;
-    border-bottom: 1px solid #edf0f4;
     border-radius: 0;
     box-shadow: none;
   }
 
   .dashboard-modern-title h1 {
     min-width: 0;
-    font-size: 21px;
-    line-height: 30px;
+    margin: 0;
+    font-size: 20px;
+    line-height: 28px;
     font-weight: 600;
     color: var(--bi-ink);
   }
@@ -131,30 +135,8 @@ export const dashboardModernStyles = css`
     background: #f6f9ff !important;
   }
 
-  /* Each filter is an inline label and input, not a nested card.
-     Preserve menu/status affordances at the trailing edge of each widget. */
-  .controller-widget {
-    box-sizing: border-box;
-    flex: 0 1 auto !important;
-    width: 100%;
-    height: 100% !important;
-    max-height: 46px;
-    min-height: 0;
-    margin-block: auto;
-    padding: 1px 4px !important;
-    background: transparent !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-  }
-
-  .controller-widget:hover,
-  .controller-widget:focus-within {
-    background: transparent !important;
-    border: 0 !important;
-    box-shadow: none !important;
-  }
-
+  /* Labels and inputs stay inline. The shared WidgetWrapper styles
+     remove outer filter cards in BOTH the editor and read-only viewer. */
   .controller-widget .ant-form-item-row {
     gap: 6px;
   }
@@ -163,18 +145,6 @@ export const dashboardModernStyles = css`
     flex: 0 0 auto;
     width: fit-content;
     max-width: 40%;
-  }
-
-  /* Keep the action menu accessible, but do not reserve extra card gutter. */
-  .controller-widget .widget-action-toolbar {
-    margin-left: 0;
-  }
-
-  @media (pointer: fine) {
-    .controller-widget .widget-tool-dropdown {
-      width: 28px;
-      min-width: 28px;
-    }
   }
 
   /* Only the native inputs retain a thin operation boundary. */
@@ -244,20 +214,17 @@ export const dashboardModernStyles = css`
 
   @media (max-width: 767px) {
     .dashboard-modern-title {
-      min-height: 52px;
-      margin: 0 8px 4px;
-      padding: 6px 8px;
+      height: 44px;
+      min-height: 44px;
+      max-height: 44px;
+      margin: 0 6px 2px;
+      padding: 3px 8px;
       border-radius: 0;
     }
 
     .dashboard-modern-title h1 {
       font-size: 19px;
       line-height: 28px;
-    }
-
-    .controller-widget {
-      max-height: 42px;
-      padding: 0 2px !important;
     }
 
     .dashboard-modern-query-button,

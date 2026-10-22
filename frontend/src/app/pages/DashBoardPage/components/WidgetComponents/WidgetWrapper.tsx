@@ -88,6 +88,37 @@ const Wrapper = styled.div`
     }
   }
 
+  /* Auto dashboards share the exact same flat filters in edit and view
+     modes. Keep the full grid hit area for editor selection/drag behavior,
+     but remove the old oversized card decoration from the actual widget. */
+  &.controller-widget.dashboard-inline-filter {
+    padding: 1px 4px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    transition: none;
+
+    &:hover,
+    &:focus-within {
+      border: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    .widget-action-toolbar {
+      margin-left: 0;
+    }
+
+    @media (pointer: fine) {
+      .widget-tool-dropdown {
+        width: 28px;
+        min-width: 28px;
+      }
+    }
+  }
+
   &.dashboard-action-widget {
     border-radius: 8px;
   }
@@ -101,9 +132,27 @@ const Wrapper = styled.div`
     box-shadow: none !important;
   }
 
+  /* Auto-board action buttons are compact in BOTH editor and viewer.
+     The grid cells remain unchanged; the buttons are vertically centered. */
+  &.dashboard-auto-action .dashboard-modern-query-button,
+  &.dashboard-auto-action .dashboard-modern-reset-button {
+    flex: 0 0 auto !important;
+    align-self: center;
+    box-sizing: border-box;
+    height: min(40px, 100%) !important;
+    min-height: 0 !important;
+    max-height: 40px;
+    border-radius: 7px;
+    box-shadow: none !important;
+  }
+
   @media (pointer: coarse) {
     &.controller-widget {
       padding: 4px 6px !important;
+    }
+
+    &.controller-widget.dashboard-inline-filter {
+      padding: 1px 2px !important;
     }
   }
 
