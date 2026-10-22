@@ -433,16 +433,17 @@ const Wrapper = styled.div<{ formFrontColor: string }>`
 
   .control-form {
     display: flex;
+    flex-direction: column;
     flex: 1 1 0;
-    align-items: center;
+    justify-content: center;
     width: 100%;
     height: 100%;
     min-width: 0;
 
-    /* AntD Form.Item and both intermediate wrappers must grow too. A
-       width:100% Select alone cannot fill a fixed-width form-item child. */
+    /* Keep centered label widgets stacked ABOVE their inputs, while the
+       Form.Item and its input column occupy the full available width. */
     .ant-form-item {
-      flex: 1 1 0;
+      flex: 0 0 auto;
       width: 100%;
       min-width: 0;
     }
