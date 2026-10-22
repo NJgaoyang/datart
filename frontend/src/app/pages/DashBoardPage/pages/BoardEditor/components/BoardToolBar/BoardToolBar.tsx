@@ -42,9 +42,13 @@ const Wrapper = styled.div`
   flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
-  min-height: 52px;
+  /* Width must INCLUDE horizontal padding. With content-box, 100% + 72px
+     pushes the right-aligned "快捷键" button outside the editor viewport. */
+  box-sizing: border-box;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
+  min-height: 52px;
   container-type: inline-size;
   container-name: board-toolbar;
   padding: 0 ${SPACE_XL};
