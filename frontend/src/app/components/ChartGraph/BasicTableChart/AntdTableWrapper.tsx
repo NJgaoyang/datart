@@ -103,10 +103,9 @@ const AntdTableWrapper: FC<{
         return undefined;
       }
       const summaryData = summaryFn?.(pageData);
+      // Keep totals inside the body's horizontal scroller, with the scrollbar
+      // below the footer. CSS pins the footer during vertical scrolling.
       return (
-        {/* Keep the total within the table body's horizontal scroller so the
-            scrollbar is BELOW the total, not between the data and total.
-            CSS below pins the row to the visible bottom during Y scroll. */}
         <Table.Summary>
           <Table.Summary.Row>
             {(summaryData?.summarys || []).map((data, index) => {
