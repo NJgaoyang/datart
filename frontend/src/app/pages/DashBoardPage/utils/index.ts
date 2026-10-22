@@ -25,6 +25,7 @@ import {
 } from 'app/constants';
 
 import { ChartDataRequestBuilder } from 'app/models/ChartDataRequestBuilder';
+import { assertStrictChartView } from 'app/utils/strictChartView';
 import { ChartDrillOption } from 'app/models/ChartDrillOption';
 import { RelatedView } from 'app/pages/DashBoardPage/pages/Board/slice/types';
 import { ChartDataConfig, ChartDataSectionField } from 'app/types/ChartConfig';
@@ -122,6 +123,9 @@ export const getDataChartRequestParams = (obj: {
   option;
 }) => {
   const { dataChart, view, option, drillOption, tempFilters } = obj;
+  // Dashboard requests must never silently fall back to name/path matching
+  // when the backend has not supplied an explicit STRICT View.
+  assertStrictChartView(view);
   const chartConfig = CloneValueDeep(dataChart?.config) as ChartDetailConfigDTO;
 
   const { datas, settings } = convertToChartConfigDTO(
