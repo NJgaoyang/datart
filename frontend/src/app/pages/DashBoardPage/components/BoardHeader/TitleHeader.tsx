@@ -49,7 +49,7 @@ export const TitleHeader: FC = memo(() => {
   const [showShareLinkModal, setShowShareLinkModal] = useState(false);
   const [mockDataModal, setMockDataModal] = useState(false);
   const [showSaveToStory, setShowSaveToStory] = useState<boolean>(false);
-  const { name, status, allowManage, allowShare, boardId, orgId } =
+  const { name, status, allowManage, allowShare, boardId, orgId, boardType } =
     useContext(BoardContext);
   const title = useStatusTitle(name, status);
   const { onGenerateShareLink } = useContext(BoardActionContext);
@@ -84,7 +84,7 @@ export const TitleHeader: FC = memo(() => {
   );
 
   return (
-    <Wrapper>
+    <Wrapper className={boardType === 'auto' ? 'compact-auto-board-title' : undefined}>
       <h1 className={classnames({ disabled: status < 2 })}>{title}</h1>
       <Space>
         {!isArchived && allowManage && (
@@ -165,6 +165,21 @@ const Wrapper = styled.div`
 
     &.disabled {
       color: ${p => p.theme.textColorLight};
+    }
+  }
+
+  /* Only the automatic dashboard's read header becomes a compact row.
+     It occupies a fixed height instead of growing into an empty panel. */
+  &.compact-auto-board-title {
+    box-sizing: border-box;
+    flex: 0 0 56px;
+    height: 56px;
+    min-height: 56px;
+    max-height: 56px;
+    padding: 0 20px;
+
+    h1 {
+      margin: 0;
     }
   }
 
