@@ -146,7 +146,7 @@ describe('dashboard batch query request lifecycle', () => {
     expect(request).toHaveBeenCalledTimes(1);
   });
 
-  it('retries unsupported batch endpoints one at a time', async () => {
+  it('retries unsupported batch endpoints with bounded parallelism', async () => {
     let active = 0; let maximum = 0;
     request.mockImplementation(async (config: any) => {
       if (config.url === 'data-provider/execute/batch') throw { response: { status: 404 } };
@@ -157,8 +157,34 @@ describe('dashboard batch query request lifecycle', () => {
     const items = Array.from({ length: 5 }, (_, i) => enqueueWidgetFetch('board-one', `widget-${i}`, { vizId: 'view' }));
     await vi.advanceTimersByTimeAsync(151);
     await Promise.all(items);
-    expect(maximum).toBe(1);
+    expect(maximum).toBeGreaterThan(1);
+    expect(maximum).toBeLessThanOrEqual(4);
     expect(request).toHaveBeenCalledTimes(6);
+  });
+
+  it('recovers missing batch entries without unbounded fallback requests', async () => {
+    let active = 0;
+    let maximumActive = 0;
+    request.mockImplementation(async (config: any) => {
+      if (config.url === 'data-provider/execute/batch') {
+        return { data: { known: { rows: [['ready']] } } } as any;
+      }
+      active++;
+      maximumActive = Math.max(maximumActive, active);
+      await Promise.resolve();
+      active--;
+      return { data: { rows: [['fallback']] } } as any;
+    });
+    const known = enqueueWidgetFetch('board-one', 'known', { vizId: 'view' });
+    const missing = Array.from({ length: 12 }, (_, i) =>
+      enqueueWidgetFetch('board-one', `missing-${i}`, { vizId: 'view', filter: i }),
+    );
+    await vi.advanceTimersByTimeAsync(151);
+    expect(await known).toEqual({ rows: [['ready']] });
+    expect(await Promise.all(missing)).toHaveLength(12);
+    expect(maximumActive).toBeGreaterThan(1);
+    expect(maximumActive).toBeLessThanOrEqual(4);
+    expect(request).toHaveBeenCalledTimes(13);
   });
 
   it('deduplicates same widget + identical query parameters while pending', async () => {
