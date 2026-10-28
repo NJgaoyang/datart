@@ -36,6 +36,7 @@ import { filterSqlOperatorName } from 'app/utils/internalChartHelper';
 import { unwrapRequiredApiData, unwrapWidgetQueryResponse } from 'app/utils/queryResponse';
 import { RootState } from 'types';
 import { request2 } from 'utils/request';
+import { startQuery } from 'utils/queryCancellation';
 import { getWidgetQueryErrorMessage } from 'app/pages/DashBoardPage/utils/widgetQueryError';
 import { boardActions } from '.';
 import { getChartWidgetRequestParams } from '../../../utils';
@@ -385,6 +386,13 @@ export const getChartWidgetDataAsync = createAsyncThunk<
       bid: curWidget.dashboardId,
       wid: widgetId,
     });
+    const shareViewId = dataChartMap[boardId]?.[curWidget.datachartId]?.viewId;
+    const shareExecuteToken = shareViewId
+      ? (getState() as RootState)?.share?.executeTokenMap?.[shareViewId]?.authorizedToken
+      : undefined;
+    const shareQuery = renderMode === 'share'
+      ? startQuery(JSON.stringify(['share-board', boardId, widgetId]), shareExecuteToken)
+      : undefined;
     try {
     let requestParams = getChartWidgetRequestParams({
       widgetId,
@@ -427,8 +435,10 @@ export const getChartWidgetDataAsync = createAsyncThunk<
           params: {
             executeToken: executeToken?.authorizedToken,
           },
-          data: requestParams,
+          data: { ...requestParams, queryId: shareQuery?.queryId },
+          signal: shareQuery?.signal,
         }, undefined, { onRejected: error => { throw error; } });
+        if (shareQuery?.signal.aborted) return null;
         widgetData = unwrapWidgetQueryResponse(response);
       }
       dispatch(
@@ -453,7 +463,7 @@ export const getChartWidgetDataAsync = createAsyncThunk<
         }),
       );
     } catch (error) {
-      if (error instanceof WidgetFetchCancelledError) return null;
+      if (error instanceof WidgetFetchCancelledError || shareQuery?.signal.aborted) return null;
       dispatch(
         boardActions.setWidgetErrInfo({
           boardId,
@@ -469,7 +479,8 @@ export const getChartWidgetDataAsync = createAsyncThunk<
         }),
       );
     } finally {
-      await dispatch(
+      shareQuery?.finish();
+      if (!shareQuery?.signal.aborted) await dispatch(
         boardActions.changeSelectedItems({
           wid: widgetId,
           data: [],

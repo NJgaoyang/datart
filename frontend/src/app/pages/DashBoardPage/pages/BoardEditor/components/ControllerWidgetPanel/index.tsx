@@ -126,10 +126,10 @@ const ControllerWidgetPanel: React.FC<WidgetControllerPanelParams> = memo(
         const nextRelatedViews: RelatedView[] = [];
         relatedWidgets.forEach(widgetItem => {
           const oldViewItem = relatedViews?.find(
-            view => view.viewId === widgetItem.viewId && viewMap[view.viewId],
+            view => view.viewId === widgetItem.viewId,
           );
           const newViewItem = nextRelatedViews.find(
-            view => view.viewId === widgetItem.viewId && viewMap[view.viewId],
+            view => view.viewId === widgetItem.viewId,
           );
           if (!newViewItem) {
             if (oldViewItem) {
@@ -183,16 +183,14 @@ const ControllerWidgetPanel: React.FC<WidgetControllerPanelParams> = memo(
           return tt;
         });
       setRelatedWidgets(oldRelatedWidgetIds);
-      setFormRelatedViews(setViewsRelatedView(oldRelatedWidgetIds));
       const preRelatedViews = confContent.relatedViews?.filter(t => t.viewId);
-      form?.setFieldsValue({ relatedViews: preRelatedViews });
-
       const { config } = confContent;
       form.setFieldsValue({
         ...confContent,
-        relatedViews: preRelatedViews,
+        relatedViews: preRelatedViews || [],
         config: preformatControlConfig(config, controllerType!),
       });
+      setFormRelatedViews(setViewsRelatedView(oldRelatedWidgetIds));
     }, [
       curFilterWidget,
       controllerType,

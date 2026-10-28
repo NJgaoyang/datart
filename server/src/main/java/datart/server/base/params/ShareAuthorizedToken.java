@@ -27,6 +27,10 @@ import java.util.Date;
 @Data
 public class ShareAuthorizedToken {
 
+    private String shareId;
+
+    private String policyHash;
+
     private String createBy;
 
     private String permissionBy;

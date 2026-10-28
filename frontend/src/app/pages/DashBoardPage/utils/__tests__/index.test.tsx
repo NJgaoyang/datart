@@ -857,19 +857,8 @@ describe('getTheWidgetFiltersAndParams', () => {
     );
   });
 
-  test('should ignore an unknown controller field without an empty column', () => {
-    const request = buildRequest('missing_controller_field');
-
-    expect(request?.filters.every(filter => filter.column.length > 0)).toBe(
-      true,
-    );
-    expect(request?.filters).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          column: ['missing_controller_field'],
-        }),
-      ]),
-    );
+  test('reports an unknown controller field instead of dropping its filter', () => {
+    expect(() => buildRequest('missing_controller_field')).toThrow('筛选字段');
   });
 
   test('should resolve the same computed field through the Builder runtime path', () => {
@@ -2291,4 +2280,27 @@ describe('getBoardChartRequests', () => {
     ];
     expect(getBoardChartRequests(obj as any)).toEqual(res);
   });
+});
+
+test('date-time field ranges include the chosen final second without changing variable values', () => {
+  const config = {
+    sqlOperator: FilterSqlOperator.Between,
+    controllerDate: {
+      pickerType: 'dateTime',
+      startTime: { relativeOrExact: TimeFilterValueCategory.Exact, exactValue: '2026-10-28 10:00:00' },
+      endTime: { relativeOrExact: TimeFilterValueCategory.Exact, exactValue: '2026-10-28 18:00:00' },
+    },
+  } as any;
+  const relatedViewItem = { viewId: 'view', relatedCategory: ChartDataViewFieldCategory.Field,
+    fieldValue: 'date', fieldValueType: DataViewFieldType.DATETIME } as RelatedView;
+  const opts = { type: ControllerFacadeTypes.RangeTime, relatedViewItem, config };
+  expect(getWidgetControlValues(opts)).toEqual([
+    { value: '2026-10-28 10:00:00', valueType: 'DATETIME' },
+    { value: '2026-10-28 18:00:01', valueType: 'DATETIME' },
+  ]);
+  relatedViewItem.relatedCategory = ChartDataViewFieldCategory.Variable;
+  expect(getWidgetControlValues(opts)).toEqual([
+    { value: '2026-10-28 10:00:00', valueType: 'DATETIME' },
+    { value: '2026-10-28 18:00:00', valueType: 'DATETIME' },
+  ]);
 });

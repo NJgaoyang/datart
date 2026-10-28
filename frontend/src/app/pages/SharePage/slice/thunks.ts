@@ -186,7 +186,7 @@ export const fetchShareDataSetByPreviewChartAction = createAsyncThunk(
 
     const executeToken =
       shareState?.shareToken[executeParam.viewId]['authorizedToken'];
-    const query = startQuery(`share:${args.preview?.backendChart?.id || executeParam.viewId}`);
+    const query = startQuery(`share:${args.preview?.backendChart?.id || executeParam.viewId}`, executeToken);
     try {
       const response = await request2({
         method: 'POST',

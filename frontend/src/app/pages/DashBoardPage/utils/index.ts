@@ -359,6 +359,13 @@ export const getWidgetControlValues = (opt: {
       filterDate: config.controllerDate!,
       execute: true,
     });
+    if (relatedViewItem.relatedCategory === ChartDataViewFieldCategory.Field &&
+        type === ControllerFacadeTypes.RangeTime &&
+        config.controllerDate.pickerType === 'dateTime' &&
+        config.controllerDate.endTime?.relativeOrExact === TimeFilterValueCategory.Exact &&
+        timeValues[1]) {
+      timeValues[1] = dayjs(timeValues[1]).add(1, 'second').format(TIME_FORMATTER);
+    }
 
     const values = timeValues
       .filter(ele => !!ele)

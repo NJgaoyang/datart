@@ -148,9 +148,9 @@ export const WidgetActionProvider: FC<{
             dispatch(resetControllerAction({ boardId, renderMode }));
           }
         }, 500),
-        onRefreshWidgetsByController: debounce((widget: Widget) => {
+        onRefreshWidgetsByController: (widget: Widget) => {
           dispatch(refreshWidgetsByControllerAction(renderMode, widget));
-        }, 500),
+        },
         onUpdateWidgetConfig: (config: WidgetConf, wid: string) => {
           dispatch(editBoardStackActions.updateWidgetConfig({ wid, config }));
         },
