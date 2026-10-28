@@ -158,7 +158,15 @@ const EditorHeader: FC<PropsWithChildren> = memo(({ children }) => {
   return (
     <Wrapper onClick={onEditClearActiveWidgets}>
       <h1 className={classnames({ disabled: status < 2 })}>
-        <LeftOutlined onClick={onCloseBoardEditor} />
+        <button
+          type="button"
+          className="editor-exit-button"
+          aria-label="退出仪表板编辑"
+          onClick={onCloseBoardEditor}
+          disabled={isSaving}
+        >
+          <LeftOutlined aria-hidden="true" />
+        </button>
         {title}
       </h1>
       <Space>
@@ -205,6 +213,25 @@ const Wrapper = styled.div`
   padding: ${SPACE_SM} ${SPACE_LG};
   background-color: ${p => p.theme.componentBackground};
   box-shadow: ${p => p.theme.shadowSider};
+
+  .editor-exit-button {
+    padding: 4px;
+    margin-right: 8px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid currentColor;
+      outline-offset: 2px;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
 
   h1 {
     flex: 1;
