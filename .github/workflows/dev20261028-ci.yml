@@ -76,8 +76,10 @@ jobs:
             -Dsurefire.failIfNoSpecifiedTests=false test
 
   browser-smoke:
-    name: Manual public-entry browser smoke (no credentials)
-    if: github.event_name == 'workflow_dispatch'
+    name: Public-entry browser smoke (no credentials)
+    # Run on PRs; avoid browser-install cost on every direct push.
+    # Manual dispatch becomes available once this workflow also exists on main.
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
