@@ -136,15 +136,15 @@ Organization MigrationMode
 
 | 分类 | 技术 | 版本 | 说明 |
 |------|------|------|------|
-| **核心** | React | ^18.2.0 | UI 框架 |
-| **类型系统** | TypeScript | 5.4.5 | 静态类型检查 |
-| **UI 组件库** | Ant Design | ^5.22.0 | 企业级组件（CSS-in-JS） |
-| **图标** | @ant-design/icons | ^5.6.1 | Ant Design 图标库 |
-| **高级组件** | @ant-design/pro-components | ^2.8.6 | 表格/表单/布局高级组件 |
-| **状态管理** | Redux Toolkit | ^2.0.0 | 全局状态管理 |
+| **核心** | React | 19.3.1 | UI 框架 |
+| **类型系统** | TypeScript | 5.9.3 | 静态类型检查 |
+| **UI 组件库** | Ant Design | 6.6.5 | 企业级组件（CSS-in-JS） |
+| **图标** | @ant-design/icons | 6.3.4 | Ant Design 图标库 |
+| **高级组件** | @ant-design/pro-components | 3.1.15-3 | 表格/表单/布局高级组件 |
+| **状态管理** | Redux Toolkit | 2.13.0 | 全局状态管理 |
 | **状态绑定** | react-redux | ^9.0.0 | React-Redux 绑定 |
 | **路由** | react-router-dom | ^6.22.0 | SPA 路由 |
-| **图表** | ECharts | ^5.5.0 | 主力可视化图表库 |
+| **图表** | ECharts | 6.1.0 | 主力可视化图表库 |
 | **图表** | @antv/g2 | ^5.4.8 | AntV 可视化语法 |
 | **表格** | @antv/s2 + s2-react | ^2.1.0 | 透视表 / 多维分析表 |
 | **代码编辑器** | Monaco Editor | ^0.45.0 | SQL 编辑器 |
@@ -152,13 +152,13 @@ Organization MigrationMode
 | **HTTP** | Axios | ^1.7.0 | HTTP 请求 |
 | **国际化** | i18next + react-i18next | ^23 / ^14 | 多语言支持 |
 | **拖拽** | @hello-pangea/dnd | ^16.6.0 | 拖拽排序 |
-| **布局** | react-grid-layout | ^1.2.4 | 仪表板网格布局 |
+| **布局** | react-grid-layout | 2.2.4 | 仪表板网格布局 |
 | **虚拟滚动** | react-window | ^1.8.6 | 大列表/大表格虚拟滚动 |
 | **富文本** | react-quill-new | ^3.3.0 | 富文本编辑器 |
-| **构建工具** | Vite | ^4.5.14 | 开发服务器 + 生产构建 |
-| **测试** | Vitest | ^0.34.6 | 单元测试框架 |
+| **构建工具** | Vite | 8.3.4 | 开发服务器 + 生产构建 |
+| **测试** | Vitest | 5.0.5 | 单元测试框架 |
 | **CSS 方案** | Less | ^4.8.1 | Ant Design 主题定制 |
-| **Node 要求** | Node.js | ≥ 18.0.0 | 构建运行时 |
+| **Node 要求** | Node.js | ≥ 22.12.0（.nvmrc = 22） | 构建运行时 |
 
 ### 基础设施（Infrastructure）
 
@@ -213,7 +213,7 @@ datart
 ### 环境要求
 
 - JDK 17+
-- Node.js 18+
+- Node.js 22.12+（请参考 `frontend/.nvmrc`）
 - MySQL 5.7+（或使用内置 H2）
 - Maven 3.6+
 
@@ -227,7 +227,7 @@ mvn clean package -DskipTests
 mvn clean package -DskipTests -pl server -am
 
 # 仅前端
-cd frontend && npm install --legacy-peer-deps && npm run build:all
+cd frontend && npm ci --legacy-peer-deps && npm run build:all
 ```
 
 ### 运行
@@ -245,6 +245,32 @@ docker run -p 8080:8080 datart/datart
 ### 配置外部数据库
 
 编辑 `config/datart.conf` 和 `config/profiles/application-config.yml`，配置 MySQL 连接信息。
+
+---
+
+## dev20261028 开发分支的质量检查
+
+`dev20261028` 使用 [独立的 GitHub Actions 工作流](./.github/workflows/dev20261028-ci.yml)，对每次推送及面向该分支的 Pull Request 运行前端类型检查、仪表板/分享回归、前端生产构建及 Java 相关测试。
+
+```bash
+# 前端：Node.js >= 22.12，npm >= 10
+cd frontend
+npm ci --legacy-peer-deps
+npm run checkTs
+npx vitest run src/app/pages/DashBoardPage/pages/Board/slice/__tests__/widgetDataBatcher.test.ts
+npm run build:all
+npm run test:bundle-budget && npm run check:bundle-budget
+
+# 后端：从仓库根目录，使用 JDK 17
+cd ..
+mvn -pl server -am -DskipTests package
+```
+
+本工作流只验证代码，**不会**修改线上数据库、Token 密钥、数据库连接密码、用户权限或 `systemd` 服务。线上部署须独立执行并提前验证回滚流程。
+
+登录接口的限流器只读取来自可信反向代理的转发 IP，默认信任直接相连的本机代理（`127.0.0.1,::1`）。若反向代理在另一台主机，可在部署环境显式设置 `datart.security.rate-limit.trusted-proxies` 为该代理的 IP 列表；代理必须正确附加/覆盖转发头。不要将任意互联网地址设为可信代理。
+
+详见 [dev20261028 优化开发记录](./docs/DEV20261028_OPTIMIZATION_20261029.md) 。
 
 ---
 
