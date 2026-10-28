@@ -146,10 +146,10 @@ describe('dashboard batch query request lifecycle', () => {
     expect(request).toHaveBeenCalledTimes(1);
   });
 
-  it('retries unsupported batch endpoints with bounded parallelism', async () => {
+  it.each([404, 405, 501])('retries unsupported batch HTTP %i with bounded parallelism', async status => {
     let active = 0; let maximum = 0;
     request.mockImplementation(async (config: any) => {
-      if (config.url === 'data-provider/execute/batch') throw { response: { status: 404 } };
+      if (config.url === 'data-provider/execute/batch') throw { response: { status } };
       active++; maximum = Math.max(maximum, active);
       await Promise.resolve(); active--;
       return { data: { rows: [['ok']] } } as any;
