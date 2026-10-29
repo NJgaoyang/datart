@@ -19,6 +19,7 @@
 import { SearchOutlined } from '@ant-design/icons';
 import {
   Button,
+  Alert,
   Card,
   DatePicker,
   Input,
@@ -30,7 +31,7 @@ import {
 } from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import dayjs, { Dayjs } from 'dayjs';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import {
   BORDER_RADIUS,
@@ -74,6 +75,8 @@ export function AuditLogPage() {
   const t = useI18NPrefix('auditLog');
   const [data, setData] = useState<AccessLogItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const requestId = useRef(0);
   const [total, setTotal] = useState(0);
   const [pageNo, setPageNo] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -88,7 +91,9 @@ export function AuditLogPage() {
 
   const fetchData = useCallback(
     async (page: number, size: number) => {
+      const currentRequest = ++requestId.current;
       setLoading(true);
+      setLoadError(false);
       try {
         const params: Record<string, string | number> = {
           pageNo: page,
@@ -111,13 +116,18 @@ export function AuditLogPage() {
           method: 'GET',
           params,
         });
-        setData(result.data || []);
-        setTotal(result.total || 0);
+        if (currentRequest === requestId.current) {
+          setData(result.data || []);
+          setTotal(result.total || 0);
+        }
       } catch (e) {
-        setData([]);
-        setTotal(0);
+        if (currentRequest === requestId.current) {
+          setData([]);
+          setTotal(0);
+          setLoadError(true);
+        }
       } finally {
-        setLoading(false);
+        if (currentRequest === requestId.current) setLoading(false);
       }
     },
     [startTime, endTime, user, resourceType],
@@ -205,6 +215,7 @@ export function AuditLogPage() {
   return (
     <Wrapper>
       <Card>
+        {loadError && <Alert type="error" showIcon message={t('loadError')} action={<Button size="small" onClick={() => fetchData(pageNo, pageSize)}>{t('retry')}</Button>} />}
         <TableHeader>
           <h3>{t('title')}</h3>
         </TableHeader>

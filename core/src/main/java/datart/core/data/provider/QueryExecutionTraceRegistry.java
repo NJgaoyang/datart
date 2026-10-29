@@ -10,12 +10,14 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** Bounded, process-local query details for the administrator monitor. */
 public final class QueryExecutionTraceRegistry {
 
     private static final int MAX_EVENTS = 200;
     private static final Deque<Trace> EVENTS = new ConcurrentLinkedDeque<>();
+    private static final Map<String, Trace> RUNNING = new ConcurrentHashMap<>();
     private static volatile Consumer<Map<String, Object>> completedListener;
 
     private QueryExecutionTraceRegistry() {
@@ -33,6 +35,7 @@ public final class QueryExecutionTraceRegistry {
                                String reportName, String sql) {
         Trace trace = new Trace(UUID.randomUUID().toString(), sourceId, queryId, dbType, reportName,
                 sql, DigestUtils.sha256Hex(sql == null ? "" : sql), System.currentTimeMillis());
+        RUNNING.put(trace.id, trace);
         EVENTS.addFirst(trace);
         while (EVENTS.size() > MAX_EVENTS) {
             EVENTS.pollLast();
@@ -41,21 +44,19 @@ public final class QueryExecutionTraceRegistry {
     }
 
     public static void finish(String traceId, String status, String error) {
-        for (Trace trace : EVENTS) {
-            if (trace.id.equals(traceId)) {
-                trace.status = status;
-                trace.error = error;
-                trace.endedAt = System.currentTimeMillis();
-                trace.elapsedMs = Math.max(0, trace.endedAt - trace.startedAt);
-                Consumer<Map<String, Object>> listener = completedListener;
-                if (listener != null) {
-                    try {
-                        listener.accept(trace.asMap());
-                    } catch (RuntimeException ignored) {
-                        // Observability must never change query execution behavior.
-                    }
+        Trace trace = RUNNING.remove(traceId);
+        if (trace != null) {
+            trace.status = status;
+            trace.error = error;
+            trace.endedAt = System.currentTimeMillis();
+            trace.elapsedMs = Math.max(0, trace.endedAt - trace.startedAt);
+            Consumer<Map<String, Object>> listener = completedListener;
+            if (listener != null) {
+                try {
+                    listener.accept(trace.asMap());
+                } catch (RuntimeException ignored) {
+                    // Observability must never change query execution behavior.
                 }
-                return;
             }
         }
     }

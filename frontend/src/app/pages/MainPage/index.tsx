@@ -16,7 +16,8 @@
  * limitations under the License.
  */
 
-import ChartEditor, { ChartEditorBaseProps } from 'app/components/ChartEditor';
+import { Spin } from 'antd';
+import type { ChartEditorBaseProps } from 'app/components/ChartEditor';
 import useMount from 'app/hooks/useMount';
 import { useIsMobile } from 'app/hooks/useIsMobile';
 import { useIsWeappEmbed } from 'app/hooks/useEmbedMode';
@@ -35,27 +36,12 @@ import {
 } from 'react-router-dom';
 import styled from 'styled-components';
 import { NotFoundPage } from '../NotFoundPage';
-import { StoryEditor } from '../StoryBoardPage/Editor';
-import { StoryPlayer } from '../StoryBoardPage/Player';
 import { AccessRoute } from './AccessRoute';
 import { Background } from './Background';
 import { Navbar } from './Navbar';
 
-import { ConfirmInvitePage } from './pages/ConfirmInvitePage';
-import { MemberPage } from './pages/MemberPage';
-
-import { OrgSettingPage } from './pages/OrgSettingPage';
-import { PermissionPage } from './pages/PermissionPage';
 import { ResourceTypes } from './pages/PermissionPage/constants';
-
-
-import { SchedulePage } from './pages/SchedulePage';
-import { SourcePage } from './pages/SourcePage';
-import { VariablePage } from './pages/VariablePage';
-import { ViewPage } from './pages/ViewPage';
 import { useViewSlice } from './pages/ViewPage/slice';
-import { MobileVizPage } from './MobileVizPage';
-import { VizPage } from './pages/VizPage';
 import { useVizSlice } from './pages/VizPage/slice';
 import { initChartPreviewData } from './pages/VizPage/slice/thunks';
 import { useMainSlice } from './slice';
@@ -74,7 +60,56 @@ const MonitorPage = React.lazy(() =>
   import('./pages/MonitorPage').then(mod => ({ default: mod.MonitorPage })),
 );
 const ResourceMigrationPage = React.lazy(() =>
-  import('./pages/ResourceMigrationPage').then(mod => ({ default: mod.ResourceMigrationPage })),
+  import('./pages/ResourceMigrationPage').then(mod => ({
+    default: mod.ResourceMigrationPage,
+  })),
+);
+const LazyChartEditor = React.lazy(() => import('app/components/ChartEditor'));
+const LazyStoryEditor = React.lazy(() =>
+  import('../StoryBoardPage/Editor').then(mod => ({
+    default: mod.StoryEditor,
+  })),
+);
+const LazyStoryPlayer = React.lazy(() =>
+  import('../StoryBoardPage/Player').then(mod => ({
+    default: mod.StoryPlayer,
+  })),
+);
+const LazyConfirmInvitePage = React.lazy(() =>
+  import('./pages/ConfirmInvitePage').then(mod => ({
+    default: mod.ConfirmInvitePage,
+  })),
+);
+const LazyMemberPage = React.lazy(() =>
+  import('./pages/MemberPage').then(mod => ({ default: mod.MemberPage })),
+);
+const LazyOrgSettingPage = React.lazy(() =>
+  import('./pages/OrgSettingPage').then(mod => ({
+    default: mod.OrgSettingPage,
+  })),
+);
+const LazyPermissionPage = React.lazy(() =>
+  import('./pages/PermissionPage').then(mod => ({
+    default: mod.PermissionPage,
+  })),
+);
+const LazySchedulePage = React.lazy(() =>
+  import('./pages/SchedulePage').then(mod => ({ default: mod.SchedulePage })),
+);
+const LazySourcePage = React.lazy(() =>
+  import('./pages/SourcePage').then(mod => ({ default: mod.SourcePage })),
+);
+const LazyVariablePage = React.lazy(() =>
+  import('./pages/VariablePage').then(mod => ({ default: mod.VariablePage })),
+);
+const LazyViewPage = React.lazy(() =>
+  import('./pages/ViewPage').then(mod => ({ default: mod.ViewPage })),
+);
+const LazyVizPage = React.lazy(() =>
+  import('./pages/VizPage').then(mod => ({ default: mod.VizPage })),
+);
+const LazyMobileVizPage = React.lazy(() =>
+  import('./MobileVizPage').then(mod => ({ default: mod.MobileVizPage })),
 );
 
 function ChartEditorRoute({
@@ -96,7 +131,7 @@ function ChartEditorRoute({
   } as ChartEditorBaseProps;
   return (
     <AccessRoute module={ResourceTypes.Viz}>
-      <ChartEditor
+      <LazyChartEditor
         dataChartId={hisState.dataChartId}
         orgId={orgId}
         chartType={hisState.chartType}
@@ -164,151 +199,157 @@ export function MainPage() {
       <Background />
       {!shouldUseMobileViz && <Navbar />}
       {orgId && (
-        <React.Suspense fallback={null}>
-        <Routes>
-          <Route
-            path="/"
-            element={<Navigate to={`/organizations/${orgId}`} replace />}
-          />
-          <Route path="/confirminvite" element={<ConfirmInvitePage />} />
-          <Route
-            path="/organizations/:orgId"
-            element={
-              <Navigate
-                to={`/organizations/${organizationMatch?.params.orgId}/vizs`}
-                replace
-              />
-            }
-          />
-          <Route
-            path="/organizations/:orgId/vizs/chartEditor"
-            element={
-              <ChartEditorRoute
-                orgId={orgId}
-                onClose={() => navigate(-1)}
-                onSaveInDataChart={onSaveInDataChart}
-              />
-            }
-          />
-          <Route
-            path="/organizations/:orgId/vizs/storyPlayer/:storyId"
-            element={<StoryPlayer />}
-          />
-          <Route
-            path="/organizations/:orgId/vizs/storyEditor/:storyId"
-            element={<StoryEditor />}
-          />
-          <Route
-            path="/organizations/:orgId/vizs/*"
-            element={
-              shouldUseMobileViz ? (
-                <MobileVizPage />
-              ) : (
-                <AccessRoute module={ResourceTypes.Viz}>
-                  <VizPage />
+        <React.Suspense
+          fallback={
+            <RouteLoading>
+              <Spin />
+            </RouteLoading>
+          }
+        >
+          <Routes>
+            <Route
+              path="/"
+              element={<Navigate to={`/organizations/${orgId}`} replace />}
+            />
+            <Route path="/confirminvite" element={<LazyConfirmInvitePage />} />
+            <Route
+              path="/organizations/:orgId"
+              element={
+                <Navigate
+                  to={`/organizations/${organizationMatch?.params.orgId}/vizs`}
+                  replace
+                />
+              }
+            />
+            <Route
+              path="/organizations/:orgId/vizs/chartEditor"
+              element={
+                <ChartEditorRoute
+                  orgId={orgId}
+                  onClose={() => navigate(-1)}
+                  onSaveInDataChart={onSaveInDataChart}
+                />
+              }
+            />
+            <Route
+              path="/organizations/:orgId/vizs/storyPlayer/:storyId"
+              element={<LazyStoryPlayer />}
+            />
+            <Route
+              path="/organizations/:orgId/vizs/storyEditor/:storyId"
+              element={<LazyStoryEditor />}
+            />
+            <Route
+              path="/organizations/:orgId/vizs/*"
+              element={
+                shouldUseMobileViz ? (
+                  <LazyMobileVizPage />
+                ) : (
+                  <AccessRoute module={ResourceTypes.Viz}>
+                    <LazyVizPage />
+                  </AccessRoute>
+                )
+              }
+            />
+            <Route
+              path="/organizations/:orgId/views/*"
+              element={
+                <AccessRoute module={ResourceTypes.View}>
+                  <LazyViewPage />
                 </AccessRoute>
-              )
-            }
-          />
-          <Route
-            path="/organizations/:orgId/views/*"
-            element={
-              <AccessRoute module={ResourceTypes.View}>
-                <ViewPage />
-              </AccessRoute>
-            }
-          />
-          <Route
-            path="/organizations/:orgId/sources/*"
-            element={
-              <AccessRoute module={ResourceTypes.Source}>
-                <SourcePage />
-              </AccessRoute>
-            }
-          />
-          <Route
-            path="/organizations/:orgId/schedules/*"
-            element={
-              <AccessRoute module={ResourceTypes.Schedule}>
-                <SchedulePage />
-              </AccessRoute>
-            }
-          />
-          <Route
-            path="/organizations/:orgId/members/*"
-            element={
-              <AccessRoute module={ResourceTypes.User}>
-                <MemberPage />
-              </AccessRoute>
-            }
-          />
-          <Route
-            path="/organizations/:orgId/roles/*"
-            element={
-              <AccessRoute module={ResourceTypes.User}>
-                <MemberPage />
-              </AccessRoute>
-            }
-          />
-          <Route
-            path="/organizations/:orgId/permissions"
-            element={
-              <Navigate
-                to={`/organizations/${organizationMatch?.params.orgId}/permissions/subject`}
-                replace
-              />
-            }
-          />
-          <Route
-            path="/organizations/:orgId/permissions/:viewpoint/*"
-            element={
-              <AccessRoute module={ResourceTypes.Manager}>
-                <PermissionPage />
-              </AccessRoute>
-            }
-          />
-          <Route
-            path="/organizations/:orgId/variables"
-            element={
-              <AccessRoute module={ResourceTypes.Manager}>
-                <VariablePage />
-              </AccessRoute>
-            }
-          />
-          <Route
-            path="/organizations/:orgId/monitor"
-            element={
-              <AccessRoute module={ResourceTypes.Manager}>
-                <MonitorPage />
-              </AccessRoute>
-            }
-          />
-          <Route
-            path="/organizations/:orgId/orgSettings"
-            element={
-              <AccessRoute module={ResourceTypes.Manager}>
-                <OrgSettingPage />
-              </AccessRoute>
-            }
-          />
-          <Route
-            path="/organizations/:orgId/resourceMigration"
-            element={
-              <AccessRoute module={ResourceTypes.Manager}>
-                <ResourceMigrationPage />
-              </AccessRoute>
-            }
-          />
-          <Route
-            path="/organizations/:orgId/auditLog"
-            element={
-              <AccessRoute module={ResourceTypes.Manager}>
-                <AuditLogPage />
-              </AccessRoute>
-            }
-          />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+              }
+            />
+            <Route
+              path="/organizations/:orgId/sources/*"
+              element={
+                <AccessRoute module={ResourceTypes.Source}>
+                  <LazySourcePage />
+                </AccessRoute>
+              }
+            />
+            <Route
+              path="/organizations/:orgId/schedules/*"
+              element={
+                <AccessRoute module={ResourceTypes.Schedule}>
+                  <LazySchedulePage />
+                </AccessRoute>
+              }
+            />
+            <Route
+              path="/organizations/:orgId/members/*"
+              element={
+                <AccessRoute module={ResourceTypes.User}>
+                  <LazyMemberPage />
+                </AccessRoute>
+              }
+            />
+            <Route
+              path="/organizations/:orgId/roles/*"
+              element={
+                <AccessRoute module={ResourceTypes.User}>
+                  <LazyMemberPage />
+                </AccessRoute>
+              }
+            />
+            <Route
+              path="/organizations/:orgId/permissions"
+              element={
+                <Navigate
+                  to={`/organizations/${organizationMatch?.params.orgId}/permissions/subject`}
+                  replace
+                />
+              }
+            />
+            <Route
+              path="/organizations/:orgId/permissions/:viewpoint/*"
+              element={
+                <AccessRoute module={ResourceTypes.Manager}>
+                  <LazyPermissionPage />
+                </AccessRoute>
+              }
+            />
+            <Route
+              path="/organizations/:orgId/variables"
+              element={
+                <AccessRoute module={ResourceTypes.Manager}>
+                  <LazyVariablePage />
+                </AccessRoute>
+              }
+            />
+            <Route
+              path="/organizations/:orgId/monitor"
+              element={
+                <AccessRoute module={ResourceTypes.Manager}>
+                  <MonitorPage />
+                </AccessRoute>
+              }
+            />
+            <Route
+              path="/organizations/:orgId/orgSettings"
+              element={
+                <AccessRoute module={ResourceTypes.Manager}>
+                  <LazyOrgSettingPage />
+                </AccessRoute>
+              }
+            />
+            <Route
+              path="/organizations/:orgId/resourceMigration"
+              element={
+                <AccessRoute module={ResourceTypes.Manager}>
+                  <ResourceMigrationPage />
+                </AccessRoute>
+              }
+            />
+            <Route
+              path="/organizations/:orgId/auditLog"
+              element={
+                <AccessRoute module={ResourceTypes.Manager}>
+                  <AuditLogPage />
+                </AccessRoute>
+              }
+            />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
         </React.Suspense>
       )}
     </AppContainer>
@@ -323,4 +364,11 @@ const AppContainer = styled.main`
   left: 0;
   display: flex;
   background-color: ${p => p.theme.bodyBackground};
+`;
+
+const RouteLoading = styled.div`
+  display: grid;
+  flex: 1;
+  min-height: 240px;
+  place-items: center;
 `;

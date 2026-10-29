@@ -859,7 +859,7 @@ class BasicTableChart extends ReactChart {
             fixed: leftFixedColumns || rightFixedColumns ? 'left' : null,
             render: (value, row, rowIndex) => {
               const pageNo = this.pageInfo?.pageNo || 1;
-              return (pageNo - 1) * (pageSize || 100) + rowIndex + 1;
+              return (pageNo - 1) * (pageSize || 20) + rowIndex + 1;
             },
           },
         ]

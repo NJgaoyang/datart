@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path';
 // Only graph reachability is reported, not hypothetical gzip transfer times.
 const root = resolve(process.cwd(), 'build');
 // Vite 4 emits build/manifest.json; newer Vite versions use build/.vite/manifest.json.
-const path = [join(root, 'manifest.json'), join(root, '.vite', 'manifest.json')]
+const path = [join(root, '.vite', 'manifest.json'), join(root, 'manifest.json')]
   .find(candidate => existsSync(candidate));
 if (!path) {
   console.error('No Vite manifest. Run npm run build first.');

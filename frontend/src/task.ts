@@ -51,7 +51,7 @@ const getBoardQueryData = (dataStr: string) => {
   );
   const parsedWidgets = parseWidgets(serverWidgets);
   const { widgetMap, wrappedDataCharts } = getWidgetMap(
-    parsedWidgets, // TODO
+    parsedWidgets,
     dataCharts,
     dashboard.config.type,
     serverViews,

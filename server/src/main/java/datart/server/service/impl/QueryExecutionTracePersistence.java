@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,6 +25,7 @@ public class QueryExecutionTracePersistence {
     private static final int QUEUE_CAPACITY = 2_000;
     private static final int MAX_ERROR_LENGTH = 2_000;
     private static final int CLEANUP_EVERY_WRITES = 100;
+    private static final int MAX_RECENT_TRACES = 200;
 
     private final JdbcTemplate jdbcTemplate;
     private final ArrayBlockingQueue<Map<String, Object>> queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
@@ -61,13 +64,18 @@ public class QueryExecutionTracePersistence {
     }
 
     public List<Map<String, Object>> recent(String sourceId) {
+        return recent(sourceId, MAX_RECENT_TRACES);
+    }
+
+    public List<Map<String, Object>> recent(String sourceId, int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, MAX_RECENT_TRACES));
         try {
             List<Map<String, Object>> persisted = jdbcTemplate.queryForList(
                     "SELECT id, source_id AS sourceId, query_id AS queryId, db_type AS dbType, "
                             + "report_name AS reportName, sql_text AS sql, sql_digest AS sqlDigest, "
                             + "started_at AS startedAt, ended_at AS endedAt, elapsed_ms AS elapsedMs, "
                             + "status, error FROM datart_query_trace WHERE source_id = ? "
-                    + "ORDER BY started_at DESC LIMIT 200", sourceId);
+                    + "ORDER BY started_at DESC LIMIT ?", sourceId, safeLimit);
             Map<String, Map<String, Object>> merged = new LinkedHashMap<>();
             for (Map<String, Object> trace : QueryExecutionTraceRegistry.recent(sourceId)) {
                 merged.put(String.valueOf(trace.get("id")), trace);
@@ -75,10 +83,10 @@ public class QueryExecutionTracePersistence {
             for (Map<String, Object> trace : persisted) {
                 merged.putIfAbsent(String.valueOf(trace.get("id")), trace);
             }
-            return merged.values().stream().limit(200).toList();
+            return merged.values().stream().limit(safeLimit).toList();
         } catch (Exception e) {
             log.debug("Query trace table is unavailable; using process-local summaries", e);
-            return QueryExecutionTraceRegistry.recent(sourceId);
+            return QueryExecutionTraceRegistry.recent(sourceId).stream().limit(safeLimit).toList();
         }
     }
 
@@ -94,6 +102,8 @@ public class QueryExecutionTracePersistence {
             addColumnIfMissing("ALTER TABLE datart_query_trace ADD COLUMN report_name varchar(255)");
             addColumnIfMissing("ALTER TABLE datart_query_trace ADD COLUMN sql_text LONGTEXT");
             addColumnIfMissing("ALTER TABLE datart_query_trace ADD COLUMN ended_at bigint");
+            addIndexIfMissing("datart_query_trace", "idx_datart_query_trace_started_at",
+                    "ALTER TABLE datart_query_trace ADD INDEX idx_datart_query_trace_started_at (started_at)");
         } catch (Exception e) {
             log.warn("Failed to create datart_query_trace table: {}", e.getMessage());
         }
@@ -104,6 +114,27 @@ public class QueryExecutionTracePersistence {
             jdbcTemplate.execute(sql);
         } catch (Exception e) {
             log.debug("Query trace schema already contains column or cannot be altered: {}", e.getMessage());
+        }
+    }
+
+    private void addIndexIfMissing(String tableName, String indexName, String sql) {
+        try {
+            Boolean exists = jdbcTemplate.execute((Connection connection) -> {
+                try (ResultSet indexes = connection.getMetaData()
+                        .getIndexInfo(connection.getCatalog(), null, tableName, false, false)) {
+                    while (indexes.next()) {
+                        if (indexName.equalsIgnoreCase(indexes.getString("INDEX_NAME"))) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            });
+            if (!Boolean.TRUE.equals(exists)) {
+                jdbcTemplate.execute(sql);
+            }
+        } catch (Exception e) {
+            log.debug("Query trace index check failed for {}: {}", indexName, e.getMessage());
         }
     }
 

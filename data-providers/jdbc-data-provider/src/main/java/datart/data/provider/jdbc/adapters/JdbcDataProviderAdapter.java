@@ -261,6 +261,8 @@ public class JdbcDataProviderAdapter implements Closeable {
             QueryExecutionTraceRegistry.finish(traceId, "ERROR", e.getMessage());
             logSqlFailure(sql, startedAt, e);
             throw e;
+        } finally {
+            QueryExecutionTraceRegistry.finish(traceId, "ERROR", "Query did not complete");
         }
     }
 
@@ -306,6 +308,8 @@ public class JdbcDataProviderAdapter implements Closeable {
             QueryExecutionTraceRegistry.finish(traceId, "ERROR", e.getMessage());
             logSqlFailure(selectSql, startedAt, e);
             throw e;
+        } finally {
+            QueryExecutionTraceRegistry.finish(traceId, "ERROR", "Query did not complete");
         }
     }
 
@@ -357,6 +361,8 @@ public class JdbcDataProviderAdapter implements Closeable {
             QueryExecutionTraceRegistry.finish(traceId, "ERROR", e.getMessage());
             logSqlFailure(countSql, startedAt, e);
             throw e;
+        } finally {
+            QueryExecutionTraceRegistry.finish(traceId, "ERROR", "Query did not complete");
         }
     }
 

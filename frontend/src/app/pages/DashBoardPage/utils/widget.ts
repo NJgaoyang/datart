@@ -211,8 +211,14 @@ export const updateAutoWidgetsRect = (
   // rectangles in both instead of being placed from the active editor viewport.
   const desktopCols = LAYOUT_COLS_MAP.lg;
   const mobileCols = LAYOUT_COLS_MAP.sm;
-  let desktopY = layouts.reduce((bottom, item) => Math.max(bottom, item.y + item.h), 0);
-  let mobileY = mobileLayouts.reduce((bottom, item) => Math.max(bottom, item.y + item.h), 0);
+  let desktopY = layouts.reduce(
+    (bottom, item) => Math.max(bottom, item.y + item.h),
+    0,
+  );
+  let mobileY = mobileLayouts.reduce(
+    (bottom, item) => Math.max(bottom, item.y + item.h),
+    0,
+  );
   let desktopX = 0;
   let mobileX = 0;
   let desktopRowHeight = 0;
@@ -230,14 +236,21 @@ export const updateAutoWidgetsRect = (
       !widget.config.mRect;
     const mobileRect = isDefaultController
       ? { x: 0, y: 0, width: 12, height: 3 }
-      : widget.config.mRect || normalizeAutoRectForCols(desktopRect, mobileCols);
+      : widget.config.mRect ||
+        normalizeAutoRectForCols(desktopRect, mobileCols);
     const desktopW = isDefaultController
       ? 24
-      : Math.max(1, Math.min(desktopCols, Math.round(Number(desktopRect.width) || 1)));
+      : Math.max(
+          1,
+          Math.min(desktopCols, Math.round(Number(desktopRect.width) || 1)),
+        );
     const desktopH = isDefaultController
       ? 8
       : Math.max(1, Math.round(Number(desktopRect.height) || 1));
-    const mobileW = Math.max(1, Math.min(mobileCols, Math.round(Number(mobileRect.width) || 1)));
+    const mobileW = Math.max(
+      1,
+      Math.min(mobileCols, Math.round(Number(mobileRect.width) || 1)),
+    );
     const mobileH = Math.max(1, Math.round(Number(mobileRect.height) || 1));
 
     if (desktopX && desktopX + desktopW > desktopCols) {
@@ -823,9 +836,6 @@ export function cloneWidgets(args: {
       newWidget.config.originalType = ORIGINAL_TYPE_MAP.ownedChart;
       newWidget.datachartId = newDataChart.id;
       newDataCharts.push(newDataChart);
-      // TODO fix
-
-      // dispatch(boardActions.setDataChartToMap([newDataChart]));
     }
     newWidgets.push(newWidget);
   });

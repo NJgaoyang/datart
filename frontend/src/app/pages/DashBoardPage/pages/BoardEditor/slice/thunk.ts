@@ -131,7 +131,7 @@ export const fetchEditBoardDetail = createAsyncThunk<
     let parsedWidgets = parseWidgets(serverWidgets);
 
     const { widgetMap, wrappedDataCharts } = getWidgetMap(
-      parsedWidgets, //todo
+      parsedWidgets,
       dataCharts,
       boardType,
       serverViews,

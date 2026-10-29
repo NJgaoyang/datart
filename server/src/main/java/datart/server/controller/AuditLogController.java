@@ -19,6 +19,11 @@
 package datart.server.controller;
 
 import datart.core.entity.AccessLog;
+import datart.core.entity.Organization;
+import datart.core.base.consts.Const;
+import datart.core.mappers.ext.OrganizationMapperExt;
+import datart.security.util.PermissionHelper;
+import datart.security.exception.PermissionDeniedException;
 import datart.server.base.dto.ResponseData;
 import datart.server.service.AsyncAccessLogService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,9 +37,11 @@ import java.util.Date;
 public class AuditLogController extends BaseController {
 
     private final AsyncAccessLogService accessLogService;
+    private final OrganizationMapperExt organizationMapper;
 
-    public AuditLogController(AsyncAccessLogService accessLogService) {
+    public AuditLogController(AsyncAccessLogService accessLogService, OrganizationMapperExt organizationMapper) {
         this.accessLogService = accessLogService;
+        this.organizationMapper = organizationMapper;
     }
 
     @Operation(summary = "query audit logs")
@@ -46,6 +53,17 @@ public class AuditLogController extends BaseController {
             @RequestParam(required = false) String resourceType,
             @RequestParam(defaultValue = "20") int pageSize,
             @RequestParam(defaultValue = "1") int pageNo) {
+        // Legacy audit records have no organization ID, so access must cover every organization.
+        java.util.List<Organization> organizations = organizationMapper.list();
+        if (organizations.isEmpty()) {
+            throw new PermissionDeniedException("Permission denied");
+        }
+        for (Organization organization : organizations) {
+            securityManager.requireAllPermissions(PermissionHelper.rolePermission(organization.getId(), Const.MANAGE));
+        }
+        if (pageSize < 1 || pageSize > 100 || pageNo < 1 || (long) (pageNo - 1) * pageSize > Integer.MAX_VALUE) {
+            throw new datart.core.base.exception.ParamException("Invalid page size or page number");
+        }
         long total = accessLogService.countLogs(startTime, endTime, user, resourceType);
         AuditLogResult result = new AuditLogResult();
         result.setTotal(total);

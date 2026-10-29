@@ -35,6 +35,7 @@ import { AppState, User } from './types';
 export const initialState: AppState = {
   loggedInUser: null,
   systemInfo: null,
+  systemInfoFailed: false,
   setupLoading: false,
   loginLoading: false,
   registerLoading: false,
@@ -131,8 +132,14 @@ const slice = createSlice({
     });
 
     // getSystemInfo
+    builder.addCase(getSystemInfo.pending, state => {
+      state.systemInfoFailed = false;
+    });
     builder.addCase(getSystemInfo.fulfilled, (state, action) => {
       state.systemInfo = action.payload;
+    });
+    builder.addCase(getSystemInfo.rejected, state => {
+      state.systemInfoFailed = true;
     });
 
     builder.addCase(getOauth2Clients.fulfilled, (state, action) => {

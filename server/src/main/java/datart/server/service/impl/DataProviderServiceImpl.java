@@ -587,7 +587,9 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
             status.put("sourceId", source.getId());
             status.put("sourceName", source.getName());
             sourceStatuses.add(status);
-            for (Map<String, Object> trace : queryExecutionTracePersistence.recent(source.getId())) {
+            // The monitor is a cross-source overview; keep each source bounded
+            // before sorting so one busy source cannot make the response grow.
+            for (Map<String, Object> trace : queryExecutionTracePersistence.recent(source.getId(), 50)) {
                 Map<String, Object> row = new LinkedHashMap<>(trace);
                 row.put("sourceName", source.getName());
                 traces.add(row);
@@ -595,6 +597,9 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
         }
         traces.sort(Comparator.comparingLong(
                 row -> -((Number) row.getOrDefault("startedAt", 0L)).longValue()));
+        if (traces.size() > 200) {
+            traces = new ArrayList<>(traces.subList(0, 200));
+        }
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("sources", sourceStatuses);
         result.put("traces", traces);
