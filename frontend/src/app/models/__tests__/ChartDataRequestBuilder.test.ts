@@ -178,6 +178,48 @@ describe('ChartDataRequestBuild Test', () => {
     ]);
   });
 
+  test('formats relative DATETIME filters before sending the request', () => {
+    const dataView = {
+      id: 'view-id',
+      migrationMode: 'STRICT',
+      meta: [
+        {
+          name: 'disabled_at',
+          fieldId: 'field-disabled-at',
+          path: ['disabled_at'],
+          type: DataViewFieldType.DATETIME,
+        },
+      ],
+      computedFields: [],
+    } as any;
+    const request = new ChartDataRequestBuilder(dataView, [
+      {
+        type: ChartDataSectionType.Filter,
+        key: 'filter',
+        rows: [
+          {
+            fieldId: 'field-disabled-at',
+            colName: 'disabled_at',
+            type: DataViewFieldType.DATETIME,
+            category: ChartDataViewFieldCategory.Field as any,
+            filter: {
+              condition: {
+                type: FilterConditionType.Time,
+                operator: FilterSqlOperator.In,
+                visualType: DataViewFieldType.DATETIME,
+                value: [{ unit: 'd', amount: 1, direction: '-' }],
+              },
+            },
+          },
+        ],
+      },
+    ] as any).build();
+
+    expect(request.filters[0].values?.[0].value).toEqual(
+      expect.stringMatching(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/),
+    );
+  });
+
   test('rejects the retired COMPAT mode at request construction', () => {
     expect(() => new ChartDataRequestBuilder({
       id: 'view-id',
