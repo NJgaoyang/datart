@@ -1,0 +1,104 @@
+name: Datart dev20261028 opt-in deployment
+
+# Do not deploy until DATART_DEV_DEPLOY_ENABLED is explicitly set to "true".
+# Never run untrusted pull_request code on a self-hosted runner.
+on:
+  push:
+    branches: [dev20261028]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: datart-dev-deploy
+  cancel-in-progress: false
+
+jobs:
+  package:
+    if: vars.DATART_DEV_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Check out trusted branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci --legacy-peer-deps --no-audit --no-fund
+          npm run checkTs
+          npx vitest run src/app/pages/DashBoardPage/pages/Board/slice/__tests__/widgetDataBatcher.test.ts
+          npm run build:all
+          test -s build/index.html
+          test -s build/task/parser.js
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Targeted Java security regression tests
+        run: >-
+          mvn --batch-mode --no-transfer-progress -pl server -am
+          -Dexec.skip=true
+          -Dtest=RateLimitInterceptorTest,ShareAccessSecurityTest,QueryCancellationRegistryTest
+          -Dsurefire.failIfNoSpecifiedTests=false test
+      - name: Assemble Datart distribution
+        # Server Maven executions ordinarily invoke npm again; frontend is already built.
+        run: mvn --batch-mode --no-transfer-progress -pl server -am -DskipTests -Dexec.skip=true package
+      - name: Validate distribution archive
+        shell: bash
+        run: |
+          shopt -s nullglob
+          archives=(datart-server-*-install.zip)
+          (( ${#archives[@]} == 1 )) || { echo "Expected one Datart install zip"; exit 1; }
+          unzip -tq "${archives[0]}"
+          unzip -Z1 "${archives[0]}" | grep -Eq '^lib/[^/]+\.jar$'
+          unzip -Z1 "${archives[0]}" | grep -qx 'static/index.html'
+          unzip -Z1 "${archives[0]}" | grep -qx 'config/profiles/application-config.yml'
+      - name: Upload verified package
+        uses: actions/upload-artifact@v4
+        with:
+          name: datart-dev-${{ github.sha }}
+          path: datart-server-*-install.zip
+          retention-days: 7
+          if-no-files-found: error
+
+  deploy:
+    needs: package
+    # GitHub strongly advises against self-hosted runners for public repositories.
+    # The second variable is an explicit risk acknowledgement, never a default.
+    if: vars.DATART_DEV_DEPLOY_ENABLED == 'true' && (github.event.repository.private || vars.DATART_ALLOW_PUBLIC_RUNNER == 'I_ACCEPT_RISK')
+    runs-on: [self-hosted, linux, x64, datart-dev]
+    environment:
+      name: datart-development
+    timeout-minutes: 20
+    steps:
+      # No checkout or compilation of repository code on the self-hosted runner.
+      - name: Download artifact from this run
+        uses: actions/download-artifact@v4
+        with:
+          name: datart-dev-${{ github.sha }}
+          path: ./distribution
+      - name: Deploy pre-reviewed package with installed server script
+        shell: bash
+        env:
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          archives=(distribution/datart-server-*-install.zip)
+          (( ${#archives[@]} == 1 )) || { echo "Expected one Datart install zip"; exit 1; }
+          test -x /usr/local/bin/datart-deploy || {
+            echo "Install deploy/scripts/deploy-dev.sh on the dev host first."
+            exit 1
+          }
+          /usr/local/bin/datart-deploy "$(realpath "${archives[0]}")" "$COMMIT_SHA"
