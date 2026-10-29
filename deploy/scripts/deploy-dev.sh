@@ -25,6 +25,7 @@ STAGE="$RELEASES/.staging-$SHA-$$"
 NEXT_LINK="$ROOT/.next-$SHA-$$"
 OLD=""
 SWITCHED=0
+ASSETS_WRITTEN=0
 
 # Prevent overlapping deploys, including a manual invocation.
 exec 9>"$ROOT/.deployment.lock" || die "Cannot write deployment lock"
@@ -39,12 +40,18 @@ current_link() {
 recover_if_needed() {
   local status="$?"
   trap - EXIT
-  if [[ "$status" -ne 0 && "$SWITCHED" -eq 1 ]]; then
-    log "Health check or restart failed. Attempting rollback."
+  if [[ "$status" -ne 0 && ( "$SWITCHED" -eq 1 || "$ASSETS_WRITTEN" -eq 1 ) ]]; then
+    log "Deployment failed. Attempting to restore the previous release and assets."
     if [[ -n "$OLD" ]]; then
-      current_link "$OLD" || true
-      rsync -a --no-owner --no-group "$OLD/.frontend-assets/" "$SHARED/static/" || true
-      sudo -n /usr/bin/systemctl restart "$SERVICE" || true
+      if [[ "$SWITCHED" -eq 1 ]]; then
+        current_link "$OLD" || true
+      fi
+      if [[ "$ASSETS_WRITTEN" -eq 1 ]]; then
+        rsync -a --no-owner --no-group "$OLD/.frontend-assets/" "$SHARED/static/" || true
+      fi
+      if [[ "$SWITCHED" -eq 1 ]]; then
+        sudo -n /usr/bin/systemctl restart "$SERVICE" || true
+      fi
     else
       log "First deployment has no previous release. Manual recovery required."
     fi
@@ -111,6 +118,7 @@ mv -- "$STAGE" "$TARGET"
 
 # Preserve uploads and previously hashed frontend assets: NEVER use --delete.
 # New frontend entrypoints are copied as part of the release.
+ASSETS_WRITTEN=1
 rsync -a --no-owner --no-group "$TARGET/.frontend-assets/" "$SHARED/static/"
 current_link "$TARGET"
 SWITCHED=1
