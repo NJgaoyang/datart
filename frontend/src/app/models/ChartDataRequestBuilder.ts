@@ -23,6 +23,7 @@ import {
   DataViewFieldType,
   FilterConditionType,
   SortActionType,
+  isDateFieldType,
 } from 'app/constants';
 import {
   ChartDataConfig,
@@ -433,7 +434,7 @@ export class ChartDataRequestBuilder {
 
   private normalizeFilters = (fields: ChartDataSectionField[]) => {
     const _timeConverter = (visualType, value, dateFormat = TIME_FORMATTER) => {
-      if (visualType !== 'DATE') {
+      if (!isDateFieldType(visualType)) {
         return value;
       }
       if (Boolean(value) && typeof value === 'object' && 'unit' in value) {

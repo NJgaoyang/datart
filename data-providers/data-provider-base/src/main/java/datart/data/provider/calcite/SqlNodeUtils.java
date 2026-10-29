@@ -95,6 +95,7 @@ public class SqlNodeUtils {
                 return variable.getValues().stream().map(v ->
                         SqlLiteral.createBoolean(Boolean.parseBoolean(v), sqlParserPos)).collect(Collectors.toList());
             case DATE:
+            case DATETIME:
                 return variable.getValues().stream().map(v ->
                         createDateSqlNode(v, variable.getFormat()))
                         .collect(Collectors.toList());
@@ -115,6 +116,7 @@ public class SqlNodeUtils {
             case BOOLEAN:
                 return SqlLiteral.createBoolean(Boolean.parseBoolean(value.getValue().toString()), SqlParserPos.ZERO);
             case DATE:
+            case DATETIME:
                 return createDateSqlNode(value.getValue().toString(), value.getFormat());
             case FRAGMENT:
                 return new SqlFragment(value.getValue().toString());

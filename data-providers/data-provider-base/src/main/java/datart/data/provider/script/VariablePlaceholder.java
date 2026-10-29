@@ -116,6 +116,7 @@ public class VariablePlaceholder {
         String minVal;
         switch (variable.getValueType()) {
             case DATE:
+            case DATETIME:
             case STRING:
                 minVal = variable.getValues().stream().map(Object::toString).min(String::compareTo).get();
                 break;
@@ -133,6 +134,7 @@ public class VariablePlaceholder {
         String maxVal;
         switch (variable.getValueType()) {
             case DATE:
+            case DATETIME:
             case STRING:
                 maxVal = variable.getValues().stream().map(Object::toString).max(String::compareTo).get();
                 break;
