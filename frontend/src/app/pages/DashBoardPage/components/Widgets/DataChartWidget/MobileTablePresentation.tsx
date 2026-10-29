@@ -92,16 +92,26 @@ export const MobileTablePresentation: React.FC = () => {
   const dimensions = fields.filter(isMobileDimension);
   const measures = fields.filter(isMobileMeasure);
   const complete = isFullTableResult(data?.pageInfo, dataSet.length);
-  const totals = measures.map(field => mobileMetricTotal(
-    field, fields, [
-      ...(dataChart?.config?.computedFields || []),
-      ...(chartDataView?.computedFields || []),
-      ...(chartDataView?.meta || []),
-    ], dataSet,
-  ));
-  const mode = resolvedMode === 'kpi-grid' && dataSet.length > 1
-    ? !complete ? 'table' : totals.some(value => value === undefined) ? 'card-list' : resolvedMode
-    : resolvedMode;
+  const totals = measures.map(field =>
+    mobileMetricTotal(
+      field,
+      fields,
+      [
+        ...(dataChart?.config?.computedFields || []),
+        ...(chartDataView?.computedFields || []),
+        ...(chartDataView?.meta || []),
+      ],
+      dataSet,
+    ),
+  );
+  const mode =
+    resolvedMode === 'kpi-grid' && dataSet.length > 1
+      ? !complete
+        ? 'table'
+        : totals.some(value => value === undefined)
+        ? 'card-list'
+        : resolvedMode
+      : resolvedMode;
   const isAggregateKpi = mode === 'kpi-grid' && dataSet.length > 1;
   const kpiScope = isAggregateKpi
     ? `全部${dimensions[0] ? fieldLabel(dimensions[0]) : '城市'}合计`
@@ -322,9 +332,11 @@ const PresentationList = styled.div`
   align-self: flex-start;
   width: 100%;
   height: auto;
-  max-height: 100%;
+  max-height: none;
   padding: 8px;
-  overflow: auto;
+  /* Let MobileBoard/ScrollBody own vertical scrolling. A nested auto
+   * scroller makes diagonal swipes move the list and page at once. */
+  overflow: visible;
 `;
 
 const KpiGrid = styled(PresentationList)<{ $columns: number }>`
@@ -335,6 +347,15 @@ const KpiGrid = styled(PresentationList)<{ $columns: number }>`
   max-height: none;
   overflow: visible;
   overscroll-behavior: contain;
+
+  /* Adapt the card count to the available phone width. */
+  @media (max-width: 359px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (min-width: 360px) and (max-width: 767px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 `;
 
 const KpiScope = styled.div`
@@ -353,6 +374,14 @@ const MetricGrid = styled.div<{ $columns: number }>`
   grid-template-columns: repeat(${p => p.$columns}, minmax(0, 1fr));
   gap: ${T.spacing.grid}px;
   width: 100%;
+
+  @media (max-width: 359px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (min-width: 360px) and (max-width: 767px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 `;
 
 const MetricCard = styled.div`
@@ -380,8 +409,8 @@ const MetricValue = styled.div`
   font-weight: 600;
   line-height: ${T.lineHeight.metric}px;
   color: ${T.color.light.text};
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 `;
 
 const EntityCard = styled.div`
