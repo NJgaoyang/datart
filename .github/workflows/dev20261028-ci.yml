@@ -1,0 +1,120 @@
+name: dev20261028 build and regression checks
+
+on:
+  push:
+    branches: [dev20261028]
+  pull_request:
+    branches: [dev20261028]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dev20261028-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend typecheck, regression and production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Verify TypeScript and compatibility contract
+        run: |
+          npm run checkTs
+          npm run check:upgrade-baseline
+      - name: Query, share, save and dashboard regression tests
+        run: |
+          npx vitest run \
+            src/app/pages/DashBoardPage/pages/Board/slice/__tests__/widgetDataBatcher.test.ts \
+            src/app/pages/DashBoardPage/pages/Board/slice/__tests__/shareRefresh.test.ts \
+            src/utils/__tests__/queryCancellation.test.ts \
+            src/app/pages/DashBoardPage/utils/__tests__/boardSaveStatus.test.ts \
+            src/app/pages/DashBoardPage/utils/__tests__/boardUnsavedState.test.ts \
+            src/app/pages/DashBoardPage/components/Widgets/DataChartWidget/__tests__/chartViewState.test.ts
+      - name: Build production assets
+        run: npm run build:all
+      - name: Check bundle regression budget
+        run: |
+          npm run test:bundle-budget
+          npm run check:bundle-budget
+          npm run report:bundles
+
+  backend:
+    name: Java compilation, authorization and query tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Compile server and dependent modules
+        run: mvn --batch-mode -pl server -am -DskipTests package
+      - name: Targeted security, share and cancellation tests
+        run: |
+          mvn --batch-mode -pl server -am \
+            -Dtest=ShareAccessSecurityTest,ShareSupportedFunctionSecurityTest,QueryCancellationRegistryTest,AccessLogIndexMigrationTest,RateLimitInterceptorTest \
+            -Dsurefire.failIfNoSpecifiedTests=false test
+
+  browser-smoke:
+    name: Public-entry browser smoke (no credentials)
+    # Run on PRs; avoid browser-install cost on every direct push.
+    # Manual dispatch becomes available once this workflow also exists on main.
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build public frontend entrypoints
+        working-directory: frontend
+        run: |
+          npm ci --legacy-peer-deps --no-audit --no-fund
+          npm run build:all
+      - name: Install isolated Chromium test tooling
+        working-directory: frontend/e2e
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Preview built frontend without an API or credentials
+        working-directory: frontend
+        run: |
+          ./node_modules/.bin/vite preview --host 127.0.0.1 --port 4173 > /tmp/datart-vite-preview.log 2>&1 &
+          for attempt in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:4173/login > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+      - name: Verify production JS entrypoints do not white-screen
+        working-directory: frontend/e2e
+        env:
+          DATART_TEST_BASE_URL: http://127.0.0.1:4173
+        run: npx playwright test --project=chromium-smoke --workers=1
+
+# Deliberately no deploy job, server secrets, schema migration or systemd restart.
+# Deployment requires a separately reviewed, protected workflow and an authorized runner.

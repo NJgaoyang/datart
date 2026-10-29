@@ -1,0 +1,38 @@
+# Template only: DO NOT install or enable on the current server without review.
+# Adjust User, Group, Java path, WorkingDirectory and runtime file permissions.
+[Unit]
+Description=Datart Spring Boot Server (non-Docker)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=datart
+Group=datart
+WorkingDirectory=/opt/datart/current
+EnvironmentFile=-/etc/datart/datart.env
+ExecStart=/usr/bin/java -server -Xms512m -Xmx2g \
+  --add-opens=java.base/java.lang=ALL-UNNAMED \
+  --add-opens=java.base/java.lang.reflect=ALL-UNNAMED \
+  --add-opens=java.base/java.util=ALL-UNNAMED \
+  --add-opens=java.base/java.io=ALL-UNNAMED \
+  --add-opens=java.base/java.nio=ALL-UNNAMED \
+  --add-opens=java.base/java.math=ALL-UNNAMED \
+  --add-opens=java.base/sun.nio.ch=ALL-UNNAMED \
+  --add-opens=java.base/sun.security.util=ALL-UNNAMED \
+  -Dfastjson2.parser.safeMode=true \
+  -Dspring.profiles.active=config \
+  -Dspring.config.additional-location=file:./config/profiles/ \
+  -Dfile.encoding=UTF-8 \
+  -cp lib/* datart.DatartServerApplication
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=60
+KillSignal=SIGTERM
+LimitNOFILE=65535
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

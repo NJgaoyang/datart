@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-import { ConfigProvider, message } from 'antd';
+import { ConfigProvider } from 'antd';
 import echartsDefaultTheme from 'app/assets/theme/echarts_default_theme.json';
 import { registerTheme } from 'echarts';
-import { PUBLIC_URL, StorageKeys } from 'globalConstants';
+import { PUBLIC_URL } from 'globalConstants';
 import { antdLocales } from 'locales/i18n';
 import { useEffect, useLayoutEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
@@ -29,7 +29,6 @@ import { unstable_HistoryRouter as HistoryRouter, Route, Routes } from 'react-ro
 import { appHistory } from './appHistory';
 import { GlobalStyles } from 'styles/globalStyles';
 import { getToken } from 'utils/auth';
-import useI18NPrefix from './hooks/useI18NPrefix';
 import { LoginAuthRoute } from './LoginAuthRoute';
 import { LazyActivationPage } from './pages/ActivationPage/Loadable';
 import { LazyAuthorizationPage } from './pages/AuthorizationPage/Loadable';
@@ -46,23 +45,15 @@ export function AppRouter() {
   const dispatch = useAppDispatch();
   const { i18n } = useTranslation();
   const logged = !!getToken();
-  const t = useI18NPrefix('global');
   useAppSlice();
 
   useLayoutEffect(() => {
-    const isAuthorizing =
-      window.location.pathname.endsWith('/authorization') &&
-      new URLSearchParams(window.location.search).has('authorization_token');
-
     if (logged) {
       dispatch(setLoggedInUser());
     } else {
-      if (localStorage.getItem(StorageKeys.LoggedInUser) && !isAuthorizing) {
-        message.warning(t('tokenExpired'));
-      }
       dispatch(logout());
     }
-  }, [dispatch, t, logged]);
+  }, [dispatch, logged]);
 
   useEffect(() => {
     dispatch(getSystemInfo());

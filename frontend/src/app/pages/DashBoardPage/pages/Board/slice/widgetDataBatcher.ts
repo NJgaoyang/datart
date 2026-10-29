@@ -31,6 +31,10 @@ const inFlight = new Map<string, BatchEntry>();
 // widgets forever.
 const MAX_BATCH_ENTRIES = 40;
 const MAX_CONCURRENT_BATCHES = 2;
+// Fall back to bounded parallel requests only when the batch API is unavailable
+// or a response entry is missing. With 2 batches, at most 8 fallback HTTP calls
+// can be active. Permission/business failures must never trigger retries.
+const MAX_FALLBACK_CONCURRENT_PER_BATCH = 4;
 let activeBatchCount = 0;
 
 // Exact same widget + serialized query (including filters, sort, paging and
@@ -193,72 +197,65 @@ async function flushBatch(batch: BatchEntry[]): Promise<void> {
 
     const resultMap: Record<string, any> = unwrapWidgetQueryResponse(response) || {};
 
-    // Some deployed server versions do not support batch execution for all
-    // views. The batch endpoint may return a per-item QUERY_FAILED object
-    // with HTTP 200; retry ONLY these failed entries using the ordinary
-    // execute endpoint. Successful widgets must never be re-queried.
-    await Promise.all(batch.map(async entry => {
-      if (entry.cancelled) return;
-      const result = resultMap[entry.widgetId] ??
-        resultMap[entry.requestParams?.vizId || ''];
-      if (result === undefined || result?.error === 'QUERY_FAILED') {
-        try {
-          const fallbackResponse = await request2<any>({
-            method: 'POST',
-            url: 'data-provider/execute',
-            data: { ...entry.requestParams, queryId: entry.queryId },
-          }, undefined, { onRejected: preserveHttpError });
-          if (entry.cancelled) return;
-          const fallbackData = unwrapWidgetQueryResponse(fallbackResponse);
-          if (fallbackData?.error) {
-            entry.reject(new Error('图表数据查询失败'));
-          } else {
-            entry.resolve(fallbackData);
-          }
-        } catch (error) {
-          if (!entry.cancelled) entry.reject(error);
-        }
+    const missingEntries: BatchEntry[] = [];
+    for (const entry of batch) {
+      if (entry.cancelled) continue;
+      const result = resultMap[entry.widgetId] ?? resultMap[entry.requestParams?.vizId || ''];
+      if (result === undefined) {
+        missingEntries.push(entry);
+      } else if (result?.error === 'PERMISSION_DENIED') {
+        entry.reject(Object.assign(new Error('无权访问图表数据'), { errCode: 403 }));
       } else if (result?.error) {
-        // Permission and other specific query errors should not be retried.
         entry.reject(new Error('图表数据查询失败'));
       } else {
         entry.resolve(result);
       }
-    }));
-  } catch (error) {
-    // Single requests must NOT be re-sent after a permission/business error.
-    // Only a multi-widget batch may fall back to separate requests.
-    if (batch.length === 1) {
-      const entry = batch[0];
-      if (!entry.cancelled) entry.reject(error);
-      return;
     }
-    // A batch is rejected as a whole when any query fails. Retry entries
-    // separately so one broken widget does not hide successful widget data,
-    // while the failed widget still receives the real backend error.
-    await Promise.all(
-      batch.map(async entry => {
-        if (entry.cancelled) return;
-        try {
-          const response = await request2<any>({
-            method: 'POST',
-            url: 'data-provider/execute',
-            data: { ...entry.requestParams, queryId: entry.queryId },
-          }, undefined, { onRejected: preserveHttpError });
-          if (entry.cancelled) return;
-          const data = unwrapWidgetQueryResponse(response);
-          if (data?.error) {
-            entry.reject(new Error(`Widget query failed: ${data.error}`));
-          } else {
-            entry.resolve(data);
-          }
-        } catch (singleError) {
-          if (!entry.cancelled) entry.reject(singleError);
-        }
-      }),
-    );
+    await retryEntriesConcurrently(missingEntries);
+  } catch (error) {
+    const status = (error as any)?.response?.status ?? (error as any)?.status;
+    if (batch.length > 1 && [404, 405, 501].includes(status)) {
+      await retryEntriesConcurrently(batch);
+    } else {
+      batch.forEach(entry => { if (!entry.cancelled) entry.reject(error); });
+    }
   } finally {
     batch.forEach(entry => inFlight.delete(entry.queryId));
+  }
+}
+
+/**
+ * Bound parallel fallback work without blocking unrelated widget results.
+ * Cancellations are checked before admission and again inside retrySingle.
+ */
+async function retryEntriesConcurrently(entries: BatchEntry[]): Promise<void> {
+  let nextIndex = 0;
+  const workers = Array.from(
+    { length: Math.min(MAX_FALLBACK_CONCURRENT_PER_BATCH, entries.length) },
+    async () => {
+      while (nextIndex < entries.length) {
+        const entry = entries[nextIndex++];
+        if (!entry.cancelled) await retrySingle(entry);
+      }
+    },
+  );
+  await Promise.all(workers);
+}
+
+async function retrySingle(entry: BatchEntry): Promise<void> {
+  if (entry.cancelled) return;
+  try {
+    const response = await request2<any>({
+      method: 'POST',
+      url: 'data-provider/execute',
+      data: { ...entry.requestParams, queryId: entry.queryId },
+    }, undefined, { onRejected: preserveHttpError });
+    if (entry.cancelled) return;
+    const data = unwrapWidgetQueryResponse(response);
+    if (data?.error) entry.reject(new Error('图表数据查询失败'));
+    else entry.resolve(data);
+  } catch (error) {
+    if (!entry.cancelled) entry.reject(error);
   }
 }
 

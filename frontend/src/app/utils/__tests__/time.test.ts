@@ -16,7 +16,32 @@
  * limitations under the License.
  */
 
-import { splitRangerDateFilters } from '../time';
+import { recommendTimeRangeConverter, splitRangerDateFilters } from '../time';
+import { RECOMMEND_TIME } from 'globalConstants';
+import { vi } from 'vitest';
+
+test('recommended daily ranges include the intended dates', () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(2026, 9, 28, 12));
+  try {
+    expect(recommendTimeRangeConverter(RECOMMEND_TIME.YESTERDAY)).toEqual([
+      '2026-10-27 00:00:00',
+      '2026-10-27 23:59:59',
+    ]);
+    expect(recommendTimeRangeConverter(RECOMMEND_TIME.LAST_7_DAYS)).toEqual([
+      '2026-10-22 00:00:00',
+      '2026-10-28 23:59:59',
+    ]);
+    expect(recommendTimeRangeConverter(RECOMMEND_TIME.LAST_1_MONTH)).toEqual([
+      '2026-09-28 00:00:00', '2026-10-28 23:59:59',
+    ]);
+    expect(recommendTimeRangeConverter(RECOMMEND_TIME.LAST_1_YEAR)).toEqual([
+      '2025-10-28 00:00:00', '2026-10-28 23:59:59',
+    ]);
+  } finally {
+    vi.useRealTimers();
+  }
+});
 
 describe('test splitRangerDateFilters', () => {
   const rangerDateFilter = {

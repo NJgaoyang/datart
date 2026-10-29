@@ -77,7 +77,7 @@ export function evaluateBundleBudget(manifest, fileBytes, budget = DEFAULT_BUNDL
 }
 
 function loadBuildManifest(root) {
-  const file = [join(root, 'manifest.json'), join(root, '.vite', 'manifest.json')]
+  const file = [join(root, '.vite', 'manifest.json'), join(root, 'manifest.json')]
     .find(candidate => existsSync(candidate));
   if (!file) throw new Error('Missing Vite manifest: run npm run build first');
   return JSON.parse(readFileSync(file, 'utf8'));

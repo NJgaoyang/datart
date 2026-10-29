@@ -19,6 +19,7 @@ import {
   Empty,
   Form,
   FormInstance,
+  Input,
   Radio,
   RadioChangeEvent,
   Select,
@@ -197,6 +198,12 @@ export const RelatedViewForm: React.FC<RelatedViewFormProps> = memo(
               <>
                 {fields.map((field, index) => (
                   <Form.Item noStyle key={index} shouldUpdate>
+                    <Form.Item name={[field.name, 'viewId']} hidden>
+                      <Input />
+                    </Form.Item>
+                    <Form.Item name={[field.name, 'fieldValueType']} hidden>
+                      <Input />
+                    </Form.Item>
                     <div className="relatedView">
                       <h4>{getViewName(index)}</h4>
                       <div style={{ width: '140px', textAlign: 'right' }}>

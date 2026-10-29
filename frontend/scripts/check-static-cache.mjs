@@ -12,7 +12,7 @@ if (!base) {
       throw new Error('Login HTML may be cached across deployments: ' + htmlCache);
     }
     const html = await htmlResponse.text();
-    const urls = [...html.matchAll(/\/static\/(?:js|css)\/[a-zA-Z0-9_-]+\.[a-f0-9]{8,}\.(?:js|css)/g)]
+    const urls = [...html.matchAll(/\/static\/(?:js|css)\/[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]{8,}\.(?:js|css)/g)]
       .map(match => match[0]);
     if (!urls.some(url => url.endsWith('.js'))) {
       throw new Error('No content-hashed JS entry found');

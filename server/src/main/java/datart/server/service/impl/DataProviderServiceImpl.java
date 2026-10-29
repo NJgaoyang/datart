@@ -39,6 +39,7 @@ import datart.core.entity.View;
 import datart.core.mappers.ext.RelSubjectColumnsMapperExt;
 import datart.core.mappers.ext.ViewFieldMapperExt;
 import datart.security.util.PermissionHelper;
+import datart.security.exception.PermissionDeniedException;
 import datart.security.util.AESUtil;
 import datart.server.base.dto.VariableValue;
 import datart.server.base.params.TestExecuteParam;
@@ -54,6 +55,7 @@ import datart.server.service.VariableService;
 import datart.server.service.ViewService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.shiro.authz.AuthorizationException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -406,7 +408,8 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
                     } catch (Exception e) {
                         log.error("Batch query failed for view {} user {}", param.getViewId(), username, e);
                         Dataframe failed = Dataframe.empty();
-                        failed.setError("QUERY_FAILED");
+                        failed.setError(e instanceof PermissionDeniedException || e instanceof AuthorizationException
+                                ? "PERMISSION_DENIED" : "QUERY_FAILED");
                         return failed;
                     } finally {
                         RequestContext.clean();
@@ -421,7 +424,8 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
                 } catch (Exception e) {
                     log.error("Batch query failed for view {} user {}", param.getViewId(), username, e);
                     Dataframe failed = Dataframe.empty();
-                    failed.setError("QUERY_FAILED");
+                    failed.setError(e instanceof PermissionDeniedException || e instanceof AuthorizationException
+                            ? "PERMISSION_DENIED" : "QUERY_FAILED");
                     jobs.add(CompletableFuture.completedFuture(failed));
                 }
             }
@@ -583,7 +587,9 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
             status.put("sourceId", source.getId());
             status.put("sourceName", source.getName());
             sourceStatuses.add(status);
-            for (Map<String, Object> trace : queryExecutionTracePersistence.recent(source.getId())) {
+            // The monitor is a cross-source overview; keep each source bounded
+            // before sorting so one busy source cannot make the response grow.
+            for (Map<String, Object> trace : queryExecutionTracePersistence.recent(source.getId(), 50)) {
                 Map<String, Object> row = new LinkedHashMap<>(trace);
                 row.put("sourceName", source.getName());
                 traces.add(row);
@@ -591,6 +597,9 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
         }
         traces.sort(Comparator.comparingLong(
                 row -> -((Number) row.getOrDefault("startedAt", 0L)).longValue()));
+        if (traces.size() > 200) {
+            traces = new ArrayList<>(traces.subList(0, 200));
+        }
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("sources", sourceStatuses);
         result.put("traces", traces);

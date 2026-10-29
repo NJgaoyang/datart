@@ -143,14 +143,15 @@ check_prerequisites() {
     if [ "${SKIP_FRONTEND}" = false ]; then
 
         if ! command -v node &>/dev/null; then
-            error "未找到 Node.js，请安装 Node 18+"
+            error "未找到 Node.js，请安装 Node 22.12+"
         fi
 
         NODE_VERSION=$(node -v)
         NODE_MAJOR=$(echo "${NODE_VERSION}" | sed 's/^v//' | cut -d'.' -f1)
+        NODE_MINOR=$(echo "${NODE_VERSION}" | sed 's/^v//' | cut -d'.' -f2)
 
-        if [ "${NODE_MAJOR}" -lt 18 ]; then
-            error "需要 Node 18+，当前版本: ${NODE_VERSION}"
+        if [ "${NODE_MAJOR}" -lt 22 ] || { [ "${NODE_MAJOR}" -eq 22 ] && [ "${NODE_MINOR}" -lt 12 ]; }; then
+            error "需要 Node 22.12+，当前版本: ${NODE_VERSION}"
         fi
 
         ok "Node: ${NODE_VERSION}"
@@ -263,9 +264,9 @@ build_frontend() {
     # --------------------------------------------------------
     # 安装依赖
     # --------------------------------------------------------
-    info "安装前端依赖 (npm install)..."
+    info "安装前端锁定依赖 (npm ci)..."
 
-    npm install --legacy-peer-deps
+    npm ci --legacy-peer-deps
 
     ok "前端依赖安装完成"
 

@@ -47,6 +47,7 @@ import {
   getValue,
 } from 'app/utils/chartHelper';
 import { transformToViewConfig } from 'app/utils/internalChartHelper';
+import dayjs from 'dayjs';
 import {
   formatTime,
   getTime,
@@ -175,8 +176,9 @@ export class ChartDataRequestBuilder {
         ratioOfSums: aggCol.ratioOfSums === true,
       })),
       (a, b) =>
-        isEqualObject(a.column, b.column) && a.sqlOperator === b.sqlOperator
-          && a.ratioOfSums === b.ratioOfSums,
+        isEqualObject(a.column, b.column) &&
+        a.sqlOperator === b.sqlOperator &&
+        a.ratioOfSums === b.ratioOfSums,
     );
   }
 
@@ -238,10 +240,11 @@ export class ChartDataRequestBuilder {
     );
   }
 
-  private buildOutputProjections(outputs =
-    this.aggregation === false
+  private buildOutputProjections(
+    outputs = this.aggregation === false
       ? this.buildSelectColumns()
-      : this.buildGroups().concat(this.buildAggregators())) {
+      : this.buildGroups().concat(this.buildAggregators()),
+  ) {
     if (isEmptyArray(outputs)) {
       return undefined;
     }
@@ -281,10 +284,10 @@ export class ChartDataRequestBuilder {
   }
 
   private buildColumnName(col) {
-    if (
-      col.category ===
-      ChartDataViewFieldCategory.DateLevelComputedField
-    ) {
+    if (Array.isArray(col.colName)) {
+      return col.colName;
+    }
+    if (col.category === ChartDataViewFieldCategory.DateLevelComputedField) {
       return [col.colName];
     }
 
@@ -363,7 +366,11 @@ export class ChartDataRequestBuilder {
         }
         if (cur.type === ChartDataSectionType.Mixed) {
           const dateAndStringFields = cur.rows?.filter(v =>
-            [DataViewFieldType.DATE, DataViewFieldType.DATETIME, DataViewFieldType.STRING].includes(v.type),
+            [
+              DataViewFieldType.DATE,
+              DataViewFieldType.DATETIME,
+              DataViewFieldType.STRING,
+            ].includes(v.type),
           );
           //zh: 判断数据中是否含有 DATE 和 STRING 类型 en: Determine whether the data contains DATE and STRING types
           return acc.concat(dateAndStringFields || []);
@@ -477,6 +484,16 @@ export class ChartDataRequestBuilder {
           conditionValue,
           dateFormat,
         );
+        if (
+          field.filter?.condition?.operator === FilterSqlOperator.Between &&
+          (field.type === DataViewFieldType.DATE ||
+            field.type === DataViewFieldType.DATETIME)
+        ) {
+          const end = recommendTimeRangeConverter(conditionValue)[1];
+          timeRange[1] = dayjs(end)
+            .add(1, 'second')
+            .format(dateFormat || TIME_FORMATTER);
+        }
         return timeRange.map(t => ({
           value: t,
           valueType: field.type,
@@ -762,16 +779,15 @@ export class ChartDataRequestBuilder {
   private removeInvalidFilter(filters: ChartDataRequestFilter[]) {
     const fields = (
       getAllColumnInMeta(this.dataView?.meta) as ChartDataViewMeta[]
-    )
-      .concat(
-        createDateLevelComputedFieldForConfigComputedFields(
-          this.dataView?.meta,
-          this.dataView?.computedFields,
-        ),
-      );
+    ).concat(
+      createDateLevelComputedFieldForConfigComputedFields(
+        this.dataView?.meta,
+        this.dataView?.computedFields,
+      ),
+    );
 
     return (filters || []).filter(filter => {
-      return fields.some(field => {
+      const valid = fields.some(field => {
         const matchedByName =
           filter.column.length === 1 && field?.name === filter.column[0];
         const matchedByPath =
@@ -779,6 +795,12 @@ export class ChartDataRequestBuilder {
           isEqualObject(field.path, filter.column);
         return matchedByName || matchedByPath;
       });
+      if (!valid) {
+        throw new Error(
+          `筛选字段“${filter.column.join('.')}”不可用，请检查图表或筛选器配置`,
+        );
+      }
+      return true;
     });
   }
 

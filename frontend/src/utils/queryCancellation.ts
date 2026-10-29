@@ -1,15 +1,15 @@
 import { request2 } from './request';
 
-type RunningQuery = { queryId: string; controller: AbortController };
+type RunningQuery = { queryId: string; controller: AbortController; shareToken?: string };
 
 const runningQueries = new Map<string, RunningQuery>();
 
 const createQueryId = () =>
   globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
 
-export function startQuery(scope: string) {
+export function startQuery(scope: string, shareToken?: string) {
   cancelQuery(scope);
-  const query = { queryId: createQueryId(), controller: new AbortController() };
+  const query = { queryId: createQueryId(), controller: new AbortController(), shareToken };
   runningQueries.set(scope, query);
   return {
     queryId: query.queryId,
@@ -27,6 +27,7 @@ export function cancelQuery(scope: string) {
   query.controller.abort();
   void request2({
     method: 'POST',
-    url: `data-provider/execute/cancel/${query.queryId}`,
+    url: query.shareToken ? `shares/execute/cancel/${query.queryId}` : `data-provider/execute/cancel/${query.queryId}`,
+    ...(query.shareToken ? { params: { executeToken: query.shareToken } } : {}),
   }).catch(() => undefined);
 }

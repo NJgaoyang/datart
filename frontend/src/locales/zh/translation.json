@@ -1,5 +1,7 @@
 {
   "global": {
+    "systemInfoError": "无法连接服务，请稍后重试",
+    "retry": "重试",
     "401": "未登录或会话过期，请重新登录",
     "copy": "副本",
     "tokenExpired": "会话过期，请重新登录",
@@ -819,6 +821,8 @@
         "needMore": "至少还需要 {{num}} 个 {{type}}"
       },
       "graph": {
+        "treemapNegative": "矩形树图不显示负数",
+        "noValidData": "没有可显示的数据，请检查字段和日期格式",
         "names": {
           "table": "表格",
           "areaChart": "区域图",
@@ -829,6 +833,9 @@
           "outlineMap": "轮廓地图",
           "pieChart": "饼图",
           "radarChart": "雷达图",
+          "heatmapChart": "热力图",
+          "treemapChart": "矩形树图",
+          "calendarHeatmapChart": "日历热力图",
           "richText": "富文本",
           "scatterChart": "散点图",
           "clusterBarChart": "条形图",
@@ -1409,6 +1416,8 @@
     }
   },
   "auditLog": {
+    "loadError": "审计日志加载失败，请重试或联系管理员",
+    "retry": "重试",
     "title": "审计日志",
     "user": "用户",
     "resourceType": "资源类型",

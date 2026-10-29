@@ -601,7 +601,9 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
     }
     if (dataState === 'error') {
       return (
-        <Empty description="图表查询失败，请稍后重试或检查数据源">
+        <Empty description={errInfo?.request?.startsWith('筛选字段“')
+          ? '筛选字段配置已失效，请检查图表或筛选器配置'
+          : '图表查询失败，请稍后重试或检查数据源'}>
           <Button
             loading={loading}
             disabled={loading}
@@ -639,6 +641,7 @@ export const DataChartWidgetCore: React.FC<{}> = memo(() => {
     cacheW,
     errText,
     dataState,
+    errInfo?.request,
     chart,
     loading,
     onWidgetGetData,

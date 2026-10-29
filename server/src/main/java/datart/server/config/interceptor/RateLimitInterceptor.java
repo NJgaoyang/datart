@@ -29,6 +29,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -54,6 +55,11 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
     @Value("${datart.security.rate-limit.window-seconds:60}")
     private int windowSeconds;
+
+    // Only these immediate peers may supply client IP headers. Default supports
+    // a reverse proxy on the same host; remote proxy addresses must be opted in.
+    @Value("${datart.security.rate-limit.trusted-proxies:127.0.0.1,::1}")
+    private String trustedProxies;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -93,19 +99,45 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     }
 
     /**
-     * 获取真实客户端 IP：优先取代理头 X-Forwarded-For 的第一跳，其次 X-Real-IP，最后回退到 remoteAddr。
+     * Trust forwarding headers only from configured immediate proxies.
+     * Walk X-Forwarded-For from the right (nearest hop) to avoid accepting a
+     * client-controlled leftmost value when the proxy appends the real peer.
+     * The reverse proxy must append/overwrite forwarding headers, not relay
+     * untrusted headers verbatim.
      */
     private String getClientIp(HttpServletRequest request) {
+        return resolveClientIp(request, trustedProxies);
+    }
+
+    static String resolveClientIp(HttpServletRequest request, String trustedProxies) {
+        String remote = request.getRemoteAddr();
+        if (!isTrustedProxy(remote, trustedProxies)) {
+            return remote;
+        }
         String forwarded = request.getHeader("X-Forwarded-For");
         if (StringUtils.isNotBlank(forwarded)) {
-            int comma = forwarded.indexOf(',');
-            return (comma > 0 ? forwarded.substring(0, comma) : forwarded).trim();
+            String[] hops = forwarded.split(",");
+            for (int i = hops.length - 1; i >= 0; i--) {
+                String candidate = hops[i].trim();
+                if (isIpLiteral(candidate) && !isTrustedProxy(candidate, trustedProxies)) {
+                    return candidate;
+                }
+            }
         }
-        String realIp = request.getHeader("X-Real-IP");
-        if (StringUtils.isNotBlank(realIp)) {
-            return realIp.trim();
-        }
-        return request.getRemoteAddr();
+        String realIp = StringUtils.trimToEmpty(request.getHeader("X-Real-IP"));
+        return isIpLiteral(realIp) && !isTrustedProxy(realIp, trustedProxies)
+                ? realIp : remote;
+    }
+
+    private static boolean isTrustedProxy(String ip, String trustedProxies) {
+        return ip != null && Arrays.stream(StringUtils.defaultString(trustedProxies).split(","))
+                .map(String::trim).anyMatch(ip::equals);
+    }
+
+    private static boolean isIpLiteral(String value) {
+        return value != null && value.length() >= 3 && value.length() <= 45
+                && (value.indexOf('.') >= 0 || value.indexOf(':') >= 0)
+                && value.matches("(?i)[0-9a-f.:]+");
     }
 
     private void writeTooManyRequests(HttpServletResponse response) throws IOException {

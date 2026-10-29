@@ -10,6 +10,15 @@ test.describe('authenticated dashboard editor responsive interaction acceptance'
     await expect(page.locator('.react-grid-layout').first()).toBeVisible();
   });
 
+  test('editor exit control has a keyboard-focusable button target', async ({ page }) => {
+    const exitButton = page.getByRole('button', { name: '退出仪表板编辑' });
+    await expect(exitButton).toBeVisible();
+    await exitButton.focus();
+    await expect(exitButton).toBeFocused();
+    await expect(exitButton).toBeEnabled();
+    // Read-only assertion: do not activate the button or discard edits.
+  });
+
   test('the visible ellipsis icon is inside its pointer hit area', async ({ page }) => {
     const button = page.getByRole('button', { name: 'Widget actions' }).first();
     await expect(button).toBeVisible();

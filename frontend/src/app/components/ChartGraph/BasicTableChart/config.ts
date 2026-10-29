@@ -213,7 +213,7 @@ const config: ChartConfig = {
         {
           label: 'paging.pageSize',
           key: 'pageSize',
-          default: 10,
+          default: 20,
           comType: 'select',
           options: {
             needRefresh: true,

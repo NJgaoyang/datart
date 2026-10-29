@@ -155,18 +155,20 @@ export const ColumnPermissions = memo(() => {
               trigger={['click']}
               placement="bottomRight"
               content={
-                <Tree
-                  className="check-list medium"
-                  treeData={columnDropdownData}
-                  checkedKeys={checkedKeys}
-                  loading={false}
-                  selectable={false}
-                  showIcon={false}
-                  onCheck={checkColumnPermission(id)}
-                  disabled={status === ViewStatus.Archived}
-                  blockNode
-                  checkable
-                />
+                <ScrollableFields>
+                  <Tree
+                    className="check-list medium"
+                    treeData={columnDropdownData}
+                    checkedKeys={checkedKeys}
+                    loading={false}
+                    selectable={false}
+                    showIcon={false}
+                    onCheck={checkColumnPermission(id)}
+                    disabled={status === ViewStatus.Archived}
+                    blockNode
+                    checkable
+                  />
+                </ScrollableFields>
               }
             >
               <Button
@@ -226,6 +228,14 @@ const SearchBar = styled(Row)`
   .icon {
     color: ${p => p.theme.textColorLight};
   }
+`;
+
+const ScrollableFields = styled.div`
+  max-width: calc(100vw - 48px);
+  max-height: min(50vh, 400px);
+  max-height: min(50dvh, 400px);
+  overflow: auto;
+  overscroll-behavior: contain;
 `;
 
 const ListWrapper = styled.div`

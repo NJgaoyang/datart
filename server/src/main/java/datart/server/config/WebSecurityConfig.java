@@ -26,7 +26,7 @@ import static datart.core.common.Application.getApiPrefix;
 @Slf4j
 public class WebSecurityConfig {
 
-    @Value("${datart.security.content-security-policy:default-src 'self'; img-src 'self' data: blob: https: http:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; worker-src 'self' blob:; connect-src 'self' ws: wss:; frame-ancestors 'self'}")
+    @Value("${datart.security.content-security-policy:default-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; img-src 'self' data: blob: https: http:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; worker-src 'self' blob:; connect-src 'self' ws: wss:; frame-ancestors 'self'}")
     private String contentSecurityPolicy;
 
     private OAuth2ClientProperties oAuth2ClientProperties;

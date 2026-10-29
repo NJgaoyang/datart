@@ -3,6 +3,7 @@ package datart.core.data.provider;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -25,5 +26,23 @@ class QueryExecutionTraceRegistryTest {
         assertEquals("日报", trace.get("reportName"));
         assertEquals(sql, trace.get("sql"));
         assertNotNull(trace.get("endedAt"));
+    }
+
+    @Test
+    void slowQueryIsPersistedAfterMoreThan200NewQueries() {
+        AtomicReference<Map<String, Object>> completed = new AtomicReference<>();
+        QueryExecutionTraceRegistry.setCompletedListener(completed::set);
+        try {
+            String slow = QueryExecutionTraceRegistry.start("slow", "slow", "MYSQL", "SELECT 1");
+            for (int i = 0; i < 210; i++) {
+                String id = QueryExecutionTraceRegistry.start("fast", "fast", "MYSQL", "SELECT 1");
+                QueryExecutionTraceRegistry.finish(id, "SUCCESS", null);
+            }
+            QueryExecutionTraceRegistry.finish(slow, "SUCCESS", null);
+            assertEquals(slow, completed.get().get("id"));
+            assertEquals("SUCCESS", completed.get().get("status"));
+        } finally {
+            QueryExecutionTraceRegistry.setCompletedListener(null);
+        }
     }
 }

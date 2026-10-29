@@ -21,6 +21,7 @@ import { TenantManagementMode } from 'app/constants';
 export interface AppState {
   loggedInUser: null | User;
   systemInfo: null | SystemInfo;
+  systemInfoFailed: boolean;
   setupLoading: boolean;
   loginLoading: boolean;
   registerLoading: boolean;

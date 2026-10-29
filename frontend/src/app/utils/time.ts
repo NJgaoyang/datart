@@ -61,25 +61,27 @@ export function recommendTimeRangeConverter(relativeTimeRange, dateFormat?) {
     case RECOMMEND_TIME.TODAY:
       break;
     case RECOMMEND_TIME.YESTERDAY:
-      timeRange = getTimeRange([-1, 0], 'd')('d', dateFormat);
+      timeRange = getTimeRange([-1, -1], 'd')('d', dateFormat);
       break;
     case RECOMMEND_TIME.THIS_WEEK:
       timeRange = getTimeRange()('W', dateFormat);
       break;
     case RECOMMEND_TIME.LAST_7_DAYS:
-      timeRange = getTimeRange([-7, 0], 'd')('d', dateFormat);
+      timeRange = getTimeRange([-6, 0], 'd')('d', dateFormat);
       break;
     case RECOMMEND_TIME.LAST_30_DAYS:
-      timeRange = getTimeRange([-30, 0], 'd')('d', dateFormat);
+      timeRange = getTimeRange([-29, 0], 'd')('d', dateFormat);
       break;
     case RECOMMEND_TIME.LAST_90_DAYS:
-      timeRange = getTimeRange([-90, 0], 'd')('d', dateFormat);
+      timeRange = getTimeRange([-89, 0], 'd')('d', dateFormat);
       break;
     case RECOMMEND_TIME.LAST_1_MONTH:
-      timeRange = getTimeRange()('M', dateFormat);
+      timeRange = [dayjs().subtract(1, 'month').startOf('day').format(dateFormat || TIME_FORMATTER),
+        dayjs().endOf('day').format(dateFormat || TIME_FORMATTER)];
       break;
     case RECOMMEND_TIME.LAST_1_YEAR:
-      timeRange = getTimeRange()('y', dateFormat);
+      timeRange = [dayjs().subtract(1, 'year').startOf('day').format(dateFormat || TIME_FORMATTER),
+        dayjs().endOf('day').format(dateFormat || TIME_FORMATTER)];
       break;
   }
 

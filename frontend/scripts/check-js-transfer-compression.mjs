@@ -33,7 +33,7 @@ if (!base) {
     const entry = await fetch(new URL('/login', base));
     if (!entry.ok) throw new Error('Login entry HTTP ' + entry.status);
     const html = await entry.text();
-    const match = html.match(/\/static\/js\/app\.[a-zA-Z0-9]+\.js/);
+    const match = html.match(/\/static\/js\/(?:app|main)\.[a-zA-Z0-9_-]+\.js/);
     if (!match) throw new Error('Versioned app entry not found');
     const wire = await requestRaw(new URL(match[0], base));
     const type = wire.headers['content-type'] || '';

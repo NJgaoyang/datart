@@ -136,19 +136,55 @@ describe('dashboard batch query request lifecycle', () => {
     expect(request).toHaveBeenCalledTimes(1);
   });
 
-  it('falls back from a business-failed multi-widget batch without dropping healthy widgets', async () => {
-    request.mockImplementation((config: any) => {
-      if (config.url === 'data-provider/execute/batch') {
-        return Promise.resolve({ success: false, errCode: 500, data: null }) as any;
-      }
-      return Promise.resolve({ success: true, data: { rows: [['ok']] } }) as any;
-    });
+  it('does not retry a failed batch', async () => {
+    request.mockResolvedValue({ success: false, errCode: 500, data: null } as any);
     const a = enqueueWidgetFetch('board-one', 'widget-1', { vizId: 'view-A' });
     const b = enqueueWidgetFetch('board-one', 'widget-2', { vizId: 'view-B' });
+    const rejected = Promise.all([expect(a).rejects.toThrow(), expect(b).rejects.toThrow()]);
     await vi.advanceTimersByTimeAsync(151);
-    expect(await a).toEqual({ rows: [['ok']] });
-    expect(await b).toEqual({ rows: [['ok']] });
-    expect(request).toHaveBeenCalledTimes(3);
+    await rejected;
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([404, 405, 501])('retries unsupported batch HTTP %i with bounded parallelism', async status => {
+    let active = 0; let maximum = 0;
+    request.mockImplementation(async (config: any) => {
+      if (config.url === 'data-provider/execute/batch') throw { response: { status } };
+      active++; maximum = Math.max(maximum, active);
+      await Promise.resolve(); active--;
+      return { data: { rows: [['ok']] } } as any;
+    });
+    const items = Array.from({ length: 5 }, (_, i) => enqueueWidgetFetch('board-one', `widget-${i}`, { vizId: 'view' }));
+    await vi.advanceTimersByTimeAsync(151);
+    await Promise.all(items);
+    expect(maximum).toBeGreaterThan(1);
+    expect(maximum).toBeLessThanOrEqual(4);
+    expect(request).toHaveBeenCalledTimes(6);
+  });
+
+  it('recovers missing batch entries without unbounded fallback requests', async () => {
+    let active = 0;
+    let maximumActive = 0;
+    request.mockImplementation(async (config: any) => {
+      if (config.url === 'data-provider/execute/batch') {
+        return { data: { known: { rows: [['ready']] } } } as any;
+      }
+      active++;
+      maximumActive = Math.max(maximumActive, active);
+      await Promise.resolve();
+      active--;
+      return { data: { rows: [['fallback']] } } as any;
+    });
+    const known = enqueueWidgetFetch('board-one', 'known', { vizId: 'view' });
+    const missing = Array.from({ length: 12 }, (_, i) =>
+      enqueueWidgetFetch('board-one', `missing-${i}`, { vizId: 'view', filter: i }),
+    );
+    await vi.advanceTimersByTimeAsync(151);
+    expect(await known).toEqual({ rows: [['ready']] });
+    expect(await Promise.all(missing)).toHaveLength(12);
+    expect(maximumActive).toBeGreaterThan(1);
+    expect(maximumActive).toBeLessThanOrEqual(4);
+    expect(request).toHaveBeenCalledTimes(13);
   });
 
   it('deduplicates same widget + identical query parameters while pending', async () => {
@@ -233,25 +269,20 @@ describe('dashboard batch query request lifecycle', () => {
     complete({ data: { rows: ['new'] } });
     expect(await fresh).toEqual({ rows: ['new'] });
   });
-  it('recovers only failed batch results using the normal execute endpoint', async () => {
-    request.mockImplementation(async (config: any) => {
-      if (config.url === 'data-provider/execute/batch') {
-        return {
-          data: {
-            'healthy-widget': { rows: [['healthy']] },
-            'failed-widget': { error: 'QUERY_FAILED', rows: [] },
-          },
-        } as any;
-      }
-      return { data: { rows: [['recovered']] } } as any;
-    });
-    const good = enqueueWidgetFetch('board-one', 'healthy-widget', { vizId: 'view-A' });
-    const bad = enqueueWidgetFetch('board-one', 'failed-widget', { vizId: 'view-B' });
+  it('does not retry failed or forbidden batch entries', async () => {
+    request.mockResolvedValue({ data: {
+      good: { rows: [['healthy']] },
+      failed: { error: 'QUERY_FAILED' },
+      forbidden: { error: 'PERMISSION_DENIED' },
+    } } as any);
+    const good = enqueueWidgetFetch('board-one', 'good', { vizId: 'view-A' });
+    const bad = enqueueWidgetFetch('board-one', 'failed', { vizId: 'view-B' });
+    const forbidden = enqueueWidgetFetch('board-one', 'forbidden', { vizId: 'view-C' });
+    const checks = Promise.all([expect(bad).rejects.toThrow(), expect(forbidden).rejects.toMatchObject({ errCode: 403 })]);
     await vi.advanceTimersByTimeAsync(151);
     expect(await good).toEqual({ rows: [['healthy']] });
-    expect(await bad).toEqual({ rows: [['recovered']] });
-    expect(request).toHaveBeenCalledTimes(2);
-    expect((request.mock.calls[1][0] as any).url).toBe('data-provider/execute');
+    await checks;
+    expect(request).toHaveBeenCalledTimes(1);
   });
 
   it('recovers when an older backend response omits a batch widget key', async () => {

@@ -263,8 +263,8 @@ export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
 
   const pagination = useMemo(
     () => ({
-      defaultPageSize: 100,
-      pageSizeOptions: ['100', '200', '500', '1000'],
+      defaultPageSize: 20,
+      pageSizeOptions: ['20', '100', '200', '500', '1000'],
     }),
     [],
   );

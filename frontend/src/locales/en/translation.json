@@ -1,5 +1,7 @@
 {
   "global": {
+    "systemInfoError": "Unable to connect to the service. Please try again.",
+    "retry": "Retry",
     "401": "Not logged in or token expired, please log in again",
     "copy": "Copy",
     "tokenExpired": "Token expired, please log in",
@@ -821,6 +823,8 @@
         "needMore": "At least need {{num}} {{type}}(s)"
       },
       "graph": {
+        "treemapNegative": "Negative values are not shown in treemaps",
+        "noValidData": "No valid data. Check the fields and date format.",
         "names": {
           "table": "Table",
           "areaChart": "Area Chart",
@@ -831,6 +835,9 @@
           "outlineMap": "Outline Map",
           "pieChart": "Pie Chart",
           "radarChart": "Radar Chart",
+          "heatmapChart": "Heatmap",
+          "treemapChart": "Treemap",
+          "calendarHeatmapChart": "Calendar Heatmap",
           "richText": "Rich Text",
           "scatterChart": "Scatter Chart",
           "clusterBarChart": "Cluster Bar Chart",
@@ -1410,6 +1417,8 @@
     }
   },
   "auditLog": {
+    "loadError": "Unable to load audit logs. Please retry or contact an administrator.",
+    "retry": "Retry",
     "title": "Audit Log",
     "user": "User",
     "resourceType": "Resource Type",

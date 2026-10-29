@@ -603,8 +603,8 @@ describe('ChartDataRequestBuild Test', () => {
     expect(request.functionColumns).toEqual([]);
   });
 
-  test('should not create function column for unknown runtime alias', () => {
-    const request = new ChartDataRequestBuilder(
+  test('should report an unknown runtime alias', () => {
+    expect(() => new ChartDataRequestBuilder(
       {
         id: 'view-id',
         meta: [
@@ -625,9 +625,7 @@ describe('ChartDataRequestBuild Test', () => {
           values: [{ value: 'x', valueType: DataViewFieldType.STRING }],
         },
       ] as any)
-      .build();
-
-    expect(request.functionColumns).toEqual([]);
+      .build()).toThrow('筛选字段');
   });
 
   test('should keep physical runtime filter after resolving field name to path', () => {
@@ -670,8 +668,8 @@ describe('ChartDataRequestBuild Test', () => {
     expect(request.functionColumns).toEqual([]);
   });
 
-  test('should remove unknown physical runtime filter', () => {
-    const request = new ChartDataRequestBuilder(
+  test('should report an unknown physical runtime filter', () => {
+    expect(() => new ChartDataRequestBuilder(
       {
         id: 'view-id',
         meta: [
@@ -692,9 +690,7 @@ describe('ChartDataRequestBuild Test', () => {
           values: [{ value: 'x', valueType: DataViewFieldType.STRING }],
         },
       ])
-      .build();
-
-    expect(request.filters).toEqual([]);
+      .build()).toThrow('筛选字段');
   });
 
   test('should validate physical path without relying on dot-joined names', () => {
@@ -2874,4 +2870,57 @@ describe('ChartDataRequestBuild Test', () => {
       { alias: 'mix', column: ['mix'] },
     ]);
   });
+});
+
+test('recommended yesterday includes all of yesterday and excludes today', () => {
+  const now = dayjs();
+  const view = {
+    id: 'view',
+    meta: [{ name: 'date', path: ['date'], type: DataViewFieldType.DATE }],
+    computedFields: [],
+  } as any;
+  const config = [
+    {
+      type: ChartDataSectionType.Filter,
+      rows: [
+        {
+          colName: 'date',
+          type: DataViewFieldType.DATE,
+          category: ChartDataViewFieldCategory.Field,
+          filter: {
+            condition: {
+              type: FilterConditionType.RecommendTime,
+              operator: FilterSqlOperator.Between,
+              visualType: 'DATE',
+              value: RECOMMEND_TIME.YESTERDAY,
+            },
+          },
+        },
+      ],
+    },
+  ] as any;
+  const filters = new ChartDataRequestBuilder(view, config).build().filters;
+  expect(filters).toEqual([
+    expect.objectContaining({
+      sqlOperator: FilterSqlOperator.GreaterThanOrEqual,
+      values: [
+        {
+          value: now
+            .subtract(1, 'day')
+            .startOf('day')
+            .format('YYYY-MM-DD HH:mm:ss'),
+          valueType: 'DATE',
+        },
+      ],
+    }),
+    expect.objectContaining({
+      sqlOperator: FilterSqlOperator.LessThan,
+      values: [
+        {
+          value: now.startOf('day').format('YYYY-MM-DD HH:mm:ss'),
+          valueType: 'DATE',
+        },
+      ],
+    }),
+  ]);
 });

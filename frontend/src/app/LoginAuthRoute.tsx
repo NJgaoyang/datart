@@ -17,14 +17,22 @@
  */
 
 import { useSelector } from 'react-redux';
+import { Button, Result, Spin } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useAppDispatch } from 'redux/hooks';
 import { Navigate } from 'react-router-dom';
 import { getToken } from 'utils/auth';
 import { LazyMainPage } from './pages/MainPage/Loadable';
 import { selectSystemInfo } from './slice/selectors';
+import { getSystemInfo } from './slice/thunks';
+import { RootState } from 'types';
 
 export function LoginAuthRoute() {
   const logged = !!getToken();
   const systemInfo = useSelector(selectSystemInfo);
+  const failed = useSelector((state: RootState) => state.app?.systemInfoFailed);
+  const dispatch = useAppDispatch();
+  const { t } = useTranslation();
 
   if (logged) {
     return <LazyMainPage />;
@@ -32,8 +40,8 @@ export function LoginAuthRoute() {
 
   if (systemInfo) {
     return <Navigate to={systemInfo.initialized ? '/login' : '/setup'} replace />;
-  } else {
-    // TODO: add system info load fail page
-    return null;
   }
+  return failed ? (
+    <Result status="error" title={t('global.systemInfoError')} extra={<Button type="primary" onClick={() => dispatch(getSystemInfo())}>{t('global.retry')}</Button>} />
+  ) : <Spin fullscreen />;
 }

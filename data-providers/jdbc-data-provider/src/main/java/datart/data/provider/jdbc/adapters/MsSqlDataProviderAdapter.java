@@ -47,6 +47,8 @@ public class MsSqlDataProviderAdapter extends JdbcDataProviderAdapter {
         } catch (SQLException e) {
             QueryExecutionTraceRegistry.finish(traceId, "ERROR", e.getMessage());
             throw e;
+        } finally {
+            QueryExecutionTraceRegistry.finish(traceId, "ERROR", "Query did not complete");
         }
     }
 

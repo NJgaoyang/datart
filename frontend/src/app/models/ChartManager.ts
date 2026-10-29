@@ -47,6 +47,7 @@ import { getChartPluginPaths } from 'app/utils/fetch';
 import { Debugger } from 'utils/debugger';
 import { CloneValueDeep } from 'utils/object';
 import PluginChartLoader from './PluginChartLoader';
+import { advancedCharts } from 'app/components/ChartGraph/AdvancedCharts';
 
 class ChartManager {
   private _loader = new PluginChartLoader();
@@ -132,6 +133,7 @@ class ChartManager {
       new ScatterOutlineMapChart(),
       new BasicGaugeChart(),
       new BasicRichText(),
+      ...advancedCharts(),
     ];
   }
 }
