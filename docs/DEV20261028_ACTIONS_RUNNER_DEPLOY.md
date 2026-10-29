@@ -8,7 +8,7 @@
 
 - .github/workflows/dev20261028-deploy.yml 仅在 dev20261028 push / workflow_dispatch 时被发现。
 - 默认跳过所有部署任务：必须由仓库管理者手动设置 Repository variable DATART_DEV_DEPLOY_ENABLED = true。
-- package 在 GitHub-hosted ubuntu-latest 上构建前端和 Maven 安装包，校验 ZIP，upload-artifact（公开仓库标准 Runner 不计时收费）。
+- package 在 GitHub-hosted ubuntu-latest 上执行前端类型检查、回归测试、构建和 Maven 安全回归测试，校验 ZIP，upload-artifact（公开仓库标准 Runner 的运行分钟免费；制品存储有套餐额度）。
 - deploy 下载同一次运行产物，只在带 datart-dev 标签的专用 Linux self-hosted Runner 上运行。**不 checkout、不编译、不运行仓库脚本**。调用管理员事先审核并安装的 /usr/local/bin/datart-deploy。
 - deploy job 绑定 datart-development environment。建议设置 required reviewers 与 branch restrictions，仅允许 dev20261028，启用前务必测试保护是否生效。
 - 仓库中现有的 dev20261028-ci.yml 继续工作。当前自动部署工作流与现有 CI 是并行触发；部署构建包含自己的构建校验，**不会自动等待独立 CI 所有检查通过**。如需硬性先后，设置分支保护、合并策略，或后续改为受信任发布工作流。
@@ -101,9 +101,10 @@ Runner 不以 root 运行。使用 sudoers 专门授权 **restart 这一个 syst
 
 1. Settings → Environments → 创建 datart-development，设置 only dev20261028 deployment branches 及 required reviewers（若套餐支持）。
 2. Settings → Secrets and variables → Actions → Variables → 新建 DATART_DEV_DEPLOY_ENABLED，初始不要设置或者设为 false。
-3. 先检查当前的 dev20261028-ci.yml 执行，审查 GitHub Actions 打包步骤和公开仓库的部署权限配置。
-4. 确认目录、运行配置、数据库备份、服务权限、Runner、健康检查和审核全部通过，再把 DATART_DEV_DEPLOY_ENABLED 改成 true。
-5. 下一次 push 到 dev20261028 将触发包构建；经过 environment 审批后会部署。如果业务要求只手动发布，可调整 push 触发器或改用已注册默认分支的显式发布工作流，不能把「自动」误认为「每次均审批」。
+3. **本仓库是公开仓库：GitHub 官方不建议把持有服务器管理权限的 self-hosted Runner 注册到公开仓库。最推荐将部署部分放到独立私有仓库，只让公开仓库做 GitHub-hosted 构建。** 现有模板的 deploy job 为公开仓库增加第二道保护：还需要设置 DATART_ALLOW_PUBLIC_RUNNER = I_ACCEPT_RISK 才允许排队。设置这个变量不代表风险被消除；在私有部署仓库建立前，请不要设置它。
+4. 先检查当前的 dev20261028-ci.yml 执行，审查 GitHub Actions 打包步骤和公开仓库的部署权限配置。
+5. 确认目录、运行配置、数据库备份、服务权限、Runner、健康检查和审核全部通过，再把 DATART_DEV_DEPLOY_ENABLED 改成 true。若仓库仍为公开状态，deploy job 默认仍会跳过。
+6. 下一次 push 到 dev20261028 将触发包构建；在受信任且满足安全条件的仓库里，经过 environment 审批后才会部署。如果业务要求只手动发布，可调整 push 触发器或改用已注册默认分支的显式发布工作流，不能把「自动」误认为「每次均审批」。
 
 ## 5. 验证与回滚
 
