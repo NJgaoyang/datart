@@ -34,6 +34,8 @@ jobs:
         working-directory: frontend
         run: |
           npm ci --legacy-peer-deps --no-audit --no-fund
+          npm run checkTs
+          npx vitest run src/app/pages/DashBoardPage/pages/Board/slice/__tests__/widgetDataBatcher.test.ts
           npm run build:all
           test -s build/index.html
           test -s build/task/parser.js
@@ -43,6 +45,12 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: maven
+      - name: Targeted Java security regression tests
+        run: >-
+          mvn --batch-mode --no-transfer-progress -pl server -am
+          -Dexec.skip=true
+          -Dtest=RateLimitInterceptorTest,ShareAccessSecurityTest,QueryCancellationRegistryTest
+          -Dsurefire.failIfNoSpecifiedTests=false test
       - name: Assemble Datart distribution
         # Server Maven executions ordinarily invoke npm again; frontend is already built.
         run: mvn --batch-mode --no-transfer-progress -pl server -am -DskipTests -Dexec.skip=true package
@@ -66,7 +74,9 @@ jobs:
 
   deploy:
     needs: package
-    if: vars.DATART_DEV_DEPLOY_ENABLED == 'true'
+    # GitHub strongly advises against self-hosted runners for public repositories.
+    # The second variable is an explicit risk acknowledgement, never a default.
+    if: vars.DATART_DEV_DEPLOY_ENABLED == 'true' && (github.event.repository.private || vars.DATART_ALLOW_PUBLIC_RUNNER == 'I_ACCEPT_RISK')
     runs-on: [self-hosted, linux, x64, datart-dev]
     environment:
       name: datart-development
