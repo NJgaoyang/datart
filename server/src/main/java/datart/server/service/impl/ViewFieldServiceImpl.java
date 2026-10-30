@@ -34,6 +34,10 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ViewFieldServiceImpl extends BaseService implements ViewFieldService {
 
+    // Kept inside the model JSON so both V1 and V2 resource envelopes, including
+    // legacy Java-serialized MainModel classes, retain their existing format.
+    private static final String TRANSFER_METADATA = "__datartFieldMetadata";
+
     private final ViewFieldMapperExt mapper;
     private final SourceSchemaIndex schemaIndex;
     private final SqlFieldLineageResolver sqlFieldLineageResolver;
@@ -83,8 +87,126 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
         if (view == null || view.getId() == null) {
             return;
         }
+        JsonNode transferredFields = takeTransferredFields(view);
         mapper.deleteByViewId(view.getId());
-        reconcile(view);
+        // Import is an explicit legacy migration boundary. Ordinary saves must
+        // never revive cleared names from a stale model.
+        reconcile(view, true);
+        if (transferredFields != null) {
+            for (ViewField field : mapper.listByViewId(view.getId())) {
+                JsonNode metadata = transferredFields.get(field.getCanonicalKey());
+                if (metadata == null) {
+                    continue;
+                }
+                field.setCustomName(trimToNull(metadata.path("customName").asText(null)));
+                field.setSourceComment(trimToNull(metadata.path("sourceComment").asText(null)));
+                field.setSourcePath(metadata.path("sourcePath").toString());
+                mapper.update(field);
+            }
+        }
+    }
+
+    @Override
+    public String exportModel(View view) {
+        if (view == null || view.getModel() == null || view.getModel().isBlank()) {
+            return view == null ? null : view.getModel();
+        }
+        try {
+            ObjectNode root = (ObjectNode) OBJECT_MAPPER.readTree(view.getModel());
+            root.remove(TRANSFER_METADATA);
+            Map<String, ViewField> fields = mapper.listByViewId(view.getId()).stream()
+                    .collect(Collectors.toMap(ViewField::getCanonicalKey, field -> field,
+                            (left, right) -> left, LinkedHashMap::new));
+            if (fields.isEmpty()) {
+                return OBJECT_MAPPER.writeValueAsString(root);
+            }
+            ObjectNode snapshot = root.putObject(TRANSFER_METADATA);
+            snapshot.put("version", 1);
+            ObjectNode transferredFields = snapshot.putObject("fields");
+            for (Map.Entry<String, FieldReferences> entry : collectReferences(root, view.getType()).entrySet()) {
+                FieldReferences refs = entry.getValue();
+                FieldData data = FieldData.from(entry.getKey(), refs.primary(), view.getType());
+                ViewField field = fields.get(data.canonicalKey());
+                if (field == null) {
+                    continue;
+                }
+                ObjectNode metadata = OBJECT_MAPPER.valueToTree(toDTO(field));
+                // Null is an explicit clear in the transfer protocol, not an
+                // omitted update. Keep it independent of mapper inclusion rules.
+                putNullable(metadata, "customName", field.getCustomName());
+                putNullable(metadata, "sourceComment", field.getSourceComment());
+                transferredFields.set(data.canonicalKey(), metadata);
+                for (ObjectNode node : refs.nodes()) {
+                    node.put("fieldId", field.getId());
+                    putNullable(node, "customName", field.getCustomName());
+                    putNullable(node, "sourceComment", field.getSourceComment());
+                    if (trimToNull(field.getSourceComment()) == null) {
+                        node.remove("comment");
+                    } else {
+                        node.put("comment", field.getSourceComment());
+                    }
+                    boolean custom = trimToNull(field.getCustomName()) != null;
+                    node.put("isDisplayNameCustom", custom);
+                    if (custom) {
+                        node.put("displayName", field.getCustomName());
+                    } else {
+                        node.remove("displayName");
+                    }
+                }
+            }
+            return OBJECT_MAPPER.writeValueAsString(root);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("VIEW_FIELD_EXPORT_FAILED", e);
+        }
+    }
+
+    private JsonNode takeTransferredFields(View view) {
+        if (view.getModel() == null || view.getModel().isBlank()) {
+            return null;
+        }
+        try {
+            ObjectNode root = (ObjectNode) OBJECT_MAPPER.readTree(view.getModel());
+            JsonNode snapshot = root.remove(TRANSFER_METADATA);
+            if (snapshot == null) {
+                return null;
+            }
+            if (!snapshot.path("version").isIntegralNumber() || snapshot.path("version").asInt() != 1
+                    || !snapshot.path("fields").isObject()) {
+                throw new IllegalArgumentException("VIEW_FIELD_TRANSFER_METADATA_INVALID");
+            }
+            JsonNode fields = snapshot.path("fields");
+            for (JsonNode field : fields) {
+                if (!field.isObject() || !field.has("customName") || !field.has("sourceComment")
+                        || !isNullableText(field.get("customName"))
+                        || !isNullableText(field.get("sourceComment"))
+                        || !field.path("sourcePath").isArray()) {
+                    throw new IllegalArgumentException("VIEW_FIELD_TRANSFER_METADATA_INVALID");
+                }
+                for (JsonNode pathSegment : field.path("sourcePath")) {
+                    if (!pathSegment.isTextual()) {
+                        throw new IllegalArgumentException("VIEW_FIELD_TRANSFER_METADATA_INVALID");
+                    }
+                }
+            }
+            // Import consumes the snapshot once. It must not become another
+            // runtime metadata authority or override a later manual edit.
+            view.setModel(OBJECT_MAPPER.writeValueAsString(root));
+            return fields;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("VIEW_FIELD_TRANSFER_METADATA_INVALID", e);
+        }
+    }
+
+    private boolean isNullableText(JsonNode value) {
+        return value != null && (value.isNull() || value.isTextual());
+    }
+
+    private void putNullable(ObjectNode node, String name, String value) {
+        if (value == null) {
+            node.putNull(name);
+        } else {
+            node.put(name, value);
+        }
     }
 
     @Override
@@ -169,11 +291,12 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
                 field.setOrdinal(ordinal++);
                 field.setActive(true);
                 String sourceComment = upstream != null
-                        ? trimToNull(upstream.getSourceComment())
+                        ? trimToNull(resolveDisplayName(upstream))
                         : sourceComment(view.getType(), data, refs, source, physicalSourcePath);
-                if (!persisted && upstream != null && trimToNull(upstream.getCustomName()) != null) {
-                    field.setCustomName(trimToNull(upstream.getCustomName()));
-                }
+                // A new joined field inherits the upstream effective name as
+                // its source label, not as a local override. Existing custom
+                // names remain untouched: old snapshots cannot be reliably
+                // distinguished from deliberate user overrides.
                 if (!persisted) {
                     refs.nodes().stream()
                             .map(node -> trimToNull(node.path("customName").asText(null)))
@@ -247,6 +370,20 @@ public class ViewFieldServiceImpl extends BaseService implements ViewFieldServic
         field.setUpdateTime(new Date());
         mapper.update(field);
         return toDTO(field);
+    }
+
+    @Override
+    @Transactional
+    public ViewFieldDTO updateCustomName(View view, String fieldId, String customName) {
+        if (mapper.selectByViewIdAndId(view.getId(), fieldId) == null) {
+            throw new IllegalArgumentException("VIEW_FIELD_NOT_FOUND: " + fieldId);
+        }
+        if (trimToNull(customName) == null) {
+            // Refresh the inherited fallback and clear the local override in
+            // one transaction. Reconcile ignores persisted model.customName.
+            reconcile(view);
+        }
+        return updateCustomName(view.getId(), fieldId, customName);
     }
 
     @Override

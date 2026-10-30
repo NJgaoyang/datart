@@ -3,7 +3,15 @@ import { Alert, Button, Form, Input, Modal, Select, Space } from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { ViewFieldMeta } from 'app/types/View';
 import { CommonFormTypes } from 'globalConstants';
-import { memo, useCallback, useContext, useMemo, useState } from 'react';
+import {
+  memo,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useSelector } from 'react-redux';
 import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
@@ -19,6 +27,7 @@ import { viewActions } from '../slice';
 import { selectCurrentEditingViewAttr, selectViews } from '../slice/selectors';
 import { runSql, saveView } from '../slice/thunks';
 import { findViewFieldMeta } from '../utils';
+import { getViewJoinSignature } from './viewJoinDraft';
 
 interface ViewDetail {
   id: string;
@@ -32,6 +41,10 @@ interface ComposeResult {
   sourceId: string;
   script: string;
   config: string;
+}
+
+interface GeneratedResult extends ComposeResult {
+  signature: string;
 }
 
 const parseColumns = (view?: ViewDetail) => {
@@ -74,9 +87,28 @@ export const ViewJoinBuilder = memo(() => {
   const [loading, setLoading] = useState(false);
   const [leftId, setLeftId] = useState<string>();
   const [rightId, setRightId] = useState<string>();
-  const [generated, setGenerated] = useState<ComposeResult>();
+  const [generated, setGenerated] = useState<GeneratedResult>();
+  const [needsRegeneration, setNeedsRegeneration] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [form] = Form.useForm();
+  const generationVersion = useRef(0);
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      generationVersion.current += 1;
+    };
+  }, []);
+
+  const invalidateGenerated = useCallback(() => {
+    generationVersion.current += 1;
+    if (generated || loading) setNeedsRegeneration(true);
+    setGenerated(undefined);
+    setPreviewVisible(false);
+    setLoading(false);
+  }, [generated, loading]);
 
   const options = useMemo(
     () =>
@@ -90,7 +122,9 @@ export const ViewJoinBuilder = memo(() => {
     async (id: string) => {
       if (!id || details[id]) return details[id];
       const { data } = await request2<ViewDetail>(`/views/${id}`);
-      setDetails(current => ({ ...current, [id]: data }));
+      if (mounted.current) {
+        setDetails(current => ({ ...current, [id]: data }));
+      }
       return data;
     },
     [details],
@@ -98,6 +132,9 @@ export const ViewJoinBuilder = memo(() => {
 
   const generate = useCallback(async () => {
     const values = await form.validateFields();
+    if (!mounted.current) return;
+    const version = ++generationVersion.current;
+    const signature = getViewJoinSignature(values);
     setLoading(true);
     try {
       const { data } = await request2<ComposeResult>({
@@ -105,15 +142,30 @@ export const ViewJoinBuilder = memo(() => {
         method: 'POST',
         data: values,
       });
-      setGenerated(data);
+      if (
+        !mounted.current ||
+        version !== generationVersion.current ||
+        signature !== getViewJoinSignature(form.getFieldsValue(true))
+      ) {
+        return;
+      }
+      setGenerated({ ...data, signature });
+      setNeedsRegeneration(false);
       setPreviewVisible(true);
     } finally {
-      setLoading(false);
+      if (mounted.current && version === generationVersion.current) {
+        setLoading(false);
+      }
     }
   }, [form]);
 
   const applyGeneratedSql = useCallback(() => {
-    if (!generated) return;
+    if (
+      !generated ||
+      generated.signature !== getViewJoinSignature(form.getFieldsValue(true))
+    ) {
+      return;
+    }
     dispatch(
       viewActions.changeCurrentEditingView({
         type: 'SQL',
@@ -124,10 +176,15 @@ export const ViewJoinBuilder = memo(() => {
       }),
     );
     setPreviewVisible(false);
-  }, [dispatch, generated]);
+  }, [dispatch, generated, form]);
 
   const executeGeneratedSql = useCallback(() => {
-    if (!generated) return;
+    if (
+      !generated ||
+      generated.signature !== getViewJoinSignature(form.getFieldsValue(true))
+    ) {
+      return;
+    }
     dispatch(
       viewActions.changeCurrentEditingView({
         type: 'SQL',
@@ -139,10 +196,13 @@ export const ViewJoinBuilder = memo(() => {
     );
     setPreviewVisible(false);
     dispatch(runSql({ id: currentViewId, isFragment: false }));
-  }, [currentViewId, dispatch, generated]);
+  }, [currentViewId, dispatch, generated, form]);
 
   const saveGeneratedView = useCallback(() => {
-    if (!generated) return;
+    if (
+      !generated ||
+      generated.signature !== getViewJoinSignature(form.getFieldsValue(true))
+    ) return;
     const generatedConfig = JSON.parse(generated.config);
     dispatch(
       viewActions.changeCurrentEditingView({
@@ -175,7 +235,7 @@ export const ViewJoinBuilder = memo(() => {
         dispatch(saveView({ resolve: onClose }));
       },
     });
-  }, [dispatch, generated, showSaveForm, t, views]);
+  }, [dispatch, generated, showSaveForm, t, views, form]);
 
   const leftColumns = parseColumns(leftId ? details[leftId] : undefined);
   const rightColumns = parseColumns(rightId ? details[rightId] : undefined);
@@ -184,10 +244,14 @@ export const ViewJoinBuilder = memo(() => {
     <Wrapper>
       <h2>{t('title')}</h2>
       <Alert title={t('description')} type="info" showIcon />
+      {needsRegeneration && (
+        <Alert title={t('regenerateRequired')} type="warning" showIcon />
+      )}
       <Form
         form={form}
         layout="vertical"
         initialValues={{ joinType: 'INNER', conditions: [{}] }}
+        onValuesChange={invalidateGenerated}
       >
         <ViewRow>
           <Form.Item
@@ -210,8 +274,16 @@ export const ViewJoinBuilder = memo(() => {
               })}
               onChange={async value => {
                 const id = String(value);
+                invalidateGenerated();
+                form.setFieldValue('conditions',
+                  (form.getFieldValue('conditions') || [{}]).map(condition => ({
+                    ...condition,
+                    leftColumn: undefined,
+                  })),
+                );
                 setLeftId(id);
                 const detail = await loadView(id);
+                if (!mounted.current || form.getFieldValue('leftViewId') !== id) return;
                 dispatch(
                   viewActions.changeCurrentEditingView({
                     sourceId: detail?.sourceId,
@@ -254,8 +326,16 @@ export const ViewJoinBuilder = memo(() => {
               })}
               onChange={async value => {
                 const id = String(value);
+                invalidateGenerated();
+                form.setFieldValue('conditions',
+                  (form.getFieldValue('conditions') || [{}]).map(condition => ({
+                    ...condition,
+                    rightColumn: undefined,
+                  })),
+                );
                 setRightId(id);
                 const detail = await loadView(id);
+                if (!mounted.current || form.getFieldValue('rightViewId') !== id) return;
                 dispatch(
                   viewActions.changeCurrentEditingView({
                     sourceId: detail?.sourceId,

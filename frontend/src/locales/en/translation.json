@@ -1323,7 +1323,15 @@
       "deleteSure": "You sure you want to delete it?",
       "edit": "Edit",
       "setDisplayName": "Set Display Name",
-      "displayName": "Display Name"
+      "displayName": "Display Name",
+      "displayNameSaved": "Field display name saved",
+      "displayNameSaveFailed": "Could not save the field display name. Try again.",
+      "displayNameHelp": "Leave blank to restore the source name. Confirming saves immediately.",
+      "displayNameDraftHelp": "Leave blank to restore the source name. Changes take effect when the dataset is saved.",
+      "refreshFields": "Update field comments",
+      "refreshFieldsHelp": "Use the synchronized source comments and keep custom names",
+      "refreshFieldsSuccess": "Field comments updated. Custom names were kept.",
+      "refreshFieldsFailed": "Could not update field comments. Try again."
     },
     "columnPermission": {
       "title": "Column permissions",
@@ -1395,6 +1403,7 @@
       "joinCondition": "Join Condition",
       "addCondition": "Add Condition",
       "generate": "Generate and Preview SQL",
+      "regenerateRequired": "Join conditions changed. Generate SQL again.",
       "previewTitle": "View SQL Preview",
       "previewHelp": "Review the generated SQL, execute it to preview data, or open it in the SQL editor.",
       "back": "Back",

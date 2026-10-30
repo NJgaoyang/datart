@@ -16,7 +16,8 @@
  * limitations under the License.
  */
 
-import { Form, Input, message, Select } from 'antd';
+import { ReloadOutlined } from '@ant-design/icons';
+import { Button, Form, Input, message, Select, Tooltip } from 'antd';
 import { APP_CURRENT_VERSION } from 'app/configVersion';
 import { DataViewFieldType, DateFormat } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
@@ -25,6 +26,7 @@ import useStateModal, { StateModalSize } from 'app/hooks/useStateModal';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import ChartComputedFieldSettingPanel from 'app/pages/ChartWorkbenchPage/components/ChartOperationPanel/components/ChartDataViewPanel/components/ChartComputedFieldSettingPanel';
 import { ChartDataViewMeta } from 'app/types/ChartDataViewMeta';
+import { View, ViewFieldMeta } from 'app/types/View';
 import { checkComputedFieldAsync } from 'app/utils/fetch';
 import { updateBy, updateByKey } from 'app/utils/mutation';
 import { FC, memo, useCallback, useEffect, useMemo, useState } from 'react';
@@ -55,8 +57,11 @@ import {
 } from '../../../slice/types';
 import {
   dataModelColumnSorter,
+  findViewFieldMeta,
   getHierarchyColumnByField,
+  getViewColumnDisplayMeta,
   hydrateViewColumnDisplayMeta,
+  isNewView,
   resolveSchemaColumnComment,
 } from '../../../utils';
 import Container from '../Container';
@@ -97,6 +102,7 @@ const DataModelTree: FC = memo(() => {
   const [computedFields, setComputedFields] = useState<ChartDataViewMeta[]>();
   const [fields, setFields] = useState<ChartDataViewMeta[]>();
   const [viewType, setViewType] = useState<ViewType>('SQL');
+  const [refreshingFields, setRefreshingFields] = useState(false);
 
   useEffect(() => {
     setViewType(type);
@@ -107,8 +113,21 @@ const DataModelTree: FC = memo(() => {
   }, [currentEditingView?.model?.hierarchy]);
 
   useEffect(() => {
-    setComputedFields(currentEditingView?.model?.computedFields);
-  }, [currentEditingView?.model?.computedFields]);
+    setComputedFields(
+      currentEditingView?.model?.computedFields?.map(column => ({
+        ...column,
+        ...getViewColumnDisplayMeta(
+          column,
+          currentEditingView?.fields,
+          currentEditingView?.previewFields,
+        ),
+      })),
+    );
+  }, [
+    currentEditingView?.model?.computedFields,
+    currentEditingView?.fields,
+    currentEditingView?.previewFields,
+  ]);
 
   useEffect(() => {
     if (viewType === 'STRUCT' && script.table) {
@@ -130,6 +149,11 @@ const DataModelTree: FC = memo(() => {
           displayName: hierarchyColumn?.displayName,
           comment,
           customName: hierarchyColumn?.customName,
+          ...getViewColumnDisplayMeta(
+            { ...hierarchyColumn, name: colName, path },
+            currentEditingView?.fields,
+            currentEditingView?.previewFields,
+          ),
         });
       };
       const childrenData = script['columns']?.map((v, i) => {
@@ -179,6 +203,11 @@ const DataModelTree: FC = memo(() => {
               displayName: v.displayName,
               comment: v.comment,
               customName: v.customName,
+              ...getViewColumnDisplayMeta(
+                v,
+                currentEditingView?.fields,
+                currentEditingView?.previewFields,
+              ),
             };
           }),
         );
@@ -189,6 +218,8 @@ const DataModelTree: FC = memo(() => {
     viewType,
     currentEditingView?.model?.columns,
     currentEditingView?.model?.hierarchy,
+    currentEditingView?.fields,
+    currentEditingView?.previewFields,
     allDatabaseSchemas,
     sourceId,
   ]);
@@ -206,11 +237,18 @@ const DataModelTree: FC = memo(() => {
         return hydrateViewColumnDisplayMeta(
           Object.assign({ index }, column, { name: colName, comment }),
           currentEditingView?.fields,
+          currentEditingView?.previewFields,
         );
       })
       .sort(dataModelColumnSorter);
     return columns as Column[];
-  }, [hierarchy, allDatabaseSchemas, sourceId, currentEditingView?.fields]);
+  }, [
+    hierarchy,
+    allDatabaseSchemas,
+    sourceId,
+    currentEditingView?.fields,
+    currentEditingView?.previewFields,
+  ]);
 
   const handleDeleteBranch = (node: Column) => {
     const newHierarchy = deleteBranch(tableColumns, node);
@@ -500,125 +538,48 @@ const DataModelTree: FC = memo(() => {
 
   const openEditDisplayNameModal = (node: Column) => {
     const currentDisplayName = node.customName?.trim() || '';
+    let requestedDisplayName = currentDisplayName;
     const columnName = node.name || '';
+    const viewId = currentEditingView?.id;
+    const fieldId =
+      findViewFieldMeta(node, currentEditingView?.fields)?.fieldId || node.fieldId;
+    const savesImmediately = Boolean(viewId && !isNewView(viewId) && fieldId);
 
     return (openStateModal as Function)({
       title: t('model.setDisplayName'),
       modalSize: StateModalSize.XSMALL,
       onOk: async displayName => {
-        const trimmedDisplayName = displayName?.trim();
-        if (currentEditingView?.id && node?.fieldId) {
-          const { data } = await request2<any>({
-            url: `/views/${currentEditingView.id}/fields/${node.fieldId}`,
-            method: 'PATCH',
-            data: { customName: trimmedDisplayName || null },
-          });
-          const serverDisplayNamePatch = {
-            displayName: data?.displayName,
-            comment: data?.sourceComment,
-            sourceComment: data?.sourceComment,
-            customName: data?.customName,
-          };
-          const update = (item: Column) => ({
-            ...item,
-            ...serverDisplayNamePatch,
-          });
-          let newHierarchy: Model;
-          if (
-            node.role === ColumnRole.Hierarchy ||
-            node.role === ColumnRole.Table
-          ) {
-            newHierarchy = updateNode(
-              tableColumns,
-              update(node),
-              tableColumns.findIndex(n => n.name === node.name),
-            );
-          } else {
-            const parentBranch = tableColumns?.find(b =>
-              b?.children?.find(bn => bn.name === node.name),
-            );
-            if (parentBranch) {
-              const clonedBranch = CloneValueDeep(parentBranch);
-              const childIdx = clonedBranch.children?.findIndex(
-                c => c.name === node.name,
-              );
-              if (
-                childIdx !== undefined &&
-                childIdx > -1 &&
-                clonedBranch.children
-              ) {
-                clonedBranch.children[childIdx] = update(
-                  clonedBranch.children[childIdx],
-                );
-              }
-              newHierarchy = updateNode(
-                tableColumns,
-                clonedBranch,
-                tableColumns.findIndex(n => n.name === clonedBranch.name),
-              );
-            } else {
-              newHierarchy = updateNode(
-                tableColumns,
-                update(node),
-                tableColumns.findIndex(n => n.name === node.name),
-              );
+        const trimmedDisplayName =
+          (displayName === undefined ? requestedDisplayName : displayName)?.trim();
+        if (savesImmediately && viewId && fieldId) {
+          try {
+            const { data } = await request2<ViewFieldMeta>({
+              url: `/views/${viewId}/fields/${fieldId}`,
+              method: 'PATCH',
+              data: { customName: trimmedDisplayName || null },
+            });
+            if (!data?.fieldId) {
+              throw new Error(t('model.displayNameSaveFailed'));
             }
+            dispatch(actions.fieldDisplayNameSaved({ viewId, field: data }));
+            message.success(t('model.displayNameSaved'));
+          } catch (error) {
+            message.error(
+              typeof error === 'string' ? error : t('model.displayNameSaveFailed'),
+            );
+            throw error;
           }
-          handleDataModelHierarchyChange(newHierarchy);
           return;
         }
-        const displayNamePatch = trimmedDisplayName
-          ? {
-              displayName: trimmedDisplayName,
-              customName: trimmedDisplayName,
-            }
-          : {
-              displayName: undefined,
-              customName: undefined,
-            };
-        let newHierarchy: Model;
-        if (
-          node.role === ColumnRole.Hierarchy ||
-          node.role === ColumnRole.Table
-        ) {
-          newHierarchy = updateNode(
-            tableColumns,
-            { ...node, ...displayNamePatch },
-            tableColumns.findIndex(n => n.name === node.name),
+        if (viewId) {
+          dispatch(
+            actions.draftFieldDisplayNameChanged({
+              viewId,
+              field: { name: node.name, path: node.path, fieldId: node.fieldId },
+              customName: trimmedDisplayName || undefined,
+            }),
           );
-        } else {
-          const parentBranch = tableColumns?.find(b =>
-            b?.children?.find(bn => bn.name === node.name),
-          );
-          if (parentBranch) {
-            const clonedBranch = CloneValueDeep(parentBranch);
-            const childIdx = clonedBranch.children?.findIndex(
-              c => c.name === node.name,
-            );
-            if (
-              childIdx !== undefined &&
-              childIdx > -1 &&
-              clonedBranch.children
-            ) {
-              clonedBranch.children[childIdx] = {
-                ...clonedBranch.children[childIdx],
-                ...displayNamePatch,
-              };
-            }
-            newHierarchy = updateNode(
-              tableColumns,
-              clonedBranch,
-              tableColumns.findIndex(n => n.name === clonedBranch.name),
-            );
-          } else {
-            newHierarchy = updateNode(
-              tableColumns,
-              { ...node, ...displayNamePatch },
-              tableColumns.findIndex(n => n.name === node.name),
-            );
-          }
         }
-        handleDataModelHierarchyChange(newHierarchy);
       },
       content: onChangeEvent => {
         return (
@@ -626,10 +587,16 @@ const DataModelTree: FC = memo(() => {
             label={t('model.displayName')}
             initialValue={currentDisplayName}
             name="displayName"
+            extra={t(
+              savesImmediately
+                ? 'model.displayNameHelp'
+                : 'model.displayNameDraftHelp',
+            )}
           >
             <Input
               placeholder={columnName}
               onChange={e => {
+                requestedDisplayName = e.target.value;
                 onChangeEvent(e.target?.value);
               }}
             />
@@ -845,6 +812,29 @@ const DataModelTree: FC = memo(() => {
     };
   }, [addCallback, t]);
 
+  const refreshFieldComments = async () => {
+    const viewId = currentEditingView?.id;
+    if (!viewId || isNewView(viewId) || refreshingFields) return;
+    setRefreshingFields(true);
+    try {
+      const { data } = await request2<View>({
+        url: `/views/${viewId}/fields/refresh`,
+        method: 'POST',
+      });
+      if (!Array.isArray(data?.fields)) {
+        throw new Error(t('model.refreshFieldsFailed'));
+      }
+      dispatch(actions.viewFieldsRefreshed({ viewId, fields: data.fields }));
+      message.success(t('model.refreshFieldsSuccess'));
+    } catch (error) {
+      message.error(
+        typeof error === 'string' ? error : t('model.refreshFieldsFailed'),
+      );
+    } finally {
+      setRefreshingFields(false);
+    }
+  };
+
   const handleComputedFieldMenuClick = useCallback(
     (node, key) => {
       if (key === 'exit') {
@@ -884,6 +874,22 @@ const DataModelTree: FC = memo(() => {
       add={titleAdd}
       loading={stage === ViewViewModelStages.Running}
     >
+      {currentEditingView?.id && !isNewView(currentEditingView.id) && (
+        <FieldActions>
+          <Tooltip title={t('model.refreshFieldsHelp')}>
+            <Button
+              size="small"
+              type="text"
+              icon={<ReloadOutlined />}
+              loading={refreshingFields}
+              disabled={stage === ViewViewModelStages.Saving}
+              onClick={refreshFieldComments}
+            >
+              {t('model.refreshFields')}
+            </Button>
+          </Tooltip>
+        </FieldActions>
+      )}
       <DragDropContext onDragEnd={handleDragEnd}>
         <Droppable
           droppableId={ROOT_CONTAINER_ID}
@@ -941,6 +947,10 @@ const DataModelTree: FC = memo(() => {
 });
 
 export default DataModelTree;
+
+const FieldActions = styled.div`
+  padding: 0 ${SPACE_LG};
+`;
 
 const StyledDroppableContainer = styled.div<{ isDraggingOver }>`
   overflow: auto;

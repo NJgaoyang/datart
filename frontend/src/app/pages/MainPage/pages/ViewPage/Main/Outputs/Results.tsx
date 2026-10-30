@@ -55,9 +55,10 @@ const ROW_KEY = 'DATART_ROW_KEY';
 interface ResultsProps {
   height?: number;
   width?: number;
+  allowManage?: boolean;
 }
 
-export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
+export const Results = memo(({ height = 0, width = 0, allowManage = false }: ResultsProps) => {
   const { actions } = useViewSlice();
   const dispatch = useAppDispatch();
   const viewId = useSelector(state =>
@@ -283,6 +284,7 @@ export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
           databaseSchemas={allDatabaseSchemas[sourceId]}
           viewFields={viewFields}
           previewFields={previewFields}
+          readOnly={!allowManage}
           getExtraHeaderActions={getExtraHeaderActions}
           onSchemaTypeChange={modelChange}
           hasCategory

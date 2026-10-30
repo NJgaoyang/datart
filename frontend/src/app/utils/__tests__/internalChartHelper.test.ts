@@ -2208,6 +2208,80 @@ describe('Internal Chart Helper ', () => {
     });
   });
 
+  test.each([null, undefined, ''])(
+    'clears stale model and chart comments when canonical sourceComment is %s',
+    sourceComment => {
+      const oldField = {
+        name: 'amount',
+        fieldId: 'field-amount',
+        originName: 'amount',
+        displayName: '旧金额',
+        sourceComment: '旧金额',
+        comment: '旧金额',
+        customName: '旧自定义金额',
+      };
+      const meta = transformHierarchyMeta(
+        JSON.stringify({ columns: { amount: oldField } }),
+        [
+          {
+            fieldId: 'field-amount',
+            originName: 'amount',
+            sourceComment,
+            displayName: 'amount',
+            customName: null,
+          },
+        ] as any,
+        'SQL',
+      );
+      const config = {
+        datas: [
+          {
+            rows: [
+              { ...oldField, category: 'field', colName: 'amount' },
+              {
+                ...oldField,
+                category: 'field',
+                colName: 'amount',
+                alias: { name: '图表金额' },
+              },
+            ],
+          },
+        ],
+      } as any;
+
+      const result = reconcileChartConfigFieldMeta(config, meta);
+      const rows = result.datas?.[0].rows || [];
+      expect(rows[0].sourceComment).toBe(sourceComment);
+      expect(rows[0].comment).toBe(sourceComment);
+      expect(getColumnRenderName(rows[0])).toBe('amount');
+      expect(getColumnRenderName(rows[1])).toBe('图表金额');
+      expect(rows[1].alias).toEqual({ name: '图表金额' });
+      expect(config.datas[0].rows[0].comment).toBe('旧金额');
+    },
+  );
+
+  test('does not reuse a saved chart comment when freshly resolved metadata omits it', () => {
+    const config = {
+      datas: [
+        {
+          rows: [
+            {
+              colName: 'city',
+              fieldId: 'field-city',
+              sourceComment: '旧城市',
+              comment: '旧城市',
+            },
+          ],
+        },
+      ],
+    } as any;
+    const result = reconcileChartConfigFieldMeta(config, [
+      { name: 'city', fieldId: 'field-city', displayName: 'city' },
+    ]);
+
+    expect(getColumnRenderName(result.datas?.[0].rows?.[0])).toBe('city');
+  });
+
   test('normalizes legacy date level types from their logical level', () => {
     const config = {
       datas: [

@@ -159,6 +159,13 @@ export function findViewFieldMeta(
     if (byPath.length === 1) {
       return byPath[0];
     }
+    if (path.length >= 2) {
+      // A full source path is authoritative. Never borrow a same-name field
+      // from another joined table just because it is the only persisted one.
+      const originName = getSchemaColumnName(field.name);
+      const byPathAndName = byPath.filter(item => item.originName === originName);
+      return byPathAndName.length === 1 ? byPathAndName[0] : undefined;
+    }
   }
 
   const originName = getSchemaColumnName(field.name);
@@ -166,27 +173,252 @@ export function findViewFieldMeta(
   return byOriginName.length === 1 ? byOriginName[0] : undefined;
 }
 
-/** Adds persisted dataset labels to an editor column without changing its identity. */
+type ViewColumnDisplayMeta = {
+  fieldId?: string;
+  name?: string | string[];
+  path?: string[];
+  customName?: string;
+  sourceComment?: string;
+  comment?: string;
+  displayName?: string;
+};
+
+/** Resolve one label consistently for the model tree, selectors and preview. */
+export function getViewColumnDisplayMeta(
+  column: ViewColumnDisplayMeta,
+  fields?: Array<ViewFieldMeta | PreviewFieldMeta>,
+  previewFields?: PreviewFieldMeta[],
+): Partial<
+  Pick<Column, 'fieldId' | 'customName' | 'sourceComment' | 'comment' | 'displayName'>
+> {
+  const field = findViewFieldMeta(column, fields);
+  const previewField = findViewFieldMeta(column, previewFields);
+  const source = previewField || field;
+  if (!source) return {};
+
+  return {
+    // A newly saved model may still be missing the ID issued by the server.
+    fieldId: field?.fieldId || previewField?.fieldId || column.fieldId,
+    // Absence on persisted metadata means the custom name was cleared.
+    customName: field ? field.customName : column.customName,
+    sourceComment: source.sourceComment,
+    comment: source.sourceComment,
+    displayName: source.displayName,
+  };
+}
+
+/** Adds dataset labels and canonical IDs without changing SQL names or paths. */
 export function hydrateViewColumnDisplayMeta(
   column: Column,
   fields?: ViewFieldMeta[],
+  previewFields?: PreviewFieldMeta[],
 ): Column {
   const children = column.children?.map(child =>
-    hydrateViewColumnDisplayMeta(child, fields),
+    hydrateViewColumnDisplayMeta(child, fields, previewFields),
   );
   if (children?.length) {
     return { ...column, children };
   }
-  const field = findViewFieldMeta(column, fields);
-  if (!field) return column;
-
   return {
     ...column,
-    sourceComment: field.sourceComment,
-    customName: field.customName,
-    comment: field.sourceComment,
-    displayName: field.displayName ?? column.displayName,
+    ...getViewColumnDisplayMeta(column, fields, previewFields),
   };
+}
+
+export function hydrateViewModelDisplayMeta(
+  model: HierarchyModel,
+  fields?: ViewFieldMeta[],
+  previewFields?: PreviewFieldMeta[],
+): HierarchyModel {
+  return {
+    ...model,
+    ...(model.columns && {
+      columns: Object.fromEntries(
+        Object.entries(model.columns).map(([key, column]) => [
+          key,
+          { ...column, ...getViewColumnDisplayMeta(column, fields, previewFields) },
+        ]),
+      ),
+    }),
+    ...(model.hierarchy && {
+      hierarchy: Object.fromEntries(
+        Object.entries(model.hierarchy).map(([key, column]) => [
+          key,
+          hydrateViewColumnDisplayMeta(column, fields, previewFields),
+        ]),
+      ),
+    }),
+    ...(model.computedFields && {
+      computedFields: model.computedFields.map(column => ({
+        ...column,
+        ...getViewColumnDisplayMeta(column, fields, previewFields),
+      })),
+    }),
+  };
+}
+
+export function refreshPreviewFieldComments(
+  previewFields: PreviewFieldMeta[] | undefined,
+  fields: ViewFieldMeta[],
+): PreviewFieldMeta[] | undefined {
+  return previewFields?.map(preview => {
+    const field = findViewFieldMeta(
+      {
+        fieldId: preview.fieldId,
+        name: preview.originName,
+        path: preview.sourcePath,
+      },
+      fields,
+    );
+    if (!field) return preview;
+    const previousPath = preview.sourcePath || [];
+    const nextPath = field.sourcePath || [];
+    const sameSource =
+      previousPath.length === nextPath.length &&
+      previousPath.every((part, index) => part === nextPath[index]);
+    if (!sameSource) return preview;
+    // A preview of unsaved SQL may use another source; keep that preview intact.
+    return {
+      ...preview,
+      sourceComment: field.sourceComment,
+      displayName: field.sourceComment || preview.originName,
+    };
+  });
+}
+
+/** Preserve explicit saved JOIN lineage when the SQL preview cannot resolve a subquery. */
+export function getViewPreviewFields(
+  view: ViewViewModel,
+  previewFields: PreviewFieldMeta[] | undefined,
+  requestedScript: string | undefined,
+  isFragment: boolean,
+): PreviewFieldMeta[] | undefined {
+  if (
+    !view.id ||
+    isNewView(view.id) ||
+    view.type !== 'SQL' ||
+    view.touched ||
+    isFragment ||
+    typeof requestedScript !== 'string' ||
+    requestedScript !== view.script
+  ) {
+    return previewFields;
+  }
+  const outputSources = (
+    view.config as {
+      lineage?: {
+        outputFieldSources?: Record<string, { viewId?: string; columnKey?: string }>;
+      };
+    }
+  )?.lineage?.outputFieldSources;
+  if (!outputSources) return previewFields;
+
+  return previewFields?.map(preview => {
+    const source = outputSources[preview.originName];
+    if (
+      !source?.viewId ||
+      !source?.columnKey ||
+      (preview.category && preview.category !== 'UNRESOLVED') ||
+      preview.sourcePath?.length ||
+      preview.sourceComment?.trim()
+    ) {
+      return preview;
+    }
+    const matches = (view.fields || []).filter(
+      field => field.active !== false && field.originName === preview.originName,
+    );
+    if (matches.length !== 1 || !matches[0].fieldId) return preview;
+    const canonical = matches[0];
+    return {
+      ...preview,
+      sourcePath: canonical.sourcePath,
+      sourceComment: canonical.sourceComment,
+      displayName: canonical.sourceComment || canonical.originName,
+    };
+  });
+}
+
+export function getSavedViewModel(
+  serverModel: string | HierarchyModel | undefined,
+  currentModel: HierarchyModel,
+  fields?: ViewFieldMeta[],
+): HierarchyModel {
+  const model =
+    typeof serverModel === 'string' ? JSON.parse(serverModel) : serverModel;
+  return hydrateViewModelDisplayMeta(
+    normalizeModelDisplayNames(model || currentModel),
+    fields,
+  );
+}
+
+export function setViewModelFieldCustomName(
+  model: HierarchyModel,
+  identity: ViewColumnDisplayMeta,
+  customName?: string,
+): HierarchyModel {
+  const pathOf = (column: ViewColumnDisplayMeta) =>
+    column.path?.length
+      ? column.path
+      : Array.isArray(column.name)
+      ? column.name
+      : [column.name];
+  const identityPath = pathOf(identity);
+  const patch = (column: ViewColumnDisplayMeta) => {
+    const path = pathOf(column);
+    const matches =
+      column.fieldId && identity.fieldId
+        ? column.fieldId === identity.fieldId
+        : path.length === identityPath.length &&
+          path.every((part, index) => part === identityPath[index]);
+    return matches ? { customName, displayName: customName } : {};
+  };
+  const updateHierarchy = (column: Column): Column => ({
+    ...column,
+    ...patch(column),
+    ...(column.children && { children: column.children.map(updateHierarchy) }),
+  });
+  return {
+    ...model,
+    ...(model.columns && {
+      columns: Object.fromEntries(
+        Object.entries(model.columns).map(([key, column]) => [
+          key,
+          { ...column, ...patch(column) },
+        ]),
+      ),
+    }),
+    ...(model.hierarchy && {
+      hierarchy: Object.fromEntries(
+        Object.entries(model.hierarchy).map(([key, column]) => [
+          key,
+          updateHierarchy(column),
+        ]),
+      ),
+    }),
+    ...(model.computedFields && {
+      computedFields: model.computedFields.map(column => ({
+        ...column,
+        ...patch(column),
+      })),
+    }),
+  };
+}
+
+export function matchesResourceSearch(
+  keywords: string,
+  node: {
+    title?: unknown;
+    value?: unknown;
+    originalName?: string;
+    comment?: string;
+  },
+): boolean {
+  const query = keywords.trim().toLocaleLowerCase();
+  const path = Array.isArray(node.value) ? node.value.join('.') : '';
+  return [node.title, node.originalName, node.comment, path].some(
+    value =>
+      typeof value === 'string' && value.toLocaleLowerCase().includes(query),
+  );
 }
 
 export function getHierarchyColumnByField(

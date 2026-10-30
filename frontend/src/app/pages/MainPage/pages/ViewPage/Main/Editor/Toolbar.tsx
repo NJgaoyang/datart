@@ -242,7 +242,7 @@ export const Toolbar = memo(
                   <Tooltip title={t('beautify')} placement="bottom">
                     <ToolbarButton
                       icon={<AlignCenterOutlined />}
-                      disabled={isArchived}
+                      disabled={isArchived || !allowManage}
                       onClick={formatSQL}
                     />
                   </Tooltip>

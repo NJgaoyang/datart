@@ -23,10 +23,7 @@ import {
   IChartDataSet,
   IChartDataSetRow,
 } from 'app/types/ChartDataSet';
-import {
-  getColumnRenderName,
-  getValueByColumnKey,
-} from 'app/utils/chartHelper';
+import { getValueByColumnKey } from 'app/utils/chartHelper';
 import { isEmptyArray } from 'utils/object';
 
 type ColumnIndexTable = { [key: string]: number };
@@ -52,15 +49,13 @@ class ChartDataSetBase extends Array {
     metas?: ChartDatasetMeta[],
     fields?: ChartDataSectionField[],
   ) {
-    return (metas || []).reduce((acc, cur) => {
-      const field = fields?.find(
-        v => getColumnRenderName(v) === cur?.name?.[0],
-      );
-      if (field) {
-        acc = acc.concat(field);
-      }
-      return acc;
-    }, [] as ChartDataSectionField[]);
+    // Result column names are technical aliases, not translated labels. Keep
+    // every ordinal, including unresolved columns, aligned with the index table.
+    return (metas || []).map(meta =>
+      fields?.find(
+        field => this.toKey(field) === this.toCaseInsensitive(meta.name),
+      ),
+    );
   }
 
   protected createColumnIndexTable(metas?: ChartDatasetMeta[]): {
@@ -86,7 +81,7 @@ export class ChartDataSet<T>
   implements IChartDataSet<T>
 {
   private columnIndexTable: ColumnIndexTable = {};
-  private originalFields?: ChartDataSectionField[];
+  private originalFields?: (ChartDataSectionField | undefined)[];
 
   constructor(
     columns: T[][],

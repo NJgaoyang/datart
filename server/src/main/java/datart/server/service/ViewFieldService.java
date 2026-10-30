@@ -19,9 +19,13 @@ public interface ViewFieldService {
 
     void rebuild(View view);
 
+    String exportModel(View view);
+
     void migrateLegacyMetadata(View view);
 
     ViewFieldDTO updateCustomName(String viewId, String fieldId, String customName);
+
+    ViewFieldDTO updateCustomName(View view, String fieldId, String customName);
 
     String resolveDisplayName(ViewField field);
 }

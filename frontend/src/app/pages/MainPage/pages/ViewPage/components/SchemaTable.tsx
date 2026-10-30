@@ -25,27 +25,18 @@ import { TableColumnType, TableProps } from 'antd';
 import { ToolbarButton } from 'app/components';
 import { VirtualTable } from 'app/components/VirtualTable';
 import { DataViewFieldType } from 'app/constants';
-import { TABLE_DATA_INDEX } from 'globalConstants';
 import { PreviewFieldMeta, ViewFieldMeta } from 'app/types/View';
+import { TABLE_DATA_INDEX } from 'globalConstants';
 import { memo, ReactElement, useMemo } from 'react';
 import styled from 'styled-components';
-import {
-  FONT_SIZE_BASE,
-  SPACE,
-  SPACE_SM,
-  WARNING,
-} from 'styles/StyleConstants';
-import {
-  getDatasetFieldDisplayName,
-  getFieldDisplayName,
-  uuidv4,
-} from 'utils/utils';
+import { FONT_SIZE_BASE, SPACE, SPACE_SM, WARNING } from 'styles/StyleConstants';
+import { getFieldDisplayName, uuidv4 } from 'utils/utils';
 import { Column, ColumnsModel, DatabaseSchema, Model } from '../slice/types';
 import {
   getColumnWidthMap,
   getHierarchyColumn,
+  getViewColumnDisplayMeta,
   resolveSchemaColumnComment,
-  findViewFieldMeta,
 } from '../utils';
 import { DatasetCommentLabel } from './DatasetCommentLabel';
 import SetFieldType from './SetFieldType';
@@ -64,6 +55,7 @@ interface SchemaTableProps extends TableProps<object> {
   databaseSchemas?: DatabaseSchema[];
   viewFields?: Array<ViewFieldMeta | PreviewFieldMeta>;
   previewFields?: PreviewFieldMeta[];
+  readOnly?: boolean;
   getExtraHeaderActions?: (
     name: string,
     column: Omit<Column, 'name'>,
@@ -87,6 +79,7 @@ export const SchemaTable = memo(
     databaseSchemas,
     viewFields,
     previewFields,
+    readOnly = false,
     getExtraHeaderActions,
     onSchemaTypeChange,
     ...tableProps
@@ -100,9 +93,39 @@ export const SchemaTable = memo(
         })),
       [dataSource],
     );
+    const displayColumns = useMemo(
+      () =>
+        Object.fromEntries(
+          Object.entries(model).map(([name, column]) => {
+            const hierarchyColumn = getHierarchyColumn(name, hierarchy) || column;
+            const identity = {
+              ...column,
+              ...hierarchyColumn,
+              fieldId: hierarchyColumn.fieldId || column.fieldId,
+              name,
+              path: (hierarchyColumn as Column).path,
+              comment:
+                resolveSchemaColumnComment(databaseSchemas, {
+                  name,
+                  path: (hierarchyColumn as Column).path,
+                }) ||
+                hierarchyColumn.comment ||
+                column.comment,
+            };
+            return [
+              name,
+              {
+                ...identity,
+                ...getViewColumnDisplayMeta(identity, viewFields, previewFields),
+              },
+            ];
+          }),
+        ),
+      [model, hierarchy, databaseSchemas, viewFields, previewFields],
+    );
     const columnWidthMap = useMemo(
-      () => getColumnWidthMap(model, dataSource || []),
-      [model, dataSource],
+      () => getColumnWidthMap(displayColumns, dataSource || []),
+      [displayColumns, dataSource],
     );
     const indexColumnWidth = 50;
 
@@ -116,7 +139,7 @@ export const SchemaTable = memo(
       let tableWidth = 0;
       const columns = Object.entries(model).map(([name, column]) => {
         const hierarchyColumn = getHierarchyColumn(name, hierarchy) || column;
-        const hierarchyMeta = hierarchyColumn as Column;
+        const displayColumn = displayColumns[name];
 
         const width = columnWidthMap[name];
         tableWidth += width;
@@ -136,69 +159,35 @@ export const SchemaTable = memo(
         }
 
         const extraActions =
-          getExtraHeaderActions && getExtraHeaderActions(name, hierarchyColumn);
+          !readOnly && getExtraHeaderActions?.(name, hierarchyColumn);
 
-        const fieldIdentity = {
-          fieldId: hierarchyMeta.fieldId || column.fieldId,
-          name,
-          path: hierarchyMeta.path,
-        };
-        const viewField = findViewFieldMeta(fieldIdentity, viewFields);
-        const previewField = findViewFieldMeta(fieldIdentity, previewFields);
-        const displayText =
-          viewField?.customName ||
-          hierarchyMeta.customName ||
-          (previewField
-            ? getDatasetFieldDisplayName(previewField)
-            : viewField
-            ? getDatasetFieldDisplayName(viewField)
-            : getFieldDisplayName({
-                fieldId: hierarchyMeta.fieldId || column.fieldId,
-                name,
-                path: hierarchyMeta.path,
-                displayName: hierarchyColumn.displayName,
-                customName: hierarchyMeta.customName,
-                comment:
-                  resolveSchemaColumnComment(databaseSchemas, {
-                    name,
-                    path: hierarchyMeta.path,
-                  }) ||
-                  column.comment ||
-                  hierarchyMeta.comment,
-              }));
+        const displayText = getFieldDisplayName(displayColumn);
 
         const title = (
           <>
             <span className="content">
               <DatasetCommentLabel
                 label={displayText}
-                comment={
-                  viewField?.sourceComment ||
-                  previewField?.sourceComment ||
-                  hierarchyColumn.comment ||
-                  column.comment
-                }
-                hasCustomName={Boolean(
-                  hierarchyMeta.customName ||
-                    viewField?.customName ||
-                    previewField?.customName,
-                )}
+                comment={displayColumn.sourceComment || displayColumn.comment}
+                hasCustomName={Boolean(displayColumn.customName)}
               />
             </span>
-            <SetFieldType
-              field={hierarchyColumn as Column}
-              hasCategory={hasCategory}
-              hasFormat={hasFormat}
-              onChange={onSchemaTypeChange(name, hierarchyColumn)}
-              icon={
-                <ToolbarButton
-                  size="small"
-                  iconSize={FONT_SIZE_BASE}
-                  className="suffix"
-                  icon={icon}
-                />
-              }
-            />
+            {!readOnly && (
+              <SetFieldType
+                field={hierarchyColumn as Column}
+                hasCategory={hasCategory}
+                hasFormat={hasFormat}
+                onChange={onSchemaTypeChange(name, hierarchyColumn)}
+                icon={
+                  <ToolbarButton
+                    size="small"
+                    iconSize={FONT_SIZE_BASE}
+                    className="suffix"
+                    icon={icon}
+                  />
+                }
+              />
+            )}
             {extraActions}
           </>
         );
@@ -229,11 +218,13 @@ export const SchemaTable = memo(
       model,
       hierarchy,
       columnWidthMap,
+      displayColumns,
       hasCategory,
       hasFormat,
       databaseSchemas,
       viewFields,
       previewFields,
+      readOnly,
       getExtraHeaderActions,
       onSchemaTypeChange,
     ]);

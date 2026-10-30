@@ -739,7 +739,7 @@ export function getValueByColumnKey(field?: {
   if (!field) {
     return '';
   }
-  if (!field.aggregate) {
+  if (!field.aggregate || field.aggregate === AggregateFieldActionType.None) {
     return field.colName;
   }
   return `${field.aggregate}(${field.colName})`;
@@ -758,7 +758,7 @@ export function getColumnRenderName(field?: ChartDataSectionField): string {
   if (!field) {
     return '[unknown]';
   }
-  if (field.alias?.name) {
+  if (field.alias?.name?.trim()) {
     return getChartFieldDisplayName(field);
   }
   return getColumnRenderOriginName(field);

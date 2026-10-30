@@ -108,6 +108,7 @@ export interface ViewViewModel<T = object>
 }
 
 export interface QueryResult {
+  requestedScript?: string;
   columns: Schema[];
   rows: any[][];
   pageInfo: PageInfo;

@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { DatasetCommentLabel, getDatasetCommentPreview } from '../DatasetCommentLabel';
+import { getFieldCommentDisplayName } from 'utils/utils';
 
 describe('dataset field comment display', () => {
   const comment = '这是一段特别长的源数据字段业务注释，描述它在日报统计中如何计算以及特殊口径';
@@ -20,5 +21,27 @@ describe('dataset field comment display', () => {
   it('renders a focusable text target containing the tail ellipsis', () => {
     render(<DatasetCommentLabel label="字段" comment={comment} maxCharacters={12} />);
     expect(screen.getByText('这是一段特别长的源数据字…')).toBeTruthy();
+  });
+
+  it.each([17, 22])('reveals comments already shortened at 16 characters (length %s)', length => {
+    const fullComment = '中'.repeat(length);
+    const label = getFieldCommentDisplayName(fullComment);
+    const result = getDatasetCommentPreview(label, fullComment);
+    expect(result.preview).toBe('中'.repeat(16) + '…');
+    expect(result.tooltip).toBe(fullComment);
+  });
+
+  it('reveals the explanation after punctuation even for a short comment', () => {
+    const fullComment = '订单金额：单位元';
+    const result = getDatasetCommentPreview(getFieldCommentDisplayName(fullComment), fullComment);
+    expect(result.preview).toBe('订单金额');
+    expect(result.tooltip).toBe(fullComment);
+  });
+
+  it('reveals the full custom name when both the name and source comment are long', () => {
+    const customName = '业务'.repeat(15);
+    const result = getDatasetCommentPreview(customName, comment, true);
+    expect(result.preview).toBe(Array.from(customName).slice(0, 22).join('') + '…');
+    expect(result.tooltip).toBe(customName);
   });
 });

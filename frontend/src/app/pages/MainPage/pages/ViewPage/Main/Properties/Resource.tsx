@@ -32,6 +32,7 @@ import {
   Menu,
   Row,
   Space,
+  Tooltip,
   TreeDataNode,
 } from 'antd';
 import { Tree } from 'app/components';
@@ -57,7 +58,11 @@ import {
 } from '../../slice/selectors';
 import { getEditorProvideCompletionItems } from '../../slice/thunks';
 import { DatabaseSchema } from '../../slice/types';
-import { buildAntdTreeNodeModel } from '../../utils';
+import {
+  buildAntdTreeNodeModel,
+  getSchemaColumnName,
+  matchesResourceSearch,
+} from '../../utils';
 import Container from './Container';
 
 export const Resource = memo(() => {
@@ -94,14 +99,16 @@ export const Resource = memo(() => {
         return Object.assign(
           buildAntdTreeNodeModel(
             ancestors.concat(table.tableName),
-            column?.name[0],
+            getSchemaColumnName(column?.name),
             [],
             true,
           ),
           {
             type: column?.type,
+            originalName: getSchemaColumnName(column?.name),
+            comment: column?.comment,
             title: getFieldDisplayName({
-              name: column?.name[0],
+              name: getSchemaColumnName(column?.name),
               comment: column?.comment,
             }),
           },
@@ -117,7 +124,7 @@ export const Resource = memo(() => {
   const { filteredData, onExpand, debouncedSearch, expandedRowKeys } =
     useSearchAndExpand(
       databaseTreeModel,
-      (keywords, data) => (data.title as string).includes(keywords),
+      matchesResourceSearch,
       DEFAULT_DEBOUNCE_WAIT,
       true,
     );
@@ -159,6 +166,31 @@ export const Resource = memo(() => {
       }
     }
   }, []);
+
+  const renderTitle = (node: TreeDataNode) => {
+    const field = node as TreeDataNode & {
+      originalName?: string;
+      comment?: string;
+      value?: string[];
+    };
+    const label = String(node.title || '');
+    if (!field.originalName) return label;
+    return (
+      <Tooltip
+        title={
+          <>
+            <div>{field.value?.join('.') || field.originalName}</div>
+            {field.comment && <div>{field.comment}</div>}
+          </>
+        }
+      >
+        <ResourceFieldName>
+          {label}
+          {label !== field.originalName && <span>（{field.originalName}）</span>}
+        </ResourceFieldName>
+      </Tooltip>
+    );
+  };
 
   const sortListOrTree = useCallback((list, sortType, sortKey) => {
     return updateBy(list, draft => {
@@ -232,6 +264,7 @@ export const Resource = memo(() => {
           treeData={filteredData}
           loading={isDatabaseSchemaLoading}
           icon={renderIcon}
+          titleRender={renderTitle}
           selectable={false}
           defaultExpandedKeys={expandedRowKeys}
           height={height}
@@ -241,6 +274,13 @@ export const Resource = memo(() => {
     </Container>
   );
 });
+
+const ResourceFieldName = styled.span`
+  span {
+    margin-left: ${SPACE_XS};
+    color: ${p => p.theme.textColorLight};
+  }
+`;
 
 const SearchBar = styled(Row)`
   .input {

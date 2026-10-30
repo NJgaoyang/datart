@@ -537,6 +537,19 @@ public class SqlBuilder {
             Exceptions.msg("parseSnippet: empty select list for expression: " + column.getSnippet());
         }
         SqlNode sqlNode = selectList.get(0);
+        if (sqlNode instanceof SqlIdentifier && tableAlias != null && !tableAlias.isEmpty()) {
+            SqlIdentifier identifier = (SqlIdentifier) sqlNode;
+            // A computed field may be a bare qualified reference rather than a
+            // function call. Keep its selected JOIN source when tables are aliased.
+            if (identifier.names.size() >= 2) {
+                String alias = TableAliasResolver.resolve(
+                        tableAlias, identifier.names.toArray(new String[0]));
+                if (alias != null) {
+                    return SqlNodeUtils.createSqlIdentifier(
+                            alias, identifier.names.get(identifier.names.size() - 1));
+                }
+            }
+        }
         if (!(sqlNode instanceof SqlCall)) {
             return sqlNode;
         }

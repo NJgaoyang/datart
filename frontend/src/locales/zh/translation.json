@@ -1322,7 +1322,15 @@
       "deleteSure": "确定要删除吗？",
       "edit": "编辑",
       "setDisplayName": "设置显示名",
-      "displayName": "显示名称"
+      "displayName": "显示名称",
+      "displayNameSaved": "字段显示名已保存",
+      "displayNameSaveFailed": "字段显示名保存失败，请重试",
+      "displayNameHelp": "留空恢复来源名称；确认后立即保存。",
+      "displayNameDraftHelp": "留空恢复来源名称；保存数据集后生效。",
+      "refreshFields": "更新字段注释",
+      "refreshFieldsHelp": "使用已同步的数据源注释，保留自定义名称",
+      "refreshFieldsSuccess": "字段注释已更新，自定义名称已保留",
+      "refreshFieldsFailed": "字段注释更新失败，请重试"
     },
     "columnPermission": {
       "title": "列权限",
@@ -1394,6 +1402,7 @@
       "joinCondition": "关联条件",
       "addCondition": "添加关联条件",
       "generate": "生成并预览 SQL",
+      "regenerateRequired": "关联条件已修改，请重新生成 SQL",
       "previewTitle": "数据视图 SQL 预览",
       "previewHelp": "可以先检查生成的 SQL，确认后直接执行查看数据，或者进入 SQL 编辑器继续修改。",
       "back": "返回修改",

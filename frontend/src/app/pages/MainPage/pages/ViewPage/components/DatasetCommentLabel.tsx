@@ -12,18 +12,21 @@ export function getDatasetCommentPreview(
   maxCharacters = 22,
 ): { preview: string; tooltip?: string } {
   const fullComment = comment?.trim() || '';
-  const visible = !hasCustomName && Array.from(fullComment).length > maxCharacters
-    ? fullComment
-    : label;
+  const visible =
+    !hasCustomName && Array.from(fullComment).length > maxCharacters
+      ? fullComment
+      : label;
   const chars = Array.from(visible);
+  const truncated = chars.length > maxCharacters;
   return {
-    preview: chars.length > maxCharacters
-      ? chars.slice(0, maxCharacters).join('') + '…'
-      : visible,
-    tooltip: fullComment && (
-      fullComment.length > maxCharacters ||
-      visible !== label
-    ) ? fullComment : chars.length > maxCharacters ? visible : undefined,
+    preview: truncated ? chars.slice(0, maxCharacters).join('') + '…' : visible,
+    // A long custom name must reveal itself, not an unrelated source comment.
+    // The supplied label may already have been shortened by the field helper.
+    tooltip: truncated
+      ? visible
+      : fullComment && fullComment !== visible
+      ? fullComment
+      : undefined,
   };
 }
 

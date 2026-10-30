@@ -34,7 +34,12 @@ import { selectCurrentEditingViewAttr } from '../../slice/selectors';
 import { Error } from './Error';
 import { Results } from './Results';
 
-export const Outputs = memo(({ hidden = false }: { hidden?: boolean }) => {
+interface OutputsProps {
+  hidden?: boolean;
+  allowManage?: boolean;
+}
+
+export const Outputs = memo(({ hidden = false, allowManage = false }: OutputsProps) => {
   const { actions } = useViewSlice();
   const dispatch = useAppDispatch();
   const systemInfo = useSelector(selectSystemInfo);
@@ -121,7 +126,7 @@ export const Outputs = memo(({ hidden = false }: { hidden?: boolean }) => {
         />
       )}
 
-      <Results width={width} height={height} />
+      <Results width={width} height={height} allowManage={allowManage} />
       {error && <Error />}
       {stage === ViewViewModelStages.Running && (
         <LoadingMask>

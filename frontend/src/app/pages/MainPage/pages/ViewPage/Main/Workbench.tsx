@@ -165,7 +165,7 @@ export const Workbench = memo(() => {
               </LoadingWrap>
             )
           ) : viewType === 'VIEW_JOIN' ? (
-            <ViewJoinBuilder />
+            <ViewJoinBuilder key={id} />
           ) : viewType !== 'STRUCT' ? (
             <Editor allowManage={allowManage} allowEnableViz={allowEnableViz} />
           ) : (
@@ -177,7 +177,7 @@ export const Workbench = memo(() => {
             </ViewErrorBoundary>
           )}
         </EditorWrap>
-        <Outputs hidden={viewType === 'VIEW_JOIN'} />
+        <Outputs hidden={viewType === 'VIEW_JOIN'} allowManage={allowManage} />
       </Development>
       <ViewErrorBoundary>
         {viewType !== 'VIEW_JOIN' && (

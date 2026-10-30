@@ -558,7 +558,9 @@ function getMeta(
     : undefined;
   const rawDisplayName =
     serverField?.displayName ?? column?.displayName ?? metadata?.displayName;
-  const comment = column?.comment ?? metadata?.comment;
+  const comment = serverField
+    ? serverField.sourceComment
+    : column?.comment ?? metadata?.comment;
   return {
     ...(column || {}),
     name: fieldName,
@@ -569,6 +571,8 @@ function getMeta(
           fieldId: serverField.fieldId,
           originName: serverField.originName,
           sourceComment: serverField.sourceComment,
+          // The canonical field can explicitly clear an old model comment.
+          comment: serverField.sourceComment,
           customName: serverField.customName,
           displayName: serverField.displayName,
         }
@@ -947,9 +951,14 @@ export function reconcileChartConfigFieldMeta(
           fieldId: latestMeta.fieldId ?? row.fieldId,
           originName: latestMeta.originName ?? row.originName ?? row.colName,
           path: latestMeta.path ?? row.path,
-          sourceComment: latestMeta.sourceComment ?? row.sourceComment,
+          sourceComment: latestMeta.sourceComment,
           customName: latestMeta.customName,
-          comment: latestMeta.comment ?? row.comment,
+          comment: Object.prototype.hasOwnProperty.call(
+            latestMeta,
+            'sourceComment',
+          )
+            ? latestMeta.sourceComment
+            : latestMeta.comment,
           type:
             row.category === ChartDataViewFieldCategory.DateLevelComputedField
               ? getDateLevelFieldType(row, latestMeta.type) || row.type

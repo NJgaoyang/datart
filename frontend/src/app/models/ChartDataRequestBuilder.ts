@@ -44,6 +44,7 @@ import {
   createDateLevelComputedFieldForConfigComputedFields,
   findFieldByIdInMeta,
   getAllColumnInMeta,
+  getColumnRenderName,
   getRuntimeDateLevelFields,
   getValue,
 } from 'app/utils/chartHelper';
@@ -67,7 +68,6 @@ import {
   IsKeyIn,
   UniqWith,
 } from 'utils/object';
-import { getDatasetFieldDisplayName } from 'utils/utils';
 import { DrillMode } from './ChartDrillOption';
 
 export class ChartDataRequestBuilder {
@@ -194,23 +194,8 @@ export class ChartDataRequestBuilder {
   }
 
   private buildBusinessAlias(c?: ChartDataSectionField) {
-    return (
-      c?.alias?.name?.trim() ||
-      getDatasetFieldDisplayName(
-        c
-          ? {
-              fieldId: c.fieldId,
-              originName: c.originName,
-              name: c.colName,
-              path: c.path,
-              customName: c.customName,
-              sourceComment: c.sourceComment,
-              displayName: c.displayName,
-              comment: c.comment,
-            }
-          : undefined,
-      )
-    );
+    // Reuse the PC title so exports retain aggregation/date-level semantics.
+    return c ? getColumnRenderName(c) : undefined;
   }
 
   private isValidStrictComputedField(candidate?: ChartDataSectionField) {

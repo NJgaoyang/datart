@@ -392,11 +392,13 @@ class PivotSheetChart extends ReactChart {
     const _getDataConfig = (data?) => {
       if (!data) return;
       const dataConfig = Object.keys(data).reduce((acc, cur) => {
-        if (chartDataSet.getOriginFieldInfo(cur)) {
+        const field = chartDataSet.getOriginFieldInfo(cur);
+        if (field) {
           return {
             ...acc,
-            [getColumnRenderName(chartDataSet.getOriginFieldInfo(cur))]:
-              data[cur],
+            // Interaction filters read technical field keys, just as other
+            // charts do. Display labels may change or be shared by two fields.
+            [chartDataSet.getFieldOriginKey(field)]: data[cur],
           };
         }
         return acc;

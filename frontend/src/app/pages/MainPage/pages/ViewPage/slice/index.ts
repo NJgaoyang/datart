@@ -17,6 +17,7 @@
  */
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { ViewFieldMeta } from 'app/types/View';
 import { getDataProviderDatabases } from 'app/pages/MainPage/slice/thunks';
 import { useInjectReducer } from 'utils/@reduxjs/injectReducer';
 import { getFieldDisplayName } from 'utils/utils';
@@ -24,7 +25,11 @@ import { ViewViewModelStages } from '../constants';
 import {
   diffMergeHierarchyModel,
   getSchemaColumnName,
+  getViewPreviewFields,
+  hydrateViewModelDisplayMeta,
+  refreshPreviewFieldComments,
   resolveSchemaColumnComment,
+  setViewModelFieldCustomName,
   transformQueryResultToModelAndDataSource,
 } from '../utils';
 import {
@@ -39,7 +44,7 @@ import {
   unarchiveView,
   updateViewBase,
 } from './thunks';
-import { DatabaseSchema, Schema, ViewState, ViewViewModel } from './types';
+import { Column, DatabaseSchema, Schema, ViewState, ViewViewModel } from './types';
 
 export const initialState: ViewState = {
   views: void 0,
@@ -89,6 +94,66 @@ const slice = createSlice({
     },
     switchCurrentEditingView(state, action: PayloadAction<string>) {
       state.currentEditingView = action.payload;
+    },
+    fieldDisplayNameSaved(
+      state,
+      action: PayloadAction<{ viewId: string; field: ViewFieldMeta }>,
+    ) {
+      const view = state.editingViews.find(v => v.id === action.payload.viewId);
+      if (!view) return;
+      const fields = [...(view.fields || [])];
+      const index = fields.findIndex(
+        field => field.fieldId === action.payload.field.fieldId,
+      );
+      if (index >= 0) {
+        fields[index] = action.payload.field;
+      } else {
+        fields.push(action.payload.field);
+      }
+      view.fields = fields;
+      view.previewFields = refreshPreviewFieldComments(view.previewFields, fields);
+      view.model = hydrateViewModelDisplayMeta(
+        view.model,
+        fields,
+        view.previewFields,
+      );
+      // This edit is already persisted. Preserve unrelated unsaved edits and stage.
+    },
+    draftFieldDisplayNameChanged(
+      state,
+      action: PayloadAction<{
+        viewId: string;
+        field: Pick<Column, 'fieldId' | 'name' | 'path'>;
+        customName?: string;
+      }>,
+    ) {
+      const view = state.editingViews.find(v => v.id === action.payload.viewId);
+      if (!view) return;
+      view.model = setViewModelFieldCustomName(
+        view.model,
+        action.payload.field,
+        action.payload.customName,
+      );
+      view.touched = true;
+      view.stage = ViewViewModelStages.Saveable;
+    },
+    viewFieldsRefreshed(
+      state,
+      action: PayloadAction<{ viewId: string; fields: ViewFieldMeta[] }>,
+    ) {
+      const view = state.editingViews.find(v => v.id === action.payload.viewId);
+      if (!view) return;
+      view.fields = action.payload.fields;
+      view.previewFields = refreshPreviewFieldComments(
+        view.previewFields,
+        action.payload.fields,
+      );
+      view.model = hydrateViewModelDisplayMeta(
+        view.model,
+        action.payload.fields,
+        view.previewFields,
+      );
+      // Refresh only display metadata; do not replace unsaved SQL or structure.
     },
     changeCurrentEditingView(
       state,
@@ -272,6 +337,12 @@ const slice = createSlice({
       );
 
       if (currentEditingView && action.payload && action.payload.rows) {
+        const previewFields = getViewPreviewFields(
+          currentEditingView,
+          action.payload.previewFields,
+          action.payload.requestedScript,
+          action.meta.arg.isFragment,
+        );
         const { model, dataSource } = transformQueryResultToModelAndDataSource(
           action.payload,
           currentEditingView.model,
@@ -299,12 +370,13 @@ const slice = createSlice({
           }
         }
 
-        currentEditingView.model = diffMergeHierarchyModel(
-          model,
-          currentEditingView.type!,
+        currentEditingView.model = hydrateViewModelDisplayMeta(
+          diffMergeHierarchyModel(model, currentEditingView.type!),
+          currentEditingView.fields,
+          previewFields,
         );
         currentEditingView.previewResults = dataSource;
-        currentEditingView.previewFields = action.payload.previewFields || [];
+        currentEditingView.previewFields = previewFields || [];
         if (!action.meta.arg.isFragment) {
           currentEditingView.stage = ViewViewModelStages.Saveable;
         } else {
@@ -314,6 +386,14 @@ const slice = createSlice({
         if (action.payload.warnings) {
           currentEditingView.warnings = action.payload.warnings;
         }
+      }
+    });
+
+    builder.addCase(runSql.rejected, (state, action) => {
+      const view = state.editingViews.find(v => v.id === action.meta.arg.id);
+      if (view) {
+        view.stage = ViewViewModelStages.Initialized;
+        view.error = action.payload ?? action.error.message ?? '';
       }
     });
 
@@ -383,9 +463,12 @@ const slice = createSlice({
         }
       }
     });
-    builder.addCase(saveView.rejected, state => {
+    builder.addCase(saveView.rejected, (state, action) => {
+      if (action.meta.arg.isSaveAs) return;
+      const savedFromId = action.meta.savedFromViewId;
+      if (!savedFromId) return;
       const currentEditingView = state.editingViews.find(
-        v => v.id === state.currentEditingView,
+        v => v.id === savedFromId,
       );
       if (currentEditingView) {
         currentEditingView.stage = ViewViewModelStages.Saveable;

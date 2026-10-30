@@ -1,0 +1,76 @@
+name: Dataset names and desktop editing regression
+
+on:
+  push:
+    branches: [dev20261030]
+  pull_request:
+    branches: [dev20261030]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: field-metadata-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: TypeScript, field lifecycle tests and production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Check TypeScript and framework compatibility
+        run: |
+          npm run checkTs
+          npm run check:upgrade-baseline
+      - name: Dataset, computed field, chart identity and display regression
+        run: |
+          npx vitest run \
+            src/app/pages/MainPage/pages/ViewPage \
+            src/app/pages/ChartWorkbenchPage/components/ChartOperationPanel/components/ChartDataViewPanel \
+            src/app/components/ChartGraph/PivotSheetChart \
+            src/app/models \
+            src/app/utils \
+            src/utils
+      - name: Build production assets
+        run: npm run build:all
+      - name: Verify existing bundle limits
+        run: |
+          npm run test:bundle-budget
+          npm run check:bundle-budget
+
+  backend:
+    name: Compile Java and verify metadata round trips
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Field metadata, permissions, SQL paths and export regression
+        run: >-
+          mvn --batch-mode --no-transfer-progress -pl server -am
+          -Dexec.skip=true
+          -Dtest=ViewFieldServiceImplTest,ViewFieldCommentLifecycleTest,ViewFieldMetadataLifecycleTest,ViewResourceRoundTripTest,ViewJoinColumnNameTest,FieldMetaResolverTest,SqlPreviewFieldMetadataResolverTest,SqlFieldLineageResolverTest,PoiConvertUtilsDisplayNameTest,SqlBuilderAggregateTest,SqlBuilderComputedFieldIdentityTest,ColumnPermissionFilterTest,SqlQueryScriptProcessorVariableScopeTest
+          -Dsurefire.failIfNoSpecifiedTests=false test
+
+# This branch validates source changes only; it does not deploy or alter a database.

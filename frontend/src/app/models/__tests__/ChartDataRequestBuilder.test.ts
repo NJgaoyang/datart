@@ -26,6 +26,7 @@ import {
   SortActionType,
 } from 'app/constants';
 import { getChartDrillOption } from 'app/utils/internalChartHelper';
+import { getColumnRenderName } from 'app/utils/chartHelper';
 import {
   DATE_LEVEL_DELIMITER,
   FilterSqlOperator,
@@ -172,10 +173,67 @@ describe('ChartDataRequestBuild Test', () => {
       {
         fieldId: 'field-count',
         technicalAlias: 'SUM(user_count)',
-        displayAlias: '用户数',
+        displayAlias: 'SUM(用户数)',
         ordinal: 1,
       },
     ]);
+  });
+
+  test('exports the same aggregate titles as the PC chart without changing SQL identities', () => {
+    const baseField = {
+      fieldId: 'field-amount',
+      colName: 'amount',
+      originName: 'amount',
+      customName: '金额',
+      type: DataViewFieldType.NUMERIC,
+      category: ChartDataViewFieldCategory.Field,
+    };
+    const rows = [
+      { ...baseField, aggregate: AggregateFieldActionType.Sum },
+      { ...baseField, aggregate: AggregateFieldActionType.Avg },
+      {
+        ...baseField,
+        aggregate: AggregateFieldActionType.Max,
+        alias: { name: '最高交易金额' },
+      },
+      {
+        ...baseField,
+        aggregate: AggregateFieldActionType.Min,
+        alias: { name: '  ' },
+      },
+    ];
+    const request = new ChartDataRequestBuilder(
+      {
+        id: 'amount-view',
+        migrationMode: 'STRICT',
+        meta: [
+          {
+            name: 'amount',
+            fieldId: baseField.fieldId,
+            path: ['orders', 'amount'],
+            type: DataViewFieldType.NUMERIC,
+          },
+        ],
+        computedFields: [],
+      } as any,
+      [{ type: ChartDataSectionType.Aggregate, rows }] as any,
+    ).build();
+
+    expect(request.outputProjections?.map(field => field.displayAlias)).toEqual([
+      'SUM(金额)',
+      'AVG(金额)',
+      '最高交易金额',
+      'MIN(金额)',
+    ]);
+    expect(request.outputProjections?.map(field => field.technicalAlias)).toEqual([
+      'SUM(amount)',
+      'AVG(amount)',
+      'MAX(amount)',
+      'MIN(amount)',
+    ]);
+    expect(request.aggregators?.map(field => field.column)).toEqual(
+      rows.map(() => ['orders', 'amount']),
+    );
   });
 
   test('formats relative DATETIME filters before sending the request', () => {
@@ -461,7 +519,7 @@ describe('ChartDataRequestBuild Test', () => {
       {
         fieldId: 'date-level-field',
         technicalAlias: dateLevelRow.colName,
-        displayAlias: dateLevelRow.colName,
+        displayAlias: getColumnRenderName(dateLevelRow as any),
         ordinal: 0,
       },
     ]);

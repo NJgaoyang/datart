@@ -65,10 +65,7 @@ type SaveFormProps = Omit<ModalFormProps, 'type' | 'open' | 'onSave'>;
 
 export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
   const [advancedVisible, setAdvancedVisible] = useState(false);
-  const [concurrencyControl, setConcurrencyControl] = useState(true);
-  const [cache, setCache] = useState(false);
   const selectViewFolderTree = useMemo(makeSelectViewFolderTree, []);
-  const [expensiveQuery, setExpensiveQuery] = useState(false); // beta.2 add expensiveQuery
   const {
     type,
     open,
@@ -134,10 +131,7 @@ export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
   const afterClose = useCallback(() => {
     formRef.current?.resetFields();
     setAdvancedVisible(false);
-    setConcurrencyControl(true);
-    setCache(false);
     onAfterClose && onAfterClose();
-    setExpensiveQuery(false);
   }, [onAfterClose]);
 
   return (
@@ -209,42 +203,66 @@ export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
               name={['config', 'concurrencyControl']}
               label={t('concurrencyControl')}
               valuePropName="checked"
-              initialValue={concurrencyControl}
+              initialValue={true}
             >
-              <Switch onChange={setConcurrencyControl} />
+              <Switch />
             </Form.Item>
             <Form.Item
-              name={['config', 'concurrencyControlMode']}
-              label={t('concurrencyControlMode')}
-              initialValue={ConcurrencyControlModes.DirtyRead}
+              noStyle
+              shouldUpdate={(previous, current) =>
+                previous.config?.concurrencyControl !==
+                current.config?.concurrencyControl
+              }
             >
-              <Radio.Group disabled={!concurrencyControl}>
-                {Object.values(ConcurrencyControlModes).map(value => (
-                  <Radio key={value} value={value}>
-                    {t(value.toLowerCase())}
-                  </Radio>
-                ))}
-              </Radio.Group>
+              {({ getFieldValue }) => (
+                <Form.Item
+                  name={['config', 'concurrencyControlMode']}
+                  label={t('concurrencyControlMode')}
+                  initialValue={ConcurrencyControlModes.DirtyRead}
+                >
+                  <Radio.Group
+                    disabled={!getFieldValue(['config', 'concurrencyControl'])}
+                  >
+                    {Object.values(ConcurrencyControlModes).map(value => (
+                      <Radio key={value} value={value}>
+                        {t(value.toLowerCase())}
+                      </Radio>
+                    ))}
+                  </Radio.Group>
+                </Form.Item>
+              )}
             </Form.Item>
             <Form.Item
               name={['config', 'cache']}
               label={t('cache')}
               valuePropName="checked"
-              initialValue={cache}
+              initialValue={false}
             >
-              <Switch onChange={setCache} />
+              <Switch />
             </Form.Item>
             <Form.Item
-              name={['config', 'cacheExpires']}
-              label={t('cacheExpires')}
-              initialValue={0}
+              noStyle
+              shouldUpdate={(previous, current) =>
+                previous.config?.cache !== current.config?.cache
+              }
             >
-              <InputNumber disabled={!cache} min={0} />
+              {({ getFieldValue }) => (
+                <Form.Item
+                  name={['config', 'cacheExpires']}
+                  label={t('cacheExpires')}
+                  initialValue={0}
+                >
+                  <InputNumber
+                    disabled={!getFieldValue(['config', 'cache'])}
+                    min={0}
+                  />
+                </Form.Item>
+              )}
             </Form.Item>
             <Form.Item
               wrapperCol={{ span: 13, offset: 9 }}
               name={['config', 'expensiveQuery']}
-              initialValue={expensiveQuery}
+              initialValue={false}
               valuePropName="checked"
             >
               <Checkbox>{t('expensiveQuery')}</Checkbox>

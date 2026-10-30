@@ -37,6 +37,7 @@ import {
   generateEditingView,
   generateNewEditingViewName,
   getSaveParamsFromViewModel,
+  getSavedViewModel,
   handleObjectScriptToString,
   isNewView,
   transformModelToViewModel,
@@ -151,11 +152,12 @@ export const getSchemaBySourceId = createAsyncThunk<any, string>(
 export const runSql = createAsyncThunk<
   QueryResult | null,
   { id: string; isFragment: boolean; script?: StructViewQueryProps },
-  { state: RootState }
->('view/runSql', async ({ script: scriptProps }, { getState, dispatch }) => {
-  const currentEditingView = selectCurrentEditingView(
-    getState(),
-  ) as ViewViewModel;
+  { state: RootState; rejectValue: string }
+>('view/runSql', async ({ id, script: scriptProps }, { getState, rejectWithValue }) => {
+  const currentEditingView = selectEditingViews(getState()).find(
+    view => view.id === id,
+  );
+  if (!currentEditingView) return null;
   const allDatabaseSchemas = selectAllSourceDatabaseSchemas(getState());
 
   const { sourceId, size, fragment, variables, type } = currentEditingView;
@@ -174,23 +176,11 @@ export const runSql = createAsyncThunk<
   }
 
   if (!sourceId) {
-    dispatch(
-      viewActions.changeCurrentEditingView({
-        stage: ViewViewModelStages.Initialized,
-        error: getErrorMessage(Error(i18n.t('view.selectSource'))),
-      }),
-    );
-    return {} as any;
+    return rejectWithValue(i18n.t('view.selectSource'));
   }
 
   if (type === 'SQL' && !(sql as string).trim()) {
-    dispatch(
-      viewActions.changeCurrentEditingView({
-        stage: ViewViewModelStages.Initialized,
-        error: getErrorMessage(Error(i18n.t('view.sqlRequired'))),
-      }),
-    );
-    return {} as any;
+    return rejectWithValue(i18n.t('view.sqlRequired'));
   }
 
   if (type === 'SQL') {
@@ -242,23 +232,15 @@ export const runSql = createAsyncThunk<
           ),
         },
       },
-      undefined,
-      {
-        onRejected: error => {
-          dispatch(
-            viewActions.changeCurrentEditingView({
-              stage: ViewViewModelStages.Initialized,
-              error: getErrorMessage(error),
-            }),
-          );
-        },
-      },
     );
     return {
       ...response?.data,
       warnings: response?.warnings,
       reqColumns: reqColumns,
+      requestedScript: script,
     };
+  } catch (error) {
+    return rejectWithValue(getErrorMessage(error));
   } finally {
     query.finish();
   }
@@ -267,9 +249,13 @@ export const runSql = createAsyncThunk<
 export const saveView = createAsyncThunk<
   ViewViewModel & { savedFromViewId?: string },
   SaveViewParams,
-  { state: RootState }
->('view/saveView', async ({ resolve, isSaveAs, currentView }, { getState }) => {
-  let currentEditingView = isSaveAs
+  {
+    state: RootState;
+    rejectValue: string;
+    rejectedMeta: { savedFromViewId?: string };
+  }
+>('view/saveView', async ({ resolve, isSaveAs, currentView }, { getState, rejectWithValue }) => {
+  const currentEditingView = isSaveAs
     ? (currentView as ViewViewModel)
     : (selectCurrentEditingView(getState()) as ViewViewModel);
   const orgId = selectOrgId(getState());
@@ -280,7 +266,7 @@ export const saveView = createAsyncThunk<
       ...currentView,
       ...data,
       config: currentView.config,
-      model: currentView.model,
+      model: getSavedViewModel(data.model, currentView.model, data.fields),
       variables: (data.variables || []).map(v => ({
         ...v,
         relVariableSubjects: data.relVariableSubjects,
@@ -292,34 +278,42 @@ export const saveView = createAsyncThunk<
     };
   };
 
-  if (isNewView(currentEditingView.id) || isSaveAs) {
-    const { data } = await request2<View>({
-      url: '/views',
-      method: 'POST',
-      data: getSaveParamsFromViewModel(
-        orgId,
-        currentEditingView,
-        false,
-        allDatabaseSchemas[currentEditingView.sourceId!],
-        isSaveAs,
-      ),
+  try {
+    if (isNewView(currentEditingView.id) || isSaveAs) {
+      const { data } = await request2<View>({
+        url: '/views',
+        method: 'POST',
+        data: getSaveParamsFromViewModel(
+          orgId,
+          currentEditingView,
+          false,
+          allDatabaseSchemas[currentEditingView.sourceId!],
+          isSaveAs,
+        ),
+      });
+      resolve && resolve();
+      return transformResponse(currentEditingView, data, isSaveAs);
+    } else {
+      const { data } = await request2<View>({
+        url: `/views/${currentEditingView.id}`,
+        method: 'PUT',
+        data: getSaveParamsFromViewModel(
+          orgId,
+          currentEditingView,
+          true,
+          allDatabaseSchemas[currentEditingView.sourceId!],
+          isSaveAs,
+        ),
+      });
+      resolve && resolve();
+      return transformResponse(currentEditingView, data, isSaveAs);
+    }
+  } catch (error) {
+    // Keep errors as strings for the existing error-message middleware; the
+    // initiating tab identity belongs in rejection metadata, not its payload.
+    return rejectWithValue(getErrorMessage(error), {
+      savedFromViewId: currentEditingView?.id,
     });
-    resolve && resolve();
-    return transformResponse(currentEditingView, data, isSaveAs);
-  } else {
-    const { data } = await request2<View>({
-      url: `/views/${currentEditingView.id}`,
-      method: 'PUT',
-      data: getSaveParamsFromViewModel(
-        orgId,
-        currentEditingView,
-        true,
-        allDatabaseSchemas[currentEditingView.sourceId!],
-        isSaveAs,
-      ),
-    });
-    resolve && resolve();
-    return transformResponse(currentEditingView, data, isSaveAs);
   }
 });
 

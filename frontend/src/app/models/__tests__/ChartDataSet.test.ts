@@ -16,10 +16,64 @@
  * limitations under the License.
  */
 
-import { ChartDataSectionType, SortActionType } from 'app/constants';
+import {
+  AggregateFieldActionType,
+  ChartDataSectionType,
+  SortActionType,
+} from 'app/constants';
 import { ChartDataSet, ChartDataSetRow } from '../ChartDataSet';
 
 describe('ChartDataSet Tests', () => {
+  test('resolves translated pivot selections by technical column identity', () => {
+    const city = { colName: 'city', fieldId: 'city-id', displayName: '城市' };
+    const amount = {
+      colName: 'amount',
+      fieldId: 'amount-id',
+      aggregate: AggregateFieldActionType.Sum,
+      alias: { name: '金额合计' },
+    };
+    const dataset = new ChartDataSet(
+      [['上海', '100']],
+      [{ name: ['city'] }, { name: ['SUM(amount)'] }] as any,
+      [city, amount] as any,
+    );
+
+    expect(dataset.getOriginFieldInfo('city')).toBe(city);
+    expect(dataset.getOriginFieldInfo('sum(amount)')).toBe(amount);
+    expect(dataset[0].getCell(city as any)).toBe('上海');
+    expect(dataset[0].getCell(amount as any)).toBe('100');
+  });
+
+  test('does not shift later fields when an earlier result column is unresolved', () => {
+    const city = { colName: 'city', displayName: '城市' };
+    const dataset = new ChartDataSet(
+      [['unconfigured', '上海']],
+      [{ name: 'unknown' }, { name: 'city' }],
+      [city] as any,
+    );
+
+    expect(dataset.getOriginFieldInfo('unknown')).toBeUndefined();
+    expect(dataset.getOriginFieldInfo('city')).toBe(city);
+  });
+
+  test('keeps repeated Chinese labels distinct and treats NONE as no aggregation', () => {
+    const first = { colName: 'orders.amount', displayName: '金额' };
+    const second = {
+      colName: 'refunds.amount',
+      displayName: '金额',
+      aggregate: AggregateFieldActionType.None,
+    };
+    const dataset = new ChartDataSet(
+      [[100, 20]],
+      [{ name: 'orders.amount' }, { name: 'refunds.amount' }],
+      [first, second] as any,
+    );
+
+    expect(dataset.getOriginFieldInfo('orders.amount')).toBe(first);
+    expect(dataset.getOriginFieldInfo('refunds.amount')).toBe(second);
+    expect(dataset[0].getCell(second as any)).toBe(20);
+  });
+
   test('should get ChartDataSet Model', () => {
     const columns = [
       [1, 2],

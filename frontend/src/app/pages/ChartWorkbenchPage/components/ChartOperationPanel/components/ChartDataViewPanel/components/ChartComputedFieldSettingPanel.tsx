@@ -33,10 +33,13 @@ import ChartSearchableList from './ChartSearchableList';
 import ComputedFunctionDescriptions from './computed-function-description-map';
 import {
   ComputedFieldDisplayName,
+  disambiguateComputedFieldNames,
+  findComputedFieldByKey,
+  formatComputedFieldIdentifier,
   toDisplayExpression,
   toQueryExpression,
 } from './computedFieldExpression';
-import { FieldTemplate, FunctionTemplate, VariableTemplate } from './utils';
+import { FunctionTemplate, VariableTemplate } from './utils';
 
 enum TextType {
   Field = 'field',
@@ -121,26 +124,19 @@ const ChartComputedFieldSettingPanel: FC<{
         const label = String(
           item?.title || getDatasetFieldDisplayName(item) || name,
         );
-        result.push({ name, label });
+        const path =
+          viewType === 'STRUCT'
+            ? Array.isArray(key)
+              ? key
+              : item?.path || [name]
+            : [name];
+        result.push({ name, label, path });
       });
     };
     collectFields(fields as any[]);
 
-    const labelCounts = result.reduce<Record<string, number>>(
-      (counts, field) => {
-        counts[field.label] = (counts[field.label] || 0) + 1;
-        return counts;
-      },
-      {},
-    );
-    return result.map(field => ({
-      ...field,
-      label:
-        labelCounts[field.label] > 1
-          ? `${field.label}（${field.name}）`
-          : field.label,
-    }));
-  }, [fields]);
+    return disambiguateComputedFieldNames(result);
+  }, [fields, viewType]);
 
   useEffect(() => {
     if (computedField) {
@@ -261,7 +257,7 @@ const ChartComputedFieldSettingPanel: FC<{
   const getInputText = (value, type) => {
     switch (type) {
       case TextType.Field:
-        return FieldTemplate(value);
+        return formatComputedFieldIdentifier([value]);
       case TextType.Variable:
         return VariableTemplate(value);
       case TextType.Function:
@@ -283,10 +279,13 @@ const ChartComputedFieldSettingPanel: FC<{
   };
 
   const handleFieldSelected = useCallback(
-    field => {
-      const displayName =
-        editorFieldNames.find(item => item.name === field)?.label || field;
-      editorRef.current?.insertField(getInputText(displayName, TextType.Field));
+    (key: string | string[]) => {
+      const field = findComputedFieldByKey(editorFieldNames, key);
+      if (field) {
+        editorRef.current?.insertField(
+          getInputText(field.label, TextType.Field),
+        );
+      }
     },
     [editorFieldNames],
   );
@@ -298,13 +297,7 @@ const ChartComputedFieldSettingPanel: FC<{
   const handleOnSelectValue = useCallback(
     selectKeys => {
       if (selectKeys?.length) {
-        const selectKey = selectKeys[0] as any;
-        // For tree nodes, key is the full path (e.g. ["table", "field"]),
-        // extract just the field name to avoid table prefix in expression
-        const fieldValue = Array.isArray(selectKey)
-          ? selectKey[selectKey.length - 1]
-          : selectKey;
-        handleFieldSelected(fieldValue);
+        handleFieldSelected(selectKeys[0] as string | string[]);
       }
     },
     [handleFieldSelected],
@@ -369,9 +362,9 @@ const ChartComputedFieldSettingPanel: FC<{
                     />
                   ) : (
                     <ChartSearchableList
-                      source={(fields || []).map(f => ({
+                      source={editorFieldNames.map(f => ({
                         value: f.name,
-                        label: getDatasetFieldDisplayName(f),
+                        label: f.label,
                       }))}
                       onItemSelected={handleFieldSelected}
                     />

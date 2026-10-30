@@ -516,6 +516,22 @@ public class ViewServiceImpl extends BaseService implements ViewService {
     }
 
     @Override
+    @Transactional
+    public ViewDetailDTO refreshFieldMetadata(String viewId) {
+        View view = retrieve(viewId);
+        requirePermission(view, Const.MANAGE);
+        // Reconcile only the saved definition. Unsaved editor SQL and model
+        // changes are deliberately not part of this operation.
+        viewFieldService.reconcile(view);
+        view.setUpdateBy(getCurrentUser().getId());
+        view.setUpdateTime(new Date());
+        if (viewMapper.updateByPrimaryKey(view) != 1) {
+            throw new IllegalStateException("VIEW_FIELD_REFRESH_FAILED");
+        }
+        return getViewDetail(viewId);
+    }
+
+    @Override
     public ViewDetailDTO buildViewDetail(View view) {
         if (migrationModeService == null) {
             throw new IllegalStateException("STRICT_ONLY_MIGRATION_MODE_SERVICE_REQUIRED");
@@ -654,7 +670,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
             securityManager.requireOrgOwner(view.getOrgId());
             View exportView = new View();
             BeanUtils.copyProperties(view, exportView);
-            exportView.setModel(ViewModelExportSanitizer.sanitize(view.getModel()));
+            exportView.setModel(ViewModelExportSanitizer.sanitize(viewFieldService.exportModel(view)));
             mainModel.setView(exportView);
             // variables
             mainModel.setVariables(variableService.listByView(viewId));
@@ -676,6 +692,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
     }
 
     @Override
+    @Transactional
     public boolean importResource(ViewResourceModel model, ImportStrategy strategy, String orgId) {
         if (model == null) {
             return true;

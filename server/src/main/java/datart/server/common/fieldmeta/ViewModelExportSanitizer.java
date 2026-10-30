@@ -6,8 +6,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Removes redundant View.model presentation markers from V2 resource exports.
- * User-defined display names and comments remain part of the legacy-readable
- * model until the canonical ViewField transfer format is introduced.
+ * Canonical names and comments are projected into a legacy-readable model by
+ * ViewFieldService before sanitizing. Its import-only metadata snapshot is kept
+ * so explicit nulls and computed annotations survive a resource round trip.
  */
 public final class ViewModelExportSanitizer {
 
