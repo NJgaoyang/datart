@@ -289,4 +289,8 @@ const ListNavWrapper = styled(ListNav)`
   padding: ${SPACE_XS} 0;
   background-color: ${p => p.theme.componentBackground};
   border-right: 1px solid ${p => p.theme.borderColorSplit};
+
+  .title > h3 {
+    color: ${p => p.theme.textColor};
+  }
 `;

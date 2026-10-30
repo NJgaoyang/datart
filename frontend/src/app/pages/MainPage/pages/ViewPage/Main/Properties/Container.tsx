@@ -53,4 +53,8 @@ const StyledContainer = styled.div`
   min-height: 0;
   overflow: hidden;
   border-left: 1px solid ${p => p.theme.borderColorSplit};
+
+  .title > h3 {
+    color: ${p => p.theme.textColor};
+  }
 `;

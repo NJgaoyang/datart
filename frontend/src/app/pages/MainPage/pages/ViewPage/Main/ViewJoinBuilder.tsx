@@ -557,6 +557,7 @@ const Header = styled.header`
 
   h2 {
     margin: 0 0 ${SPACE_XS};
+    color: ${p => p.theme.textColor};
     font-size: 20px;
     font-weight: 600;
     line-height: 1.4;
@@ -582,6 +583,7 @@ const SectionHeader = styled.div`
 
   h3 {
     margin: 0;
+    color: ${p => p.theme.textColor};
     font-size: 14px;
     font-weight: 600;
   }
@@ -642,6 +644,7 @@ const ConditionHeading = styled.div`
 
   h4 {
     margin: 0;
+    color: ${p => p.theme.textColor};
     font-size: 13px;
     font-weight: 600;
   }

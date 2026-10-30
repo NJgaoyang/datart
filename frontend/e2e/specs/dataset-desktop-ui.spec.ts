@@ -3,7 +3,10 @@ import {
   test, expect, openDataset, UI_ORG_ID, UI_VIEW_ID, UI_VIEW_NAME,
   UI_SECOND_VIEW_NAME, UI_QUERY_ERROR, UI_SCRIPT, UI_SECOND_SCRIPT,
 } from '../fixtures/dataset-ui';
-import { captureDatasetScreenshot, expectNoPageOverflow } from '../fixtures/dataset-ui-screenshot';
+import {
+  captureDatasetScreenshot, expectNoPageOverflow,
+  expectReadableThemeText, expectShortLabelUnclipped,
+} from '../fixtures/dataset-ui-screenshot';
 
 const preview = (page: Page) => page.getByRole('region', { name: '数据预览', exact: true });
 const execute = (page: Page) => page.getByRole('button', { name: '执行', exact: true });
@@ -37,6 +40,12 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1366, height: 768
         await expect(fieldsButton).toHaveAttribute('aria-pressed', 'true');
         await expect(page.getByRole('button', { name: /更新字段注释$/ })).toBeInViewport();
         await expect(page.getByRole('button', { name: '设置显示名: 成交金额', exact: true })).toBeVisible();
+        await expectReadableThemeText(page.getByRole('heading', { name: '数据视图列表', exact: true }));
+        await expectReadableThemeText(page.getByRole('heading', { name: '数据模型', exact: true }));
+        await expectShortLabelUnclipped(
+          preview(page).getByRole('columnheader').filter({ hasText: '城市' }).locator('.field-label-primary'),
+          '城市',
+        );
         await expectNoPageOverflow(page);
         const editor = await page.locator('.monaco-editor').first().boundingBox();
         expect(editor?.width || 0, 'The field panel must leave a usable SQL editor').toBeGreaterThan(240);
@@ -172,34 +181,38 @@ test('an empty SQL fragment keeps fields and a zero-row summary; errors can be r
   await expect(preview(page).getByText(UI_QUERY_ERROR, { exact: true })).toHaveCount(0);
 });
 
-test('advanced settings open by keyboard, preserve collapsed values and fit the dialog', async ({ page, dataset }, testInfo) => {
-  await openDataset(page);
-  await page.getByRole('button', { name: '更多操作', exact: true }).click();
-  await page.getByRole('menuitem', { name: /详情设置$/ }).click();
-  const dialog = page.getByRole('dialog');
-  await expect(dialog.getByLabel('名称', { exact: true })).toHaveValue(UI_VIEW_NAME);
-  const advanced = dialog.getByRole('button', { name: /高级配置/ });
-  await expect(advanced).toHaveAttribute('aria-expanded', 'false');
-  await advanced.focus();
-  await page.keyboard.press('Enter');
-  await expect(advanced).toHaveAttribute('aria-expanded', 'true');
-  const cache = dialog.getByRole('switch', { name: '缓存', exact: true });
-  const expires = dialog.getByRole('spinbutton', { name: '有效期(秒)', exact: true });
-  await expect(expires).toBeDisabled();
-  await cache.click();
-  await expect(expires).toBeEnabled();
-  await expires.fill('180');
-  await advanced.click();
-  await expect(expires).not.toBeVisible();
-  await advanced.click();
-  await expect(expires).toHaveValue('180');
-  await expectNoPageOverflow(page);
-  const bounds = await dialog.boundingBox();
-  const viewport = page.viewportSize()!;
-  expect(bounds?.x).toBeGreaterThanOrEqual(0);
-  expect((bounds?.x || 0) + (bounds?.width || 0)).toBeLessThanOrEqual(viewport.width);
-  await captureDatasetScreenshot(page, testInfo, 'dataset-advanced-settings');
-  expect(dataset.saves).toHaveLength(0);
+test.describe('advanced settings in dark theme', () => {
+  test.use({ uiTheme: 'dark' });
+  test('advanced settings open by keyboard, preserve collapsed values and fit the dialog', async ({ page, dataset }, testInfo) => {
+    await openDataset(page);
+    await page.getByRole('button', { name: '更多操作', exact: true }).click();
+    await page.getByRole('menuitem', { name: /详情设置$/ }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByLabel('名称', { exact: true })).toHaveValue(UI_VIEW_NAME);
+    await expectReadableThemeText(dialog.getByRole('heading', { name: '基本信息', exact: true }));
+    const advanced = dialog.getByRole('button', { name: /高级配置/ });
+    await expect(advanced).toHaveAttribute('aria-expanded', 'false');
+    await advanced.focus();
+    await page.keyboard.press('Enter');
+    await expect(advanced).toHaveAttribute('aria-expanded', 'true');
+    const cache = dialog.getByRole('switch', { name: '缓存', exact: true });
+    const expires = dialog.getByRole('spinbutton', { name: '有效期(秒)', exact: true });
+    await expect(expires).toBeDisabled();
+    await cache.click();
+    await expect(expires).toBeEnabled();
+    await expires.fill('180');
+    await advanced.click();
+    await expect(expires).not.toBeVisible();
+    await advanced.click();
+    await expect(expires).toHaveValue('180');
+    await expectNoPageOverflow(page);
+    const bounds = await dialog.boundingBox();
+    const viewport = page.viewportSize()!;
+    expect(bounds?.x).toBeGreaterThanOrEqual(0);
+    expect((bounds?.x || 0) + (bounds?.width || 0)).toBeLessThanOrEqual(viewport.width);
+    await captureDatasetScreenshot(page, testInfo, 'dataset-advanced-settings');
+    expect(dataset.saves).toHaveLength(0);
+  });
 });
 
 test.describe('JOIN builder', () => {
@@ -209,6 +222,7 @@ test.describe('JOIN builder', () => {
     await page.goto(`/organizations/${UI_ORG_ID}/views/GENERATED-ui-fixture-join`);
     await page.getByRole('heading', { name: '视图关联', exact: true }).click();
     await expect(page.getByRole('heading', { name: '创建关联数据视图', exact: true })).toBeVisible();
+    await expectReadableThemeText(page.getByRole('heading', { name: '创建关联数据视图', exact: true }));
     await chooseOption(page, page.getByLabel('数据视图 A', { exact: true }), UI_VIEW_NAME);
     await chooseOption(page, page.getByLabel('数据视图 B', { exact: true }), UI_SECOND_VIEW_NAME);
     const condition = page.getByRole('group', { name: '条件 1', exact: true });

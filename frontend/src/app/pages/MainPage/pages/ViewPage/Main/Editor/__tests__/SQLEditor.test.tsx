@@ -8,14 +8,18 @@ const mocks = vi.hoisted(() => ({
   views: {} as Record<string, { id: string; script: string; status: number; stage: number }>,
   dispatch: vi.fn(),
   changeEditor: (_value: string) => {},
+  mountEditor: (_editor: unknown) => {},
+  editorOptions: {} as { readOnly?: boolean; readOnlyMessage?: { value: string } },
   actions: {
     changeCurrentEditingView: payload => ({ type: 'change', payload }),
   },
 }));
 
 vi.mock('app/components/CodeEditor', () => ({
-  default: ({ value, onChange, options }) => {
+  default: ({ value, onChange, onMount, options }) => {
     mocks.changeEditor = onChange;
+    mocks.mountEditor = onMount;
+    mocks.editorOptions = options;
     return (
       <textarea
         aria-label="SQL"
@@ -29,6 +33,7 @@ vi.mock('app/components/CodeEditor', () => ({
 }));
 vi.mock('monaco-editor/esm/vs/basic-languages/sql/sql', () => ({ language: {} }));
 vi.mock('monaco-editor/esm/vs/editor/editor.api', () => ({}));
+vi.mock('monaco-editor/esm/vs/editor/contrib/readOnlyMessage/browser/contribution', () => ({}));
 vi.mock('react-hotkeys-hook', () => ({ useHotkeys: () => {} }));
 vi.mock('redux/hooks', () => ({ useAppDispatch: () => mocks.dispatch }));
 vi.mock('react-redux', () => ({ useSelector: selector => selector({}) }));
@@ -108,6 +113,32 @@ describe('SQL editor draft persistence', () => {
   it('does not mark the draft changed for an unchanged editor value', () => {
     render(<SQLEditor allowManage />);
     act(() => mocks.changeEditor('SELECT 1'));
+    expect(mocks.dispatch).not.toHaveBeenCalled();
+  });
+
+  it('uses the public read-only message option without requiring a private contribution', () => {
+    const readOnlyListeners: Array<() => void> = [];
+    const editor = {
+      getContribution: vi.fn(() => null),
+      getPosition: () => ({ lineNumber: 1, column: 1 }),
+      onDidChangeCursorSelection: vi.fn(),
+      onDidAttemptReadOnlyEdit: vi.fn(listener => {
+        readOnlyListeners.push(listener);
+      }),
+    };
+    render(<SQLEditor allowManage={false} />);
+
+    expect(() => {
+      act(() => {
+        mocks.mountEditor(editor);
+        readOnlyListeners.forEach(listener => listener());
+      });
+    }).not.toThrow();
+    expect(editor.getContribution).not.toHaveBeenCalled();
+    expect(mocks.editorOptions).toMatchObject({
+      readOnly: true,
+      readOnlyMessage: { value: 'readOnlyEditorTip' },
+    });
     expect(mocks.dispatch).not.toHaveBeenCalled();
   });
 });

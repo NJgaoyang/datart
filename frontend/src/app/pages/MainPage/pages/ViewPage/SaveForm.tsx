@@ -340,6 +340,7 @@ const FormContent = styled.div`
 
 const SectionTitle = styled.h3`
   margin: 0 0 ${SPACE_MD};
+  color: ${p => p.theme.textColor};
   font-size: 14px;
   font-weight: 600;
 `;
@@ -355,6 +356,7 @@ const AdvancedToggle = styled(Button)`
   justify-content: space-between;
   width: 100%;
   padding-inline: 0;
+  color: ${p => p.theme.textColor};
   font-weight: 600;
   text-align: left;
 `;

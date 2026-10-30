@@ -29,8 +29,15 @@ import { PreviewFieldMeta, ViewFieldMeta } from 'app/types/View';
 import { TABLE_DATA_INDEX } from 'globalConstants';
 import { memo, ReactElement, useMemo } from 'react';
 import styled from 'styled-components';
-import { FONT_SIZE_BASE, SPACE, SPACE_SM, WARNING } from 'styles/StyleConstants';
-import { getFieldDisplayName, uuidv4 } from 'utils/utils';
+import {
+  FONT_SIZE_BASE,
+  FONT_SIZE_SUBTITLE,
+  FONT_WEIGHT_MEDIUM,
+  SPACE,
+  SPACE_SM,
+  WARNING,
+} from 'styles/StyleConstants';
+import { getFieldDisplayName, getTextWidth, uuidv4 } from 'utils/utils';
 import { Column, ColumnsModel, DatabaseSchema, Model } from '../slice/types';
 import {
   getColumnWidthMap,
@@ -141,9 +148,6 @@ export const SchemaTable = memo(
         const hierarchyColumn = getHierarchyColumn(name, hierarchy) || column;
         const displayColumn = displayColumns[name];
 
-        const width = columnWidthMap[name];
-        tableWidth += width;
-
         let icon;
         switch (hierarchyColumn.type) {
           case DataViewFieldType.NUMERIC:
@@ -158,10 +162,18 @@ export const SchemaTable = memo(
             break;
         }
 
-        const extraActions =
-          !readOnly && getExtraHeaderActions?.(name, hierarchyColumn);
-
+        const extraActions = readOnly
+          ? undefined
+          : getExtraHeaderActions?.(name, hierarchyColumn);
         const displayText = getFieldDisplayName(displayColumn);
+        // Reserve the actual compact controls and their gaps, so a short
+        // Chinese name is not squeezed by editable type/permission buttons.
+        const controlsWidth = readOnly ? 20 : 28 * (1 + (extraActions?.length || 0));
+        const headerWidth =
+          getTextWidth(displayText, `${FONT_WEIGHT_MEDIUM}`, FONT_SIZE_SUBTITLE) +
+          controlsWidth + 16;
+        const width = Math.max(columnWidthMap[name], Math.min(360, headerWidth));
+        tableWidth += width;
 
         const title = (
           <>
@@ -258,7 +270,7 @@ function TableHeader({ children, className, ...props }) {
 
 const TH = styled.th`
   padding: ${SPACE_SM} ${SPACE} !important;
-  font-size: 13px;
+  font-size: ${FONT_SIZE_SUBTITLE};
   font-weight: 500;
   background-color: ${p => p.theme.emphasisBackground};
 
@@ -269,8 +281,15 @@ const TH = styled.th`
     min-width: 0;
 
     .type-icon { flex: none; color: ${p => p.theme.textColorSnd}; }
+    > :not(.content) { flex: none; }
 
     .btn {
+      width: 24px;
+      min-width: 24px;
+      height: 24px;
+      padding: 0;
+      margin: 0;
+
       &:hover {
         background-color: ${p => p.theme.emphasisBackground};
       }
@@ -286,10 +305,6 @@ const TH = styled.th`
 
     .prefix {
       margin-right: ${SPACE};
-    }
-
-    .suffix {
-      margin-left: ${SPACE};
     }
 
     .partial {

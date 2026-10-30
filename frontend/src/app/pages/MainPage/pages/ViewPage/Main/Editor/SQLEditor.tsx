@@ -21,6 +21,7 @@ import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import classnames from 'classnames';
 import { CommonFormTypes } from 'globalConstants';
 import { language } from 'monaco-editor/esm/vs/basic-languages/sql/sql';
+import 'monaco-editor/esm/vs/editor/contrib/readOnlyMessage/browser/contribution';
 import { memo, useCallback, useContext, useEffect } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useSelector } from 'react-redux';
@@ -149,11 +150,6 @@ export const SQLEditor = memo(({ allowManage }: { allowManage: boolean }) => {
   const editorDidMount = useCallback(
     (editor: monaco.editor.IStandaloneCodeEditor) => {
       setEditor(editor);
-      // Removing the tooltip on the read-only editor
-      // https://github.com/microsoft/monaco-editor/issues/1742
-      const messageContribution = editor.getContribution(
-        'editor.contrib.messageController',
-      );
       editor.onDidChangeCursorSelection(e => {
         dispatch(
           actions.changeCurrentEditingView({
@@ -161,14 +157,8 @@ export const SQLEditor = memo(({ allowManage }: { allowManage: boolean }) => {
           }),
         );
       });
-      editor.onDidAttemptReadOnlyEdit(() => {
-        (messageContribution as any).showMessage(
-          t('readOnlyEditorTip'),
-          editor.getPosition(),
-        );
-      });
     },
-    [setEditor, dispatch, actions, t],
+    [setEditor, dispatch, actions],
   );
 
   useEffect(() => {
@@ -252,6 +242,7 @@ export const SQLEditor = memo(({ allowManage }: { allowManage: boolean }) => {
           // Pane sizes are assigned asynchronously by split.js.
           automaticLayout: true,
           readOnly: !allowManage || status === ViewStatus.Archived,
+          readOnlyMessage: { value: t('readOnlyEditorTip') },
           padding: { top: 12, bottom: 12 },
           scrollBeyondLastLine: false,
           smoothScrolling: true,
