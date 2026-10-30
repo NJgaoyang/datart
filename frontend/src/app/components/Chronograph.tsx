@@ -46,7 +46,8 @@ export function Chronograph({ running, status }: ChronographProps) {
         setLabel(
           dayjs(current - start)
             .utc()
-            .format('HH:mm:ss.SS'),
+            .format('HH:mm:ss.SSS')
+            .slice(0, -1),
         );
       }, 10);
     } else {

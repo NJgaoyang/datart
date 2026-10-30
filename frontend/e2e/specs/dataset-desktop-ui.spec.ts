@@ -33,6 +33,8 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1366, height: 768
         await expect(preview(page).getByText('示例城市 A', { exact: true })).toBeVisible();
         expect(dataset.queries).toHaveLength(1);
         expect(dataset.queries[0].script).toBe(UI_SCRIPT);
+        await expect(page.locator('[aria-label="数据集编辑工具栏"] .ant-badge-status-text'))
+          .toHaveText(/^\d{2}:\d{2}:\d{2}\.\d{2}$/);
 
         const fieldsButton = page.getByRole('button', { name: '数据模型', exact: true });
         await fieldsButton.focus();
