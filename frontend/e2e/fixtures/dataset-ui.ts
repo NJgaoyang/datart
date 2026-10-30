@@ -9,6 +9,8 @@ export const UI_SECOND_VIEW_ID = 'ui-fixture-cities';
 export const UI_SOURCE_ID = 'ui-fixture-source';
 export const UI_VIEW_NAME = '演示租赁交易数据（合成）';
 export const UI_SECOND_VIEW_NAME = '演示城市信息（合成）';
+export const UI_HOME_FOLDER_ID = 'ui-fixture-home-folder';
+export const UI_HOME_FOLDER_NAME = '演示资源目录（合成）';
 export const UI_QUERY_ERROR = '演示查询失败：请检查筛选条件后重试';
 export const UI_VIEW_PATH = `/organizations/${UI_ORG_ID}/views/${UI_VIEW_ID}`;
 export const UI_SCRIPT = [
@@ -118,6 +120,7 @@ function permissions(role: UiRole) {
       privilege('VIEW', UI_SECOND_VIEW_ID, level),
       privilege('SOURCE', '*', 1), privilege('SOURCE', UI_SOURCE_ID, 2),
       privilege('VIZ', '*', 1),
+      privilege('VIZ', UI_HOME_FOLDER_ID, 2),
     ],
     hideInNav: [],
   };
@@ -200,7 +203,13 @@ export const test = base.extend<Options & { dataset: DatasetUiFixture }>({
         if (path === '/data-provider/providers') return respond([{ type: 'JDBC', name: 'JDBC' }]);
         if (path === '/plugins/custom/charts' || path === '/download/tasks' ||
             path === `/orgs/${UI_ORG_ID}/roles` || path === '/variables/org' ||
-            path === '/views/archived') return respond([]);
+            path === '/views/archived' || path === '/viz/storyboards') return respond([]);
+        if (path === '/viz/folders') return respond([{
+          id: UI_HOME_FOLDER_ID, name: UI_HOME_FOLDER_NAME, orgId: UI_ORG_ID,
+          parentId: null, relId: '', relType: 'FOLDER', index: 0, status: 1,
+          createBy: user.id, updateBy: user.id,
+          createTime: '2026-10-30T08:00:00', updateTime: '2026-10-30T08:00:00',
+        }]);
         if (path === `/orgs/${UI_ORG_ID}/members`) return respond([user]);
         if (path === '/views') return respond(emptyViews ? [] : [view, secondView]);
         if (path === `/views/${UI_VIEW_ID}`) return respond(view);

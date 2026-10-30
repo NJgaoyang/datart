@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 import {
   test, expect, openDataset, UI_ORG_ID, UI_VIEW_ID, UI_VIEW_NAME,
-  UI_SECOND_VIEW_NAME, UI_QUERY_ERROR, UI_SCRIPT, UI_SECOND_SCRIPT,
+  UI_SECOND_VIEW_NAME, UI_QUERY_ERROR, UI_SCRIPT, UI_SECOND_SCRIPT, UI_HOME_FOLDER_NAME,
 } from '../fixtures/dataset-ui';
 import {
   captureDatasetScreenshot, expectNoPageOverflow,
@@ -18,6 +18,26 @@ async function chooseOption(page: Page, control: Locator, label: string) {
   const popup = page.locator('.ant-select-dropdown:visible').last();
   await popup.getByText(label, { exact: true }).last().click();
 }
+
+test.describe('application home screenshot', () => {
+  test.use({ viewport: { width: 1440, height: 900 }, uiTheme: 'light' });
+
+  test('captures the actual application home after navigating from root', async ({ page, dataset }, testInfo) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await expect(page).toHaveURL(new RegExp(`/organizations/${UI_ORG_ID}/vizs$`));
+    await expect(page.locator('.datart-viz').getByRole('heading', {
+      name: '请在左侧列表选择可视化', exact: true,
+    })).toBeVisible();
+    await expect(page.getByText(UI_HOME_FOLDER_NAME, { exact: true })).toBeVisible();
+    await expect.poll(() => dataset.calls.some(call => call.path === '/viz/storyboards')).toBe(true);
+    // Fresh navigation selects no visualization. Preserve the application's
+    // actual Empty state rather than manufacturing a home dashboard.
+    await expect(page.locator('.datart-viz').getByRole('tab')).toHaveCount(0);
+    expect(dataset.queries).toHaveLength(0);
+    expect(dataset.saves).toHaveLength(0);
+    await captureDatasetScreenshot(page, testInfo, 'datart-home-1440-light');
+  });
+});
 
 for (const viewport of [{ width: 1440, height: 900 }, { width: 1366, height: 768 }]) {
   for (const uiTheme of ['light', 'dark'] as const) {
