@@ -8,7 +8,7 @@ vi.mock('utils/request', () => ({ request2: mocks.request }));
 vi.mock('redux/hooks', () => ({ useAppDispatch: () => mocks.dispatch }));
 vi.mock('react-redux', () => ({ useSelector: selector => selector({}) }));
 vi.mock('app/hooks/useI18NPrefix', () => ({
-  default: () => (key: string, values?: { index?: number }) =>
+  default: () => (key: string, _disablePrefix = false, values?: { index?: number }) =>
     values?.index ? `${key} ${values.index}` : key,
 }));
 vi.mock('app/pages/MainPage/pages/ViewPage/slice/selectors', () => ({

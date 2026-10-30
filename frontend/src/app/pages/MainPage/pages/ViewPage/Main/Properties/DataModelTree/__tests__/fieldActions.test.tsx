@@ -97,7 +97,7 @@ describe('dataset field keyboard actions', () => {
     await user.click(screen.getByRole('button', { name: 'delete: 净额' }));
     expect(menuClick).not.toHaveBeenCalled();
     await user.click(
-      await screen.findByRole('button', { name: 'delete', exact: true }),
+      await screen.findByRole('button', { name: 'delete' }),
     );
     expect(menuClick).toHaveBeenCalledWith(computedField, 'delete');
   });

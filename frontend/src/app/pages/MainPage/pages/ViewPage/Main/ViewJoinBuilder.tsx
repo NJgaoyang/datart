@@ -394,15 +394,15 @@ export const ViewJoinBuilder = memo(() => {
                     >
                       <ConditionHeading>
                         <h4 id={`${builderId}-condition-${field.key}`}>
-                          {t('conditionNumber', { index: index + 1 })}
+                          {t('conditionNumber', false, { index: index + 1 })}
                         </h4>
                         {fields.length > 1 && (
                           <Button
                             type="text"
                             htmlType="button"
                             icon={<DeleteOutlined aria-hidden="true" />}
-                            aria-label={t('removeCondition', { index: index + 1 })}
-                            title={t('removeCondition', { index: index + 1 })}
+                            aria-label={t('removeCondition', false, { index: index + 1 })}
+                            title={t('removeCondition', false, { index: index + 1 })}
                             onClick={() => {
                               remove(field.name);
                               addConditionRef.current?.focus();

@@ -109,7 +109,7 @@ export const Outputs = memo(({ hidden = false, allowManage = false, expanded = f
           {stage === ViewViewModelStages.Running
             ? t('preview.running')
             : hasPreview
-            ? t('preview.summary', { rows: previewResults?.length || 0, columns: columnCount })
+            ? t('preview.summary', false, { rows: previewResults?.length || 0, columns: columnCount })
             : t('preview.ready')}
         </PreviewSummary>
         {onToggleSize && (
