@@ -34,12 +34,14 @@ jobs:
             frontend/package-lock.json
             frontend/e2e/package-lock.json
       - name: Install locked application dependencies
+        id: application-dependencies
         run: npm ci --legacy-peer-deps --no-audit --no-fund
       - name: Check TypeScript and framework compatibility
         run: |
           npm run checkTs
           npm run check:upgrade-baseline
       - name: Dataset and chart regression
+        if: ${{ !cancelled() && steps.application-dependencies.outcome == 'success' }}
         run: |
           npx vitest run \
             src/app/pages/MainPage/pages/ViewPage \
@@ -49,21 +51,28 @@ jobs:
             src/app/utils \
             src/utils
       - name: Build production assets and check bundle limits
+        id: production-build
+        if: ${{ !cancelled() && steps.application-dependencies.outcome == 'success' }}
         run: |
           npm run build:all
           npm run test:bundle-budget
           npm run check:bundle-budget
       - name: Install locked browser test dependencies
+        id: browser-dependencies
+        if: ${{ !cancelled() && steps.production-build.outcome == 'success' }}
         working-directory: frontend/e2e
         run: npm ci --no-audit --no-fund
       - name: Install Chromium
+        id: chromium
+        if: ${{ !cancelled() && steps.browser-dependencies.outcome == 'success' }}
         working-directory: frontend/e2e
         run: npx playwright install --with-deps chromium
       - name: Desktop UI with local fixture APIs
+        if: ${{ !cancelled() && steps.chromium.outcome == 'success' }}
         working-directory: frontend/e2e
         env:
           DATART_UI_SCREENSHOTS_BASE64: '1'
-        run: npx playwright test --config=playwright.dataset-ui.config.ts
+        run: npx playwright test --config=playwright.dataset-ui.config.ts --max-failures=3
       - name: Retain browser screenshots and test results
         if: always()
         uses: actions/upload-artifact@v4

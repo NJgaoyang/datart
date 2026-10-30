@@ -67,7 +67,7 @@ const DataModelNode: FC<{
         ? [
             {
               key: 'create',
-              icon: <BranchesOutlined />,
+              icon: <BranchesOutlined aria-hidden="true" />,
               label: t('newHierarchy'),
               onClick: () => onCreateHierarchy(node),
             },
@@ -77,7 +77,7 @@ const DataModelNode: FC<{
         ? [
             {
               key: 'move',
-              icon: <SisternodeOutlined />,
+              icon: <SisternodeOutlined aria-hidden="true" />,
               label: t('addToHierarchy'),
               onClick: () => onMoveToHierarchy(node),
             },
@@ -87,7 +87,7 @@ const DataModelNode: FC<{
         ? [
             {
               key: 'remove',
-              icon: <DeleteOutlined />,
+              icon: <DeleteOutlined aria-hidden="true" />,
               label: t('delete'),
               onClick: () => onDeleteFromHierarchy(node),
             },
