@@ -75,10 +75,13 @@ export const Main = memo(({ sliderVisible }: { sliderVisible: boolean }) => {
 const Container = styled.div`
   display: flex;
   flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   flex-direction: column;
   &.close {
-    width: calc(100% - 30px) !important;
-    min-width: calc(100% - 30px) !important;
-    padding-left: 30px;
+    width: calc(100% - 36px) !important;
+    min-width: calc(100% - 36px) !important;
+    padding-left: 36px;
   }
 `;

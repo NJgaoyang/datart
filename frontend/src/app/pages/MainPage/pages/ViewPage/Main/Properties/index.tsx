@@ -58,12 +58,13 @@ export const Properties = memo(({ allowManage, viewType }: PropertiesProps) => {
 
   const tabTitle = useMemo(() => {
     const tabTitle = [
-      { name: 'reference', title: t('reference'), icon: <DatabaseOutlined /> },
-      { name: 'variable', title: t('variable'), icon: <FunctionOutlined /> },
-      { name: 'model', title: t('model'), icon: <ApartmentOutlined /> },
+      { name: 'reference', title: t('reference'), shortTitle: t('referenceShort'), icon: <DatabaseOutlined /> },
+      { name: 'variable', title: t('variable'), shortTitle: t('variableShort'), icon: <FunctionOutlined /> },
+      { name: 'model', title: t('model'), shortTitle: t('modelShort'), icon: <ApartmentOutlined /> },
       {
         name: 'columnPermissions',
         title: t('columnPermissions'),
+        shortTitle: t('permissionsShort'),
         icon: <SafetyCertificateOutlined />,
       },
     ];
@@ -107,5 +108,7 @@ const Container = styled.div`
   z-index: ${LEVEL_1};
   display: flex;
   flex-shrink: 0;
+  min-width: 0;
+  min-height: 0;
   background-color: ${p => p.theme.componentBackground};
 `;

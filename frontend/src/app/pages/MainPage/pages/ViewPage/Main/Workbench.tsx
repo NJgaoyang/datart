@@ -18,6 +18,7 @@
 
 import { Spin } from 'antd';
 import { Split } from 'app/components';
+import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { useAccess, useCascadeAccess } from 'app/pages/MainPage/Access';
 import debounce from 'lodash/debounce';
 import React, {
@@ -26,6 +27,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useState,
 } from 'react';
 import { useSelector } from 'react-redux';
 import { useAppDispatch } from 'redux/hooks';
@@ -50,6 +52,8 @@ import { ViewJoinBuilder } from './ViewJoinBuilder';
 
 export const Workbench = memo(() => {
   const dispatch = useAppDispatch();
+  const t = useI18NPrefix('view.preview');
+  const [previewExpanded, setPreviewExpanded] = useState(false);
   const { editorInstance } = useContext(EditorContext);
   const { actions } = useViewSlice();
 
@@ -66,6 +70,8 @@ export const Workbench = memo(() => {
   const viewType = useSelector(state =>
     selectCurrentEditingViewAttr(state, { name: 'type' }),
   ) as string;
+
+  const showPreview = Boolean(viewType) && viewType !== 'VIEW_JOIN';
 
   const path = useMemo(
     () =>
@@ -149,10 +155,16 @@ export const Workbench = memo(() => {
     <Wrapper>
       <Development
         direction="vertical"
-        sizes={[55, 45]}
-        minSize={[160, 120]}
-        gutterSize={0}
-        className="datart-split"
+        sizes={showPreview ? (previewExpanded ? [30, 70] : [55, 45]) : [100, 0]}
+        minSize={showPreview ? [160, 180] : [160, 0]}
+        gutterSize={showPreview ? 6 : 0}
+        className={showPreview ? 'datart-split' : 'datart-split without-preview'}
+        gutter={(_, direction) => {
+          const gutter = document.createElement('div');
+          gutter.className = `gutter gutter-${direction}`;
+          gutter.title = t('resize');
+          return gutter;
+        }}
         onDrag={editorResize}
       >
         <EditorWrap>
@@ -177,7 +189,12 @@ export const Workbench = memo(() => {
             </ViewErrorBoundary>
           )}
         </EditorWrap>
-        <Outputs hidden={viewType === 'VIEW_JOIN'} allowManage={allowManage} />
+        <Outputs
+          hidden={!showPreview}
+          allowManage={allowManage}
+          expanded={previewExpanded}
+          onToggleSize={() => setPreviewExpanded(expanded => !expanded)}
+        />
       </Development>
       <ViewErrorBoundary>
         {viewType !== 'VIEW_JOIN' && (
@@ -211,6 +228,28 @@ const Development = styled(Split)`
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
+
+  > .gutter-vertical {
+    position: relative;
+    flex: none;
+    cursor: row-resize;
+    background-color: ${p => p.theme.bodyBackground};
+
+    &::after {
+      position: absolute;
+      top: 2px;
+      left: calc(50% - 20px);
+      width: 40px;
+      height: 2px;
+      content: '';
+      background-color: ${p => p.theme.borderColorBase};
+      border-radius: 1px;
+    }
+
+    &:hover::after { background-color: ${p => p.theme.primary}; }
+  }
+
+  &.without-preview > .gutter-vertical { display: none; }
 `;
 
 const LoadingWrap = styled.div`

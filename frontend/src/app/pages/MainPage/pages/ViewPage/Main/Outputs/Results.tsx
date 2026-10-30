@@ -17,7 +17,7 @@
  */
 
 import {
-  CaretRightOutlined,
+  TableOutlined,
   EyeInvisibleOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
@@ -49,6 +49,7 @@ import {
   HierarchyModel,
   ViewViewModel,
 } from '../../slice/types';
+import { hasPreviewResult } from './previewState';
 
 const ROW_KEY = 'DATART_ROW_KEY';
 
@@ -243,6 +244,7 @@ export const Results = memo(({ height = 0, width = 0, allowManage = false }: Res
             <ToolbarButton
               size="small"
               iconSize={FONT_SIZE_BASE}
+              aria-label={`${t('columnPermission.title')}: ${name}`}
               icon={
                 checkedKeys.length > 0 ? (
                   <EyeOutlined
@@ -270,7 +272,7 @@ export const Results = memo(({ height = 0, width = 0, allowManage = false }: Res
     [],
   );
 
-  return stage > ViewViewModelStages.Fresh ? (
+  return hasPreviewResult({ stage, previewFields, previewResults }) ? (
     <TableWrapper>
       {height > 96 && (
         <SchemaTable
@@ -293,11 +295,9 @@ export const Results = memo(({ height = 0, width = 0, allowManage = false }: Res
     </TableWrapper>
   ) : (
     <InitialDesc>
-      <p>
-        {t('resultEmpty1')}
-        <CaretRightOutlined />
-        {t('resultEmpty2')}
-      </p>
+      <TableOutlined aria-hidden="true" />
+      <h3>{t('preview.emptyTitle')}</h3>
+      <p>{t('preview.emptyDescription')}</p>
     </InitialDesc>
   );
 });
@@ -307,15 +307,25 @@ const InitialDesc = styled.div`
   flex: 1;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+  background-color: ${p => p.theme.componentBackground};
 
-  p {
-    color: ${p => p.theme.textColorLight};
-  }
+  > .anticon { color: ${p => p.theme.textColorLight}; font-size: 26px; }
+  h3 { margin: 0; color: ${p => p.theme.textColor}; font-size: 14px; font-weight: 500; }
+  p { max-width: 360px; margin: 0; color: ${p => p.theme.textColorSnd}; font-size: 13px; line-height: 1.7; }
 `;
 
 const TableWrapper = styled.div`
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   overflow: hidden;
   font-family: ${FONT_FAMILY};
   background-color: ${p => p.theme.componentBackground};
+
+  .ant-table-pagination { margin: 12px; }
+  .virtual-table-cell { font-size: 13px; }
 `;

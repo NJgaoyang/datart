@@ -1,5 +1,5 @@
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import { Alert, Button, Form, Input, Modal, Select, Space } from 'antd';
+import { Alert, Button, Form, Input, Modal, Select } from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { ViewFieldMeta } from 'app/types/View';
 import { CommonFormTypes } from 'globalConstants';
@@ -8,6 +8,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -76,6 +77,7 @@ const parseColumns = (view?: ViewDetail) => {
 };
 
 export const ViewJoinBuilder = memo(() => {
+  const builderId = useId();
   const dispatch = useAppDispatch();
   const views = useSelector(selectViews);
   const currentViewId = useSelector(state =>
@@ -93,6 +95,7 @@ export const ViewJoinBuilder = memo(() => {
   const [form] = Form.useForm();
   const generationVersion = useRef(0);
   const mounted = useRef(true);
+  const addConditionRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     mounted.current = true;
@@ -242,183 +245,284 @@ export const ViewJoinBuilder = memo(() => {
 
   return (
     <Wrapper>
-      <h2>{t('title')}</h2>
-      <Alert title={t('description')} type="info" showIcon />
-      {needsRegeneration && (
-        <Alert title={t('regenerateRequired')} type="warning" showIcon />
-      )}
-      <Form
-        form={form}
-        layout="vertical"
-        initialValues={{ joinType: 'INNER', conditions: [{}] }}
-        onValuesChange={invalidateGenerated}
-      >
-        <ViewRow>
-          <Form.Item
-            name="leftViewId"
-            label={t('leftView')}
-            rules={[{ required: true }]}
-          >
-            <Select
-              options={options.filter(option => {
-                const rightSourceId = views?.find(
-                  view => view.id === rightId,
-                )?.sourceId;
-                const optionSourceId = views?.find(
-                  view => view.id === option.value,
-                )?.sourceId;
-                return (
-                  option.value !== rightId &&
-                  (!rightSourceId || optionSourceId === rightSourceId)
-                );
-              })}
-              onChange={async value => {
-                const id = String(value);
-                invalidateGenerated();
-                form.setFieldValue('conditions',
-                  (form.getFieldValue('conditions') || [{}]).map(condition => ({
-                    ...condition,
-                    leftColumn: undefined,
-                  })),
-                );
-                setLeftId(id);
-                const detail = await loadView(id);
-                if (!mounted.current || form.getFieldValue('leftViewId') !== id) return;
-                dispatch(
-                  viewActions.changeCurrentEditingView({
-                    sourceId: detail?.sourceId,
-                    error: '',
-                  }),
-                );
-              }}
-              showSearch={{ optionFilterProp: 'label' }}
-            />
-          </Form.Item>
-          <Form.Item
-            name="joinType"
-            label={t('joinType')}
-            rules={[{ required: true }]}
-          >
-            <Select
-              options={['INNER', 'LEFT', 'RIGHT', 'FULL'].map(value => ({
-                value,
-                label: t(value),
-              }))}
-            />
-          </Form.Item>
-          <Form.Item
-            name="rightViewId"
-            label={t('rightView')}
-            rules={[{ required: true }]}
-          >
-            <Select
-              options={options.filter(option => {
-                const leftSourceId = views?.find(
-                  view => view.id === leftId,
-                )?.sourceId;
-                const optionSourceId = views?.find(
-                  view => view.id === option.value,
-                )?.sourceId;
-                return (
-                  option.value !== leftId &&
-                  (!leftSourceId || optionSourceId === leftSourceId)
-                );
-              })}
-              onChange={async value => {
-                const id = String(value);
-                invalidateGenerated();
-                form.setFieldValue('conditions',
-                  (form.getFieldValue('conditions') || [{}]).map(condition => ({
-                    ...condition,
-                    rightColumn: undefined,
-                  })),
-                );
-                setRightId(id);
-                const detail = await loadView(id);
-                if (!mounted.current || form.getFieldValue('rightViewId') !== id) return;
-                dispatch(
-                  viewActions.changeCurrentEditingView({
-                    sourceId: detail?.sourceId,
-                    error: '',
-                  }),
-                );
-              }}
-              showSearch={{ optionFilterProp: 'label' }}
-            />
-          </Form.Item>
-        </ViewRow>
+      <Content>
+        <Header>
+          <h2 id={`${builderId}-title`}>{t('title')}</h2>
+          <Description>{t('description')}</Description>
+        </Header>
+        {needsRegeneration && (
+          <Alert
+            title={t('regenerateRequired')}
+            type="warning"
+            showIcon
+            role="status"
+          />
+        )}
+        <Form
+          form={form}
+          layout="vertical"
+          aria-labelledby={`${builderId}-title`}
+          initialValues={{ joinType: 'INNER', conditions: [{}] }}
+          onValuesChange={invalidateGenerated}
+        >
+          <FormSection aria-labelledby={`${builderId}-sources`}>
+            <SectionHeader>
+              <StepNumber aria-hidden="true">1</StepNumber>
+              <h3 id={`${builderId}-sources`}>{t('sourcesTitle')}</h3>
+            </SectionHeader>
+            <ViewRow>
+              <Form.Item
+                name="leftViewId"
+                label={t('leftView')}
+                rules={[{ required: true }]}
+              >
+                <Select
+                  placeholder={t('selectView')}
+                  options={options.filter(option => {
+                    const rightSourceId = views?.find(
+                      view => view.id === rightId,
+                    )?.sourceId;
+                    const optionSourceId = views?.find(
+                      view => view.id === option.value,
+                    )?.sourceId;
+                    return (
+                      option.value !== rightId &&
+                      (!rightSourceId || optionSourceId === rightSourceId)
+                    );
+                  })}
+                  onChange={async value => {
+                    const id = String(value);
+                    invalidateGenerated();
+                    form.setFieldValue(
+                      'conditions',
+                      (form.getFieldValue('conditions') || [{}]).map(
+                        condition => ({ ...condition, leftColumn: undefined }),
+                      ),
+                    );
+                    setLeftId(id);
+                    const detail = await loadView(id);
+                    if (
+                      !mounted.current ||
+                      form.getFieldValue('leftViewId') !== id
+                    ) return;
+                    dispatch(
+                      viewActions.changeCurrentEditingView({
+                        sourceId: detail?.sourceId,
+                        error: '',
+                      }),
+                    );
+                  }}
+                  showSearch={{ optionFilterProp: 'label' }}
+                />
+              </Form.Item>
+              <Form.Item
+                name="joinType"
+                label={t('joinType')}
+                rules={[{ required: true }]}
+              >
+                <Select
+                  options={['INNER', 'LEFT', 'RIGHT', 'FULL'].map(value => ({
+                    value,
+                    label: t(value),
+                  }))}
+                />
+              </Form.Item>
+              <Form.Item
+                name="rightViewId"
+                label={t('rightView')}
+                rules={[{ required: true }]}
+              >
+                <Select
+                  placeholder={t('selectView')}
+                  options={options.filter(option => {
+                    const leftSourceId = views?.find(
+                      view => view.id === leftId,
+                    )?.sourceId;
+                    const optionSourceId = views?.find(
+                      view => view.id === option.value,
+                    )?.sourceId;
+                    return (
+                      option.value !== leftId &&
+                      (!leftSourceId || optionSourceId === leftSourceId)
+                    );
+                  })}
+                  onChange={async value => {
+                    const id = String(value);
+                    invalidateGenerated();
+                    form.setFieldValue(
+                      'conditions',
+                      (form.getFieldValue('conditions') || [{}]).map(
+                        condition => ({ ...condition, rightColumn: undefined }),
+                      ),
+                    );
+                    setRightId(id);
+                    const detail = await loadView(id);
+                    if (
+                      !mounted.current ||
+                      form.getFieldValue('rightViewId') !== id
+                    ) return;
+                    dispatch(
+                      viewActions.changeCurrentEditingView({
+                        sourceId: detail?.sourceId,
+                        error: '',
+                      }),
+                    );
+                  }}
+                  showSearch={{ optionFilterProp: 'label' }}
+                />
+              </Form.Item>
+            </ViewRow>
+          </FormSection>
 
-        <Form.List name="conditions">
-          {(fields, { add, remove }) => (
-            <>
-              {fields.map((field, index) => (
-                <ConditionRow key={field.key}>
-                  <Form.Item
-                    {...field}
-                    name={[field.name, 'leftColumn']}
-                    label={index === 0 ? t('joinCondition') : undefined}
-                    rules={[{ required: true }]}
+          <FormSection aria-labelledby={`${builderId}-conditions`}>
+            <SectionHeader>
+              <StepNumber aria-hidden="true">2</StepNumber>
+              <h3 id={`${builderId}-conditions`}>{t('joinCondition')}</h3>
+            </SectionHeader>
+            <SectionHint id={`${builderId}-conditions-help`}>
+              {t('conditionsDescription')}
+            </SectionHint>
+            <Form.List name="conditions">
+              {(fields, { add, remove }) => (
+                <>
+                  {fields.map((field, index) => (
+                    <ConditionRow
+                      key={field.key}
+                      role="group"
+                      aria-labelledby={`${builderId}-condition-${field.key}`}
+                      aria-describedby={`${builderId}-conditions-help`}
+                    >
+                      <ConditionHeading>
+                        <h4 id={`${builderId}-condition-${field.key}`}>
+                          {t('conditionNumber', { index: index + 1 })}
+                        </h4>
+                        {fields.length > 1 && (
+                          <Button
+                            type="text"
+                            htmlType="button"
+                            icon={<DeleteOutlined aria-hidden="true" />}
+                            aria-label={t('removeCondition', { index: index + 1 })}
+                            title={t('removeCondition', { index: index + 1 })}
+                            onClick={() => {
+                              remove(field.name);
+                              addConditionRef.current?.focus();
+                            }}
+                          >
+                            {t('remove')}
+                          </Button>
+                        )}
+                      </ConditionHeading>
+                      <ConditionFields>
+                        <Form.Item
+                          {...field}
+                          name={[field.name, 'leftColumn']}
+                          label={t('leftColumn')}
+                          rules={[{ required: true }]}
+                        >
+                          <Select
+                            options={leftColumns}
+                            disabled={!leftId}
+                            placeholder={t(
+                              leftId ? 'selectField' : 'chooseLeftViewFirst',
+                            )}
+                            showSearch={{ optionFilterProp: 'label' }}
+                            optionRender={option => (
+                              <ColumnOption>
+                                <span>{option.label}</span>
+                                {option.value !== option.label && (
+                                  <small>{option.value}</small>
+                                )}
+                              </ColumnOption>
+                            )}
+                          />
+                        </Form.Item>
+                        <EqualityMark aria-hidden="true">=</EqualityMark>
+                        <Form.Item
+                          {...field}
+                          name={[field.name, 'rightColumn']}
+                          label={t('rightColumn')}
+                          rules={[{ required: true }]}
+                        >
+                          <Select
+                            options={rightColumns}
+                            disabled={!rightId}
+                            placeholder={t(
+                              rightId ? 'selectField' : 'chooseRightViewFirst',
+                            )}
+                            showSearch={{ optionFilterProp: 'label' }}
+                            optionRender={option => (
+                              <ColumnOption>
+                                <span>{option.label}</span>
+                                {option.value !== option.label && (
+                                  <small>{option.value}</small>
+                                )}
+                              </ColumnOption>
+                            )}
+                          />
+                        </Form.Item>
+                      </ConditionFields>
+                    </ConditionRow>
+                  ))}
+                  <Button
+                    ref={addConditionRef}
+                    type="dashed"
+                    htmlType="button"
+                    icon={<PlusOutlined aria-hidden="true" />}
+                    onClick={() => add()}
                   >
-                    <Select options={leftColumns} />
-                  </Form.Item>
-                  <span>=</span>
-                  <Form.Item
-                    {...field}
-                    name={[field.name, 'rightColumn']}
-                    label={index === 0 ? ' ' : undefined}
-                    rules={[{ required: true }]}
-                  >
-                    <Select options={rightColumns} />
-                  </Form.Item>
-                  {fields.length > 1 && (
-                    <Button
-                      type="text"
-                      icon={<DeleteOutlined />}
-                      onClick={() => remove(field.name)}
-                    />
-                  )}
-                </ConditionRow>
-              ))}
-              <Button icon={<PlusOutlined />} onClick={() => add()}>
-                {t('addCondition')}
+                    {t('addCondition')}
+                  </Button>
+                </>
+              )}
+            </Form.List>
+          </FormSection>
+          <ActionBar>
+            <Button
+              type="primary"
+              htmlType="button"
+              loading={loading}
+              onClick={generate}
+            >
+              {t('generate')}
+            </Button>
+            {generated && (
+              <Button htmlType="button" onClick={saveGeneratedView}>
+                {t('save')}
               </Button>
-            </>
-          )}
-        </Form.List>
-        <Space>
-          <Button type="primary" loading={loading} onClick={generate}>
-            {t('generate')}
-          </Button>
-          {generated && (
-            <Button onClick={saveGeneratedView}>{t('save')}</Button>
-          )}
-        </Space>
-      </Form>
+            )}
+          </ActionBar>
+        </Form>
+      </Content>
       <Modal
         title={t('previewTitle')}
         open={previewVisible}
-        width="80%"
+        width={1040}
+        style={{ maxWidth: 'calc(100vw - 32px)' }}
         onCancel={() => setPreviewVisible(false)}
-        footer={[
-          <Button key="back" onClick={() => setPreviewVisible(false)}>
-            {t('back')}
-          </Button>,
-          <Button key="editor" onClick={applyGeneratedSql}>
-            {t('openEditor')}
-          </Button>,
-          <Button key="save" onClick={saveGeneratedView}>
-            {t('save')}
-          </Button>,
-          <Button key="execute" type="primary" onClick={executeGeneratedSql}>
-            {t('execute')}
-          </Button>,
-        ]}
+        footer={
+          <PreviewFooter>
+            <Button onClick={() => setPreviewVisible(false)}>
+              {t('back')}
+            </Button>
+            <PreviewActions>
+              <Button onClick={applyGeneratedSql}>{t('openEditor')}</Button>
+              <Button onClick={saveGeneratedView}>{t('save')}</Button>
+              <Button type="primary" onClick={executeGeneratedSql}>
+                {t('execute')}
+              </Button>
+            </PreviewActions>
+          </PreviewFooter>
+        }
       >
-        <PreviewHelp>{t('previewHelp')}</PreviewHelp>
-        <Input.TextArea
+        <PreviewHelp id={`${builderId}-preview-help`}>
+          {t('previewHelp')}
+        </PreviewHelp>
+        <PreviewSql
+          aria-label={t('generatedSql')}
+          aria-describedby={`${builderId}-preview-help`}
           value={generated?.script}
           readOnly
-          autoSize={{ minRows: 14, maxRows: 26 }}
+          autoSize={{ minRows: 12, maxRows: 24 }}
         />
       </Modal>
     </Wrapper>
@@ -427,33 +531,204 @@ export const ViewJoinBuilder = memo(() => {
 
 const Wrapper = styled.div`
   flex: 1;
+  min-width: 0;
   padding: ${SPACE_LG};
   overflow: auto;
+  container-type: inline-size;
 
-  h2,
-  .ant-alert,
-  .ant-form {
+  .ant-alert {
     margin-bottom: ${SPACE_MD};
   }
+
+  .ant-btn:focus-visible {
+    outline: 2px solid ${p => p.theme.primary};
+    outline-offset: 2px;
+  }
+`;
+
+const Content = styled.div`
+  width: 100%;
+  max-width: 1040px;
+  margin-inline: auto;
+`;
+
+const Header = styled.header`
+  margin-bottom: ${SPACE_LG};
+
+  h2 {
+    margin: 0 0 ${SPACE_XS};
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+`;
+
+const Description = styled.p`
+  margin: 0;
+  color: ${p => p.theme.textColorSnd};
+  line-height: 1.6;
+`;
+
+const FormSection = styled.section`
+  min-width: 0;
+  margin-bottom: ${SPACE_LG};
+`;
+
+const SectionHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${SPACE_XS};
+  margin-bottom: ${SPACE_MD};
+
+  h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+`;
+
+const StepNumber = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: ${p => p.theme.textColorSnd};
+  border: 1px solid ${p => p.theme.borderColorSplit};
+  border-radius: 50%;
+  font-size: 12px;
+`;
+
+const SectionHint = styled.p`
+  margin: 0 0 ${SPACE_MD};
+  color: ${p => p.theme.textColorSnd};
+  line-height: 1.6;
 `;
 
 const ViewRow = styled.div`
   display: grid;
-  grid-template-columns: minmax(200px, 1fr) 140px minmax(200px, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 0.6fr) minmax(0, 1fr);
   gap: ${SPACE_MD};
-`;
 
-const ConditionRow = styled.div`
-  display: grid;
-  grid-template-columns: minmax(200px, 1fr) auto minmax(200px, 1fr) 40px;
-  gap: ${SPACE_XS};
-  align-items: center;
+  .ant-form-item {
+    min-width: 0;
+    margin-bottom: 0;
+  }
 
-  > span {
-    padding-top: ${SPACE_MD};
+  .ant-select {
+    width: 100%;
+  }
+
+  @container (max-width: 680px) {
+    grid-template-columns: minmax(0, 1fr);
   }
 `;
 
-const PreviewHelp = styled.p`
+const ConditionRow = styled.div`
+  min-width: 0;
+  padding: ${SPACE_MD};
+  margin-bottom: ${SPACE_MD};
+  border: 1px solid ${p => p.theme.borderColorSplit};
+  border-radius: 4px;
+`;
+
+const ConditionHeading = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${SPACE_XS};
+  min-height: 32px;
   margin-bottom: ${SPACE_XS};
+
+  h4 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+  }
+`;
+
+const ConditionFields = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr);
+  gap: ${SPACE_XS};
+  align-items: start;
+
+  .ant-form-item {
+    min-width: 0;
+    margin-bottom: 0;
+  }
+
+  .ant-select {
+    width: 100%;
+  }
+
+  @container (max-width: 560px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+`;
+
+const EqualityMark = styled.span`
+  padding-top: 34px;
+  color: ${p => p.theme.textColorSnd};
+  font-size: 16px;
+  text-align: center;
+
+  @container (max-width: 560px) {
+    padding-top: 0;
+  }
+`;
+
+const ColumnOption = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  span,
+  small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  small {
+    color: ${p => p.theme.textColorSnd};
+  }
+`;
+
+const ActionBar = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${SPACE_XS};
+  padding-top: ${SPACE_MD};
+  border-top: 1px solid ${p => p.theme.borderColorSplit};
+`;
+
+const PreviewHelp = styled.p`
+  margin-bottom: ${SPACE_MD};
+  color: ${p => p.theme.textColorSnd};
+  line-height: 1.6;
+`;
+
+const PreviewSql = styled(Input.TextArea)`
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.65;
+`;
+
+const PreviewFooter = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${SPACE_XS} ${SPACE_MD};
+
+  .ant-btn:focus-visible {
+    outline: 2px solid ${p => p.theme.primary};
+    outline-offset: 2px;
+  }
+`;
+
+const PreviewActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${SPACE_XS};
 `;

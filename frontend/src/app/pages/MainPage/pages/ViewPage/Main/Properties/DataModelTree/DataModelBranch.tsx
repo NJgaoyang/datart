@@ -23,25 +23,17 @@ import {
   TableOutlined,
 } from '@ant-design/icons';
 import { Button, Tooltip } from 'antd';
-import { IW } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
-import { FC, memo, useState } from 'react';
+import { FC, memo } from 'react';
 import { Draggable, Droppable } from '@hello-pangea/dnd';
 import styled from 'styled-components';
 import { getFieldDisplayName } from 'utils/utils';
 import { DatasetCommentLabel } from '../../../components/DatasetCommentLabel';
-import {
-  BLUE,
-  FONT_SIZE_BASE,
-  FONT_SIZE_HEADING,
-  SPACE,
-  SPACE_MD,
-  SPACE_XS,
-  YELLOW,
-} from 'styles/StyleConstants';
+import { FONT_SIZE_LABEL } from 'styles/StyleConstants';
 import { Column, ColumnRole } from '../../../slice/types';
 import { ROOT_CONTAINER_ID, TreeNodeHierarchy } from './constant';
 import DataModelNode from './DataModelNode';
+import { FieldRow, FieldTypeIcon } from './FieldRow';
 
 const DataModelBranch: FC<{
   node: Column;
@@ -64,57 +56,65 @@ const DataModelBranch: FC<{
     onEditDisplayName,
   }) => {
     const t = useI18NPrefix('view.model');
-    const [isHover, setIsHover] = useState(false);
 
     const renderNode = (node, isDragging) => {
-      let icon =
+      const label = getFieldDisplayName(node);
+      const icon =
         node.role === ColumnRole.Hierarchy ? (
-          <FolderOpenOutlined style={{ alignSelf: 'center', color: YELLOW }} />
+          <FolderOpenOutlined />
         ) : (
-          <TableOutlined style={{ alignSelf: 'center', color: BLUE }} />
+          <TableOutlined />
         );
 
       return (
         <>
-          <div
-            className="content"
-            onMouseEnter={() => {
-              setIsHover(true);
-            }}
-            onMouseLeave={() => {
-              setIsHover(false);
-            }}
-          >
-            <IW fontSize={FONT_SIZE_HEADING}>{icon}</IW>
-            <DatasetCommentLabel
-              label={getFieldDisplayName(node)}
-              comment={node.sourceComment || node.comment}
-              hasCustomName={Boolean(node.customName)}
-            />
+          <BranchHeader>
+            <div className="field-content">
+              <FieldTypeIcon
+                className={
+                  node.role === ColumnRole.Table ? 'table-icon' : undefined
+                }
+                aria-hidden="true"
+              >
+                {icon}
+              </FieldTypeIcon>
+              <DatasetCommentLabel
+                label={label}
+                comment={node.sourceComment || node.comment}
+                hasCustomName={Boolean(node.customName)}
+                secondaryLabel={node.name}
+                focusable
+              />
+            </div>
+            <span className="branch-count" aria-hidden="true">
+              {node.children?.length || 0}
+            </span>
             {node.role === ColumnRole.Hierarchy && (
-              <div className="action">
-                {isHover && !isDragging && (
-                  <Tooltip title={t('rename')}>
-                    <Button
-                      type="link"
-                      onClick={() => onEditBranch(node)}
-                      icon={<EditOutlined />}
-                    />
-                  </Tooltip>
-                )}
-                {isHover && !isDragging && (
-                  <Tooltip title={t('delete')}>
-                    <Button
-                      type="link"
-                      onClick={() => onDelete(node)}
-                      icon={<DeleteOutlined />}
-                    />
-                  </Tooltip>
-                )}
+              <div className="field-actions">
+                <Tooltip title={t('rename')}>
+                  <Button
+                    className="field-action"
+                    type="text"
+                    aria-label={`${t('rename')}: ${label}`}
+                    disabled={isDragging}
+                    onClick={() => onEditBranch(node)}
+                    icon={<EditOutlined />}
+                  />
+                </Tooltip>
+                <Tooltip title={t('delete')}>
+                  <Button
+                    className="field-action"
+                    type="text"
+                    aria-label={`${t('delete')}: ${label}`}
+                    disabled={isDragging}
+                    onClick={() => onDelete(node)}
+                    icon={<DeleteOutlined />}
+                  />
+                </Tooltip>
               </div>
             )}
-          </div>
-          <div className="children">
+          </BranchHeader>
+          <div className="branch-children">
             {node?.children?.map(childNode => (
               <DataModelNode
                 className="in-hierarchy"
@@ -179,26 +179,35 @@ const DataModelBranch: FC<{
 
 export default DataModelBranch;
 
-const StyledDataModelBranch = styled.div<{}>`
-  margin: ${SPACE} ${SPACE_MD};
-  font-size: ${FONT_SIZE_BASE};
-  line-height: 32px;
-  user-select: 'none';
+const StyledDataModelBranch = styled.div`
+  min-width: 0;
+  margin: 4px 8px 8px;
 
-  & .content {
-    display: flex;
-    align-items: center;
-    min-width: 0;
+  .branch-children {
+    padding-left: 8px;
+    margin-left: 18px;
+    border-left: 1px solid ${p => p.theme.borderColorBase};
+  }
+`;
+
+const BranchHeader = styled(FieldRow)`
+  margin: 0;
+  font-weight: 500;
+
+  .table-icon {
+    color: ${p => p.theme.info};
   }
 
-  & .children {
-    margin-left: ${SPACE_MD};
-  }
-
-  & .action {
-    display: flex;
-    flex: 1;
-    justify-content: flex-end;
-    padding-right: ${SPACE_XS};
+  .branch-count {
+    flex-shrink: 0;
+    min-width: 20px;
+    padding: 0 5px;
+    font-size: ${FONT_SIZE_LABEL};
+    font-weight: 400;
+    line-height: 20px;
+    color: ${p => p.theme.textColorSnd};
+    text-align: center;
+    background: ${p => p.theme.bodyBackground};
+    border-radius: 4px;
   }
 `;

@@ -16,22 +16,15 @@
  * limitations under the License.
  */
 
-import classnames from 'classnames';
-import { cloneElement, memo, ReactElement, useCallback, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Tooltip } from 'antd';
+import { memo, ReactElement, useCallback, useState } from 'react';
+import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import styled from 'styled-components';
-import {
-  FONT_SIZE_TITLE,
-  FONT_WEIGHT_MEDIUM,
-  FONT_WEIGHT_REGULAR,
-  SPACE,
-  SPACE_XS,
-} from 'styles/StyleConstants';
-import { getTextWidth } from 'utils/utils';
 
 interface TabProps {
   name: string;
   title: string;
+  shortTitle?: string;
   icon?: ReactElement;
 }
 
@@ -42,91 +35,81 @@ interface VerticalTabsProps {
 
 export const VerticalTabs = memo(({ tabs, onSelect }: VerticalTabsProps) => {
   const [selectedTab, setSelectedTab] = useState('');
-  const { i18n } = useTranslation();
+  const t = useI18NPrefix('view.properties');
 
   const selectTab = useCallback(
-    name => () => {
-      const nextSelectedTab = name === selectedTab ? '' : name;
-      setSelectedTab(nextSelectedTab);
-      onSelect && onSelect(nextSelectedTab);
+    (name: string) => {
+      const nextTab = name === selectedTab ? '' : name;
+      setSelectedTab(nextTab);
+      onSelect?.(nextTab);
     },
     [selectedTab, onSelect],
   );
 
   return (
-    <Wrapper>
-      {tabs.map(({ name, title, icon }) => {
-        const rotate = ['en'].includes(i18n.language) ? '90deg' : '0';
-        return (
+    <Wrapper role="group" aria-label={t('tools')}>
+      {tabs.map(({ name, title, shortTitle, icon }) => (
+        <Tooltip title={title} placement="left" key={name}>
           <Tab
-            key={name}
-            className={classnames({ selected: selectedTab === name })}
-            onClick={selectTab(name)}
+            type="button"
+            aria-label={title}
+            aria-pressed={selectedTab === name}
+            onClick={() => selectTab(name)}
           >
-            {icon && (
-              <Word rotate={rotate} className="icon">
-                {cloneElement(icon)}
-              </Word>
-            )}
-            {title.split('').map((s, index) => {
-              const wordHeight = getTextWidth(
-                s,
-                String(FONT_WEIGHT_REGULAR),
-                FONT_SIZE_TITLE,
-              );
-              return (
-                <Word key={index} rotate={rotate} height={wordHeight}>
-                  {s}
-                </Word>
-              );
-            })}
+            <span className="tab-icon" aria-hidden="true">{icon}</span>
+            <span className="tab-label">{shortTitle || title}</span>
           </Tab>
-        );
-      })}
+        </Tooltip>
+      ))}
     </Wrapper>
   );
 });
 
-const Wrapper = styled.ul`
-  flex-shrink: 0;
-  width: 32px;
-  background-color: ${p => p.theme.componentBackground};
+const Wrapper = styled.div`
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 4px;
+  width: 56px;
+  padding: 6px 4px;
+  background-color: ${p => p.theme.bodyBackground};
   border-left: 1px solid ${p => p.theme.borderColorSplit};
 `;
 
-const Tab = styled.li`
+const Tab = styled.button`
   display: flex;
+  flex: none;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: ${SPACE_XS};
+  gap: 5px;
+  min-height: 58px;
+  width: 100%;
+  padding: 6px 2px;
   color: ${p => p.theme.textColorSnd};
+  font: inherit;
   cursor: pointer;
-  user-select: none;
-  border-bottom: 1px solid ${p => p.theme.borderColorSplit};
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+
+  .tab-icon { font-size: 17px; line-height: 20px; }
+  .tab-label { font-size: 12px; line-height: 16px; }
 
   &:hover {
-    color: ${p => p.theme.textColor};
-    background-color: ${p => p.theme.bodyBackground};
+    color: ${p => p.theme.primary};
+    background-color: ${p => p.theme.componentBackground};
   }
 
-  &.selected {
-    font-weight: ${FONT_WEIGHT_MEDIUM};
-    color: ${p => p.theme.textColor};
-    background-color: ${p => p.theme.emphasisBackground};
+  &[aria-pressed='true'] {
+    color: ${p => p.theme.primary};
+    background-color: ${p => p.theme.componentBackground};
+    border-color: ${p => p.theme.borderColorBase};
+    box-shadow: inset 2px 0 0 ${p => p.theme.primary};
   }
-`;
 
-const Word = styled.span<{ rotate: string; height?: number }>`
-  display: block;
-  width: ${FONT_SIZE_TITLE};
-  height: ${p => (p.height ? `${p.height}px` : FONT_SIZE_TITLE)};
-  font-size: ${FONT_SIZE_TITLE};
-  line-height: ${p => (p.height ? `${p.height}px` : FONT_SIZE_TITLE)};
-  text-align: center;
-  transform: ${p => `rotate(${p.rotate})`};
-
-  &.icon {
-    margin-bottom: ${SPACE};
+  &:focus-visible {
+    outline: 2px solid ${p => p.theme.primary};
+    outline-offset: 1px;
   }
 `;

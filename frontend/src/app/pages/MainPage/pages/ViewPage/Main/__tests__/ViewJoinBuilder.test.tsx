@@ -1,5 +1,5 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { beforeEach, describe, it, vi } from 'vitest';
 import { ViewJoinBuilder } from '../ViewJoinBuilder';
 
 const mocks = vi.hoisted(() => ({ request: vi.fn(), dispatch: vi.fn() }));
@@ -7,7 +7,10 @@ const mocks = vi.hoisted(() => ({ request: vi.fn(), dispatch: vi.fn() }));
 vi.mock('utils/request', () => ({ request2: mocks.request }));
 vi.mock('redux/hooks', () => ({ useAppDispatch: () => mocks.dispatch }));
 vi.mock('react-redux', () => ({ useSelector: selector => selector({}) }));
-vi.mock('app/hooks/useI18NPrefix', () => ({ default: () => (key: string) => key }));
+vi.mock('app/hooks/useI18NPrefix', () => ({
+  default: () => (key: string, values?: { index?: number }) =>
+    values?.index ? `${key} ${values.index}` : key,
+}));
 vi.mock('app/pages/MainPage/pages/ViewPage/slice/selectors', () => ({
   selectCurrentEditingViewAttr: () => 'new-view',
   selectViews: () => [
@@ -27,8 +30,8 @@ vi.mock('antd', async () => {
   return {
     ...actual,
     // Keep the real Form event flow while avoiding portal/virtual-select details.
-    Select: ({ id, value, options, onChange }) => (
-      <select id={id} value={value || ''} onChange={event => onChange?.(event.target.value)}>
+    Select: ({ id, value, options, onChange, disabled }) => (
+      <select id={id} value={value || ''} disabled={disabled} onChange={event => onChange?.(event.target.value)}>
         <option value="" />
         {(options || []).map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
       </select>
@@ -44,10 +47,10 @@ function compose(joinType: string) {
 async function chooseJoin() {
   fireEvent.change(screen.getByLabelText('leftView'), { target: { value: 'orders' } });
   fireEvent.change(screen.getByLabelText('rightView'), { target: { value: 'refunds' } });
-  await waitFor(() => expect(screen.getAllByRole('combobox')[3].querySelector('option[value="amount"]')).toBeTruthy());
-  await waitFor(() => expect(screen.getAllByRole('combobox')[4].querySelector('option[value="amount"]')).toBeTruthy());
-  fireEvent.change(screen.getAllByRole('combobox')[3], { target: { value: 'amount' } });
-  fireEvent.change(screen.getAllByRole('combobox')[4], { target: { value: 'amount' } });
+  await waitFor(() => expect(screen.getByLabelText('leftColumn').querySelector('option[value="amount"]')).toBeTruthy());
+  await waitFor(() => expect(screen.getByLabelText('rightColumn').querySelector('option[value="amount"]')).toBeTruthy());
+  fireEvent.change(screen.getByLabelText('leftColumn'), { target: { value: 'amount' } });
+  fireEvent.change(screen.getByLabelText('rightColumn'), { target: { value: 'amount' } });
 }
 
 describe('generated join query freshness', () => {
@@ -103,5 +106,40 @@ describe('generated join query freshness', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.queryByRole('button', { name: 'save' })).toBeNull();
     expect(screen.getByText('regenerateRequired')).toBeTruthy();
+  });
+
+  it('labels both sides of each condition and preserves the remaining condition after removal', async () => {
+    render(<ViewJoinBuilder />);
+    expect(screen.getByLabelText('leftColumn')).toBeDisabled();
+    expect(screen.getByLabelText('rightColumn')).toBeDisabled();
+    await chooseJoin();
+    expect(screen.getByLabelText('leftColumn')).not.toBeDisabled();
+    expect(screen.getByLabelText('rightColumn')).not.toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'addCondition' }));
+    const second = screen.getByRole('group', { name: 'conditionNumber 2' });
+    expect(within(second).getByLabelText('leftColumn')).toBeTruthy();
+    expect(within(second).getByLabelText('rightColumn')).toBeTruthy();
+    fireEvent.click(within(second).getByRole('button', { name: 'removeCondition 2' }));
+    expect(screen.getByRole('button', { name: 'addCondition' })).toHaveFocus();
+    expect(screen.queryByRole('group', { name: 'conditionNumber 2' })).toBeNull();
+    expect(screen.getByLabelText('leftColumn')).toHaveValue('amount');
+    expect(screen.getByLabelText('rightColumn')).toHaveValue('amount');
+
+    fireEvent.click(screen.getByRole('button', { name: 'generate' }));
+    await screen.findByRole('dialog');
+    expect(mocks.request).toHaveBeenCalledWith({
+      url: '/views/compose',
+      method: 'POST',
+      data: {
+        leftViewId: 'orders',
+        rightViewId: 'refunds',
+        joinType: 'INNER',
+        conditions: [{ leftColumn: 'amount', rightColumn: 'amount' }],
+      },
+    });
+    const preview = screen.getByRole('textbox', { name: 'generatedSql' });
+    expect(preview).toHaveAttribute('readonly');
+    expect(preview).toHaveValue("SELECT 'INNER'");
   });
 });

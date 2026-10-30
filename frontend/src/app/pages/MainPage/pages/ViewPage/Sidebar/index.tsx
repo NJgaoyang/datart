@@ -24,6 +24,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
+import { Button, Tooltip } from 'antd';
 import { ListNav, ListPane, ListTitle } from 'app/components';
 import { useDebouncedSearch } from 'app/hooks/useDebouncedSearch';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
@@ -39,7 +40,7 @@ import { useSelector } from 'react-redux';
 import { useAppDispatch } from 'redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { LEVEL_10, SPACE_TIMES, SPACE_XS, WHITE } from 'styles/StyleConstants';
+import { LEVEL_10, SPACE_XS } from 'styles/StyleConstants';
 import { getInsertedNodeIndex, uuidv4 } from 'utils/utils';
 import { UNPERSISTED_ID_PREFIX } from '../constants';
 import { SaveFormContext } from '../SaveFormContext';
@@ -61,7 +62,7 @@ interface SidebarProps {
 }
 
 export const Sidebar = memo(
-  ({ isDragging, width, sliderVisible, handleSliderVisible }: SidebarProps) => {
+  ({ isDragging, sliderVisible, handleSliderVisible }: SidebarProps) => {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
     const { showSaveForm } = useContext(SaveFormContext);
@@ -220,17 +221,20 @@ export const Sidebar = memo(
 
     return (
       <Wrapper
-        sliderVisible={sliderVisible}
         className={sliderVisible ? 'close' : ''}
-        isDragging={isDragging}
-        width={width}
+        $isDragging={isDragging}
       >
-        {sliderVisible ? (
-          <MenuUnfoldOutlined className="menuUnfoldOutlined" />
-        ) : (
-          <></>
+        {sliderVisible && (
+          <Tooltip title={t('open')} placement="right">
+            <ExpandSidebarButton
+              type="text"
+              icon={<MenuUnfoldOutlined />}
+              aria-label={t('open')}
+              onClick={() => handleSliderVisible(false)}
+            />
+          </Tooltip>
         )}
-        <ListNavWrapper defaultActiveKey="list">
+        <ListNavWrapper className="dataset-navigation" defaultActiveKey="list">
           <ListPane key="list">
             <ListTitle {...titles[0]} />
             <FolderTree treeData={filteredTreeData} />
@@ -244,40 +248,35 @@ export const Sidebar = memo(
     );
   },
 );
-const Wrapper = styled.div<{
-  sliderVisible: boolean;
-  isDragging: boolean;
-  width: number;
-}>`
+const Wrapper = styled.div<{ $isDragging: boolean }>`
+  min-width: 0;
   height: 100%;
-  transition: ${p => (!p.isDragging ? 'width 0.3s ease' : 'none')};
+  transition: ${p => (p.$isDragging ? 'none' : 'width 0.2s ease')};
+
   &.close {
     position: absolute;
-    width: ${SPACE_TIMES(7.5)} !important;
+    z-index: ${LEVEL_10};
+    width: 36px !important;
+    min-width: 36px !important;
     height: 100%;
-    background: ${WHITE};
-    border-right: 1px solid #e9ecef;
-    .menuUnfoldOutlined {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
-    > div {
-      display: ${p => (p.sliderVisible ? 'none' : 'flex')};
-    }
-    &:hover {
-      width: ${p => p.width + '%'} !important;
-      .menuUnfoldOutlined {
-        display: none;
-      }
-      > div {
-        display: flex;
-        &.hidden {
-          display: none;
-        }
-      }
-    }
+    background-color: ${p => p.theme.bodyBackground};
+    border-right: 1px solid ${p => p.theme.borderColorSplit};
+
+    .dataset-navigation { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) { transition: none; }
+`;
+
+const ExpandSidebarButton = styled(Button)`
+  width: 28px;
+  height: 32px;
+  margin: 10px 3px;
+  color: ${p => p.theme.textColorSnd};
+
+  &:focus-visible {
+    outline: 2px solid ${p => p.theme.primary};
+    outline-offset: 1px;
   }
 `;
 const ListNavWrapper = styled(ListNav)`

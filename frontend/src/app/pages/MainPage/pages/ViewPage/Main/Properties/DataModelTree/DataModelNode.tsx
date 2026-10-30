@@ -23,32 +23,22 @@ import {
   EditOutlined,
   FieldStringOutlined,
   FileUnknownOutlined,
+  MoreOutlined,
   NumberOutlined,
   SisternodeOutlined,
 } from '@ant-design/icons';
-import { Button, Tooltip } from 'antd';
-import { IW } from 'app/components';
+import { Draggable } from '@hello-pangea/dnd';
+import { Button, Dropdown, Tooltip } from 'antd';
 import { DataViewFieldType } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
-import { FC, memo, useState } from 'react';
-import { Draggable } from '@hello-pangea/dnd';
-import styled from 'styled-components';
+import { FC, memo } from 'react';
 import { getFieldDisplayName } from 'utils/utils';
 import { DatasetCommentLabel } from '../../../components/DatasetCommentLabel';
-import {
-  FONT_SIZE_BASE,
-  FONT_SIZE_TITLE,
-  INFO,
-  SPACE,
-  SPACE_MD,
-  SPACE_TIMES,
-  SPACE_XS,
-  SUCCESS,
-  WARNING,
-} from 'styles/StyleConstants';
 import SetFieldType from '../../../components/SetFieldType';
 import { Column, ColumnRole } from '../../../slice/types';
 import { ALLOW_COMBINE_COLUMN_TYPES } from './constant';
+import { FieldRow, FieldTypeButton } from './FieldRow';
+
 const DataModelNode: FC<{
   node: Column;
   className?: string;
@@ -62,7 +52,6 @@ const DataModelNode: FC<{
   ({
     node,
     className,
-    branchRole,
     onCreateHierarchy,
     onMoveToHierarchy,
     onNodeTypeChange,
@@ -70,106 +59,53 @@ const DataModelNode: FC<{
     onEditDisplayName,
   }) => {
     const t = useI18NPrefix('view.model');
-    const [isHover, setIsHover] = useState(false);
-    const hasCategory = true;
+    const label = getFieldDisplayName(node);
+    const source = node.path?.join('.') || node.name;
+    const canJoinHierarchy = ALLOW_COMBINE_COLUMN_TYPES.includes(node.type);
+    const hierarchyActions = [
+      ...(canJoinHierarchy && onCreateHierarchy
+        ? [
+            {
+              key: 'create',
+              icon: <BranchesOutlined />,
+              label: t('newHierarchy'),
+              onClick: () => onCreateHierarchy(node),
+            },
+          ]
+        : []),
+      ...(canJoinHierarchy
+        ? [
+            {
+              key: 'move',
+              icon: <SisternodeOutlined />,
+              label: t('addToHierarchy'),
+              onClick: () => onMoveToHierarchy(node),
+            },
+          ]
+        : []),
+      ...(onDeleteFromHierarchy
+        ? [
+            {
+              key: 'remove',
+              icon: <DeleteOutlined />,
+              label: t('delete'),
+              onClick: () => onDeleteFromHierarchy(node),
+            },
+          ]
+        : []),
+    ];
 
-    const renderNode = (node, isDragging) => {
-      let icon;
-      switch (node.type) {
-        case DataViewFieldType.NUMERIC:
-          icon = (
-            <NumberOutlined style={{ alignSelf: 'center', color: SUCCESS }} />
-          );
-          break;
-        case DataViewFieldType.STRING:
-          icon = (
-            <FieldStringOutlined style={{ alignSelf: 'center', color: INFO }} />
-          );
-          break;
-        case DataViewFieldType.DATE:
-        case DataViewFieldType.DATETIME:
-          icon = (
-            <CalendarOutlined style={{ alignSelf: 'center', color: INFO }} />
-          );
-          break;
-        default:
-          icon = (
-            <FileUnknownOutlined
-              style={{ alignSelf: 'center', color: WARNING }}
-            />
-          );
-          break;
-      }
-
-      const isAllowCreateHierarchy = node => {
-        return ALLOW_COMBINE_COLUMN_TYPES.includes(node.type);
-      };
-
-      return (
-        <div
-          className="content"
-          onMouseEnter={() => {
-            setIsHover(true);
-          }}
-          onMouseLeave={() => {
-            setIsHover(false);
-          }}
-        >
-          <SetFieldType
-            field={node}
-            onChange={onNodeTypeChange}
-            hasCategory={hasCategory}
-            icon={<StyledIW fontSize={FONT_SIZE_TITLE}>{icon}</StyledIW>}
-          />
-          <DatasetCommentLabel
-              label={getFieldDisplayName(node)}
-              comment={node.sourceComment || node.comment}
-              hasCustomName={Boolean(node.customName)}
-            />
-          <div className="action">
-            {isHover && !isDragging && onEditDisplayName && (
-              <Tooltip title={t('setDisplayName')}>
-                <Button
-                  type="link"
-                  onClick={() => onEditDisplayName(node)}
-                  icon={<EditOutlined />}
-                />
-              </Tooltip>
-            )}
-            {isHover &&
-              !isDragging &&
-              isAllowCreateHierarchy(node) &&
-              onCreateHierarchy && (
-                <Tooltip title={t('newHierarchy')}>
-                  <Button
-                    type="link"
-                    onClick={() => onCreateHierarchy(node)}
-                    icon={<BranchesOutlined />}
-                  />
-                </Tooltip>
-              )}
-            {isHover && !isDragging && isAllowCreateHierarchy(node) && (
-              <Tooltip title={t('addToHierarchy')}>
-                <Button
-                  type="link"
-                  onClick={() => onMoveToHierarchy(node)}
-                  icon={<SisternodeOutlined />}
-                />
-              </Tooltip>
-            )}
-            {isHover && !isDragging && onDeleteFromHierarchy && (
-              <Tooltip title={t('delete')}>
-                <Button
-                  type="link"
-                  onClick={() => onDeleteFromHierarchy(node)}
-                  icon={<DeleteOutlined />}
-                />
-              </Tooltip>
-            )}
-          </div>
-        </div>
+    const icon =
+      node.type === DataViewFieldType.NUMERIC ? (
+        <NumberOutlined />
+      ) : node.type === DataViewFieldType.STRING ? (
+        <FieldStringOutlined />
+      ) : node.type === DataViewFieldType.DATE ||
+        node.type === DataViewFieldType.DATETIME ? (
+        <CalendarOutlined />
+      ) : (
+        <FileUnknownOutlined />
       );
-    };
 
     return (
       <Draggable
@@ -178,16 +114,70 @@ const DataModelNode: FC<{
         index={node?.index ?? 0}
       >
         {(draggableProvided, draggableSnapshot) => (
-          <StyledDataModelNode
-            isDragging={draggableSnapshot.isDragging}
+          <FieldRow
+            $isDragging={draggableSnapshot.isDragging}
             className={className}
             style={draggableProvided.draggableProps.style}
             ref={draggableProvided.innerRef}
             {...draggableProvided.draggableProps}
             {...draggableProvided.dragHandleProps}
           >
-            {renderNode(node, draggableSnapshot.isDragging)}
-          </StyledDataModelNode>
+            <div className="field-content">
+              <SetFieldType
+                field={node}
+                onChange={onNodeTypeChange}
+                hasCategory
+                icon={
+                  <FieldTypeButton
+                    type="text"
+                    $kind={node.type}
+                    aria-label={`${t('typeAndCategory')}: ${label}`}
+                    disabled={draggableSnapshot.isDragging}
+                    icon={icon}
+                  />
+                }
+              />
+              <DatasetCommentLabel
+                label={label}
+                comment={node.sourceComment || node.comment}
+                hasCustomName={Boolean(node.customName)}
+                secondaryLabel={source}
+                source={source}
+                focusable
+              />
+            </div>
+            <div className="field-actions">
+              {onEditDisplayName && (
+                <Tooltip title={t('setDisplayName')}>
+                  <Button
+                    className="field-action"
+                    type="text"
+                    aria-label={`${t('setDisplayName')}: ${label}`}
+                    disabled={draggableSnapshot.isDragging}
+                    onClick={() => onEditDisplayName(node)}
+                    icon={<EditOutlined />}
+                  />
+                </Tooltip>
+              )}
+              {!!hierarchyActions.length && (
+                <Dropdown
+                  trigger={['click']}
+                  placement="bottomRight"
+                  menu={{ items: hierarchyActions }}
+                  disabled={draggableSnapshot.isDragging}
+                >
+                  <Button
+                    className="field-action"
+                    type="text"
+                    aria-label={`${t('moreActions')}: ${label}`}
+                    title={t('moreActions')}
+                    disabled={draggableSnapshot.isDragging}
+                    icon={<MoreOutlined />}
+                  />
+                </Dropdown>
+              )}
+            </div>
+          </FieldRow>
         )}
       </Draggable>
     );
@@ -195,40 +185,3 @@ const DataModelNode: FC<{
 );
 
 export default DataModelNode;
-
-const StyledDataModelNode = styled.div<{
-  isDragging: boolean;
-}>`
-  margin: ${SPACE} ${SPACE_MD};
-  font-size: ${FONT_SIZE_BASE};
-  line-height: 32px;
-  user-select: 'none';
-  background: ${p =>
-    p.isDragging ? p.theme.highlightBackground : 'transparent'};
-
-  &.in-hierarchy {
-    margin-right: 0;
-  }
-
-  & .content {
-    display: flex;
-    align-items: center;
-    min-width: 0;
-  }
-
-  & .action {
-    display: flex;
-    flex: 1;
-    justify-content: flex-end;
-    padding-right: ${SPACE_XS};
-  }
-`;
-
-const StyledIW = styled(IW)`
-  width: ${SPACE_TIMES(7)};
-  height: ${SPACE_TIMES(7)};
-  margin-right: ${SPACE_XS};
-  cursor: pointer;
-  border: 1px solid ${p => p.theme.borderColorSplit};
-  border-radius: 4px;
-`;

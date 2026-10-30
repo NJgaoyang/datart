@@ -19,31 +19,24 @@
 import {
   AlignCenterOutlined,
   CaretRightOutlined,
-  CopyFilled,
+  CopyOutlined,
+  DownOutlined,
+  EllipsisOutlined,
   MonitorOutlined,
-  PauseOutlined,
-  SaveFilled,
-  SettingFilled,
+  SaveOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
-import { Divider, Dropdown, Menu, Select, Space, Tooltip } from 'antd';
-import { ToolbarButton } from 'app/components';
+import { Button, Dropdown, Select, Tooltip } from 'antd';
 import { Chronograph } from 'app/components/Chronograph';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { CommonFormTypes } from 'globalConstants';
 import { memo, useCallback, useContext, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useAppDispatch } from 'redux/hooks';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { format } from 'sql-formatter';
 import styled from 'styled-components';
-import {
-  INFO,
-  LEVEL_1,
-  SPACE,
-  SPACE_TIMES,
-  SPACE_XS,
-  WARNING,
-} from 'styles/StyleConstants';
+import { LEVEL_1 } from 'styles/StyleConstants';
 import { getInsertedNodeIndex } from 'utils/utils';
 import { isParentIdEqual } from '../../../../slice/utils';
 import { selectSources } from '../../../SourcePage/slice/selectors';
@@ -76,7 +69,6 @@ export const Toolbar = memo(
     const { onRun, onSave } = useContext(EditorContext);
     const { showSaveForm } = useContext(SaveFormContext);
     const sources = useSelector(selectSources);
-    const navigate = useNavigate();
     const location = useLocation();
     const histState = location.state as any;
     const viewsData = useSelector(selectViews);
@@ -119,7 +111,12 @@ export const Toolbar = memo(
     const ViewIndex = useSelector(state =>
       selectCurrentEditingViewAttr(state, { name: 'index' }),
     ) as number;
+    const touched = useSelector(state =>
+      selectCurrentEditingViewAttr(state, { name: 'touched' }),
+    ) as boolean;
     const isArchived = status === ViewStatus.Archived;
+    const running = stage === ViewViewModelStages.Running;
+    const saving = stage === ViewViewModelStages.Saving;
 
     const formatSQL = useCallback(() => {
       dispatch(
@@ -191,151 +188,140 @@ export const Toolbar = memo(
       }
     }, [histState?.sourcesId, sourceChange, sources]);
 
+    const moreItems = allowManage
+      ? [
+          {
+            key: 'settings',
+            label: t('info'),
+            icon: <SettingOutlined />,
+            disabled: isArchived || isNewView(id),
+            onClick: showEdit,
+          },
+          {
+            key: 'saveAs',
+            label: t('saveAs'),
+            icon: <CopyOutlined />,
+            disabled: isNewView(id),
+            onClick: () => saveAsView(id),
+          },
+        ]
+      : [];
+
     return (
-      <Container>
+      <Container role="group" aria-label={t('toolbar')}>
         <Operates>
-          <Space
-            separator={<Divider orientation="vertical" className="divider" />}
-          >
+          {type === 'SQL' && allowManage && (
+            <SourceControl>
+              <span className="control-label">{t('sourceLabel')}</span>
+              <Select
+                aria-label={t('sourceLabel')}
+                placeholder={t('source')}
+                value={sourceId}
+                disabled={isArchived}
+                onChange={sourceChange}
+                className="source"
+                showSearch={{ optionFilterProp: 'label' }}
+                options={(sources || []).map(({ id, name }) => ({
+                  value: id,
+                  label: name,
+                }))}
+              />
+            </SourceControl>
+          )}
+          <ActionGroup>
             {type === 'SQL' && (
               <>
-                {allowManage && (
-                  <Select
-                    placeholder={t('source')}
-                    value={sourceId}
-                    variant="borderless"
-                    disabled={isArchived}
-                    onChange={sourceChange}
-                    className="source"
-                    options={[
-                      ...(sources.flatMap(({ id, name }) => [
-                        { key: String(id), value: id, label: name },
-                      ]) || []),
-                    ]}
-                  />
-                )}
-                <Space>
-                  <Tooltip
-                    title={
-                      <TipTitle
-                        title={[
-                          `${fragment ? t('runSelection') : t('run')}`,
-                          t('runWinTip'),
-                          t('runMacTip'),
-                        ]}
-                      />
-                    }
-                    placement="bottom"
+                <Tooltip
+                  title={
+                    <TipTitle
+                      title={running
+                        ? [t('running')]
+                        : [fragment ? t('runSelection') : t('run'), t('runWinTip'), t('runMacTip')]}
+                    />
+                  }
+                  placement="bottom"
+                >
+                  <Button
+                    type="primary"
+                    loading={running}
+                    disabled={running}
+                    icon={<CaretRightOutlined />}
+                    onClick={onRun}
+                    aria-label={running ? t('running') : fragment ? t('runSelection') : t('run')}
                   >
-                    <ToolbarButton
-                      icon={
-                        stage === ViewViewModelStages.Running ? (
-                          <PauseOutlined />
-                        ) : (
-                          <CaretRightOutlined />
-                        )
-                      }
-                      color={fragment ? WARNING : INFO}
-                      onClick={onRun}
-                    />
-                  </Tooltip>
-                  <Tooltip title={t('beautify')} placement="bottom">
-                    <ToolbarButton
-                      icon={<AlignCenterOutlined />}
-                      disabled={isArchived || !allowManage}
-                      onClick={formatSQL}
-                    />
-                  </Tooltip>
-                </Space>
+                    {running ? t('running') : fragment ? t('runSelection') : t('run')}
+                  </Button>
+                </Tooltip>
+                <Tooltip title={t('beautify')} placement="bottom">
+                  <Button
+                    type="text"
+                    icon={<AlignCenterOutlined />}
+                    aria-label={t('beautify')}
+                    disabled={isArchived || !allowManage}
+                    onClick={formatSQL}
+                  />
+                </Tooltip>
               </>
             )}
             <Dropdown
               trigger={['click']}
-              popupRender={() => (
-                <Menu
-                  onClick={sizeMenuClick}
-                  items={[
-                    ...(PREVIEW_SIZE_LIST.flatMap(s => [
-                      { key: String(s), label: s },
-                    ]) || []),
-                  ]}
-                />
-              )}
+              menu={{
+                selectedKeys: [String(size)],
+                onClick: sizeMenuClick,
+                items: PREVIEW_SIZE_LIST.map(limit => ({
+                  key: String(limit),
+                  label: limit.toLocaleString(),
+                })),
+              }}
             >
-              <ToolbarButton size="small">{`Limit: ${size}`}</ToolbarButton>
+              <Button type="text" className="preview-limit" aria-label={t('previewLimit')}>
+                {t('previewLimit')}: {size?.toLocaleString()}
+                <DownOutlined />
+              </Button>
             </Dropdown>
             <Chronograph
-              running={stage === ViewViewModelStages.Running}
-              status={
-                error
-                  ? 'error'
-                  : stage >= ViewViewModelStages.Running
-                  ? stage === ViewViewModelStages.Running
-                    ? 'processing'
-                    : 'success'
-                  : 'default'
-              }
+              running={running}
+              status={error ? 'error' : running ? 'processing' : stage >= ViewViewModelStages.Running ? 'success' : 'default'}
             />
-          </Space>
+          </ActionGroup>
         </Operates>
-
         <Actions>
-          <Space>
-            {allowManage && (
-              <Tooltip
-                title={
-                  <TipTitle
-                    title={[t('save'), t('saveWinTip'), t('saveMacTip')]}
-                  />
-                }
-                placement="bottom"
+          <SaveState role="status">
+            {!allowManage || isArchived
+              ? t('readOnly')
+              : saving
+              ? t('saving')
+              : touched || isNewView(id)
+              ? t('unsaved')
+              : t('saved')}
+          </SaveState>
+          {allowManage && (
+            <Tooltip title={<TipTitle title={[t('save'), t('saveWinTip'), t('saveMacTip')]} />} placement="bottom">
+              <Button
+                icon={<SaveOutlined />}
+                loading={saving}
+                disabled={isArchived || stage !== ViewViewModelStages.Saveable}
+                onClick={onSave}
               >
-                <ToolbarButton
-                  icon={<SaveFilled />}
-                  disabled={
-                    isArchived || stage !== ViewViewModelStages.Saveable
-                  }
-                  color={INFO}
-                  onClick={onSave}
-                />
-              </Tooltip>
-            )}
-            {allowManage && (
-              <Tooltip title={t('info')} placement="bottom">
-                <ToolbarButton
-                  icon={<SettingFilled />}
-                  disabled={isArchived || isNewView(id)}
-                  color={INFO}
-                  onClick={showEdit}
-                />
-              </Tooltip>
-            )}
-            {allowManage && (
-              <Tooltip title={t('saveAs')} placement="bottom">
-                <ToolbarButton
-                  icon={<CopyFilled />}
-                  onClick={() => saveAsView(id)}
-                  disabled={isNewView(id)}
-                  color={INFO}
-                />
-              </Tooltip>
-            )}
-            {/* <Tooltip title={t('saveFragment')} placement="bottom">
-            <ToolbarButton icon={<SnippetsFilled />} />
-          </Tooltip> */}
-            {allowEnableViz && (
-              <Tooltip title={t('startAnalysis')} placement="bottom">
-                <ToolbarButton
-                  disabled={isNewView(id)}
-                  icon={<MonitorOutlined />}
-                  color={INFO}
-                  onClick={() => {
-                    startAnalysis(id);
-                  }}
-                />
-              </Tooltip>
-            )}
-          </Space>
+                {t('save')}
+              </Button>
+            </Tooltip>
+          )}
+          {allowEnableViz && (
+            <Button
+              type="text"
+              icon={<MonitorOutlined />}
+              disabled={isNewView(id)}
+              onClick={() => startAnalysis(id)}
+            >
+              {t('startAnalysis')}
+            </Button>
+          )}
+          {moreItems.length > 0 && (
+            <Dropdown trigger={['click']} menu={{ items: moreItems }}>
+              <Button type="text" icon={<EllipsisOutlined />} aria-label={t('moreActions')} title={t('moreActions')} />
+            </Dropdown>
+          )}
         </Actions>
       </Container>
     );
@@ -345,33 +331,78 @@ export const Toolbar = memo(
 const Container = styled.div`
   z-index: ${LEVEL_1};
   display: flex;
-  flex-shrink: 0;
+  flex: none;
+  flex-wrap: wrap;
   align-items: center;
-  padding: ${SPACE} ${SPACE_XS};
+  gap: 8px 12px;
+  min-width: 0;
+  padding: 10px 12px;
   background-color: ${p => p.theme.componentBackground};
   border-bottom: 1px solid ${p => p.theme.borderColorSplit};
 
-  .source {
-    width: ${SPACE_TIMES(40)};
+  .ant-btn {
+    height: 32px;
+    font-size: 13px;
+    border-radius: 4px;
   }
 
-  .size {
-    width: ${SPACE_TIMES(40)};
+  .ant-btn:focus-visible {
+    outline: 2px solid ${p => p.theme.primary};
+    outline-offset: 2px;
   }
 
-  .divider {
-    border-color: ${p => p.theme.borderColorBase};
+  .preview-limit {
+    color: ${p => p.theme.textColorSnd};
+    font-size: 12px;
   }
 `;
 
 const Operates = styled.div`
   display: flex;
-  flex: 1;
+  flex: 1 1 400px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-width: 0;
 `;
 
-const Actions = styled.div`
+const SourceControl = styled.div`
   display: flex;
-  flex-shrink: 0;
+  flex: 0 1 260px;
+  align-items: center;
+  gap: 8px;
+  min-width: 180px;
+
+  .control-label {
+    flex: none;
+    color: ${p => p.theme.textColorSnd};
+    font-size: 12px;
+  }
+
+  .source {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+  }
+`;
+
+const ActionGroup = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+`;
+
+const Actions = styled(ActionGroup)`
+  justify-content: flex-end;
+  margin-left: auto;
+`;
+
+const SaveState = styled.span`
+  margin-right: 4px;
+  color: ${p => p.theme.textColorSnd};
+  font-size: 12px;
+  white-space: nowrap;
 `;
 
 const TipTitle = ({ title }: { title: string[] }) => {

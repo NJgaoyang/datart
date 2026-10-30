@@ -24,17 +24,7 @@ import {
   SearchOutlined,
   TableOutlined,
 } from '@ant-design/icons';
-import {
-  Button,
-  Col,
-  Dropdown,
-  Input,
-  Menu,
-  Row,
-  Space,
-  Tooltip,
-  TreeDataNode,
-} from 'antd';
+import { Button, Dropdown, Input, Menu, TreeDataNode } from 'antd';
 import { Tree } from 'app/components';
 import { DataViewFieldType } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
@@ -51,6 +41,7 @@ import { SPACE_MD, SPACE_XS } from 'styles/StyleConstants';
 import { RootState } from 'types';
 import { getFieldDisplayName } from 'utils/utils';
 import { EditorContext } from '../../EditorContext';
+import { DatasetCommentLabel } from '../../components/DatasetCommentLabel';
 import {
   selectCurrentEditingViewAttr,
   selectDatabaseSchemaLoading,
@@ -174,21 +165,14 @@ export const Resource = memo(() => {
       value?: string[];
     };
     const label = String(node.title || '');
-    if (!field.originalName) return label;
     return (
-      <Tooltip
-        title={
-          <>
-            <div>{field.value?.join('.') || field.originalName}</div>
-            {field.comment && <div>{field.comment}</div>}
-          </>
-        }
-      >
-        <ResourceFieldName>
-          {label}
-          {label !== field.originalName && <span>（{field.originalName}）</span>}
-        </ResourceFieldName>
-      </Tooltip>
+      <DatasetCommentLabel
+        label={label}
+        comment={field.comment}
+        secondaryLabel={field.originalName}
+        source={field.value?.join('.') || field.originalName}
+        focusable
+      />
     );
   };
 
@@ -239,24 +223,26 @@ export const Resource = memo(() => {
   return (
     <Container title="reference">
       <SearchBar>
-        <Col span={24}>
-          <StyleSpace>
-            <Input
-              prefix={<SearchOutlined className="icon" />}
-              placeholder={t('search')}
-              className="input"
-              variant="borderless"
-              onChange={debouncedSearch}
-            />
-            <Dropdown
-              key="more"
-              trigger={['click']}
-              popupRender={() => getOverlays()}
-            >
-              <Button type="text" icon={<MoreOutlined />} />
-            </Dropdown>
-          </StyleSpace>
-        </Col>
+        <Input
+          allowClear
+          prefix={<SearchOutlined className="icon" />}
+          placeholder={t('searchBilingual')}
+          aria-label={t('searchBilingual')}
+          onChange={debouncedSearch}
+        />
+        <Dropdown
+          key="more"
+          trigger={['click']}
+          placement="bottomRight"
+          popupRender={() => getOverlays()}
+        >
+          <Button
+            type="text"
+            aria-label={t('sortType')}
+            title={t('sortType')}
+            icon={<MoreOutlined />}
+          />
+        </Dropdown>
       </SearchBar>
       <TreeWrapper ref={treeWrapperRef}>
         <Tree
@@ -268,6 +254,7 @@ export const Resource = memo(() => {
           selectable={false}
           defaultExpandedKeys={expandedRowKeys}
           height={height}
+          itemHeight={40}
           onExpand={onExpand}
         />
       </TreeWrapper>
@@ -275,32 +262,83 @@ export const Resource = memo(() => {
   );
 });
 
-const ResourceFieldName = styled.span`
-  span {
-    margin-left: ${SPACE_XS};
-    color: ${p => p.theme.textColorLight};
-  }
-`;
+const SearchBar = styled.div`
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  padding: 0 ${SPACE_XS} ${SPACE_XS};
 
-const SearchBar = styled(Row)`
-  .input {
-    padding-bottom: ${SPACE_XS};
+  .ant-input-affix-wrapper {
+    flex: 1;
+    min-width: 0;
   }
 
   .icon {
-    color: ${p => p.theme.textColorLight};
+    color: ${p => p.theme.textColorSnd};
+  }
+
+  .ant-btn {
+    flex-shrink: 0;
+  }
+
+  .ant-btn:focus-visible {
+    outline: 2px solid ${p => p.theme.primary};
+    outline-offset: 1px;
   }
 `;
 
 const TreeWrapper = styled.div`
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   padding-bottom: ${SPACE_MD};
-  overflow-y: auto;
-`;
+  overflow: hidden;
 
-const StyleSpace = styled(Space)`
-  width: 100%;
-  > div:nth-child(1) {
-    flex: 1;
+  .ant-tree.medium {
+    background: transparent;
+
+    .ant-tree-treenode {
+      box-sizing: border-box;
+      min-width: 0;
+      padding: 2px 6px;
+      border-radius: 4px;
+
+      &:hover,
+      &:focus-within {
+        background: ${p => p.theme.emphasisBackground};
+      }
+    }
+
+    .ant-tree-switcher {
+      line-height: 36px;
+    }
+
+    .ant-tree-indent-unit {
+      width: 14px;
+    }
+
+    .ant-tree-node-content-wrapper {
+      flex: 1;
+      min-width: 0;
+      min-height: 36px;
+      line-height: 20px;
+      color: ${p => p.theme.textColor};
+
+      .ant-tree-iconEle {
+        color: ${p => p.theme.textColorSnd};
+      }
+
+      .ant-tree-title {
+        display: flex;
+        min-width: 0;
+      }
+    }
+
+    .ant-tree-treenode-active .ant-tree-node-content-wrapper {
+      outline: 2px solid ${p => p.theme.primary};
+      outline-offset: -2px;
+      border-radius: 4px;
+    }
   }
 `;

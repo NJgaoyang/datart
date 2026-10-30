@@ -1269,7 +1269,8 @@
       "execute": "执行",
       "warning": "有未执行的修改，是否执行？",
       "closeOther": "关闭其他",
-      "closeAll": "关闭所有"
+      "closeAll": "关闭所有",
+      "openViews": "打开的数据集"
     },
     "editor": {
       "startAnalysis": "开始分析",
@@ -1286,20 +1287,36 @@
       "info": "详情设置",
       "saveAs": "另存为",
       "saveFragment": "保存片段",
-      "readonlyTip": "回收站中不可编辑"
+      "readonlyTip": "回收站中不可编辑",
+      "toolbar": "数据集编辑工具栏",
+      "sourceLabel": "数据源",
+      "previewLimit": "预览行数",
+      "running": "执行中",
+      "saving": "保存中",
+      "saved": "已保存",
+      "unsaved": "未保存",
+      "readOnly": "只读",
+      "readOnlyEditorTip": "当前数据集为只读状态，可以预览，不能编辑或保存。",
+      "moreActions": "更多操作"
     },
     "properties": {
       "reference": "数据源信息",
       "variable": "变量配置",
       "model": "数据模型",
-      "columnPermissions": "列权限"
+      "columnPermissions": "列权限",
+      "tools": "数据集工具",
+      "referenceShort": "资源",
+      "variableShort": "变量",
+      "modelShort": "字段",
+      "permissionsShort": "权限"
     },
     "resource": {
       "title": "数据源信息",
       "search": "搜索数据库 / 表 / 字段关键字",
       "sortType": "排序方式",
       "byName": "按名称",
-      "byField": "按字段"
+      "byField": "按字段",
+      "searchBilingual": "搜索中文、英文名或注释"
     },
     "variable": {
       "title": "变量配置",
@@ -1330,7 +1347,10 @@
       "refreshFields": "更新字段注释",
       "refreshFieldsHelp": "使用已同步的数据源注释，保留自定义名称",
       "refreshFieldsSuccess": "字段注释已更新，自定义名称已保留",
-      "refreshFieldsFailed": "字段注释更新失败，请重试"
+      "refreshFieldsFailed": "字段注释更新失败，请重试",
+      "moreActions": "更多字段操作",
+      "computedFields": "计算字段",
+      "emptyFields": "暂无字段，请先运行查询"
     },
     "columnPermission": {
       "title": "列权限",
@@ -1360,7 +1380,10 @@
       "fastfailover": "快速失败",
       "cache": "缓存",
       "cacheExpires": "有效期(秒)",
-      "expensiveQuery": "这是一个消耗资源的查询"
+      "expensiveQuery": "这是一个消耗资源的查询",
+      "basicInfo": "基本信息",
+      "namePlaceholder": "输入名称",
+      "advancedDescription": "按需调整并发控制、缓存和查询标记。"
     },
     "schemaTable": {
       "category": "分类",
@@ -1413,7 +1436,19 @@
       "INNER": "内连接",
       "LEFT": "左连接",
       "RIGHT": "右连接",
-      "FULL": "全连接"
+      "FULL": "全连接",
+      "sourcesTitle": "选择数据视图",
+      "conditionsDescription": "选择两侧用于匹配记录的字段。多个条件需同时满足。",
+      "selectView": "选择数据视图",
+      "leftColumn": "数据视图 A 的字段",
+      "rightColumn": "数据视图 B 的字段",
+      "selectField": "选择字段",
+      "chooseLeftViewFirst": "请先选择数据视图 A",
+      "chooseRightViewFirst": "请先选择数据视图 B",
+      "conditionNumber": "条件 {{index}}",
+      "remove": "移除",
+      "removeCondition": "移除条件 {{index}}",
+      "generatedSql": "生成的 SQL"
     },
     "lineage": {
       "title": "查看血缘",
@@ -1422,6 +1457,17 @@
       "dashboards": "仪表板",
       "analyses": "分析",
       "empty": "暂无上下游使用关系"
+    },
+    "preview": {
+      "title": "数据预览",
+      "summary": "{{rows}} 行 · {{columns}} 列",
+      "ready": "运行后查看结果",
+      "running": "查询执行中…",
+      "emptyTitle": "尚未执行查询",
+      "emptyDescription": "点击上方“执行”查看数据，预览行数可在工具栏调整。",
+      "expand": "增大预览",
+      "restore": "恢复默认布局",
+      "resize": "拖动调整编辑区和预览区的高度"
     }
   },
   "auditLog": {

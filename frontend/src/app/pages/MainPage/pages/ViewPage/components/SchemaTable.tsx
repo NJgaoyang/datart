@@ -170,8 +170,11 @@ export const SchemaTable = memo(
                 label={displayText}
                 comment={displayColumn.sourceComment || displayColumn.comment}
                 hasCustomName={Boolean(displayColumn.customName)}
+                source={name}
+                focusable
               />
             </span>
+            {readOnly && <span className="type-icon" title={String(column.type)}>{icon}</span>}
             {!readOnly && (
               <SetFieldType
                 field={hierarchyColumn as Column}
@@ -206,7 +209,8 @@ export const SchemaTable = memo(
       return {
         columns: [
           {
-            align: 'left',
+            align: 'center',
+            title: '#',
             dataIndex: TABLE_DATA_INDEX,
             width: indexColumnWidth,
           },
@@ -244,22 +248,27 @@ export const SchemaTable = memo(
   },
 );
 
-function TableHeader(props) {
+function TableHeader({ children, className, ...props }) {
   return (
-    <TH className="ant-table-cell">
-      <div className="content-wrapper">{props.children}</div>
+    <TH {...props} scope="col" className={['ant-table-cell', className].filter(Boolean).join(' ')}>
+      <div className="content-wrapper">{children}</div>
     </TH>
   );
 }
 
 const TH = styled.th`
   padding: ${SPACE_SM} ${SPACE} !important;
-  font-weight: 600;
-  background-color: ${p => p.theme.componentBackground};
+  font-size: 13px;
+  font-weight: 500;
+  background-color: ${p => p.theme.emphasisBackground};
 
   .content-wrapper {
     display: flex;
     align-items: center;
+    gap: 4px;
+    min-width: 0;
+
+    .type-icon { flex: none; color: ${p => p.theme.textColorSnd}; }
 
     .btn {
       &:hover {
@@ -269,6 +278,7 @@ const TH = styled.th`
 
     .content {
       flex: 1;
+      min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;

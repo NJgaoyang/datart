@@ -1270,7 +1270,8 @@
       "execute": "Execute",
       "warning": "There are unexecuted changes, still execute?",
       "closeOther": "Close Other Tabs",
-      "closeAll": "Close All Tabs"
+      "closeAll": "Close All Tabs",
+      "openViews": "Open datasets"
     },
     "editor": {
       "startAnalysis": "Start Analysis",
@@ -1287,20 +1288,36 @@
       "info": "Info",
       "saveAs": "Save As",
       "saveFragment": "Save Fragment",
-      "readonlyTip": "Not editable in recycle"
+      "readonlyTip": "Not editable in recycle",
+      "toolbar": "Dataset editor toolbar",
+      "sourceLabel": "Data source",
+      "previewLimit": "Preview limit",
+      "running": "Running",
+      "saving": "Saving",
+      "saved": "Saved",
+      "unsaved": "Unsaved",
+      "readOnly": "Read only",
+      "readOnlyEditorTip": "This dataset is read only. You can preview it, but cannot edit or save it.",
+      "moreActions": "More actions"
     },
     "properties": {
       "reference": "Source Reference",
       "variable": "Variables",
       "model": "Data Model",
-      "columnPermissions": "Column Permissions"
+      "columnPermissions": "Column Permissions",
+      "tools": "Dataset tools",
+      "referenceShort": "Source",
+      "variableShort": "Vars",
+      "modelShort": "Fields",
+      "permissionsShort": "Access"
     },
     "resource": {
       "title": "Source info",
       "search": "Search database / table / column",
       "sortType": "Sort",
       "byName": "By Name",
-      "byField": "By Field"
+      "byField": "By Field",
+      "searchBilingual": "Search names, original names, or comments"
     },
     "variable": {
       "title": "Variables",
@@ -1331,7 +1348,10 @@
       "refreshFields": "Update field comments",
       "refreshFieldsHelp": "Use the synchronized source comments and keep custom names",
       "refreshFieldsSuccess": "Field comments updated. Custom names were kept.",
-      "refreshFieldsFailed": "Could not update field comments. Try again."
+      "refreshFieldsFailed": "Could not update field comments. Try again.",
+      "moreActions": "More field actions",
+      "computedFields": "Calculated fields",
+      "emptyFields": "Run a query to load fields"
     },
     "columnPermission": {
       "title": "Column permissions",
@@ -1361,7 +1381,10 @@
       "fastfailover": "Fast failover",
       "cache": "Cache",
       "cacheExpires": "Expires(s)",
-      "expensiveQuery": "This is an expensive query"
+      "expensiveQuery": "This is an expensive query",
+      "basicInfo": "Basic information",
+      "namePlaceholder": "Enter a name",
+      "advancedDescription": "Adjust concurrency, caching, and query options when needed."
     },
     "schemaTable": {
       "category": "Category",
@@ -1414,7 +1437,19 @@
       "INNER": "Inner Join",
       "LEFT": "Left Join",
       "RIGHT": "Right Join",
-      "FULL": "Full Join"
+      "FULL": "Full Join",
+      "sourcesTitle": "Choose views",
+      "conditionsDescription": "Choose matching fields from both views. All conditions must match.",
+      "selectView": "Select a view",
+      "leftColumn": "Field from view A",
+      "rightColumn": "Field from view B",
+      "selectField": "Select a field",
+      "chooseLeftViewFirst": "Select view A first",
+      "chooseRightViewFirst": "Select view B first",
+      "conditionNumber": "Condition {{index}}",
+      "remove": "Remove",
+      "removeCondition": "Remove condition {{index}}",
+      "generatedSql": "Generated SQL"
     },
     "lineage": {
       "title": "View Lineage",
@@ -1423,6 +1458,17 @@
       "dashboards": "Dashboards",
       "analyses": "Analyses",
       "empty": "No upstream or downstream usage"
+    },
+    "preview": {
+      "title": "Data preview",
+      "summary": "{{rows}} rows · {{columns}} columns",
+      "ready": "Run a query to see results",
+      "running": "Running query…",
+      "emptyTitle": "No query results yet",
+      "emptyDescription": "Run the query above to preview data. Adjust the preview limit in the toolbar.",
+      "expand": "Expand preview",
+      "restore": "Restore default layout",
+      "resize": "Drag to resize the editor and preview"
     }
   },
   "auditLog": {

@@ -20,9 +20,8 @@ import CodeEditor, { monaco } from 'app/components/CodeEditor';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import classnames from 'classnames';
 import { CommonFormTypes } from 'globalConstants';
-import debounce from 'lodash/debounce';
 import { language } from 'monaco-editor/esm/vs/basic-languages/sql/sql';
-import { memo, useCallback, useContext, useEffect, useMemo } from 'react';
+import { memo, useCallback, useContext, useEffect } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useSelector } from 'react-redux';
 import { useAppDispatch } from 'redux/hooks';
@@ -49,7 +48,7 @@ import { isNewView } from '../../utils';
 // Text selected when "value" prop changes issue
 // https://github.com/react-monaco-editor/react-monaco-editor/issues/325
 
-export const SQLEditor = memo(() => {
+export const SQLEditor = memo(({ allowManage }: { allowManage: boolean }) => {
   const { actions } = useViewSlice();
   const dispatch = useAppDispatch();
   const {
@@ -91,6 +90,7 @@ export const SQLEditor = memo(() => {
 
   const callSave = useCallback(() => {
     if (
+      allowManage &&
       status !== ViewStatus.Archived &&
       stage === ViewViewModelStages.Saveable
     ) {
@@ -121,7 +121,7 @@ export const SQLEditor = memo(() => {
         save();
       }
     }
-  }, [dispatch, actions, stage, status, id, save, showSaveForm, viewsData, t]);
+  }, [dispatch, actions, stage, status, id, save, showSaveForm, viewsData, t, allowManage]);
 
   const editorWillMount = useCallback(
     editor => {
@@ -163,7 +163,7 @@ export const SQLEditor = memo(() => {
       });
       editor.onDidAttemptReadOnlyEdit(() => {
         (messageContribution as any).showMessage(
-          t('readonlyTip'),
+          t('readOnlyEditorTip'),
           editor.getPosition(),
         );
       });
@@ -221,12 +221,18 @@ export const SQLEditor = memo(() => {
     [dispatch, callSave],
   );
 
-  const debouncedEditorChange = useMemo(() => {
-    const editorChange = script => {
-      dispatch(actions.changeCurrentEditingView({ script }));
-    };
-    return debounce(editorChange, 200);
-  }, [dispatch, actions]);
+  const editorChange = useCallback(
+    (nextScript: string) => {
+      if (
+        !allowManage ||
+        status === ViewStatus.Archived ||
+        nextScript === script
+      ) return;
+      // Keep the draft before a tab switch can change the current view.
+      dispatch(actions.changeCurrentEditingView({ script: nextScript }));
+    },
+    [dispatch, actions, allowManage, status, script],
+  );
 
   return (
     <EditorWrapper
@@ -245,9 +251,12 @@ export const SQLEditor = memo(() => {
           minimap: { enabled: false },
           // Pane sizes are assigned asynchronously by split.js.
           automaticLayout: true,
-          readOnly: status === ViewStatus.Archived,
+          readOnly: !allowManage || status === ViewStatus.Archived,
+          padding: { top: 12, bottom: 12 },
+          scrollBeyondLastLine: false,
+          smoothScrolling: true,
         }}
-        onChange={debouncedEditorChange}
+        onChange={editorChange}
         onBeforeMount={editorWillMount}
         onMount={editorDidMount}
       />

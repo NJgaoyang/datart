@@ -144,7 +144,7 @@ export const Tabs = memo(() => {
   const Tab = (id: string, name: string) => (
     <span>
       <Dropdown popupRender={() => menu(id)} trigger={['contextMenu']}>
-        <span className="ant-dropdown-link">{name}</span>
+        <span className="ant-dropdown-link dataset-tab-name" title={name}>{name}</span>
       </Dropdown>
     </span>
   );
@@ -152,6 +152,7 @@ export const Tabs = memo(() => {
   return (
     <Wrapper>
       <TabsComponent
+        aria-label={t('openViews')}
         hideAdd
         type="editable-card"
         activeKey={id}
@@ -162,7 +163,7 @@ export const Tabs = memo(() => {
             {
               key: String(id),
               label: error ? (
-                <span css={errorColor}>{name}</span>
+                <span className="dataset-tab-name" title={name} css={errorColor}>{name}</span>
               ) : (
                 Tab(id, name)
               ),
@@ -242,7 +243,16 @@ function CloseIcon({ touched, stage, error }: CloseIconProps) {
 
 const Wrapper = styled.div`
   z-index: ${LEVEL_1};
-  flex-shrink: 0;
+  flex: none;
+  min-width: 0;
+
+  .ant-tabs-nav { margin: 0; min-height: 42px; background-color: ${p => p.theme.bodyBackground}; }
+  .ant-tabs-tab { min-width: 96px; max-width: 230px; padding: 9px 12px !important; }
+  .ant-tabs-tab-active { box-shadow: inset 0 2px 0 ${p => p.theme.primary}; }
+  .ant-tabs-tab-btn { min-width: 0; font-size: 13px; }
+  .dataset-tab-name { display: block; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ant-tabs-tab-remove { flex: none; margin-left: 10px; }
+  .ant-tabs-tab-remove:focus-visible { outline: 2px solid ${p => p.theme.primary}; outline-offset: 2px; }
 `;
 
 const CloseIconWrapper = styled.span`
@@ -257,6 +267,6 @@ const Editing = styled.span`
   display: block;
   width: 10px;
   height: 10px;
-  background-color: ${p => p.theme.textColorLight};
+  background-color: ${p => p.theme.warning};
   border-radius: 50%;
 `;

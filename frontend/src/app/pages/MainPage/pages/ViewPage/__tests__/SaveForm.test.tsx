@@ -40,7 +40,12 @@ describe('saved dataset advanced settings', () => {
     const { rerender } = render(
       <SaveFormContext.Provider value={context}><SaveForm /></SaveFormContext.Provider>,
     );
-    fireEvent.click(screen.getByText('advanced'));
+    const advanced = screen.getByRole('button', { name: 'advanced' });
+    expect(advanced).toHaveAttribute('aria-expanded', 'false');
+    expect(advanced).toHaveAttribute('aria-controls');
+    expect(screen.queryByRole('spinbutton', { name: 'cacheExpires' })).toBeNull();
+    fireEvent.click(advanced);
+    expect(advanced).toHaveAttribute('aria-expanded', 'true');
     const expires = screen.getByRole('spinbutton', { name: 'cacheExpires' });
     await waitFor(() => expect(expires).not.toBeDisabled());
     expect(expires).toHaveValue('120');
@@ -64,5 +69,12 @@ describe('saved dataset advanced settings', () => {
     await waitFor(() => expect(expires).not.toBeDisabled());
     expect(expires).toHaveValue('240');
     screen.getAllByRole('radio').forEach(radio => expect(radio).toBeDisabled());
+
+    fireEvent.click(advanced);
+    expect(advanced).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('spinbutton', { name: 'cacheExpires' })).toBeNull();
+    fireEvent.click(advanced);
+    expect(screen.getByRole('spinbutton', { name: 'cacheExpires' })).toHaveValue('240');
+    expect(screen.getByRole('switch', { name: 'cache' })).toHaveAttribute('aria-checked', 'true');
   });
 });

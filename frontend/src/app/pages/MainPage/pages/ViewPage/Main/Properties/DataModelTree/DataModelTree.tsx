@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-import { ReloadOutlined } from '@ant-design/icons';
-import { Button, Form, Input, message, Select, Tooltip } from 'antd';
+import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Button, Empty, Form, Input, message, Select, Tooltip } from 'antd';
 import { APP_CURRENT_VERSION } from 'app/configVersion';
 import { DataViewFieldType, DateFormat } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
@@ -33,7 +33,7 @@ import { FC, memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useAppDispatch } from 'redux/hooks';
 import styled from 'styled-components';
-import { SPACE_LG } from 'styles/StyleConstants';
+import { FONT_SIZE_LABEL, SPACE_LG } from 'styles/StyleConstants';
 import { Nullable } from 'types';
 import { CloneValueDeep, isEmpty, isEmptyArray } from 'utils/object';
 import { request2 } from 'utils/request';
@@ -594,6 +594,8 @@ const DataModelTree: FC = memo(() => {
             )}
           >
             <Input
+              autoFocus
+              allowClear
               placeholder={columnName}
               onChange={e => {
                 requestedDisplayName = e.target.value;
@@ -805,13 +807,6 @@ const DataModelTree: FC = memo(() => {
     ],
   );
 
-  const titleAdd = useMemo(() => {
-    return {
-      items: [{ key: 'computerField', text: t('model.createComputedFields') }],
-      callback: () => addCallback(),
-    };
-  }, [addCallback, t]);
-
   const refreshFieldComments = async () => {
     const viewId = currentEditingView?.id;
     if (!viewId || isNewView(viewId) || refreshingFields) return;
@@ -871,11 +866,17 @@ const DataModelTree: FC = memo(() => {
   return (
     <Container
       title="model"
-      add={titleAdd}
       loading={stage === ViewViewModelStages.Running}
     >
-      {currentEditingView?.id && !isNewView(currentEditingView.id) && (
-        <FieldActions>
+      <FieldActions>
+        <Button
+          size="small"
+          icon={<PlusOutlined />}
+          onClick={() => addCallback()}
+        >
+          {t('model.createComputedFields')}
+        </Button>
+        {currentEditingView?.id && !isNewView(currentEditingView.id) && (
           <Tooltip title={t('model.refreshFieldsHelp')}>
             <Button
               size="small"
@@ -888,58 +889,72 @@ const DataModelTree: FC = memo(() => {
               {t('model.refreshFields')}
             </Button>
           </Tooltip>
-        </FieldActions>
-      )}
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable
-          droppableId={ROOT_CONTAINER_ID}
-          type={TreeNodeHierarchy.Root}
-          isCombineEnabled={true}
-        >
-          {(droppableProvided, droppableSnapshot) => (
-            <StyledDroppableContainer
-              ref={droppableProvided.innerRef}
-              isDraggingOver={droppableSnapshot.isDraggingOver}
-            >
-              {GroupTableColumn(tableColumns, viewType).map(col => {
-                return col.role === ColumnRole.Hierarchy ||
-                  col.role === ColumnRole.Table ? (
-                  <DataModelBranch
-                    node={col}
-                    key={col.name}
-                    onNodeTypeChange={handleNodeTypeChange}
-                    onMoveToHierarchy={openMoveToHierarchyModal}
-                    onEditBranch={openEditBranchModal}
-                    onDelete={handleDeleteBranch}
-                    onDeleteFromHierarchy={handleDeleteFromBranch}
-                    onCreateHierarchy={openCreateHierarchyModal}
-                    onEditDisplayName={openEditDisplayNameModal}
-                  />
-                ) : (
-                  <DataModelNode
-                    node={col}
-                    key={col.name}
-                    onCreateHierarchy={openCreateHierarchyModal}
-                    onNodeTypeChange={handleNodeTypeChange}
-                    onMoveToHierarchy={openMoveToHierarchyModal}
-                    onEditDisplayName={openEditDisplayNameModal}
-                  />
-                );
-              })}
-              {droppableProvided.placeholder}
-            </StyledDroppableContainer>
-          )}
-        </Droppable>
-      </DragDropContext>
-      {computedFields?.map((v, i) => {
-        return (
-          <DataModelComputerFieldNode
-            key={i}
-            node={v}
-            menuClick={handleComputedFieldMenuClick}
-          ></DataModelComputerFieldNode>
-        );
-      })}
+        )}
+      </FieldActions>
+      <ModelBody>
+        {!tableColumns.length && !computedFields?.length && (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={t('model.emptyFields')}
+          />
+        )}
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable
+            droppableId={ROOT_CONTAINER_ID}
+            type={TreeNodeHierarchy.Root}
+            isCombineEnabled={true}
+          >
+            {(droppableProvided, droppableSnapshot) => (
+              <StyledDroppableContainer
+                ref={droppableProvided.innerRef}
+                $isDraggingOver={droppableSnapshot.isDraggingOver}
+              >
+                {GroupTableColumn(tableColumns, viewType).map(col => {
+                  return col.role === ColumnRole.Hierarchy ||
+                    col.role === ColumnRole.Table ? (
+                    <DataModelBranch
+                      node={col}
+                      key={col.name}
+                      onNodeTypeChange={handleNodeTypeChange}
+                      onMoveToHierarchy={openMoveToHierarchyModal}
+                      onEditBranch={openEditBranchModal}
+                      onDelete={handleDeleteBranch}
+                      onDeleteFromHierarchy={handleDeleteFromBranch}
+                      onCreateHierarchy={openCreateHierarchyModal}
+                      onEditDisplayName={openEditDisplayNameModal}
+                    />
+                  ) : (
+                    <DataModelNode
+                      node={col}
+                      key={col.name}
+                      onCreateHierarchy={openCreateHierarchyModal}
+                      onNodeTypeChange={handleNodeTypeChange}
+                      onMoveToHierarchy={openMoveToHierarchyModal}
+                      onEditDisplayName={openEditDisplayNameModal}
+                    />
+                  );
+                })}
+                {droppableProvided.placeholder}
+              </StyledDroppableContainer>
+            )}
+          </Droppable>
+        </DragDropContext>
+        {!!computedFields?.length && (
+          <>
+            <SectionTitle>
+              {t('model.computedFields')}
+              <span>{computedFields.length}</span>
+            </SectionTitle>
+            {computedFields.map((field, index) => (
+              <DataModelComputerFieldNode
+                key={index}
+                node={field}
+                menuClick={handleComputedFieldMenuClick}
+              />
+            ))}
+          </>
+        )}
+      </ModelBody>
       {contextHolder}
       {modalContextHolder}
     </Container>
@@ -949,12 +964,56 @@ const DataModelTree: FC = memo(() => {
 export default DataModelTree;
 
 const FieldActions = styled.div`
-  padding: 0 ${SPACE_LG};
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px 12px;
+  border-bottom: 1px solid ${p => p.theme.borderColorSplit};
+
+  .ant-btn {
+    min-height: 28px;
+    font-size: ${FONT_SIZE_LABEL};
+    border-radius: 5px;
+  }
+
+  .ant-btn:focus-visible {
+    outline: 2px solid ${p => p.theme.primary};
+    outline-offset: 1px;
+  }
 `;
 
-const StyledDroppableContainer = styled.div<{ isDraggingOver }>`
+const ModelBody = styled.div`
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 6px 0 12px;
   overflow: auto;
-  user-select: 'none';
+  overscroll-behavior: contain;
+`;
+
+const SectionTitle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px 4px;
+  margin-top: 8px;
+  font-size: ${FONT_SIZE_LABEL};
+  font-weight: 500;
+  color: ${p => p.theme.textColorSnd};
+  border-top: 1px solid ${p => p.theme.borderColorSplit};
+
+  span {
+    font-weight: 400;
+  }
+`;
+
+const StyledDroppableContainer = styled.div<{ $isDraggingOver: boolean }>`
+  min-width: 0;
+  user-select: none;
+  background: ${p =>
+    p.$isDraggingOver ? p.theme.bodyBackground : 'transparent'};
 `;
 
 const StyledFormItem = styled(Form.Item)`

@@ -21,7 +21,6 @@ import { ListTitle, ListTitleProps } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { FC, memo, ReactNode } from 'react';
 import styled from 'styled-components';
-import { SPACE_TIMES } from 'styles/StyleConstants';
 
 interface ContainerProps extends ListTitleProps {
   title: string;
@@ -49,7 +48,9 @@ const StyledContainer = styled.div`
   display: flex;
   flex: 1;
   flex-direction: column;
-  width: ${SPACE_TIMES(100)};
+  width: clamp(272px, 23vw, 352px);
+  min-width: 0;
   min-height: 0;
+  overflow: hidden;
   border-left: 1px solid ${p => p.theme.borderColorSplit};
 `;

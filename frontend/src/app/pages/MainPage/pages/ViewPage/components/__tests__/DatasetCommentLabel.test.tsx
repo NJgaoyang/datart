@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { DatasetCommentLabel, getDatasetCommentPreview } from '../DatasetCommentLabel';
 import { getFieldCommentDisplayName } from 'utils/utils';
 
@@ -19,8 +19,28 @@ describe('dataset field comment display', () => {
   });
 
   it('renders a focusable text target containing the tail ellipsis', () => {
-    render(<DatasetCommentLabel label="字段" comment={comment} maxCharacters={12} />);
-    expect(screen.getByText('这是一段特别长的源数据字…')).toBeTruthy();
+    render(<DatasetCommentLabel label="字段" comment={comment} maxCharacters={12} focusable />);
+    expect(screen.getByText('这是一段特别长的源数据字…').parentElement).toHaveAttribute('tabindex', '0');
+  });
+
+  it('reveals the full name, physical source and comment on keyboard focus', async () => {
+    render(
+      <DatasetCommentLabel
+        label="订单金额"
+        comment="含税金额，单位元"
+        hasCustomName
+        secondaryLabel="order_amount"
+        source="sales.orders.order_amount"
+        focusable
+      />,
+    );
+    const target = screen.getByText('订单金额').parentElement!;
+    fireEvent.focus(target);
+    const tooltip = await screen.findByRole('tooltip');
+    expect(tooltip).toHaveTextContent('订单金额');
+    expect(tooltip).toHaveTextContent('sales.orders.order_amount');
+    expect(tooltip).toHaveTextContent('含税金额，单位元');
+    expect(screen.getByText('order_amount')).toBeTruthy();
   });
 
   it.each([17, 22])('reveals comments already shortened at 16 characters (length %s)', length => {

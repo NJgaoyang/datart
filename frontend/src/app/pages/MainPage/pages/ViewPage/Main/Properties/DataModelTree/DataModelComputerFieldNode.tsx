@@ -22,178 +22,76 @@ import {
   EditOutlined,
   FieldStringOutlined,
   FileUnknownOutlined,
-  MoreOutlined,
   NumberOutlined,
 } from '@ant-design/icons';
-import { Menu, Popconfirm, Tooltip } from 'antd';
-import { IW, MenuItemLabel, Popup } from 'app/components';
+import { Button, Popconfirm, Tooltip } from 'antd';
 import { DataViewFieldType } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { ChartDataViewMeta } from 'app/types/ChartDataViewMeta';
 import { FC, memo } from 'react';
-import styled from 'styled-components';
-import {
-  FONT_SIZE_BASE,
-  FONT_SIZE_TITLE,
-  SPACE,
-  SPACE_MD,
-  SPACE_TIMES,
-  SPACE_XS,
-  WARNING,
-} from 'styles/StyleConstants';
 import { getFieldDisplayName } from 'utils/utils';
 import { DatasetCommentLabel } from '../../../components/DatasetCommentLabel';
+import { FieldRow, FieldTypeIcon } from './FieldRow';
 
 const DataModelComputerFieldNode: FC<{
   node: ChartDataViewMeta;
   menuClick: (node: ChartDataViewMeta, key: string) => void;
 }> = memo(({ node, menuClick }) => {
   const t = useI18NPrefix('view.model');
-
-  const renderNode = (node: ChartDataViewMeta) => {
-    let icon;
-    switch (node.type) {
-      case DataViewFieldType.NUMERIC:
-        icon = (
-          <NumberOutlined style={{ alignSelf: 'center', color: WARNING }} />
-        );
-        break;
-      case DataViewFieldType.STRING:
-        icon = (
-          <FieldStringOutlined
-            style={{ alignSelf: 'center', color: WARNING }}
-          />
-        );
-        break;
-      case DataViewFieldType.DATE:
-      case DataViewFieldType.DATETIME:
-        icon = (
-          <CalendarOutlined style={{ alignSelf: 'center', color: WARNING }} />
-        );
-        break;
-      default:
-        icon = (
-          <FileUnknownOutlined
-            style={{ alignSelf: 'center', color: WARNING }}
-          />
-        );
-        break;
-    }
-
-    return (
-      <>
-        <div className="content">
-          <Tooltip title={t('createComputedFields')} placement="left">
-            <StyledIW fontSize={FONT_SIZE_TITLE}>{icon}</StyledIW>
-          </Tooltip>
-          <DatasetCommentLabel
-            label={getFieldDisplayName(node)}
-            comment={node.sourceComment || node.comment}
-            hasCustomName={Boolean(node.customName)}
-          />
-        </div>
-        <div className="action">
-          <Popup
-            trigger={['click']}
-            placement="bottom"
-            content={
-              <Menu
-                prefixCls="ant-dropdown-menu"
-                selectable={false}
-                onClick={({ key }) => menuClick(node, key)}
-                items={[
-                  {
-                    key: String('exit'),
-                    label: (
-                      <MenuItemLabel prefix={<EditOutlined className="icon" />}>
-                        {t('edit')}
-                      </MenuItemLabel>
-                    ),
-                  },
-                  {
-                    key: String('del'),
-                    label: (
-                      <MenuItemLabel
-                        prefix={<DeleteOutlined className="icon" />}
-                      >
-                        {
-                          <Popconfirm
-                            title={t('deleteSure')}
-                            onConfirm={() => menuClick(node, 'delete')}
-                          >
-                            {t('delete')}
-                          </Popconfirm>
-                        }
-                      </MenuItemLabel>
-                    ),
-                  },
-                ]}
-              />
-            }
-          >
-            <MoreOutlined />
-          </Popup>
-        </div>
-      </>
+  const label = getFieldDisplayName(node);
+  const icon =
+    node.type === DataViewFieldType.NUMERIC ? (
+      <NumberOutlined />
+    ) : node.type === DataViewFieldType.STRING ? (
+      <FieldStringOutlined />
+    ) : node.type === DataViewFieldType.DATE ||
+      node.type === DataViewFieldType.DATETIME ? (
+      <CalendarOutlined />
+    ) : (
+      <FileUnknownOutlined />
     );
-  };
 
   return (
-    <StyledDataModelComputerFieldNode>
-      {renderNode(node)}
-    </StyledDataModelComputerFieldNode>
+    <FieldRow>
+      <div className="field-content">
+        <Tooltip title={t('computedFields')} placement="left">
+          <FieldTypeIcon>{icon}</FieldTypeIcon>
+        </Tooltip>
+        <DatasetCommentLabel
+          label={label}
+          comment={node.sourceComment || node.comment}
+          hasCustomName={Boolean(node.customName)}
+          secondaryLabel={node.name}
+          focusable
+        />
+      </div>
+      <div className="field-actions">
+        <Tooltip title={t('edit')}>
+          <Button
+            className="field-action"
+            type="text"
+            aria-label={`${t('edit')}: ${label}`}
+            onClick={() => menuClick(node, 'exit')}
+            icon={<EditOutlined />}
+          />
+        </Tooltip>
+        <Popconfirm
+          title={t('deleteSure')}
+          okText={t('delete')}
+          okButtonProps={{ danger: true }}
+          onConfirm={() => menuClick(node, 'delete')}
+        >
+          <Button
+            className="field-action"
+            type="text"
+            aria-label={`${t('delete')}: ${label}`}
+            title={t('delete')}
+            icon={<DeleteOutlined />}
+          />
+        </Popconfirm>
+      </div>
+    </FieldRow>
   );
 });
 
 export default DataModelComputerFieldNode;
-
-const StyledDataModelComputerFieldNode = styled.div`
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  min-width: 0;
-  padding: 0 ${SPACE_MD};
-  margin: ${SPACE} 0;
-  font-size: ${FONT_SIZE_BASE};
-  line-height: 32px;
-  user-select: 'none';
-  background: 'transparent';
-  &.in-hierarchy {
-    margin-right: 0;
-  }
-
-  & .content {
-    display: flex;
-    align-items: center;
-    min-width: 0;
-
-    span {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-  }
-
-  & .action {
-    display: none;
-    flex-shrink: 0;
-    padding-right: ${SPACE_XS};
-    margin-left: auto;
-  }
-  &:hover {
-    .action {
-      display: inline-block;
-    }
-  }
-`;
-
-const StyledIW = styled(IW)`
-  width: ${SPACE_TIMES(7)};
-  height: ${SPACE_TIMES(7)};
-  margin-right: ${SPACE_XS};
-  cursor: pointer;
-  border: 1px solid ${p => p.theme.borderColorSplit};
-  border-radius: 4px;
-`;

@@ -37,7 +37,7 @@ export const Error = memo(() => {
   const t = useI18NPrefix('view');
 
   return (
-    <Wrapper>
+    <Wrapper role="alert">
       <h3>
         <InfoCircleOutlined className="icon" />
         {t('errorTitle')}
@@ -69,5 +69,7 @@ const Wrapper = styled.div`
   p {
     padding: 0 ${SPACE_TIMES(6)};
     line-height: ${LINE_HEIGHT_BODY};
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
 `;

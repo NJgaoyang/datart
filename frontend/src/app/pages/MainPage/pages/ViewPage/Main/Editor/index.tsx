@@ -34,7 +34,7 @@ export const Editor = memo(({ allowManage, allowEnableViz }: EditorProps) => {
         allowManage={allowManage}
         allowEnableViz={allowEnableViz}
       />
-      <SQLEditor />
+      <SQLEditor allowManage={allowManage} />
     </Wrapper>
   );
 });

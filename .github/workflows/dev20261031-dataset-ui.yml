@@ -1,0 +1,79 @@
+name: Dataset desktop UI regression
+
+on:
+  push:
+    branches: [dev20261031]
+  pull_request:
+    branches: [dev20261031]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dataset-desktop-ui-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: TypeScript, regression, production build and desktop browser checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            frontend/e2e/package-lock.json
+      - name: Install locked application dependencies
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Check TypeScript and framework compatibility
+        run: |
+          npm run checkTs
+          npm run check:upgrade-baseline
+      - name: Dataset and chart regression
+        run: |
+          npx vitest run \
+            src/app/pages/MainPage/pages/ViewPage \
+            src/app/pages/ChartWorkbenchPage/components/ChartOperationPanel/components/ChartDataViewPanel \
+            src/app/components/ChartGraph/PivotSheetChart \
+            src/app/models \
+            src/app/utils \
+            src/utils
+      - name: Build production assets and check bundle limits
+        run: |
+          npm run build:all
+          npm run test:bundle-budget
+          npm run check:bundle-budget
+      - name: Install locked browser test dependencies
+        working-directory: frontend/e2e
+        run: npm ci --no-audit --no-fund
+      - name: Install Chromium
+        working-directory: frontend/e2e
+        run: npx playwright install --with-deps chromium
+      - name: Desktop UI with local fixture APIs
+        working-directory: frontend/e2e
+        env:
+          DATART_UI_SCREENSHOTS_BASE64: '1'
+        run: npx playwright test --config=playwright.dataset-ui.config.ts
+      - name: Retain browser screenshots and test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dataset-desktop-ui-${{ github.sha }}
+          path: |
+            frontend/e2e/test-results/dataset-ui
+            frontend/e2e/playwright-report/dataset-ui
+          if-no-files-found: ignore
+          retention-days: 14
+
+# The browser suite serves the built application on localhost and intercepts
+# requests with synthetic fixtures. No deployment or live database is involved.
