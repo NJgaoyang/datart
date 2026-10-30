@@ -192,11 +192,8 @@ export const runSql = createAsyncThunk<
     );
   }
 
-  let reqColumns = '';
-
-  if (type === 'STRUCT') {
-    reqColumns = buildRequestColumns(structure!);
-  }
+  const reqColumns: NonNullable<QueryResult['reqColumns']> =
+    type === 'STRUCT' ? buildRequestColumns(structure!) : [];
 
   const query = startQuery('view-preview');
   try {
@@ -211,7 +208,9 @@ export const runSql = createAsyncThunk<
           sourceId,
           size,
           scriptType: type,
-          columns: reqColumns,
+          // Keep the SQL request contract unchanged; only STRUCT queries send
+          // physical paths. The local result consistently carries an array.
+          columns: type === 'STRUCT' ? reqColumns : '',
           variables: variables.map(
             ({ name, type, valueType, defaultValue, expression }) => {
               let values = null;

@@ -114,7 +114,7 @@ export interface QueryResult {
   pageInfo: PageInfo;
   script?: string;
   warnings?: string[] | null;
-  reqColumns?: { column: []; alias: string }[];
+  reqColumns?: { column: string[]; alias: string }[];
   previewFields?: PreviewFieldMeta[];
 }
 export interface PageInfo {
